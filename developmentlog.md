@@ -52,11 +52,11 @@ Building a Model Context Protocol (MCP) server for capturing and framing moments
 
 ## Next Development Phases
 
-### Phase 0: Validation & Core Testing (Immediate)
-- [ ] **Manual testing with Claude on Cursor as MCP host**
-- [ ] Validate all 4 tools work end-to-end in practice
-- [ ] Test current resources and prompts with real AI interaction
-- [ ] Document user experience gaps and workflow issues
+### Phase 0: Validation & Core Testing (IN PROGRESS)
+- [x] Manual testing with Claude on Cursor as MCP host
+- [x] Validate basic tools work with real AI interaction
+- [x] Test current resources and prompts 
+- [ ] Fix identified critical bugs blocking core workflow
 
 ### Phase 1: Advanced Resources (Essential)
 - [ ] Implement search functionality (`moments://search/{query}`)
@@ -106,6 +106,49 @@ Building a Model Context Protocol (MCP) server for capturing and framing moments
 - MCP protocol compliance verified
 - **Design evaluation**: Identified 70% implementation gap
 
+### **2025-01-02 PM**: Phase 0 Step 1 - Core Testing Complete ⚠️
+**MCP Integration Status**: Successfully connected to Cursor via MCP
+
+#### ✅ **Working Components**
+- **MCP Server**: Running and responsive via Cursor integration
+- **`capture` tool**: Successfully creates sources with proper metadata validation
+- **`synthesize` tool**: Creates synthesis records correctly (even with empty moment arrays)
+- **`diagnostics` tool**: Provides accurate system health and statistics
+- **Storage Layer**: JSONL file writing, ID generation, data persistence working
+- **Build System**: TypeScript compilation clean, no syntax errors
+
+#### ❌ **Critical Blocking Issues**
+1. **`frame` Tool Complete Failure** 
+   - **Symptoms**: Tool calls hang/timeout with no error messages returned
+   - **Impact**: BLOCKS core workflow - cannot convert captures to moments
+   - **Evidence**: 3 sources created, 0 moments in `data/data.jsonl`
+   - **Code Analysis**: Implementation appears correct, likely async operation hanging
+
+2. **`enhance` Tool Complete Failure**
+   - **Symptoms**: Same hanging behavior as frame tool
+   - **Impact**: BLOCKS progressive refinement of content
+   - **Code Analysis**: `updateSource()` and `updateMoment()` implementations look correct
+
+#### 📊 **Current System State**
+- **3 sources**: Successfully captured via MCP integration
+- **0 moments**: Frame tool blocking moment creation
+- **1 synthesis**: Created but location unclear (not in main data file)
+- **Data Directory**: `data/data.jsonl` exists with 3 source records
+
+#### 🔍 **Technical Analysis**
+- **Code Quality**: All implementations syntactically correct, TypeScript builds clean
+- **Storage Operations**: File writing, ID generation, validation working correctly
+- **Error Handling**: Tools failing silently - may need better error reporting
+- **Async Operations**: Likely hanging on file I/O or validation operations
+
+#### 🚨 **Immediate Action Required**
+1. **Priority 1**: Debug frame tool hanging issue - add logging/error handling
+2. **Priority 2**: Fix enhance tool similar issue 
+3. **Priority 3**: Investigate synthesis storage location discrepancy
+4. **Priority 4**: Add better error reporting for failed tool calls
+
+**Impact**: Core workflow is completely blocked. Users can capture experiences but cannot transform them into structured moments, making the system unusable for its primary purpose.
+
 ### **Architecture Decisions**
 - **JSONL Storage**: Human-readable, append-only, efficient streaming
 - **TypeScript**: Strong typing for better development experience
@@ -114,13 +157,14 @@ Building a Model Context Protocol (MCP) server for capturing and framing moments
 
 ## Current Working Features
 - ✅ Capture experiences with full metadata validation
-- ✅ Frame captures into moments with source validation
-- ✅ Enhance sources or moments with update tracking
-- ✅ Synthesize multiple moments into groups
+- ❌ Frame captures into moments (BLOCKED - tool hangs)
+- ❌ Enhance sources or moments (BLOCKED - tool hangs)
+- ✅ Synthesize multiple moments into groups (working but storage unclear)
 - ✅ Data persistence with integrity validation
 - ✅ Basic data access via 4 core resources
 - ✅ Simple guided workflows via 2 basic prompts
 - ✅ Full MCP protocol compliance with error handling
+- ✅ Cursor MCP integration working
 
 ## Resources
 - [Framed Moments Design Document](framed-moments-design.md) - Complete feature specification
