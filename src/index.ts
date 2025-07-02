@@ -26,7 +26,6 @@ import {
   getRecentMoments,
   getSyntheses,
   getUnframedSources,
-  validateFilePath,
   validateDataIntegrity,
   getMomentsByDateRange,
   searchMoments,
@@ -34,7 +33,8 @@ import {
   getMomentsBySynthesis,
   getSynthesis,
   saveSession,
-  getLatestRecord
+  getLatestRecord,
+  storeFile
 } from './storage.js';
 import type { SourceRecord, ProcessingLevel } from './types.js';
 
@@ -297,15 +297,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     switch (name) {
       case 'capture': {
         const input = captureSchema.parse(args);
-        
-        // Validate file path if provided
-        if (input.file && !validateFilePath(input.file)) {
-          throw new McpError(
-            ErrorCode.InvalidParams,
-            'Invalid file path: path traversal not allowed'
-          );
+        let storedFilePath: string | undefined = undefined;
+        if (input.file) {
+          // Validate and store the file
+          const maybePath = await storeFile(input.file, generateId('srcfile'));
+          if (!maybePath) {
+            throw new McpError(
+              ErrorCode.InvalidParams,
+              `File not found or could not be stored: ${input.file}`
+            );
+          }
+          storedFilePath = maybePath;
         }
-        
         // Create source record
         const source = await saveSource({
           id: generateId('src'),
@@ -317,11 +320,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           experiencer: input.experiencer,
           processing: input.processing as ProcessingLevel,
           related: input.related,
-          file: input.file,
+          file: storedFilePath,
         });
-        
         trackCapture(source.id);
-        
         return {
           content: [
             {

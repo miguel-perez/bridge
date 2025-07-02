@@ -78,6 +78,37 @@ async function ensureStorageDir(): Promise<void> {
   }
 }
 
+// Helper to sanitize filenames (remove dangerous characters)
+function sanitize(filename: string): string {
+  return filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+}
+
+// Store a file in the managed storage directory
+export async function storeFile(sourcePath: string, sourceId: string): Promise<string | null> {
+  try {
+    // Check if file exists
+    await fs.access(sourcePath);
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const filesDir = join(STORAGE_DIR, 'files', year.toString(), month, day);
+    await fs.mkdir(filesDir, { recursive: true });
+    const origName = sanitize(sourcePath.split(/[\\/]/).pop() || 'file');
+    const destName = `${sourceId}_${origName}`;
+    const destPath = join(filesDir, destName);
+    await fs.copyFile(sourcePath, destPath);
+    // Return relative path from STORAGE_DIR (e.g., files/YYYY/MM/DD/filename)
+    return join('files', year.toString(), month, day, destName);
+  } catch (err: unknown) {
+    if (typeof err === 'object' && err && 'code' in err && (err as { code?: string }).code === 'ENOENT') {
+      // Source file missing
+      return null;
+    }
+    throw new Error(`Failed to store file: ${err instanceof Error ? err.message : String(err)}`);
+  }
+}
+
 // Generate unique IDs
 export function generateId(prefix: string): string {
   const timestamp = Date.now();
