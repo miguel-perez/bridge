@@ -11,6 +11,8 @@ Building a Model Context Protocol (MCP) server for capturing and framing moments
 - All 4 tools have placeholder implementations
 - Server tested and working with MCP protocol
 - Integrated with Cursor via .cursor/mcp.json
+- Storage layer implemented with JSONL file handling
+- All tools now persist data to storage
 
 ## Immediate Tasks
 
@@ -28,30 +30,30 @@ Building a Model Context Protocol (MCP) server for capturing and framing moments
 - [x] Configure Cursor integration
 
 ### 3. Storage Layer
-- [ ] Create JSONL file storage utilities
-- [ ] Implement atomic write operations
-- [ ] Add basic query capabilities
-- [ ] Set up data validation
+- [x] Create JSONL file storage utilities
+- [x] Implement atomic write operations (append-only)
+- [x] Add basic query capabilities
+- [x] Set up data validation
 
 ### 4. Tool Implementation
-- [x] Implement `capture` tool (placeholder)
+- [x] Implement `capture` tool
   - [x] Add input validation
-  - [ ] Create storage handler
+  - [x] Create storage handler
   - [x] Add error handling
   
-- [x] Implement `frame` tool (placeholder)
-  - [ ] Add source validation
-  - [ ] Implement framing logic
+- [x] Implement `frame` tool
+  - [x] Add source validation
+  - [x] Implement framing logic
   - [ ] Add pattern recognition
   
-- [x] Implement `enhance` tool (placeholder)
-  - [ ] Add moment/source lookup
-  - [ ] Implement update logic
+- [x] Implement `enhance` tool
+  - [x] Add moment/source lookup
+  - [x] Implement update logic
   - [x] Add validation rules
   
-- [x] Implement `synthesize` tool (placeholder)
-  - [ ] Add moment grouping logic
-  - [ ] Implement synthesis creation
+- [x] Implement `synthesize` tool
+  - [x] Add moment grouping logic
+  - [x] Implement synthesis creation
   - [ ] Add relationship tracking
 
 ### 5. Testing
@@ -69,6 +71,11 @@ Building a Model Context Protocol (MCP) server for capturing and framing moments
   - Easy backup and restore
   - Human-readable format
   - Efficient line-by-line processing
+- Implemented in storage.ts with:
+  - Unique ID generation (timestamp + random)
+  - Separate files for data and sessions
+  - Query operations for unframed sources
+  - Search by text, pattern, and date range
 
 ### Transport
 - Starting with stdio transport for:
@@ -112,7 +119,17 @@ Building a Model Context Protocol (MCP) server for capturing and framing moments
   - Confirmed all 4 tools are properly exposed
   - Tested capture and frame tool calls
   - Server responds correctly to MCP messages
-- Ready to implement storage layer
+- Implemented storage layer:
+  - Created storage.ts with JSONL file handling
+  - Append-only operations for data integrity
+  - Separate data.jsonl and sessions.jsonl files
+  - Query operations for unframed sources, search, etc.
+- Updated all tools to use storage:
+  - Capture tool saves sources with unique IDs
+  - Frame tool validates sources and creates moments
+  - Enhance tool updates sources or moments
+  - Synthesize tool groups moments together
+- Ready to add resources and prompts
 
 ## Questions to Resolve
 - [ ] Best practices for handling concurrent writes to JSONL

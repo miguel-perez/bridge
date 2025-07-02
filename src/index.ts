@@ -12,6 +12,17 @@ import {
   McpError,
 } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
+import {
+  generateId,
+  saveSource,
+  saveMoment,
+  saveSynthesis,
+  getSource,
+  getMoment,
+  updateSource,
+  updateMoment,
+} from './storage.js';
+import type { SourceRecord, ProcessingLevel } from './types.js';
 
 // Constants
 const SERVER_NAME = 'framed-moments';
@@ -158,12 +169,26 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     switch (name) {
       case 'capture': {
         const input = captureSchema.parse(args);
-        // TODO: Implement capture logic
+        
+        // Create source record
+        const source = await saveSource({
+          id: generateId('src'),
+          content: input.content,
+          contentType: input.contentType,
+          created: new Date().toISOString(),
+          when: input.when,
+          perspective: input.perspective,
+          experiencer: input.experiencer,
+          processing: input.processing as ProcessingLevel,
+          related: input.related,
+          file: input.file,
+        });
+        
         return {
           content: [
             {
               type: 'text',
-              text: `Captured: "${input.content}" (${input.contentType}, ${input.perspective} perspective)`,
+              text: `Captured: "${input.content.substring(0, 50)}${input.content.length > 50 ? '...' : ''}" (ID: ${source.id})`,
             },
           ],
         };
@@ -171,12 +196,38 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'frame': {
         const input = frameSchema.parse(args);
-        // TODO: Implement frame logic
+        
+        // Verify all sources exist
+        const validSources: SourceRecord[] = [];
+        for (const sourceId of input.sourceIds) {
+          const source = await getSource(sourceId);
+          if (!source) {
+            throw new McpError(
+              ErrorCode.InvalidParams,
+              `Source not found: ${sourceId}`
+            );
+          }
+          validSources.push(source);
+        }
+        
+        // Create moment record
+        const moment = await saveMoment({
+          id: generateId('mom'),
+          emoji: input.emoji,
+          summary: input.summary,
+          narrative: input.narrative,
+          pattern: input.pattern,
+          sources: input.sourceIds.map(sourceId => ({ sourceId })),
+          created: new Date().toISOString(),
+          // Use the earliest source's when date if available
+          when: validSources.find(s => s.when)?.when,
+        });
+        
         return {
           content: [
             {
               type: 'text',
-              text: `Framed moment: ${input.emoji} ${input.summary} (from ${input.sourceIds.length} sources)`,
+              text: `Framed moment: ${moment.emoji} ${moment.summary} (ID: ${moment.id})`,
             },
           ],
         };
@@ -184,25 +235,69 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'enhance': {
         const input = enhanceSchema.parse(args);
-        // TODO: Implement enhance logic
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Enhanced ${input.id} with updates: ${JSON.stringify(input.updates)}`,
-            },
-          ],
-        };
+        
+        // Try to enhance a source first
+        const enhancedSource = await updateSource(input.id, input.updates);
+        if (enhancedSource) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Enhanced source ${input.id} with updates: ${Object.keys(input.updates).join(', ')}`,
+              },
+            ],
+          };
+        }
+        
+        // If not a source, try moment
+        const enhancedMoment = await updateMoment(input.id, input.updates);
+        if (enhancedMoment) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Enhanced moment ${input.id} with updates: ${Object.keys(input.updates).join(', ')}`,
+              },
+            ],
+          };
+        }
+        
+        throw new McpError(
+          ErrorCode.InvalidParams,
+          `No source or moment found with ID: ${input.id}`
+        );
       }
 
       case 'synthesize': {
         const input = synthesizeSchema.parse(args);
-        // TODO: Implement synthesize logic
+        
+        // Verify all moments exist
+        for (const momentId of input.momentIds) {
+          const moment = await getMoment(momentId);
+          if (!moment) {
+            throw new McpError(
+              ErrorCode.InvalidParams,
+              `Moment not found: ${momentId}`
+            );
+          }
+        }
+        
+        // Create synthesis record
+        const synthesis = await saveSynthesis({
+          id: generateId('syn'),
+          emoji: input.emoji,
+          summary: input.summary,
+          narrative: input.narrative,
+          synthesizedMomentIds: input.momentIds,
+          pattern: input.pattern,
+          created: new Date().toISOString(),
+        });
+        
         return {
           content: [
             {
               type: 'text',
-              text: `Created synthesis: ${input.emoji} ${input.summary} (${input.momentIds.length} moments)`,
+              text: `Created synthesis: ${synthesis.emoji} ${synthesis.summary} (ID: ${synthesis.id})`,
             },
           ],
         };
