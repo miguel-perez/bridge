@@ -1,0 +1,39 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Framed Moments MCP Server Context
+
+## What This Is
+A minimal MCP server for capturing moments of experience using phenomenological principles. Separates quick capture from thoughtful framing.
+
+## Core Architecture
+- **capture**: Save raw experiences quickly
+- **frame**: Create structured moments from captures  
+- **enhance**: Add details to existing items
+- **synthesize**: Group related moments
+
+## Key Principles
+- Sources are immutable once created
+- Moments can evolve through enhancement
+- First-person present tense for narratives
+- Preserve authentic voice
+- Accept imperfect input, refine later
+
+## Technical Stack
+- TypeScript, Node.js
+- MCP SDK for server implementation
+- JSONL storage
+- Optional AI integration via MCP sampling
+
+## File Structure
+storage/
+data.jsonl      # All records
+sessions.jsonl  # Session metadata
+files/          # Voice/image storage
+
+[FRAMED_MOMENTS.md](mdc:FRAMED_MOMENTS.md)
+[framed-moments-design.md](mdc:framed-moments-design.md)
+[developmentlog.md](mdc:developmentlog.md)
+
