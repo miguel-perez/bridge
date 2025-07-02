@@ -9,6 +9,8 @@ Building a Model Context Protocol (MCP) server for capturing and framing moments
 - Core types defined in types.ts
 - JSONL chosen as storage format
 - All 4 tools have placeholder implementations
+- Server tested and working with MCP protocol
+- Integrated with Cursor via .cursor/mcp.json
 
 ## Immediate Tasks
 
@@ -22,7 +24,8 @@ Building a Model Context Protocol (MCP) server for capturing and framing moments
 - [x] Create basic MCP server with stdio transport
 - [x] Implement server initialization and connection handling
 - [x] Set up error handling and logging
-- [ ] Add basic health check endpoints
+- [x] Test server with MCP protocol messages
+- [x] Configure Cursor integration
 
 ### 3. Storage Layer
 - [ ] Create JSONL file storage utilities
@@ -31,28 +34,29 @@ Building a Model Context Protocol (MCP) server for capturing and framing moments
 - [ ] Set up data validation
 
 ### 4. Tool Implementation
-- [ ] Implement `capture` tool
-  - [ ] Add input validation
+- [x] Implement `capture` tool (placeholder)
+  - [x] Add input validation
   - [ ] Create storage handler
-  - [ ] Add error handling
+  - [x] Add error handling
   
-- [ ] Implement `frame` tool
+- [x] Implement `frame` tool (placeholder)
   - [ ] Add source validation
   - [ ] Implement framing logic
   - [ ] Add pattern recognition
   
-- [ ] Implement `enhance` tool
+- [x] Implement `enhance` tool (placeholder)
   - [ ] Add moment/source lookup
   - [ ] Implement update logic
-  - [ ] Add validation rules
+  - [x] Add validation rules
   
-- [ ] Implement `synthesize` tool
+- [x] Implement `synthesize` tool (placeholder)
   - [ ] Add moment grouping logic
   - [ ] Implement synthesis creation
   - [ ] Add relationship tracking
 
 ### 5. Testing
-- [ ] Set up testing framework
+- [x] Set up testing framework (Jest configured)
+- [x] Manual server testing completed
 - [ ] Add unit tests for each tool
 - [ ] Add integration tests
 - [ ] Create test fixtures
@@ -83,7 +87,7 @@ Building a Model Context Protocol (MCP) server for capturing and framing moments
 ### 2025-01-02
 - Initial project setup completed
 - Created all necessary configuration files:
-  - package.json with dependencies
+  - package.json with dependencies (including bin configuration)
   - tsconfig.json for TypeScript
   - jest.config.js for testing
   - .eslintrc and .prettierrc for code quality
@@ -95,6 +99,19 @@ Building a Model Context Protocol (MCP) server for capturing and framing moments
   - Added all 4 tools with placeholder handlers
   - Set up proper error handling with Zod validation
   - Successfully builds and compiles
+- Updated tool definitions to match design document:
+  - Added missing fields to capture tool (experiencer, related, file)
+  - Enhanced descriptions with valid options
+  - Fixed description texts for all tools
+- Created .cursor/mcp.json configuration:
+  - Server named "moments" 
+  - Configured to run with Node.js
+  - Successfully integrated with Cursor
+- Tested server manually:
+  - Verified JSON-RPC protocol handling
+  - Confirmed all 4 tools are properly exposed
+  - Tested capture and frame tool calls
+  - Server responds correctly to MCP messages
 - Ready to implement storage layer
 
 ## Questions to Resolve
