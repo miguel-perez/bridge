@@ -155,7 +155,7 @@ const synthesizeSchema = z.object({
 });
 
 // Add diagnostic tool for system health
-const diagnosticsSchema = z.object({
+const statusSchema = z.object({
   verbose: z.boolean().optional().default(false),
 });
 
@@ -274,7 +274,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
       },
     },
     {
-      name: 'diagnostics',
+      name: 'status',
       description: 'Check system health and data integrity',
       inputSchema: {
         type: 'object',
@@ -573,8 +573,8 @@ Suggest improvements for: ${Object.keys(input.updates).join(', ')}.`
         };
       }
 
-      case 'diagnostics': {
-        const input = diagnosticsSchema.parse(args);
+      case 'status': {
+        const input = statusSchema.parse(args);
         const integrity = await validateDataIntegrity();
         
         let message = `System Health Report:\n`;
@@ -971,14 +971,14 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
           const moments = await getMoments();
           return { contents: [{ uri, mimeType: 'application/json', text: JSON.stringify({ syntheses, moments }, null, 2) }] };
         }
-        const idMatch = uri.match(/^moments:\/\/id\/([^\/]+)$/);
+        const idMatch = uri.match(/^moments:\/\/id\/([^/]+)$/);
         if (idMatch) {
           const id = decodeURIComponent(idMatch[1]);
           const moment = await getMoment(id);
           const synthesis = await getSynthesis(id);
           return { contents: [{ uri, mimeType: 'application/json', text: JSON.stringify(moment || synthesis || null, null, 2) }] };
         }
-        const childrenMatch = uri.match(/^moments:\/\/id\/([^\/]+)\/children$/);
+        const childrenMatch = uri.match(/^moments:\/\/id\/([^/]+)\/children$/);
         if (childrenMatch) {
           const id = decodeURIComponent(childrenMatch[1]);
           const children = await getMomentsBySynthesis(id);
