@@ -123,12 +123,31 @@ function trackMoment(id: string): void {
 }
 
 // Tool input schemas
+const allowedContentTypes = ['text', 'voice', 'image', 'link'];
+const allowedPerspectives = ['I', 'we', 'you', 'they'];
+const allowedProcessing = ['during', 'right-after', 'long-after', 'crafted'];
+
 const captureSchema = z.object({
-  content: z.string(),
-  contentType: z.string().optional().default('text'),
-  perspective: z.string().optional().default('I'),
-  processing: z.string().optional().default('during'),
-  when: z.string().optional(),
+  content: z.string().min(1, { message: 'Content is required.' }).refine(
+    val => val.trim().length > 0,
+    { message: 'Content cannot be empty or just whitespace.' }
+  ),
+  contentType: z.string().optional().default('text').refine(
+    val => allowedContentTypes.includes(val),
+    { message: `contentType must be one of: ${allowedContentTypes.join(', ')}` }
+  ),
+  perspective: z.string().optional().default('I').refine(
+    val => allowedPerspectives.includes(val),
+    { message: `perspective must be one of: ${allowedPerspectives.join(', ')}` }
+  ),
+  processing: z.string().optional().default('during').refine(
+    val => allowedProcessing.includes(val),
+    { message: `processing must be one of: ${allowedProcessing.join(', ')}` }
+  ),
+  when: z.string().optional().refine(
+    val => !val || !isNaN(Date.parse(val)),
+    { message: 'when must be a valid date string (ISO or YYYY-MM-DD)' }
+  ),
   experiencer: z.string().optional().default('self'),
   related: z.array(z.string()).optional(),
   file: z.string().optional(),
@@ -296,10 +315,29 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   try {
     switch (name) {
       case 'capture': {
-        const input = captureSchema.parse(args);
+        let input;
+        try {
+          input = captureSchema.parse(args);
+        } catch (err) {
+          if (err instanceof z.ZodError) {
+            throw new McpError(
+              ErrorCode.InvalidParams,
+              err.errors.map(e => e.message).join('; ')
+            );
+          }
+          throw err;
+        }
+        // For file captures, require content to describe the file
+        if (input.file) {
+          if (!input.content || input.content.trim().length < 5) {
+            throw new McpError(
+              ErrorCode.InvalidParams,
+              'For file captures, content must describe what the file contains.'
+            );
+          }
+        }
         let storedFilePath: string | undefined = undefined;
         if (input.file) {
-          // Validate and store the file
           const maybePath = await storeFile(input.file, generateId('srcfile'));
           if (!maybePath) {
             throw new McpError(
@@ -327,7 +365,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           content: [
             {
               type: 'text',
-              text: `✓ Captured: "${input.content.substring(0, 50)}${input.content.length > 50 ? '...' : ''}" (ID: ${source.id})\nType: ${source.contentType} | Perspective: ${source.perspective} | Processing: ${source.processing}`,
+              text: `✓ Captured: "${input.content.substring(0, 50)}${input.content.length > 50 ? '...' : ''}" (ID: ${source.id})\nType: ${input.contentType} | Perspective: ${input.perspective} | Processing: ${input.processing}`,
             },
           ],
         };
