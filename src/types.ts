@@ -29,6 +29,7 @@ export interface Source {
   
   // File reference (for non-text content)
   file?: string; // Path to file, validated against MCP roots
+  ai?: { suggestion: string }; // Optional AI suggestions/analysis
 }
 
 export interface Moment {
@@ -56,6 +57,7 @@ export interface Moment {
   // Timestamps  
   created: string; // When moment was framed
   when?: string; // When experience happened
+  ai?: { suggestion: string }; // Optional AI suggestions/analysis
 }
 
 export interface Synthesis {
@@ -94,6 +96,7 @@ export interface SessionRecord extends BaseRecord {
   ended?: string;
   captureCount: number;
   frameCount: number;
+  intention?: string;
 }
 
 export type StorageRecord = SourceRecord | MomentRecord | SynthesisRecord | SessionRecord; 
