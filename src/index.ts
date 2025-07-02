@@ -34,6 +34,7 @@ import {
   getMomentsBySynthesis,
   getSynthesis,
   saveSession,
+  getLatestRecord
 } from './storage.js';
 import type { SourceRecord, ProcessingLevel } from './types.js';
 
@@ -333,28 +334,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'frame': {
         const input = frameSchema.parse(args);
-        
         // Verify all sources exist
         const validSources: SourceRecord[] = [];
-        
         for (let i = 0; i < input.sourceIds.length; i++) {
           const sourceId = input.sourceIds[i];
-          
           const source = await getSource(sourceId);
-          
           if (!source) {
             throw new McpError(
               ErrorCode.InvalidParams,
               `Source not found: ${sourceId}`
             );
           }
-          
           validSources.push(source);
         }
-        
         // Create moment record
         const momentId = generateId('mom');
-        
         const momentData = {
           id: momentId,
           emoji: input.emoji,
@@ -363,17 +357,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           pattern: input.pattern,
           sources: input.sourceIds.map(sourceId => ({ sourceId })),
           created: new Date().toISOString(),
-          // Use the earliest source's when date if available
           when: validSources.find(s => s.when)?.when,
         };
-        
         const moment = await saveMoment(momentData);
-        
         trackMoment(moment.id);
-        
         // AI integration for framing
         if (input.withAI) {
+          const progressToken = generateId('progress');
           try {
+            await sendProgress(progressToken, { kind: 'begin', title: 'Analyzing experience...' });
+            await sendProgress(progressToken, { kind: 'report', percentage: 33, message: 'Finding moment boundaries' });
             const aiResult = await server.request(
               {
                 method: 'sampling/createMessage',
@@ -383,26 +376,31 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                       role: 'user',
                       content: {
                         type: 'text',
-                        text: `Given this moment:
-Summary: ${moment.summary}
-${moment.narrative ? `Narrative: ${moment.narrative}
-` : ''}Suggest the most prominent experiential qualities and a richer narrative, preserving the authentic voice.`
+                        text: `Given this moment:\nSummary: ${moment.summary}\n${moment.narrative ? `Narrative: ${moment.narrative}\n` : ''}Suggest the most prominent experiential qualities and a richer narrative, preserving the authentic voice.`
                       }
                     }
                   ],
                   systemPrompt: PHENOMENOLOGICAL_SYSTEM_PROMPT,
                   includeContext: 'thisServer',
                   temperature: 0.7,
-                  maxTokens: 2000
+                  maxTokens: 2000,
+                  progressToken,
                 }
               },
               SamplingResponseSchema,
               undefined
             );
+            await sendProgress(progressToken, { kind: 'report', percentage: 66, message: 'Identifying qualities' });
             if (aiResult.content && aiResult.content.text) {
-              await updateMoment(moment.id, { ai: { suggestion: aiResult.content.text } });
+              // Store suggestion in latest version
+              const latest = await getLatestRecord(moment.id);
+              if (latest && latest.type === 'moment') {
+                await updateMoment(latest.id, { ai: { suggestion: aiResult.content.text } });
+              }
             }
+            await sendProgress(progressToken, { kind: 'end' });
           } catch (aiError) {
+            await sendProgress(progressToken, { kind: 'end' });
             return {
               content: [{
                 type: 'text',
@@ -433,9 +431,11 @@ ${moment.narrative ? `Narrative: ${moment.narrative}
           ? await updateSource(latestSource.id, input.updates)
           : null;
         if (enhancedSource) {
-          // AI integration for source enhancement
           if (input.withAI) {
+            const progressToken = generateId('progress');
             try {
+              await sendProgress(progressToken, { kind: 'begin', title: 'Enhancing source...' });
+              await sendProgress(progressToken, { kind: 'report', percentage: 50, message: 'Generating suggestions' });
               const aiResult = await server.request(
                 {
                   method: 'sampling/createMessage',
@@ -452,17 +452,22 @@ ${moment.narrative ? `Narrative: ${moment.narrative}
                     systemPrompt: PHENOMENOLOGICAL_SYSTEM_PROMPT,
                     includeContext: 'thisServer',
                     temperature: 0.7,
-                    maxTokens: 2000
+                    maxTokens: 2000,
+                    progressToken,
                   }
                 },
                 SamplingResponseSchema,
                 undefined
               );
               if (aiResult.content && aiResult.content.text) {
-                // Attach AI suggestion to the latest version
-                await updateSource(enhancedSource.id, { ai: { suggestion: aiResult.content.text } });
+                const latest = await getLatestRecord(enhancedSource.id);
+                if (latest && latest.type === 'source') {
+                  await updateSource(latest.id, { ai: { suggestion: aiResult.content.text } });
+                }
               }
+              await sendProgress(progressToken, { kind: 'end' });
             } catch (aiError) {
+              await sendProgress(progressToken, { kind: 'end' });
               return {
                 content: [{
                   type: 'text',
@@ -488,9 +493,11 @@ ${moment.narrative ? `Narrative: ${moment.narrative}
           ? await updateMoment(latestMoment.id, input.updates)
           : null;
         if (enhancedMoment) {
-          // AI integration for moment enhancement
           if (input.withAI) {
+            const progressToken = generateId('progress');
             try {
+              await sendProgress(progressToken, { kind: 'begin', title: 'Enhancing moment...' });
+              await sendProgress(progressToken, { kind: 'report', percentage: 50, message: 'Generating suggestions' });
               const aiResult = await server.request(
                 {
                   method: 'sampling/createMessage',
@@ -507,16 +514,22 @@ ${moment.narrative ? `Narrative: ${moment.narrative}
                     systemPrompt: PHENOMENOLOGICAL_SYSTEM_PROMPT,
                     includeContext: 'thisServer',
                     temperature: 0.7,
-                    maxTokens: 2000
+                    maxTokens: 2000,
+                    progressToken,
                   }
                 },
                 SamplingResponseSchema,
                 undefined
               );
               if (aiResult.content && aiResult.content.text) {
-                await updateMoment(enhancedMoment.id, { ai: { suggestion: aiResult.content.text } });
+                const latest = await getLatestRecord(enhancedMoment.id);
+                if (latest && latest.type === 'moment') {
+                  await updateMoment(latest.id, { ai: { suggestion: aiResult.content.text } });
+                }
               }
+              await sendProgress(progressToken, { kind: 'end' });
             } catch (aiError) {
+              await sendProgress(progressToken, { kind: 'end' });
               return {
                 content: [{
                   type: 'text',
@@ -1346,4 +1359,9 @@ async function main(): Promise<void> {
 main().catch((error) => {
   console.error('Server error:', error);
   process.exit(1);
-}); 
+});
+
+// Utility: send progress notification (MCP-compliant)
+async function sendProgress(progressToken: string, progress: object): Promise<void> {
+  await server.notification({ method: 'server/progress', params: { progressToken, progress } });
+} 
