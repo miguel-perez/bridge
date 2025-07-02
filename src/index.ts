@@ -71,9 +71,15 @@ const server = new Server(
   },
   {
     capabilities: {
-      tools: {},
-      resources: {},
-      prompts: {},
+      tools: {
+        listChanged: false  // We don't dynamically change tools
+      },
+      resources: {
+        listChanged: false  // We don't dynamically change resources
+      },
+      prompts: {
+        listChanged: false  // We don't dynamically change prompts
+      },
     },
   }
 );
