@@ -10,6 +10,7 @@ import {
   GetPromptRequestSchema,
   ErrorCode,
   McpError,
+  ListRootsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import {
@@ -34,7 +35,8 @@ import {
   getSynthesis,
   saveSession,
   getLatestRecord,
-  storeFile
+  storeFile,
+  validateFilePath as baseValidateFilePath,
 } from './storage.js';
 import type { SourceRecord, ProcessingLevel } from './types.js';
 
@@ -93,6 +95,9 @@ interface GuidedEnhanceState {
   withAI?: boolean;
 }
 let guidedEnhanceState: GuidedEnhanceState | null = null;
+
+// In-memory MCP roots (populated by ListRootsRequestSchema)
+let mcpRoots: Array<{ uri: string; name?: string; title?: string; mimeType?: string }> = [];
 
 function startSession(intention?: string): void {
   currentSession = {
@@ -335,6 +340,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               'For file captures, content must describe what the file contains.'
             );
           }
+          if (!mcpRoots.length) {
+            throw new McpError(
+              ErrorCode.InvalidParams,
+              'No file roots are available. Please configure accessible directories in your MCP client.'
+            );
+          }
+          if (!validateFilePathWithRoots(input.file)) {
+            throw new McpError(
+              ErrorCode.InvalidParams,
+              `File path is not within any allowed root. Allowed roots: ${mcpRoots.map(r => r.uri).join(', ')}`
+            );
+          }
         }
         let storedFilePath: string | undefined = undefined;
         if (input.file) {
@@ -361,6 +378,219 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           file: storedFilePath,
         });
         trackCapture(source.id);
+
+        // --- MCP Elicitation for missing fields (non-blocking) ---
+        (async (): Promise<void> => {
+          const elicitations: Array<{ field: string; action: string; timestamp: string; value?: unknown }> = [];
+          let updatedSource = source;
+          // 1. If processing is "long-after" but no 'when' date provided
+          if (input.processing === 'long-after' && !input.when) {
+            const response = await server.request({
+              method: 'elicitation/create',
+              params: {
+                message: 'When did this memory originally happen? (Approximate date, e.g., YYYY-MM or YYYY)',
+                requestedSchema: {
+                  type: 'string',
+                  format: 'date',
+                  description: 'Approximate date (YYYY-MM or YYYY)'
+                }
+              }
+            }, z.object({ action: z.string(), content: z.unknown().optional() }), undefined);
+            elicitations.push({ field: 'when', action: response.action, timestamp: new Date().toISOString(), value: response.content });
+            if (response.action === 'accept' && typeof response.content === 'string') {
+              const result = await updateSource(updatedSource.id, { when: response.content });
+              if (result) updatedSource = result;
+            }
+          }
+          // 2. If contentType is voice/image but no file provided
+          if ((input.contentType === 'voice' || input.contentType === 'image') && !input.file) {
+            const response = await server.request({
+              method: 'elicitation/create',
+              params: {
+                message: `Please provide the file for this ${input.contentType} capture (path or upload, must be within allowed roots).`,
+                requestedSchema: {
+                  type: 'string',
+                  description: 'Path to the file (must be within allowed roots)'
+                }
+              }
+            }, z.object({ action: z.string(), content: z.unknown().optional() }), undefined);
+            elicitations.push({ field: 'file', action: response.action, timestamp: new Date().toISOString(), value: response.content });
+            if (response.action === 'accept' && typeof response.content === 'string') {
+              if (!validateFilePathWithRoots(response.content)) return;
+              const maybePath = await storeFile(response.content, generateId('srcfile'));
+              if (maybePath) {
+                const result = await updateSource(updatedSource.id, { file: maybePath });
+                if (result) updatedSource = result;
+              }
+            }
+          }
+          // 3. If perspective is "we" but experiencer is still "self"
+          if (input.perspective === 'we' && input.experiencer === 'self') {
+            const response = await server.request({
+              method: 'elicitation/create',
+              params: {
+                message: 'Who were the other experiencers (besides yourself)?',
+                requestedSchema: {
+                  type: 'string',
+                  description: 'Names or description of other experiencers'
+                }
+              }
+            }, z.object({ action: z.string(), content: z.unknown().optional() }), undefined);
+            elicitations.push({ field: 'experiencer', action: response.action, timestamp: new Date().toISOString(), value: response.content });
+            if (response.action === 'accept' && typeof response.content === 'string') {
+              const result = await updateSource(updatedSource.id, { experiencer: response.content });
+              if (result) updatedSource = result;
+            }
+          }
+          // --- Additional experiential dimensions (gentle, non-blocking, design doc language) ---
+          // Only elicit for up to 2 more missing fields to avoid overwhelming the user
+          let extraElicitCount = 0;
+          // 4. Narrative/Summary (if content is very short or generic)
+          if (input.content && input.content.trim().length < 20 && extraElicitCount < 2) {
+            const response = await server.request({
+              method: 'elicitation/create',
+              params: {
+                message: 'Would you like to add a brief summary or narrative to help you remember this moment later? Use your own words, rhythm, and expressions.',
+                requestedSchema: {
+                  type: 'string',
+                  description: 'A short summary or narrative (optional)'
+                }
+              }
+            }, z.object({ action: z.string(), content: z.unknown().optional() }), undefined);
+            elicitations.push({ field: 'narrative', action: response.action, timestamp: new Date().toISOString(), value: response.content });
+            // Do not assign to updatedSource.narrative (not in SourceRecord), just log
+            extraElicitCount++;
+          }
+          // 5. Mood/Emotion
+          if (!('mood' in input) && extraElicitCount < 2) {
+            const response = await server.request({
+              method: 'elicitation/create',
+              params: {
+                message: 'How did you feel in this moment? (e.g., anxious, joyful, curious) Feel free to use your own words.',
+                requestedSchema: {
+                  type: 'string',
+                  description: 'Mood or feeling in the moment (optional)'
+                }
+              }
+            }, z.object({ action: z.string(), content: z.unknown().optional() }), undefined);
+            elicitations.push({ field: 'mood', action: response.action, timestamp: new Date().toISOString(), value: response.content });
+            // Do not assign to updatedSource.mood (not in SourceRecord), just log
+            extraElicitCount++;
+          }
+          // 6. Where/Location
+          if (!('where' in input) && extraElicitCount < 2) {
+            const response = await server.request({
+              method: 'elicitation/create',
+              params: {
+                message: 'Where did this experience happen? (e.g., at home, in the park, in a meeting)',
+                requestedSchema: {
+                  type: 'string',
+                  description: 'Location of the experience (optional)'
+                }
+              }
+            }, z.object({ action: z.string(), content: z.unknown().optional() }), undefined);
+            elicitations.push({ field: 'where', action: response.action, timestamp: new Date().toISOString(), value: response.content });
+            // Do not assign to updatedSource.where (not in SourceRecord), just log
+            extraElicitCount++;
+          }
+          // 7. Attention/Focus
+          if (!('attention' in input) && extraElicitCount < 2) {
+            const response = await server.request({
+              method: 'elicitation/create',
+              params: {
+                message: 'What was most present or alive in your attention during this moment? (e.g., a sound, a thought, a sensation)',
+                requestedSchema: {
+                  type: 'string',
+                  description: 'What was most present in your attention (optional)'
+                }
+              }
+            }, z.object({ action: z.string(), content: z.unknown().optional() }), undefined);
+            elicitations.push({ field: 'attention', action: response.action, timestamp: new Date().toISOString(), value: response.content });
+            // Do not assign to updatedSource.attention (not in SourceRecord), just log
+            extraElicitCount++;
+          }
+          // 8. Body Sensation
+          if (!('body' in input) && extraElicitCount < 2) {
+            const response = await server.request({
+              method: 'elicitation/create',
+              params: {
+                message: 'Was there anything notable happening in your body at this time? (e.g., tension, relaxation, movement)',
+                requestedSchema: {
+                  type: 'string',
+                  description: 'Body sensation or state (optional)'
+                }
+              }
+            }, z.object({ action: z.string(), content: z.unknown().optional() }), undefined);
+            elicitations.push({ field: 'body', action: response.action, timestamp: new Date().toISOString(), value: response.content });
+            // Do not assign to updatedSource.body (not in SourceRecord), just log
+            extraElicitCount++;
+          }
+          // 9. Purpose/Intention
+          if (!('purpose' in input) && extraElicitCount < 2) {
+            const response = await server.request({
+              method: 'elicitation/create',
+              params: {
+                message: 'Was there a purpose or intention guiding you in this moment? (e.g., seeking, waiting, deciding)',
+                requestedSchema: {
+                  type: 'string',
+                  description: 'Purpose or intention (optional)'
+                }
+              }
+            }, z.object({ action: z.string(), content: z.unknown().optional() }), undefined);
+            elicitations.push({ field: 'purpose', action: response.action, timestamp: new Date().toISOString(), value: response.content });
+            // Do not assign to updatedSource.purpose (not in SourceRecord), just log
+            extraElicitCount++;
+          }
+          // 10. Related People
+          if (!input.related && extraElicitCount < 2) {
+            const response = await server.request({
+              method: 'elicitation/create',
+              params: {
+                message: 'Who else was involved or present in this experience? (names, roles, or descriptions)',
+                requestedSchema: {
+                  type: 'string',
+                  description: 'Other people involved (optional)'
+                }
+              }
+            }, z.object({ action: z.string(), content: z.unknown().optional() }), undefined);
+            elicitations.push({ field: 'related', action: response.action, timestamp: new Date().toISOString(), value: response.content });
+            // Only update if related is a string or array of strings and updateSource returns non-null
+            if (response.action === 'accept') {
+              let relUpdate: string[] | undefined = undefined;
+              if (typeof response.content === 'string') {
+                relUpdate = [response.content];
+              } else if (Array.isArray(response.content) && response.content.every((v) => typeof v === 'string')) {
+                relUpdate = response.content;
+              }
+              if (relUpdate) {
+                const relResult = await updateSource(updatedSource.id, { related: relUpdate });
+                if (relResult) updatedSource = relResult;
+              }
+            }
+            extraElicitCount++;
+          }
+          // 11. Pattern/Type
+          if (!('pattern' in input) && extraElicitCount < 2) {
+            const response = await server.request({
+              method: 'elicitation/create',
+              params: {
+                message: 'Does this moment fit any of these patterns? (recognition, threshold, sustained attention, etc.)',
+                requestedSchema: {
+                  type: 'string',
+                  description: 'Pattern or experiential type (optional)'
+                }
+              }
+            }, z.object({ action: z.string(), content: z.unknown().optional() }), undefined);
+            elicitations.push({ field: 'pattern', action: response.action, timestamp: new Date().toISOString(), value: response.content });
+            // Do not assign to updatedSource.pattern (not in SourceRecord), just log
+            extraElicitCount++;
+          }
+          // Store what was elicited for future reference (append-only)
+          // If you want to persist elicitations, you could log them or store in a separate log file, since SourceRecord does not support an 'elicitations' field.
+          // For now, just keep in memory for this session or for debugging.
+        })();
+        // --- End elicitation ---
+
         return {
           content: [
             {
@@ -664,26 +894,26 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           guidedEnhanceState = { step: 0, updates: {} };
         }
         // Step 0: Ask for moment/source ID
-        if (guidedEnhanceState.step === 0) {
-          if (args && typeof args.answer === 'string' && args.answer.trim()) {
-            guidedEnhanceState.momentId = args.answer.trim();
-            guidedEnhanceState.step++;
-          } else {
-            return {
-              description: 'Guided enhancement: select moment/source',
-              messages: [
-                {
-                  role: 'assistant',
-                  content: { type: 'text', text: 'Enter the ID of the moment or source you want to enhance.' },
-                },
-              ],
-            };
-          }
+        const idVal = args && typeof args.id === 'string' ? args.id.trim() : (args && typeof args.answer === 'string' ? args.answer.trim() : undefined);
+        if (idVal) {
+          guidedEnhanceState.momentId = idVal;
+          guidedEnhanceState.step++;
+        } else {
+          return {
+            description: 'Guided enhancement: select moment/source',
+            messages: [
+              {
+                role: 'assistant',
+                content: { type: 'text', text: 'Enter the ID of the moment or source you want to enhance.' },
+              },
+            ],
+          };
         }
         // Step 1: Ask which fields to enhance
         if (guidedEnhanceState.step === 1) {
-          if (args && typeof args.answer === 'string' && args.answer.trim()) {
-            guidedEnhanceState.fields = args.answer.split(',').map((f: string) => f.trim()).filter(Boolean);
+          const fieldsVal = args && typeof args.fields === 'string' ? args.fields : (args && typeof args.answer === 'string' ? args.answer : undefined);
+          if (fieldsVal && typeof fieldsVal === 'string' && fieldsVal.trim()) {
+            guidedEnhanceState.fields = fieldsVal.split(',').map((f: string) => f.trim()).filter(Boolean);
             guidedEnhanceState.currentFieldIndex = 0;
             guidedEnhanceState.step++;
           } else {
@@ -813,14 +1043,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           `Unknown tool: ${name}`
         );
     }
-  } catch (error) {
-    if (error instanceof z.ZodError) {
+  } catch (err) {
+    if (err instanceof z.ZodError) {
       throw new McpError(
         ErrorCode.InvalidParams,
-        `Invalid parameters: ${error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')}`
+        err.errors.map(e => e.message).join('; ')
       );
     }
-    throw error;
+    if (err instanceof Error) {
+      throw new McpError(ErrorCode.InternalError, err.message);
+    }
+    throw new McpError(ErrorCode.InternalError, 'Unknown error occurred');
   }
 });
 
@@ -832,8 +1065,16 @@ server.setRequestHandler(ListResourcesRequestSchema, async () => {
   const syntheses = await getSyntheses();
   const unframed = await getUnframedSources();
 
+  const rootsResource = {
+    uri: 'roots://all',
+    name: 'Available Roots',
+    description: 'Directories accessible for file capture',
+    mimeType: 'application/json',
+    roots: mcpRoots
+  };
   return {
     resources: [
+      rootsResource,
       {
         uri: 'moments://recent',
         name: 'Recent Moments',
@@ -1097,6 +1338,14 @@ server.setRequestHandler(ListPromptsRequestSchema, async () => ({
       name: 'review_captures',
       description: 'Review your unframed captures',
       arguments: [],
+    },
+    {
+      name: 'guided_enhance',
+      description: 'Deepen and refine an existing moment or source with step-by-step guidance',
+      arguments: [
+        { name: 'id', description: 'Which moment or source to enhance', required: true },
+        { name: 'fields', description: 'Fields to enhance (comma-separated)', required: false },
+      ],
     },
   ],
 }));
@@ -1377,10 +1626,174 @@ Use the frame tool when we've crafted something that feels right.`,
         ],
       };
     }
+    case 'guided_enhance': {
+      // Multi-step, stateful guided enhance prompt
+      if (!guidedEnhanceState) {
+        guidedEnhanceState = { step: 0, updates: {} };
+      }
+      // Step 0: Ask for moment/source ID
+      const idVal = args && typeof args.id === 'string' ? args.id.trim() : (args && typeof args.answer === 'string' ? args.answer.trim() : undefined);
+      if (idVal) {
+        guidedEnhanceState.momentId = idVal;
+        guidedEnhanceState.step++;
+      } else {
+        return {
+          description: 'Guided enhancement: select moment/source',
+          messages: [
+            {
+              role: 'assistant',
+              content: { type: 'text', text: 'Enter the ID of the moment or source you want to enhance.' },
+            },
+          ],
+        };
+      }
+      // Step 1: Ask which fields to enhance
+      if (guidedEnhanceState.step === 1) {
+        const fieldsVal = args && typeof args.fields === 'string' ? args.fields : (args && typeof args.answer === 'string' ? args.answer : undefined);
+        if (fieldsVal && typeof fieldsVal === 'string' && fieldsVal.trim()) {
+          guidedEnhanceState.fields = fieldsVal.split(',').map((f: string) => f.trim()).filter(Boolean);
+          guidedEnhanceState.currentFieldIndex = 0;
+          guidedEnhanceState.step++;
+        } else {
+          return {
+            description: 'Guided enhancement: choose fields',
+            messages: [
+              {
+                role: 'assistant',
+                content: { type: 'text', text: 'Which fields would you like to enhance? (e.g., narrative, summary, pattern, qualities) List as comma-separated values.' },
+              },
+            ],
+          };
+        }
+      }
+      // Step 2: For each field, ask for new value
+      if (guidedEnhanceState.step === 2 && guidedEnhanceState.fields && guidedEnhanceState.currentFieldIndex !== undefined) {
+        const fields = guidedEnhanceState.fields;
+        const idx = guidedEnhanceState.currentFieldIndex;
+        const field = fields[idx];
+        if (args && typeof args.answer === 'string') {
+          if (args.answer.toLowerCase() !== 'skip') {
+            guidedEnhanceState.updates[field] = args.answer;
+          }
+          guidedEnhanceState.currentFieldIndex!++;
+        }
+        // If more fields, ask next
+        if (guidedEnhanceState.currentFieldIndex! < fields.length) {
+          const nextField = fields[guidedEnhanceState.currentFieldIndex!];
+          return {
+            description: 'Guided enhancement: field update',
+            messages: [
+              {
+                role: 'assistant',
+                content: { type: 'text', text: `Enter new value for "${nextField}" (or type 'skip'):` },
+              },
+            ],
+          };
+        } else {
+          guidedEnhanceState.step++;
+        }
+      }
+      // Step 3: Offer AI assistance
+      if (guidedEnhanceState.step === 3) {
+        if (args && typeof args.answer === 'string') {
+          guidedEnhanceState.withAI = /^y(es)?$/i.test(args.answer);
+          guidedEnhanceState.step++;
+        } else {
+          return {
+            description: 'Guided enhancement: AI assistance',
+            messages: [
+              {
+                role: 'assistant',
+                content: { type: 'text', text: 'Would you like AI suggestions for enhancement? (yes/no, default: no)' },
+              },
+            ],
+          };
+        }
+      }
+      // Step 4: Confirm and save
+      if (guidedEnhanceState.step === 4) {
+        if (args && typeof args.answer === 'string' && args.answer.toLowerCase().startsWith('y')) {
+          // Call enhance tool
+          const input: z.infer<typeof enhanceSchema> = {
+            id: guidedEnhanceState.momentId!,
+            updates: guidedEnhanceState.updates,
+            withAI: guidedEnhanceState.withAI === true,
+          };
+          // Remove undefined/empty fields
+          Object.keys(input.updates).forEach(k => (input.updates[k] === undefined || input.updates[k] === '') && delete input.updates[k]);
+          // Use the correct method signature for server.request
+          const result = await server.request(
+            { method: 'callTool', params: { name: 'enhance', arguments: input } },
+            z.object({ content: z.array(z.object({ type: z.string(), text: z.string() })), isError: z.boolean().optional(), meta: z.any().optional() }),
+            undefined
+          );
+          guidedEnhanceState = null;
+          return {
+            description: 'Guided enhancement complete',
+            messages: [
+              {
+                role: 'assistant',
+                content: { type: 'text', text: result.content[0].text },
+              },
+            ],
+          };
+        } else if (args && typeof args.answer === 'string' && args.answer.toLowerCase().startsWith('n')) {
+          guidedEnhanceState = null;
+          return {
+            description: 'Guided enhancement cancelled',
+            messages: [
+              {
+                role: 'assistant',
+                content: { type: 'text', text: 'Enhancement cancelled.' },
+              },
+            ],
+          };
+        } else {
+          // Show summary and ask for confirmation
+          const summary = Object.entries(guidedEnhanceState.updates).map(([k, v]) => `${k}: ${v}`).join('\n');
+          return {
+            description: 'Guided enhancement: confirm',
+            messages: [
+              {
+                role: 'assistant',
+                content: { type: 'text', text: `You are about to enhance ${guidedEnhanceState.momentId} with:\n${summary}\nProceed? (yes/no)` },
+              },
+            ],
+          };
+        }
+      }
+      // Should not reach here
+      guidedEnhanceState = null;
+      return {
+        description: 'Guided enhancement error',
+        messages: [
+          {
+            role: 'assistant',
+            content: { type: 'text', text: 'Something went wrong in the guided enhance flow.' },
+          },
+        ],
+      };
+    }
     default:
       throw new McpError(ErrorCode.InvalidParams, `Unknown prompt: ${name}`);
   }
 });
+
+// Register handler for MCP roots
+server.setRequestHandler(ListRootsRequestSchema, async (request) => {
+  if (request && request.params && Array.isArray(request.params.roots)) {
+    mcpRoots = request.params.roots;
+  }
+  return { roots: mcpRoots };
+});
+
+// Patch validateFilePath to use mcpRoots
+function validateFilePathWithRoots(filePath: string): boolean {
+  if (!mcpRoots.length) return false;
+  // Only allow files within any of the MCP roots
+  const allowedRoots = mcpRoots.map(r => r.uri.replace('file://', ''));
+  return baseValidateFilePath(filePath, allowedRoots);
+}
 
 // Error handling
 process.on('unhandledRejection', (reason, promise) => {
