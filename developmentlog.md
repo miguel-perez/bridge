@@ -1,197 +1,128 @@
 # Framed Moments MCP Server Development Log
 
 ## Project Overview
-Building a Model Context Protocol (MCP) server for capturing and framing moments of experience. The server provides tools for quick capture, thoughtful framing, enhancement, and synthesis of experiential moments.
+Building a Model Context Protocol (MCP) server for capturing and framing moments of experience using phenomenological principles. The system separates quick capture from thoughtful framing, enabling both in-the-moment recording and later reflection with optional AI assistance.
 
-## Current State
-- Initial project setup completed
-- Basic MCP server implemented with stdio transport
-- Core types defined in types.ts
-- JSONL chosen as storage format
-- All 4 tools fully implemented with storage persistence
-- Server tested and working with MCP protocol
-- Integrated with Cursor via .cursor/mcp.json
-- Storage layer implemented with JSONL file handling
-- MCP compliance verified and capabilities properly declared
+## Current Status: ~30% Complete
 
-## Immediate Tasks
+### ✅ **Foundation Complete** (High Quality)
+- **Core Architecture**: MCP server with stdio transport, full protocol compliance
+- **Type System**: All interfaces from design implemented correctly
+- **Storage Layer**: Robust JSONL storage with integrity validation, caching, security
+- **Core Tools**: All 4 primary tools (capture, frame, enhance, synthesize) functional
+- **Testing**: Jest working with ESM + TypeScript, basic test coverage
+- **Integration**: Server configured with Cursor via .cursor/mcp.json
 
-### 1. Project Setup ✅
-- [x] Initialize npm project with TypeScript
-- [x] Add @modelcontextprotocol/sdk dependency
-- [x] Configure TypeScript and build scripts
-- [x] Set up development environment
+### 🚧 **Partially Implemented**
+- **Tool Features**: `withAI` parameter exists but AI integration not implemented
+- **File Handling**: Path validation exists but storage system not implemented
+- **Basic Resources**: 4 core resources vs 16+ in design
+- **Basic Prompts**: 2 simple prompts vs 8+ guided workflows in design
+- **Integration Testing**: Server configured for Cursor but no manual testing with Claude as MCP host
 
-### 2. Core Server Implementation ✅
-- [x] Create basic MCP server with stdio transport
-- [x] Implement server initialization and connection handling
-- [x] Set up error handling and logging
-- [x] Test server with MCP protocol messages
-- [x] Configure Cursor integration
-- [x] Fix capabilities declaration (listChanged)
+## Implementation Gaps (70% Missing)
 
-### 3. Storage Layer ✅
-- [x] Create JSONL file storage utilities
-- [x] Implement atomic write operations (append-only)
-- [x] Add basic query capabilities
-- [x] Set up data validation
+### 🔴 **Critical Gaps** (Highest Priority)
+1. **Advanced Resources** (13 missing)
+   - Search, filtering, timeline views essential for usability
+   - `moments://search/{query}`, `moments://pattern/{pattern}`, `moments://timeline`
+   - Date, quality, perspective, processing level filters
 
-### 4. Tool Implementation ✅
-- [x] Implement `capture` tool
-  - [x] Add input validation
-  - [x] Create storage handler
-  - [x] Add error handling
-  
-- [x] Implement `frame` tool
-  - [x] Add source validation
-  - [x] Implement framing logic
-  - [ ] Add pattern recognition (AI integration)
-  
-- [x] Implement `enhance` tool
-  - [x] Add moment/source lookup
-  - [x] Implement update logic
-  - [x] Add validation rules
-  
-- [x] Implement `synthesize` tool
-  - [x] Add moment grouping logic
-  - [x] Implement synthesis creation
-  - [x] Add relationship tracking
+2. **Advanced Prompts** (6 missing)
+   - Guided workflows are core user experience
+   - `begin_reflection`, `guided_capture`, `guided_frame`, `review_captures`
 
-### 5. Resources Implementation
-- [ ] Implement `moments://recent` - Last 20 framed moments
-- [ ] Implement `sources://unframed` - Unframed captures
-- [ ] Implement `moments://search/{query}` - Search functionality
-- [ ] Implement `moments://pattern/{pattern}` - Filter by pattern
-- [ ] Implement `moments://date/{date}` - Filter by date
-- [ ] Implement `moments://timeline` - Hierarchical view
-- [ ] Add other resources from design document
+3. **AI Integration** (Complete gap)
+   - MCP Sampling for AI-assisted framing
+   - Phenomenological system prompts
+   - Boundary detection and quality identification
 
-### 6. Prompts Implementation
-- [ ] Implement `begin_reflection` - Start reflection session
-- [ ] Implement `guided_capture` - Guided capture experience
-- [ ] Implement `guided_frame` - Guided framing
-- [ ] Implement `guided_enhance` - Guided enhancement
-- [ ] Implement `review_captures` - Review unframed sources
+### 🟡 **Important Features** (Medium Priority)
+4. **File Storage System**
+   - Directory structure, MCP Roots integration
+   - Voice/image support with secure file handling
 
-### 7. Advanced Features
-- [ ] File storage for non-text content (voice, image)
-- [ ] AI integration for frame tool (withAI parameter)
-- [ ] Session management
-- [ ] Progress notifications
-- [ ] Elicitation for missing details
+5. **Session Management**
+   - Session tracking, workflow containers
+   - Queue management for unframed captures
 
-### 8. Testing
-- [x] Set up testing framework (Jest configured)
-- [x] Manual server testing completed
-- [ ] Add unit tests for storage operations
-- [ ] Add unit tests for each tool
-- [ ] Add integration tests
-- [ ] Create test fixtures
+### 🟢 **Enhanced Features** (Low Priority)
+6. **Advanced MCP Features**
+   - Elicitation, progress feedback, notifications
 
-## Technical Decisions
+## Next Development Phases
 
-### Storage
-- Using JSONL for:
-  - Simple append-only operations
-  - Easy backup and restore
-  - Human-readable format
-  - Efficient line-by-line processing
-- Implemented in storage.ts with:
-  - Unique ID generation (timestamp + random)
-  - Separate files for data and sessions
-  - Query operations for unframed sources
-  - Search by text, pattern, and date range
+### Phase 0: Validation & Core Testing (Immediate)
+- [ ] **Manual testing with Claude on Cursor as MCP host**
+- [ ] Validate all 4 tools work end-to-end in practice
+- [ ] Test current resources and prompts with real AI interaction
+- [ ] Document user experience gaps and workflow issues
 
-### Transport
-- Starting with stdio transport for:
-  - Simple local development
-  - Easy debugging
-  - Direct integration with MCP clients
+### Phase 1: Advanced Resources (Essential)
+- [ ] Implement search functionality (`moments://search/{query}`)
+- [ ] Add filtering resources (pattern, date, quality, perspective)
+- [ ] Create timeline view (`moments://timeline`)
+- [ ] Add recent moments view (`moments://recent`)
 
-### Type System
-- Using TypeScript for:
-  - Strong type safety
-  - Better development experience
-  - Easy integration with MCP SDK
+### Phase 2: Guided Workflows (High Impact)
+- [ ] Implement session prompts (`begin_reflection`, `close_reflection`)
+- [ ] Add guided capture workflows
+- [ ] Create frame and enhance guidance
+- [ ] Build review and queue management prompts
 
-### MCP Compliance
-- Properly declaring capabilities with listChanged
-- Following tool structure requirements
-- Using appropriate error codes
-- Implementing JSON-RPC 2.0 via SDK
+### Phase 3: AI Integration (Key Differentiator)
+- [ ] Implement MCP Sampling for AI assistance
+- [ ] Add phenomenological system prompts
+- [ ] Build boundary detection and quality identification
+- [ ] Create voice-preserving narrative expansion
 
-## Notes & Learnings
+### Phase 4: File & Session Systems
+- [ ] Complete file storage with MCP Roots
+- [ ] Implement session management
+- [ ] Add enhanced MCP features
 
-### 2025-01-02
-- Initial project setup completed
-- Created all necessary configuration files:
-  - package.json with dependencies (including bin configuration)
-  - tsconfig.json for TypeScript
-  - jest.config.js for testing
-  - .eslintrc and .prettierrc for code quality
-  - .gitignore for version control
-- Created README.md with basic documentation
-- Implemented basic MCP server:
-  - Created types.ts with all interfaces from design
-  - Implemented index.ts with stdio transport
-  - Added all 4 tools with placeholder handlers
-  - Set up proper error handling with Zod validation
-  - Successfully builds and compiles
-- Updated tool definitions to match design document:
-  - Added missing fields to capture tool (experiencer, related, file)
-  - Enhanced descriptions with valid options
-  - Fixed description texts for all tools
-- Created .cursor/mcp.json configuration:
-  - Server named "moments" 
-  - Configured to run with Node.js
-  - Successfully integrated with Cursor
-- Tested server manually:
-  - Verified JSON-RPC protocol handling
-  - Confirmed all 4 tools are properly exposed
-  - Tested capture and frame tool calls
-  - Server responds correctly to MCP messages
-- Implemented storage layer:
-  - Created storage.ts with JSONL file handling
-  - Append-only operations for data integrity
-  - Separate data.jsonl and sessions.jsonl files
-  - Query operations for unframed sources, search, etc.
-- Updated all tools to use storage:
-  - Capture tool saves sources with unique IDs
-  - Frame tool validates sources and creates moments
-  - Enhance tool updates sources or moments
-  - Synthesize tool groups moments together
-- MCP compliance check completed:
-  - Fixed capabilities declaration (added listChanged)
-  - Verified tool structure follows spec
-  - Confirmed proper error handling
-  - Identified Resources and Prompts as next priorities
+## Technical Architecture
 
-## What's Working Now
-- ✅ Capture experiences with full metadata
-- ✅ Frame captures into moments with validation
-- ✅ Enhance sources or moments with updates
+### **Storage**: JSONL with append-only design
+- Unique ID generation, data integrity validation
+- Caching for performance, security validation
+- Separate files for data and sessions
+
+### **MCP Compliance**: Full protocol support
+- Proper capabilities declaration
+- Error handling with appropriate codes
+- JSON-RPC 2.0 via SDK
+
+### **Testing**: Jest with ESM + TypeScript
+- `jest.config.mjs` with `--experimental-vm-modules`
+- ts-jest preset with useESM configuration
+
+## Key Learnings & Decisions
+
+### **2025-01-02**: Foundation Complete
+- All core types and tools implemented
+- Storage layer with security and validation
+- Jest ESM configuration resolved
+- MCP protocol compliance verified
+- **Design evaluation**: Identified 70% implementation gap
+
+### **Architecture Decisions**
+- **JSONL Storage**: Human-readable, append-only, efficient streaming
+- **TypeScript**: Strong typing for better development experience
+- **Stdio Transport**: Simple debugging and direct MCP client integration
+- **Security First**: File path validation, data integrity checks
+
+## Current Working Features
+- ✅ Capture experiences with full metadata validation
+- ✅ Frame captures into moments with source validation
+- ✅ Enhance sources or moments with update tracking
 - ✅ Synthesize multiple moments into groups
-- ✅ All data persisted to JSONL files
-- ✅ Basic query operations (search, filter)
-- ✅ Cursor integration functional
-
-## What's Left to Build
-1. **Resources** - Enable browsing and searching stored data
-2. **Prompts** - Provide guided experiences and workflows
-3. **File handling** - Store voice/image files
-4. **AI integration** - Implement withAI features
-5. **Session management** - Track user sessions
-6. **Testing** - Comprehensive test coverage
-
-## Questions to Resolve
-- [ ] Best practices for handling concurrent writes to JSONL
-- [ ] Strategy for implementing search across JSONL files
-- [ ] Approach for handling large datasets
-- [ ] Method for ensuring data integrity
-- [ ] How to implement file storage for non-text content
-- [ ] Best approach for AI integration (sampling)
+- ✅ Data persistence with integrity validation
+- ✅ Basic data access via 4 core resources
+- ✅ Simple guided workflows via 2 basic prompts
+- ✅ Full MCP protocol compliance with error handling
 
 ## Resources
-- [MCP TypeScript SDK Documentation](https://github.com/modelcontextprotocol/typescript-sdk)
-- [Framed Moments Design Document](framed-moments-design.md)
-- [MCP Reference Guide](mcp-reference.md) 
+- [Framed Moments Design Document](framed-moments-design.md) - Complete feature specification
+- [MCP TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk) - Implementation reference
+- [MCP Sampling Documentation](https://modelcontextprotocol.io/specification/server/sampling) - AI integration guide 

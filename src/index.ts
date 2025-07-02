@@ -21,6 +21,12 @@ import {
   getMoment,
   updateSource,
   updateMoment,
+  getSources,
+  getMoments,
+  getSyntheses,
+  getUnframedSources,
+  validateFilePath,
+  validateDataIntegrity,
 } from './storage.js';
 import type { SourceRecord, ProcessingLevel } from './types.js';
 
@@ -61,6 +67,11 @@ const synthesizeSchema = z.object({
   summary: z.string(),
   narrative: z.string().optional(),
   pattern: z.string().optional().default('synthesis'),
+});
+
+// Add diagnostic tool for system health
+const diagnosticsSchema = z.object({
+  verbose: z.boolean().optional().default(false),
 });
 
 // Create server instance
@@ -165,6 +176,17 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         required: ['momentIds', 'emoji', 'summary'],
       },
     },
+    {
+      name: 'diagnostics',
+      description: 'Check system health and data integrity',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          verbose: { type: 'boolean', description: 'Include detailed information', default: false },
+        },
+        required: [],
+      },
+    },
   ],
 }));
 
@@ -175,6 +197,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     switch (name) {
       case 'capture': {
         const input = captureSchema.parse(args);
+        
+        // Validate file path if provided
+        if (input.file && !validateFilePath(input.file)) {
+          throw new McpError(
+            ErrorCode.InvalidParams,
+            'Invalid file path: path traversal not allowed'
+          );
+        }
         
         // Create source record
         const source = await saveSource({
@@ -194,7 +224,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           content: [
             {
               type: 'text',
-              text: `Captured: "${input.content.substring(0, 50)}${input.content.length > 50 ? '...' : ''}" (ID: ${source.id})`,
+              text: `✓ Captured: "${input.content.substring(0, 50)}${input.content.length > 50 ? '...' : ''}" (ID: ${source.id})\nType: ${source.contentType} | Perspective: ${source.perspective} | Processing: ${source.processing}`,
             },
           ],
         };
@@ -309,6 +339,34 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      case 'diagnostics': {
+        const input = diagnosticsSchema.parse(args);
+        const integrity = await validateDataIntegrity();
+        
+        let message = `System Health Report:\n`;
+        message += `✅ Data integrity: ${integrity.valid ? 'GOOD' : 'ISSUES FOUND'}\n`;
+        message += `📊 Stats: ${integrity.stats.sources} sources, ${integrity.stats.moments} moments, ${integrity.stats.syntheses} syntheses\n`;
+        
+        if (!integrity.valid) {
+          message += `🚨 Issues found:\n${integrity.errors.map(e => `  - ${e}`).join('\n')}\n`;
+        }
+        
+        if (input.verbose) {
+          const unframed = await getUnframedSources();
+          message += `📝 Unframed sources: ${unframed.length}\n`;
+          message += `📅 Server uptime: ${process.uptime().toFixed(0)}s\n`;
+        }
+        
+        return {
+          content: [
+            {
+              type: 'text',
+              text: message,
+            },
+          ],
+        };
+      }
+
       default:
         throw new McpError(
           ErrorCode.MethodNotFound,
@@ -326,22 +384,196 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 });
 
-// Resource handlers (placeholder)
-server.setRequestHandler(ListResourcesRequestSchema, async () => ({
-  resources: [],
-}));
+// Resource handlers - expose captured data
+server.setRequestHandler(ListResourcesRequestSchema, async () => {
+  const sources = await getSources();
+  const moments = await getMoments();
+  const syntheses = await getSyntheses();
+  const unframed = await getUnframedSources();
 
-server.setRequestHandler(ReadResourceRequestSchema, async () => {
-  throw new McpError(ErrorCode.MethodNotFound, 'No resources available yet');
+  return {
+    resources: [
+      {
+        uri: 'sources://all',
+        name: 'All Sources',
+        description: `All captured sources (${sources.length} total)`,
+        mimeType: 'application/json',
+      },
+      {
+        uri: 'moments://all',
+        name: 'All Moments',
+        description: `All framed moments (${moments.length} total)`,
+        mimeType: 'application/json',
+      },
+      {
+        uri: 'syntheses://all',
+        name: 'All Syntheses',
+        description: `All syntheses (${syntheses.length} total)`,
+        mimeType: 'application/json',
+      },
+      {
+        uri: 'sources://unframed',
+        name: 'Unframed Sources',
+        description: `Sources not yet framed into moments (${unframed.length} total)`,
+        mimeType: 'application/json',
+      },
+    ],
+  };
 });
 
-// Prompt handlers (placeholder)
+server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+  const { uri } = request.params;
+
+  try {
+    switch (uri) {
+      case 'sources://all':
+        return {
+          contents: [
+            {
+              uri,
+              mimeType: 'application/json',
+              text: JSON.stringify(await getSources(), null, 2),
+            },
+          ],
+        };
+      
+      case 'moments://all':
+        return {
+          contents: [
+            {
+              uri,
+              mimeType: 'application/json',
+              text: JSON.stringify(await getMoments(), null, 2),
+            },
+          ],
+        };
+      
+      case 'syntheses://all':
+        return {
+          contents: [
+            {
+              uri,
+              mimeType: 'application/json',
+              text: JSON.stringify(await getSyntheses(), null, 2),
+            },
+          ],
+        };
+      
+      case 'sources://unframed':
+        return {
+          contents: [
+            {
+              uri,
+              mimeType: 'application/json',
+              text: JSON.stringify(await getUnframedSources(), null, 2),
+            },
+          ],
+        };
+      
+      default:
+        throw new McpError(ErrorCode.InvalidParams, `Unknown resource: ${uri}`);
+    }
+  } catch (error) {
+    throw new McpError(ErrorCode.InternalError, `Failed to read resource: ${error}`);
+  }
+});
+
+// Prompt handlers - provide common workflows
 server.setRequestHandler(ListPromptsRequestSchema, async () => ({
-  prompts: [],
+  prompts: [
+    {
+      name: 'capture-moment',
+      description: 'Help capture a meaningful moment of experience',
+      arguments: [
+        {
+          name: 'experience',
+          description: 'Describe the experience you want to capture',
+          required: true,
+        },
+        {
+          name: 'context',
+          description: 'Additional context about when/where this happened',
+          required: false,
+        },
+      ],
+    },
+    {
+      name: 'frame-sources',
+      description: 'Help frame captured sources into a meaningful moment',
+      arguments: [
+        {
+          name: 'sourceIds',
+          description: 'Comma-separated source IDs to frame together',
+          required: true,
+        },
+      ],
+    },
+  ],
 }));
 
-server.setRequestHandler(GetPromptRequestSchema, async () => {
-  throw new McpError(ErrorCode.MethodNotFound, 'No prompts available yet');
+server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+  const { name, arguments: args } = request.params;
+
+  switch (name) {
+    case 'capture-moment': {
+      const experience = args?.experience || '[experience description]';
+      const context = args?.context || '';
+      
+      return {
+        description: 'Guided prompt for capturing experiential moments',
+        messages: [
+          {
+            role: 'user',
+            content: {
+              type: 'text',
+              text: `Help me capture this moment of experience:
+
+Experience: ${experience}
+${context ? `Context: ${context}` : ''}
+
+Guide me through capturing this as a source, then suggest how to frame it into a moment. Focus on:
+- The embodied, felt sense of this experience
+- What was most alive or present in this moment
+- The experiential qualities that stood out
+- How to preserve the authentic voice and immediacy
+
+Use the capture tool to save this, then suggest framing options.`,
+            },
+          },
+        ],
+      };
+    }
+    
+    case 'frame-sources': {
+      const sourceIds = args?.sourceIds || '';
+      
+      return {
+        description: 'Guided prompt for framing sources into moments',
+        messages: [
+          {
+            role: 'user',
+            content: {
+              type: 'text',
+              text: `Help me frame these sources into a meaningful moment:
+
+Source IDs: ${sourceIds}
+
+First, let me see these sources, then help me:
+- Identify the unified experiential thread connecting them
+- Choose an appropriate emoji and 5-7 word summary
+- Craft a first-person narrative that captures the experiential wholeness
+- Suggest an appropriate frame pattern if one emerges
+
+Use the frame tool when we've crafted something that feels right.`,
+            },
+          },
+        ],
+      };
+    }
+    
+    default:
+      throw new McpError(ErrorCode.InvalidParams, `Unknown prompt: ${name}`);
+  }
 });
 
 // Error handling

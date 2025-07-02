@@ -1,0 +1,62 @@
+import { describe, it, expect } from '@jest/globals';
+import {
+  generateId,
+  validateFilePath,
+} from './storage';
+
+describe('Storage Layer', () => {
+  describe('ID Generation', () => {
+    it('should generate unique IDs with correct prefix', () => {
+      const id1 = generateId('src');
+      const id2 = generateId('src');
+      
+      expect(id1).toMatch(/^src_\d+_[a-z0-9]+$/);
+      expect(id2).toMatch(/^src_\d+_[a-z0-9]+$/);
+      expect(id1).not.toBe(id2);
+    });
+
+    it('should generate IDs with different prefixes', () => {
+      const srcId = generateId('src');
+      const momId = generateId('mom');
+      const synId = generateId('syn');
+
+      expect(srcId).toMatch(/^src_/);
+      expect(momId).toMatch(/^mom_/);
+      expect(synId).toMatch(/^syn_/);
+    });
+  });
+
+  describe('File Path Validation', () => {
+    it('should reject dangerous paths', () => {
+      expect(validateFilePath('../../../etc/passwd')).toBe(false);
+      expect(validateFilePath('../../secrets.txt')).toBe(false);
+      expect(validateFilePath('../config.ini')).toBe(false);
+    });
+
+    it('should accept safe paths', () => {
+      expect(validateFilePath('normal-file.txt')).toBe(true);
+      expect(validateFilePath('folder/file.txt')).toBe(true);
+      expect(validateFilePath('deep/folder/structure/file.md')).toBe(true);
+    });
+
+    it('should validate against allowed roots when provided', () => {
+      // When allowed roots are provided, only files within those roots should be allowed
+      const allowedRoots = [process.cwd()]; // Use current working directory as allowed root
+      
+      expect(validateFilePath('valid-file.txt', allowedRoots)).toBe(true);
+      expect(validateFilePath('../../../etc/passwd', allowedRoots)).toBe(false);
+      
+      // Test with empty allowed roots - should fall back to basic validation
+      expect(validateFilePath('safe-file.txt', [])).toBe(true);
+      expect(validateFilePath('../dangerous.txt', [])).toBe(false);
+    });
+  });
+
+  describe('Basic Functionality', () => {
+    it('should have all required exports', () => {
+      // Test that we can import the main functions
+      expect(typeof generateId).toBe('function');
+      expect(typeof validateFilePath).toBe('function');
+    });
+  });
+}); 
