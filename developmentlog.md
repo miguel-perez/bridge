@@ -3,7 +3,7 @@
 ## Project Overview
 Building a Model Context Protocol (MCP) server for capturing and framing moments of experience using phenomenological principles. The system separates quick capture from thoughtful framing, enabling both in-the-moment recording and later reflection with optional AI assistance.
 
-## Current Status: ~30% Complete
+## Current Status: ~60% Complete
 
 ### ✅ **Foundation Complete** (High Quality)
 - **Core Architecture**: MCP server with stdio transport, full protocol compliance
@@ -13,56 +13,63 @@ Building a Model Context Protocol (MCP) server for capturing and framing moments
 - **Testing**: Jest working with ESM + TypeScript, basic test coverage
 - **Integration**: Server configured with Cursor via .cursor/mcp.json
 
+### ✅ **Phase 0: Core Testing Complete** (High Quality)
+- **MCP Integration**: Successfully connected to Cursor via MCP
+- **All 4 Tools Working**: capture, frame, enhance, synthesize fully functional
+- **Critical Bug Fixed**: Console.log stdio interference resolved
+- **End-to-End Workflow**: capture → frame → enhance → synthesize works perfectly
+- **Data Validation**: JSONL storage, ID generation, integrity checks operational
+
+### ✅ **Phase 1: Advanced Resources (COMPLETE)**
+- All advanced resource URIs from the design are now implemented:
+  - `moments://recent`, `sources://unframed`, `moments://date/{date}`, `moments://year/{year}`
+  - `moments://search/{query}`, `moments://pattern/{pattern}`, `moments://quality/{quality}`
+  - `moments://perspective/{perspective}`, `moments://experiencer/{experiencer}`
+  - `moments://processing/{level}`, `moments://type/{contentType}`
+  - `moments://syntheses`, `moments://timeline`, `moments://id/{id}`, `moments://id/{id}/children`
+- Resource handler supports all filtering, search, and timeline views as specified in the design
+- Fully MCP-compliant resource protocol (no custom resource tool)
+
 ### 🚧 **Partially Implemented**
 - **Tool Features**: `withAI` parameter exists but AI integration not implemented
 - **File Handling**: Path validation exists but storage system not implemented
-- **Basic Resources**: 4 core resources vs 16+ in design
 - **Basic Prompts**: 2 simple prompts vs 8+ guided workflows in design
-- **Integration Testing**: Server configured for Cursor but no manual testing with Claude as MCP host
 
-## Implementation Gaps (70% Missing)
+## Implementation Gaps (Now ~40% Remaining)
 
-### 🔴 **Critical Gaps** (Highest Priority)
-1. **Advanced Resources** (13 missing)
-   - Search, filtering, timeline views essential for usability
-   - `moments://search/{query}`, `moments://pattern/{pattern}`, `moments://timeline`
-   - Date, quality, perspective, processing level filters
-
-2. **Advanced Prompts** (6 missing)
+### 🔴 **Critical Gaps** (Next Phases)
+1. **Advanced Prompts** (6 missing)
    - Guided workflows are core user experience
    - `begin_reflection`, `guided_capture`, `guided_frame`, `review_captures`
 
-3. **AI Integration** (Complete gap)
+2. **AI Integration** (Complete gap)
    - MCP Sampling for AI-assisted framing
    - Phenomenological system prompts
    - Boundary detection and quality identification
 
 ### 🟡 **Important Features** (Medium Priority)
-4. **File Storage System**
+3. **File Storage System**
    - Directory structure, MCP Roots integration
    - Voice/image support with secure file handling
 
-5. **Session Management**
+4. **Session Management**
    - Session tracking, workflow containers
    - Queue management for unframed captures
 
 ### 🟢 **Enhanced Features** (Low Priority)
-6. **Advanced MCP Features**
+5. **Advanced MCP Features**
    - Elicitation, progress feedback, notifications
 
 ## Next Development Phases
 
-### Phase 0: Validation & Core Testing (IN PROGRESS)
+### ✅ Phase 0: Validation & Core Testing (COMPLETE)
 - [x] Manual testing with Claude on Cursor as MCP host
 - [x] Validate basic tools work with real AI interaction
 - [x] Test current resources and prompts 
-- [ ] Fix identified critical bugs blocking core workflow
+- [x] Fix identified critical bugs blocking core workflow
 
-### Phase 1: Advanced Resources (Essential)
-- [ ] Implement search functionality (`moments://search/{query}`)
-- [ ] Add filtering resources (pattern, date, quality, perspective)
-- [ ] Create timeline view (`moments://timeline`)
-- [ ] Add recent moments view (`moments://recent`)
+### ✅ Phase 1: Advanced Resources (COMPLETE)
+- [x] Implement all advanced resource URIs from design
 
 ### Phase 2: Guided Workflows (High Impact)
 - [ ] Implement session prompts (`begin_reflection`, `close_reflection`)
@@ -157,11 +164,11 @@ Building a Model Context Protocol (MCP) server for capturing and framing moments
 
 ## Current Working Features
 - ✅ Capture experiences with full metadata validation
-- ❌ Frame captures into moments (BLOCKED - tool hangs)
-- ❌ Enhance sources or moments (BLOCKED - tool hangs)
-- ✅ Synthesize multiple moments into groups (working but storage unclear)
+- ✅ Frame captures into moments
+- ✅ Enhance sources or moments
+- ✅ Synthesize multiple moments into groups
 - ✅ Data persistence with integrity validation
-- ✅ Basic data access via 4 core resources
+- ✅ Full resource access via all advanced URIs
 - ✅ Simple guided workflows via 2 basic prompts
 - ✅ Full MCP protocol compliance with error handling
 - ✅ Cursor MCP integration working
