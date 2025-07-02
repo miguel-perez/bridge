@@ -4,8 +4,7 @@
       "command": "node",
       "args": ["C:\\Users\\Miguel\\Git\\bridge\\dist\\index.js"],
       "cwd": "C:\\Users\\Miguel\\Git\\bridge",
-      "env": {},
-      "disabled": false
+      "env": {}
     }
   }
 } 

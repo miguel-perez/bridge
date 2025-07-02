@@ -39,6 +39,10 @@ class SimpleCache<K, V> {
     return item.value;
   }
 
+  clear(): void {
+    this.cache.clear();
+  }
+
   private cleanup(): void {
     const now = Date.now();
     for (const [key, item] of this.cache.entries()) {
@@ -127,8 +131,8 @@ async function readRecordsStream<T extends StorageRecord>(
       }
       
       return results;
-    } catch (error: any) {
-      if (error.code === 'ENOENT') {
+    } catch (error: unknown) {
+      if ((error as { code?: string }).code === 'ENOENT') {
         return [];
       }
       throw error;
@@ -136,12 +140,11 @@ async function readRecordsStream<T extends StorageRecord>(
   }, `reading records from ${file}`);
 }
 
-
-
 // Storage operations for sources
-export async function saveSource(source: Omit<SourceRecord, 'type'>): Promise<SourceRecord> {
-  const record: SourceRecord = { ...source, type: 'source' };
+export async function saveSource(source: Omit<SourceRecord, 'type' | 'version' | 'previousVersion'>): Promise<SourceRecord> {
+  const record: SourceRecord = { ...source, type: 'source', version: 1, previousVersion: null };
   await appendRecord(DATA_FILE, record);
+  recordCache.clear();
   return record;
 }
 
@@ -166,15 +169,30 @@ export async function getSource(id: string): Promise<SourceRecord | null> {
 }
 
 // Storage operations for moments
-export async function saveMoment(moment: Omit<MomentRecord, 'type'>): Promise<MomentRecord> {
-  const record: MomentRecord = { ...moment, type: 'moment' };
+export async function saveMoment(moment: Omit<MomentRecord, 'type' | 'version' | 'previousVersion'>): Promise<MomentRecord> {
+  const record: MomentRecord = { ...moment, type: 'moment', version: 1, previousVersion: null };
   await appendRecord(DATA_FILE, record);
+  recordCache.clear();
   return record;
 }
 
 export async function getMoments(): Promise<MomentRecord[]> {
   const records = await readRecordsStream<StorageRecord>(DATA_FILE);
   return records.filter((r): r is MomentRecord => r.type === 'moment');
+}
+
+export async function getRecentMoments(limit: number = 20): Promise<MomentRecord[]> {
+  const moments = await getMoments();
+  
+  // Sort by creation date descending (most recent first)
+  const sorted = moments.sort((a, b) => {
+    const dateA = new Date(a.created);
+    const dateB = new Date(b.created);
+    return dateB.getTime() - dateA.getTime();
+  });
+  
+  // Return the specified number of recent moments
+  return sorted.slice(0, limit);
 }
 
 export async function getMoment(id: string): Promise<MomentRecord | null> {
@@ -186,6 +204,8 @@ export async function getMoment(id: string): Promise<MomentRecord | null> {
 export async function saveSynthesis(synthesis: Omit<SynthesisRecord, 'type'>): Promise<SynthesisRecord> {
   const record: SynthesisRecord = { ...synthesis, type: 'synthesis' };
   await appendRecord(DATA_FILE, record);
+  // Clear the cache to ensure fresh data on next read
+  recordCache.clear();
   return record;
 }
 
@@ -231,19 +251,40 @@ export async function getMomentsBySynthesis(synthesisId: string): Promise<Moment
   return moments.filter(m => synthesis.synthesizedMomentIds.includes(m.id));
 }
 
-// Update operations (create new record with updates, preserving append-only)
+// Helper: Find the latest version of a record given any ID
+export async function getLatestRecord<T extends StorageRecord>(id: string): Promise<T | null> {
+  const records = await readRecordsStream<StorageRecord>(DATA_FILE);
+  let current = records.find(r => r.id === id) as T | undefined;
+  if (!current) return null;
+  let next = records.find(r => r.previousVersion === current!.id) as T | undefined;
+  while (next) {
+    current = next;
+    next = records.find(r => r.previousVersion === current!.id) as T | undefined;
+  }
+  return current ?? null;
+}
+
+// Update operations (create new versioned record, preserving append-only)
 export async function updateSource(id: string, updates: Partial<SourceRecord>): Promise<SourceRecord | null> {
   try {
-    const source = await getSource(id);
-    if (!source) return null;
-    
+    const prev = await getLatestRecord<SourceRecord>(id);
+    if (!prev) return null;
     // Validate file path if provided
     if (updates.file && !validateFilePath(updates.file)) {
       throw new Error('Invalid file path');
     }
-    
-    const updated: SourceRecord = { ...source, ...updates, type: 'source', id };
+    const newId = generateId('src');
+    const updated: SourceRecord = {
+      ...prev,
+      ...updates,
+      id: newId,
+      version: (prev.version || 1) + 1,
+      previousVersion: prev.id,
+      type: 'source',
+      created: new Date().toISOString(),
+    };
     await appendRecord(DATA_FILE, updated);
+    recordCache.clear();
     return updated;
   } catch (error) {
     console.error(`Failed to update source ${id}:`, error);
@@ -252,19 +293,21 @@ export async function updateSource(id: string, updates: Partial<SourceRecord>): 
 }
 
 export async function updateMoment(id: string, updates: Partial<MomentRecord>): Promise<MomentRecord | null> {
-  const moment = await getMoment(id);
-  if (!moment) return null;
-  
-  const updated: MomentRecord = { ...moment, ...updates, type: 'moment', id };
+  const prev = await getLatestRecord<MomentRecord>(id);
+  if (!prev) return null;
+  const newId = generateId('mom');
+  const updated: MomentRecord = {
+    ...prev,
+    ...updates,
+    id: newId,
+    version: (prev.version || 1) + 1,
+    previousVersion: prev.id,
+    type: 'moment',
+    created: new Date().toISOString(),
+  };
   await appendRecord(DATA_FILE, updated);
+  recordCache.clear();
   return updated;
-}
-
-// Get the latest version of a record (for append-only updates)
-export async function getLatestRecord<T extends StorageRecord>(id: string): Promise<T | null> {
-  const records = await readRecordsStream<StorageRecord>(DATA_FILE);
-  const matching = records.filter(r => r.id === id);
-  return matching.length > 0 ? matching[matching.length - 1] as T : null;
 }
 
 // Search operations
@@ -322,29 +365,67 @@ export async function validateDataIntegrity(): Promise<{
 }> {
   const errors: string[] = [];
   const stats = { totalRecords: 0, sources: 0, moments: 0, syntheses: 0 };
-  
+
   try {
     const records = await readRecordsStream<StorageRecord>(DATA_FILE);
     stats.totalRecords = records.length;
-    
+
+    const idSet = new Set<string>();
+    const versionRoots = new Map<string, string>(); // originalId -> latestId
+    const versionChains = new Map<string, string[]>(); // originalId -> chain of ids
     const sourceIds = new Set<string>();
     const momentIds = new Set<string>();
-    
+
     for (const record of records) {
       // Count by type
       if (record.type === 'source') stats.sources++;
       else if (record.type === 'moment') stats.moments++;
       else if (record.type === 'synthesis') stats.syntheses++;
-      
-      // Check for duplicate IDs
-      if (record.type === 'source') {
-        if (sourceIds.has(record.id)) {
-          errors.push(`Duplicate source ID: ${record.id}`);
+
+      // Check for duplicate IDs (should never happen)
+      if (idSet.has(record.id)) {
+        errors.push(`Duplicate record ID: ${record.id}`);
+      }
+      idSet.add(record.id);
+
+      // Track version chains for sources and moments
+      if ((record.type === 'source' || record.type === 'moment') && record.version === 1) {
+        versionRoots.set(record.id, record.id);
+        versionChains.set(record.id, [record.id]);
+      } else if ((record.type === 'source' || record.type === 'moment') && record.previousVersion) {
+        // Find the root of the chain
+        let root = record.previousVersion;
+        let safety = 0;
+        while (root && safety < 100) {
+          const prev = records.find(r => r.id === root);
+          if (!prev || !('previousVersion' in prev) || !prev.previousVersion) break;
+          root = prev.previousVersion;
+          safety++;
         }
+        versionRoots.set(root, record.id);
+        const chain = versionChains.get(root) || [root];
+        chain.push(record.id);
+        versionChains.set(root, chain);
+        // Check for cycles
+        const seen = new Set<string>();
+        let curr = record.id;
+        let cycleSafety = 0;
+        while (curr && cycleSafety < 100) {
+          if (seen.has(curr)) {
+            errors.push(`Cycle detected in version chain starting at ${root}`);
+            break;
+          }
+          seen.add(curr);
+          const rec = records.find(r => r.id === curr);
+          curr = rec && 'previousVersion' in rec ? rec.previousVersion || '' : '';
+          cycleSafety++;
+        }
+      }
+
+      // Validate moment/source references as before
+      if (record.type === 'source') {
         sourceIds.add(record.id);
       }
-      
-      // Validate moment references
       if (record.type === 'moment') {
         const moment = record as MomentRecord;
         for (const source of moment.sources) {
@@ -352,10 +433,8 @@ export async function validateDataIntegrity(): Promise<{
             errors.push(`Moment ${moment.id} references non-existent source ${source.sourceId}`);
           }
         }
-        momentIds.add(moment.id);
+        momentIds.add(record.id);
       }
-      
-      // Validate synthesis references
       if (record.type === 'synthesis') {
         const synthesis = record as SynthesisRecord;
         for (const momentId of synthesis.synthesizedMomentIds) {
@@ -365,7 +444,15 @@ export async function validateDataIntegrity(): Promise<{
         }
       }
     }
-    
+
+    // Check for multiple latest versions for the same root
+    for (const [root, chain] of versionChains.entries()) {
+      const latest = versionRoots.get(root);
+      if (chain.filter(id => id === latest).length > 1) {
+        errors.push(`Multiple latest versions for root ${root}`);
+      }
+    }
+
     return {
       valid: errors.length === 0,
       errors,

@@ -76,22 +76,24 @@ let guidedCaptureState: {
 } | null = null;
 
 // In-memory state for guided_frame (single user/session for now)
-let guidedFrameState: {
+interface GuidedFrameState {
   step: number;
-  answers: Record<string, any>;
-} | null = null;
+  answers: Record<string, string | number | boolean | undefined>;
+}
+let guidedFrameState: GuidedFrameState | null = null;
 
 // In-memory state for guided_enhance (single user/session for now)
-let guidedEnhanceState: {
+interface GuidedEnhanceState {
   step: number;
   momentId?: string;
   fields?: string[];
   currentFieldIndex?: number;
-  updates: Record<string, any>;
+  updates: Record<string, unknown>;
   withAI?: boolean;
-} | null = null;
+}
+let guidedEnhanceState: GuidedEnhanceState | null = null;
 
-function startSession(intention?: string) {
+function startSession(intention?: string): void {
   currentSession = {
     id: generateId('ses'),
     started: new Date().toISOString(),
@@ -101,19 +103,19 @@ function startSession(intention?: string) {
   };
 }
 
-function endSession() {
+function endSession(): void {
   if (currentSession) {
     currentSession.ended = new Date().toISOString();
   }
 }
 
-function trackCapture(id: string) {
+function trackCapture(id: string): void {
   if (currentSession) {
     currentSession.captures.push(id);
   }
 }
 
-function trackMoment(id: string) {
+function trackMoment(id: string): void {
   if (currentSession) {
     currentSession.moments.push(id);
   }
@@ -423,9 +425,13 @@ ${moment.narrative ? `Narrative: ${moment.narrative}
 
       case 'enhance': {
         const input = enhanceSchema.parse(args);
-        
+        // Always enhance the latest version
+        const latestSource = await getLatestRecord(input.id);
+        const latestMoment = await getLatestRecord(input.id);
         // Try to enhance a source first
-        const enhancedSource = await updateSource(input.id, input.updates);
+        const enhancedSource = latestSource && latestSource.type === 'source'
+          ? await updateSource(latestSource.id, input.updates)
+          : null;
         if (enhancedSource) {
           // AI integration for source enhancement
           if (input.withAI) {
@@ -439,9 +445,7 @@ ${moment.narrative ? `Narrative: ${moment.narrative}
                         role: 'user',
                         content: {
                           type: 'text',
-                          text: `Given this source:
-${JSON.stringify(enhancedSource, null, 2)}
-Suggest improvements for: ${Object.keys(input.updates).join(', ')}.`
+                          text: `Given this source:\n${JSON.stringify(enhancedSource, null, 2)}\nSuggest improvements for: ${Object.keys(input.updates).join(', ')}.`
                         }
                       }
                     ],
@@ -455,13 +459,14 @@ Suggest improvements for: ${Object.keys(input.updates).join(', ')}.`
                 undefined
               );
               if (aiResult.content && aiResult.content.text) {
-                await updateSource(input.id, { ai: { suggestion: aiResult.content.text } });
+                // Attach AI suggestion to the latest version
+                await updateSource(enhancedSource.id, { ai: { suggestion: aiResult.content.text } });
               }
             } catch (aiError) {
               return {
                 content: [{
                   type: 'text',
-                  text: `Enhanced source ${input.id} (AI suggestion unavailable)`
+                  text: `Enhanced source ${enhancedSource.id} (AI suggestion unavailable)`
                 }],
                 isError: false,
                 meta: { partialSuccess: true }
@@ -472,14 +477,16 @@ Suggest improvements for: ${Object.keys(input.updates).join(', ')}.`
             content: [
               {
                 type: 'text',
-                text: `Enhanced source ${input.id} with updates: ${Object.keys(input.updates).join(', ')}`,
+                text: `Enhanced source (new ID: ${enhancedSource.id}, version: ${enhancedSource.version}) with updates: ${Object.keys(input.updates).join(', ')}`,
               },
             ],
+            record: enhancedSource
           };
         }
-        
         // If not a source, try moment
-        const enhancedMoment = await updateMoment(input.id, input.updates);
+        const enhancedMoment = latestMoment && latestMoment.type === 'moment'
+          ? await updateMoment(latestMoment.id, input.updates)
+          : null;
         if (enhancedMoment) {
           // AI integration for moment enhancement
           if (input.withAI) {
@@ -493,9 +500,7 @@ Suggest improvements for: ${Object.keys(input.updates).join(', ')}.`
                         role: 'user',
                         content: {
                           type: 'text',
-                          text: `Given this moment:
-${JSON.stringify(enhancedMoment, null, 2)}
-Suggest improvements for: ${Object.keys(input.updates).join(', ')}.`
+                          text: `Given this moment:\n${JSON.stringify(enhancedMoment, null, 2)}\nSuggest improvements for: ${Object.keys(input.updates).join(', ')}.`
                         }
                       }
                     ],
@@ -509,13 +514,13 @@ Suggest improvements for: ${Object.keys(input.updates).join(', ')}.`
                 undefined
               );
               if (aiResult.content && aiResult.content.text) {
-                await updateMoment(input.id, { ai: { suggestion: aiResult.content.text } });
+                await updateMoment(enhancedMoment.id, { ai: { suggestion: aiResult.content.text } });
               }
             } catch (aiError) {
               return {
                 content: [{
                   type: 'text',
-                  text: `Enhanced moment ${input.id} (AI suggestion unavailable)`
+                  text: `Enhanced moment ${enhancedMoment.id} (AI suggestion unavailable)`
                 }],
                 isError: false,
                 meta: { partialSuccess: true }
@@ -526,12 +531,12 @@ Suggest improvements for: ${Object.keys(input.updates).join(', ')}.`
             content: [
               {
                 type: 'text',
-                text: `Enhanced moment ${input.id} with updates: ${Object.keys(input.updates).join(', ')}`,
+                text: `Enhanced moment (new ID: ${enhancedMoment.id}, version: ${enhancedMoment.version}) with updates: ${Object.keys(input.updates).join(', ')}`,
               },
             ],
+            record: enhancedMoment
           };
         }
-        
         throw new McpError(
           ErrorCode.InvalidParams,
           `No source or moment found with ID: ${input.id}`
@@ -689,10 +694,10 @@ Suggest improvements for: ${Object.keys(input.updates).join(', ')}.`
         if (guidedEnhanceState.step === 4) {
           if (args && typeof args.answer === 'string' && args.answer.toLowerCase().startsWith('y')) {
             // Call enhance tool
-            const input: any = {
-              id: guidedEnhanceState.momentId,
+            const input: z.infer<typeof enhanceSchema> = {
+              id: guidedEnhanceState.momentId!,
               updates: guidedEnhanceState.updates,
-              withAI: guidedEnhanceState.withAI,
+              withAI: guidedEnhanceState.withAI === true,
             };
             // Remove undefined/empty fields
             Object.keys(input.updates).forEach(k => (input.updates[k] === undefined || input.updates[k] === '') && delete input.updates[k]);
@@ -1183,14 +1188,22 @@ Use the frame tool when we've crafted something that feels right.`,
       // If all steps complete, call capture tool
       if (guidedCaptureState.step >= steps.length) {
         // Build capture input
-        const input: any = {
+        const input: {
+          content: string;
+          contentType: string;
+          perspective: string;
+          processing: ProcessingLevel;
+          when?: string;
+          experiencer: string;
+          file?: string;
+        } = {
           content: guidedCaptureState.answers['description'] || '',
           contentType: 'text',
           perspective: 'I',
-          processing: 'during',
-          when: guidedCaptureState.answers['when'],
-          experiencer: guidedCaptureState.answers['who'] || 'self',
-          file: guidedCaptureState.answers['file'] && guidedCaptureState.answers['file'] !== 'skip' ? guidedCaptureState.answers['file'] : undefined,
+          processing: 'during' as ProcessingLevel,
+          when: guidedCaptureState.answers['when'] as string,
+          experiencer: (guidedCaptureState.answers['who'] as string) || 'self',
+          file: guidedCaptureState.answers['file'] && guidedCaptureState.answers['file'] !== 'skip' ? (guidedCaptureState.answers['file'] as string) : undefined,
         };
         // Call capture tool
         const source = await saveSource({
@@ -1245,7 +1258,7 @@ Use the frame tool when we've crafted something that feels right.`,
       // If all steps complete, call frame tool
       if (guidedFrameState.step >= steps.length) {
         // Build frame input
-        const inputValidated = frameSchema.parse(guidedFrameState.answers);
+        const inputValidated = frameSchema.parse(guidedFrameState.answers) as z.infer<typeof frameSchema>;
         // Verify all sources exist
         const validSources: SourceRecord[] = [];
         for (let i = 0; i < inputValidated.sourceIds.length; i++) {
@@ -1324,7 +1337,7 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 // Start the server
-async function main() {
+async function main(): Promise<void> {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error(`${SERVER_NAME} v${SERVER_VERSION} running on stdio`);

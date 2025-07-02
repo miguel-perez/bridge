@@ -6,11 +6,11 @@ alwaysApply: true
 # Framed Moments MCP Server Context
 
 ## What This Is
-A minimal MCP server for capturing moments of experience using phenomenological principles. Separates quick capture from thoughtful framing.
+A minimal MCP server for capturing moments of experience using phenomenological principles. Separates quick capture from thoughtful framing, enabling both in-the-moment recording and later reflection with optional AI assistance.
 
-## Core Architecture
-- **capture**: Save raw experiences quickly
-- **frame**: Create structured moments from captures  
+## Core Architecture - 4 Primary Tools
+- **capture**: Save raw experiences quickly 
+- **frame**: Create structured moments from captures
 - **enhance**: Add details to existing items
 - **synthesize**: Group related moments
 
@@ -18,22 +18,47 @@ A minimal MCP server for capturing moments of experience using phenomenological 
 - Sources are immutable once created
 - Moments can evolve through enhancement
 - First-person present tense for narratives
-- Preserve authentic voice
+- Preserve authentic voice and experiential wholeness
 - Accept imperfect input, refine later
+- Progressive enhancement over time
 
-## Technical Stack
-- TypeScript, Node.js
-- MCP SDK for server implementation
-- JSONL storage
-- Optional AI integration via MCP sampling
+## Technical Stack & Architecture
+- **TypeScript + Node.js** with ESM modules
+- **MCP SDK** for protocol compliance
+- **JSONL Storage** - human-readable, append-only
+- **Zod** for schema validation
+- **Jest** for testing (ESM configured)
+- **Stdio Transport** for MCP communication
+
+## MCP Debugging Best Practices ⚠️ CRITICAL
+**❌ NEVER use console.log in MCP servers** - interferes with stdio transport
+**✅ Use instead:**
+- File-based logging for debugging
+- MCP Inspector tool for interactive debugging  
+- Error responses within MCP protocol
+- External debugging tools
 
 ## File Structure
-storage/
-data.jsonl      # All records
-sessions.jsonl  # Session metadata
-files/          # Voice/image storage
+```
+data/
+  data.jsonl         # All source/moment/synthesis records  
+  sessions.jsonl     # Session metadata (planned)
+  files/             # Voice/image storage (planned)
+src/
+  index.ts           # Main MCP server with tool handlers
+  storage.ts         # JSONL operations and data integrity
+  types.ts           # TypeScript interfaces for all record types
+```
 
-[FRAMED_MOMENTS.md](mdc:FRAMED_MOMENTS.md)
-[framed-moments-design.md](mdc:framed-moments-design.md)
-[developmentlog.md](mdc:developmentlog.md)
+## Development Guidelines
+1. **Always build before testing**: `npm run build`
+2. **Test tools via MCP integration**: Use Cursor's MCP integration for real testing
+3. **No console.log in production code**: Use file logging for debugging
+4. **Preserve append-only JSONL**: Never modify existing records, only append
+5. **Validate with Zod schemas**: All tool inputs must be validated
+6. **Handle errors gracefully**: Return McpError with appropriate error codes
 
+## Key Resources
+- [FRAMED_MOMENTS.md](mdc:FRAMED_MOMENTS.md) - Theoretical framework
+- [framed-moments-design.md](mdc:framed-moments-design.md) - Complete feature specification  
+- [developmentlog.md](mdc:developmentlog.md) - Development progress and findings

@@ -76,6 +76,8 @@ export type RecordType = "source" | "moment" | "synthesis" | "session";
 export interface BaseRecord {
   type: RecordType;
   id: string;
+  version?: number; // Version number, 1 for original, incremented for each update
+  previousVersion?: string | null; // Previous record's ID, null for original
 }
 
 export interface SourceRecord extends BaseRecord, Source {
