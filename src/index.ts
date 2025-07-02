@@ -23,6 +23,7 @@ import {
   updateMoment,
   getSources,
   getMoments,
+  getRecentMoments,
   getSyntheses,
   getUnframedSources,
   validateFilePath,
@@ -235,20 +236,27 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         
         // Verify all sources exist
         const validSources: SourceRecord[] = [];
-        for (const sourceId of input.sourceIds) {
+        
+        for (let i = 0; i < input.sourceIds.length; i++) {
+          const sourceId = input.sourceIds[i];
+          
           const source = await getSource(sourceId);
+          
           if (!source) {
             throw new McpError(
               ErrorCode.InvalidParams,
               `Source not found: ${sourceId}`
             );
           }
+          
           validSources.push(source);
         }
         
         // Create moment record
-        const moment = await saveMoment({
-          id: generateId('mom'),
+        const momentId = generateId('mom');
+        
+        const momentData = {
+          id: momentId,
           emoji: input.emoji,
           summary: input.summary,
           narrative: input.narrative,
@@ -257,7 +265,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           created: new Date().toISOString(),
           // Use the earliest source's when date if available
           when: validSources.find(s => s.when)?.when,
-        });
+        };
+        
+        const moment = await saveMoment(momentData);
         
         return {
           content: [
@@ -388,11 +398,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 server.setRequestHandler(ListResourcesRequestSchema, async () => {
   const sources = await getSources();
   const moments = await getMoments();
+  const recentMoments = await getRecentMoments();
   const syntheses = await getSyntheses();
   const unframed = await getUnframedSources();
 
   return {
     resources: [
+      {
+        uri: 'moments://recent',
+        name: 'Recent Moments',
+        description: `Last ${recentMoments.length} framed moments (most recent first)`,
+        mimeType: 'application/json',
+      },
       {
         uri: 'sources://all',
         name: 'All Sources',
@@ -426,6 +443,17 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
 
   try {
     switch (uri) {
+      case 'moments://recent':
+        return {
+          contents: [
+            {
+              uri,
+              mimeType: 'application/json',
+              text: JSON.stringify(await getRecentMoments(), null, 2),
+            },
+          ],
+        };
+        
       case 'sources://all':
         return {
           contents: [
