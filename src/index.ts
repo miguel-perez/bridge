@@ -280,12 +280,140 @@ const releaseSchema = z.object({
   id: z.string(),
 });
 
-// Helper: Contextual coaching prompts for captures
-function getContextualPrompts(): string {
-  // All content types: guide to next steps, not qualities
-  return '\n✓ Captured! You can:\n' +
-         '• Reflect - add memories, insights, or deeper noticings\n' +
-         '• Frame - identify patterns and qualities in this moment';
+const critiqueSchema = z.object({
+  momentId: z.string(),
+});
+
+const treeSchema = z.object({
+  rootId: z.string().optional(),
+});
+
+interface TreeNode {
+  type: 'source' | 'moment' | 'synthesis';
+  id: string;
+  emoji?: string;
+  summary?: string;
+  content?: string;
+  when: string;
+  children?: TreeNode[];
+}
+
+async function buildMomentTree(rootId?: string): Promise<TreeNode | TreeNode[]> {
+  const sources = await getSources();
+  const moments = await getMoments();
+  const syntheses = await getSyntheses();
+
+  const sourceMap = new Map(sources.map(s => [s.id, s]));
+  const momentMap = new Map(moments.map(m => [m.id, m]));
+  const synthesisMap = new Map(syntheses.map(s => [s.id, s]));
+
+  function buildSourceNode(sourceId: string): TreeNode | null {
+    const source = sourceMap.get(sourceId);
+    if (!source) return null;
+    return {
+      type: 'source',
+      id: source.id,
+      content: source.content.substring(0, 50) + '...',
+      when: source.when || source.created
+    };
+  }
+
+  function buildMomentNode(momentId: string): TreeNode | null {
+    const moment = momentMap.get(momentId);
+    if (!moment) return null;
+    const children = moment.sources
+      .map(s => buildSourceNode(s.sourceId))
+      .filter(Boolean) as TreeNode[];
+    return {
+      type: 'moment',
+      id: moment.id,
+      emoji: moment.emoji,
+      summary: moment.summary,
+      when: moment.when || moment.created,
+      children
+    };
+  }
+
+  function buildSynthesisNode(synthesisId: string): TreeNode | null {
+    const synthesis = synthesisMap.get(synthesisId);
+    if (!synthesis) return null;
+    const children = synthesis.synthesizedMomentIds
+      .map(id => buildMomentNode(id))
+      .filter(Boolean) as TreeNode[];
+    return {
+      type: 'synthesis',
+      id: synthesis.id,
+      emoji: synthesis.emoji,
+      summary: synthesis.summary,
+      when: synthesis.created,
+      children
+    };
+  }
+
+  // If specific root requested
+  if (rootId) {
+    return buildSynthesisNode(rootId) || 
+           buildMomentNode(rootId) || 
+           buildSourceNode(rootId) || 
+           { type: 'source', id: rootId, content: 'Not found', when: '' };
+  }
+
+  // Otherwise return forest of all top-level items
+  const momentIdsInSyntheses = new Set(
+    syntheses.flatMap(s => s.synthesizedMomentIds)
+  );
+  const topLevelSyntheses = syntheses.map(s => buildSynthesisNode(s.id)).filter(Boolean);
+  const orphanMoments = moments
+    .filter(m => !momentIdsInSyntheses.has(m.id))
+    .map(m => buildMomentNode(m.id))
+    .filter(Boolean);
+  return [...topLevelSyntheses, ...orphanMoments] as TreeNode[];
+}
+
+// Helper: Contextual coaching prompts for captures and tool-to-tool flow
+function getContextualPrompts(toolName: string, unframedCount?: number): string {
+  let prompts = '\n✓ Next steps:\n';
+  switch(toolName) {
+    case 'capture':
+      prompts += '• Reflect - add memories, insights, or deeper noticings about this experience\n';
+      if (unframedCount && unframedCount >= 5) {
+        prompts += `• Storyboard - review your ${unframedCount} unframed sources to identify moment boundaries\n`;
+      } else {
+        prompts += '• Frame - transform this into a complete moment with patterns and qualities\n';
+      }
+      break;
+    case 'storyboard':
+      prompts += '• Frame - create individual moments using the boundaries you\'ve identified\n';
+      prompts += '• Capture more - if you need additional raw material\n';
+      break;
+    case 'frame':
+      prompts += '• Critique - validate this moment against proven quality criteria\n';
+      prompts += '• Enrich - add narrative depth or missing experiential qualities\n';
+      prompts += '• Weave - connect with related moments to see larger patterns\n';
+      break;
+    case 'critique':
+      prompts += '• Enrich - add missing elements the validation revealed\n';
+      prompts += '• Reframe - if the moment boundaries feel wrong\n';
+      prompts += '• Tree - see how this moment fits your larger experiential patterns\n';
+      break;
+    case 'weave':
+      prompts += '• Tree - visualize your new synthesis in the larger hierarchy\n';
+      prompts += '• Capture more - explore themes this synthesis revealed\n';
+      break;
+    case 'tree':
+      prompts += '• Capture - record more experiences in the patterns you notice\n';
+      prompts += '• Weave - connect moments that share themes but aren\'t yet linked\n';
+      break;
+    case 'reflect':
+      prompts += '• Frame - combine this reflection with the original source\n';
+      prompts += '• Reflect again - if more layers have emerged\n';
+      break;
+    default:
+      prompts += '• Capture - record another experience\n';
+      prompts += '• Storyboard - review unframed sources\n';
+      prompts += '• Tree - see your moment hierarchy\n';
+  }
+  return prompts;
 }
 
 // Tool handlers
@@ -293,7 +421,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   const tools = [
     {
       name: 'capture',
-      description: 'Capture a lived moment - what are you sensing, feeling, noticing right now? Try present tense to stay close to the experience. (Defaults: perspective="I", experiencer="self", processing="during")',
+      description: 'Capture a lived moment - preserving raw experience before it fades. The more sensory detail and present-tense immediacy, the richer your future framing. Start here with messy, authentic experience.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -315,7 +443,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     },
     {
       name: 'frame',
-      description: 'Frame your experience into a complete moment from one or more sources. Pattern type helps identify where your moment naturally begins and ends—like a storyboard artist choosing frame boundaries. See moments://patterns/guide, moments://qualities/guide and moments://examples.',
+      description: 'Transform raw sources into a complete experiential moment. Like choosing what belongs in a photograph, identify natural boundaries using pattern types. Requires identifying experiential qualities first.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -402,7 +530,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     },
     {
       name: 'reflect',
-      description: 'Add depth to an existing source by capturing further reflection, memories, or insights. Creates a new source linked to the original.',
+      description: 'Add layers to an existing capture - how you see it now, what you remember differently, what meanings emerge. Creates linked sources that can be framed together for richer moments.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -427,6 +555,37 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         },
         required: ['id']
       }
+    },
+    {
+      name: 'critique',
+      description: 'Validate your framed moments against 13 proven criteria. Like a trusted reader checking if your experience rings true. Expect 2-3 iterations - refinement is normal, not failure.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          momentId: { type: 'string', description: 'ID of moment to critique' }
+        },
+        required: ['momentId'],
+      },
+    },
+    {
+      name: 'storyboard',
+      description: 'View all unframed sources to find natural moment boundaries. Like a film editor with rushes, identify where attention shifts, emotions change, or actions complete. Essential for continuous captures.',
+      inputSchema: {
+        type: 'object',
+        properties: {},
+        required: [],
+      },
+    },
+    {
+      name: 'tree',
+      description: 'See how your moments nest and connect hierarchically. Reveals experiential architecture - recurring themes, micro-to-macro patterns, meaning clusters. Essential for understanding your larger story.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          rootId: { type: 'string', description: 'Optional: Start from specific moment/synthesis' }
+        },
+        required: [],
+      },
     },
   ];
   return { tools };
@@ -493,9 +652,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               text: `Defaults applied: ${defaultsUsed.join(', ')}`
             });
           }
+          const unframed = await getUnframedSources();
           content.push({
             type: 'text',
-            text: getContextualPrompts()
+            text: getContextualPrompts('capture', unframed.length)
           });
           return { content };
         }
@@ -532,9 +692,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             text: `Defaults applied: ${defaultsUsed.join(', ')}`
           });
         }
+        const unframed = await getUnframedSources();
         content.push({
           type: 'text',
-          text: getContextualPrompts()
+          text: getContextualPrompts('capture', unframed.length)
         });
         return { content };
       }
@@ -578,6 +739,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             {
               type: 'text',
               text: `Full record:\n${JSON.stringify(moment, null, 2)}`
+            },
+            {
+              type: 'text',
+              text: getContextualPrompts('frame')
             }
           ]
         };
@@ -614,6 +779,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             {
               type: 'text',
               text: `Full record:\n${JSON.stringify(synthesis, null, 2)}`
+            },
+            {
+              type: 'text',
+              text: getContextualPrompts('weave')
             }
           ]
         };
@@ -711,7 +880,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             },
             {
               type: 'text',
-              text: '\n💡 Frame these related sources together for a richer, multi-layered moment'
+              text: getContextualPrompts('reflect')
             }
           ]
         };
@@ -835,6 +1004,77 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         );
       }
 
+      case 'critique': {
+        const input = critiqueSchema.parse(args);
+        const moment = await getMoment(input.momentId);
+        if (!moment) {
+          throw new McpError(
+            ErrorCode.InvalidParams,
+            `Moment not found: ${input.momentId}`
+          );
+        }
+        const checklistText = `VALIDATION CHECKLIST:
+
+□ Voice recognition ("that's how I talk")
+  Does this sound like the actual person speaking? Are speech patterns preserved?
+
+□ Experiential completeness  
+  Is this a whole experience, not assembled from parts? Can you feel the unified moment?
+
+□ Visual anchorability
+  Can you imagine this as a specific moment in time? Concrete enough to visualize?
+
+□ Temporal flow implied
+  Does the moment naturally suggest what came before and after?
+
+□ Emotional atmosphere preserved
+  Is the feeling-tone present? Not just named emotions, but the lived quality?
+
+□ Self-containment
+  Could someone understand this without additional context?
+
+□ Narrative coherence
+  Does it flow naturally from beginning to end? No jarring jumps?
+
+□ Causal logic
+  Do actions and reactions make sense? Cause connects to effect?
+
+□ Temporal knowledge accuracy
+  Only what was known/felt THEN, not insights that came later?
+
+□ No invented details
+  Everything described actually in the source? No embellishments?
+
+□ Voice pattern fidelity
+  Exact phrasings and speech quirks preserved from original?
+
+□ Minimal transformation
+  Reordered for flow but not rewritten? Original words kept?
+
+□ Physical/sensory grounding
+  Enough embodied details to anchor in lived experience?`;
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `MOMENT TO CRITIQUE:\n\n${moment.emoji} ${moment.summary} (ID: ${moment.id})`
+            },
+            {
+              type: 'text',
+              text: `Pattern: ${moment.pattern || 'none'}\nQualities: ${moment.qualities?.map(q => q.type).join(', ') || 'none'}\n`
+            },
+            {
+              type: 'text',
+              text: checklistText
+            },
+            {
+              type: 'text',
+              text: getContextualPrompts('critique')
+            }
+          ]
+        };
+      }
+
       case 'clear': {
         const env = process.env.NODE_ENV || process.env.MCP_ENV || 'development';
         if (env === 'production') {
@@ -881,6 +1121,94 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               text: message,
             },
           ],
+        };
+      }
+
+      case 'storyboard': {
+        // No input validation needed
+        const unframedSources = await getUnframedSources();
+        if (unframedSources.length === 0) {
+          return {
+            content: [{
+              type: 'text',
+              text: 'No unframed sources found. All sources have been framed into moments!'
+            }]
+          };
+        }
+        const framingGuide = `THE TENSION:
+Experience flows continuously - "it cannot be broken into separate moments" (Bergson). 
+Yet for understanding, we need discrete units. You're a storyboard artist facing an 
+impossible but necessary task: finding natural joints in what is inherently seamless.
+
+BOUNDARY TYPES:
+
+1. ATTENTION BOUNDARIES
+   Where awareness fundamentally redirects. The entire field of consciousness 
+   reorganizes around a different center.
+
+2. TEMPORAL BOUNDARIES  
+   Natural segments in lived duration. Where experience has its own beginning, 
+   middle, end. Where "now" becomes "then."
+
+3. SPATIAL BOUNDARIES
+   When the sense of place transforms. Not just moving, but when lived space 
+   - its feeling, meaning, possibilities - becomes different.
+
+4. EMOTIONAL BOUNDARIES
+   Where affective atmosphere shifts. When the whole coloring of experience 
+   changes, like weather fronts moving through.
+
+5. ACTIONAL BOUNDARIES
+   Natural completions and initiations. Where purposive momentum finds its 
+   target or redirects. Reaching vs having reached.
+
+6. RELATIONAL BOUNDARIES
+   When the intersubjective field reconfigures. Others entering, leaving, 
+   or the felt sense of connection fundamentally shifting.
+
+Go as granular as possible. A conversation might contain dozens of attention 
+shifts, several emotional boundaries, multiple actional completions.`;
+        const content = [
+          {
+            type: 'text',
+            text: `UNFRAMED SOURCES (${unframedSources.length} total):\n`
+          }
+        ];
+        unframedSources.forEach((source, index) => {
+          content.push({
+            type: 'text',
+            text: `\n--- Source ${index + 1} ---\nID: ${source.id}\nCaptured: ${source.created}\n\n"${source.content}"\n`
+          });
+        });
+        content.push(
+          { type: 'text', text: `\n\nFRAMING GUIDE:\n\n${framingGuide}` },
+          { type: 'text', text: getContextualPrompts('storyboard') }
+        );
+        return { content };
+      }
+
+      case 'tree': {
+        const input = treeSchema.parse(args);
+        const treeData = await buildMomentTree(input.rootId);
+        return {
+          content: [
+            {
+              type: 'text',
+              text: 'MOMENT HIERARCHY DATA:\n'
+            },
+            {
+              type: 'text',
+              text: JSON.stringify(treeData, null, 2)
+            },
+            {
+              type: 'text',
+              text: '\n\nAsk Claude to render this as a visual tree showing how sources build to moments, moments weave into syntheses.'
+            },
+            {
+              type: 'text',
+              text: getContextualPrompts('tree')
+            }
+          ]
         };
       }
 
