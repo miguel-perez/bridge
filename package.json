@@ -23,7 +23,15 @@
     "experience",
     "moments",
     "capture",
-    "phenomenology"
+    "phenomenology",
+    "experiential",
+    "qualities",
+    "embodied",
+    "lived-experience",
+    "attention",
+    "awareness",
+    "sensory",
+    "reflection"
   ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "latest",

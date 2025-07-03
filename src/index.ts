@@ -246,7 +246,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       inputSchema: {
         type: 'object',
         properties: {
-          content: { type: 'string', description: 'The experience to capture' },
+          content: { type: 'string', description: 'The lived moment - try present tense, include what you\'re sensing, feeling, noticing' },
           contentType: { type: 'string', description: 'Type of content (text, voice, image, link)', default: 'text' },
           perspective: { type: 'string', description: 'Perspective (I, we, you, they)', default: 'I' },
           processing: { type: 'string', description: 'When captured relative to experience (during, right-after, long-after, crafted)', default: 'during' },
@@ -283,7 +283,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           narrative: { type: 'string', description: 'Full experiential narrative (optional)' },
           pattern: { 
             type: 'string', 
-            description: 'Pattern type - helps identify where this moment naturally starts/ends (see moments://patterns/guide). Defaults to "moment-of-recognition" for moments, "synthesis" for syntheses.',
+            description: 'Pattern type - recognizes how your attention moved (focused, sustained, shifting, juggling). Helps identify natural moment boundaries. See moments://patterns/guide',
             default: 'moment-of-recognition'
           }
         },
@@ -439,6 +439,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               {
                 type: 'text',
                 text: `\nFull record:\n${JSON.stringify(moment, null, 2)}`
+              },
+              {
+                type: 'text',
+                text: '\n✨ Does this capture the lived experience? Consider which qualities feel most alive:\n- Embodied: What your body felt\n- Attentional: Where your focus went\n- Emotional: The feeling atmosphere\n- Spatial: Your sense of place\n- Temporal: How time flowed\n- Relational: Others\' presence\n- Purposive: What you moved toward/away from'
               }
             ]
           };
@@ -489,6 +493,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         // Try to enhance a moment first
         const moment = await getMoment(input.id);
         if (moment) {
+          // TODO: Future enhancement - support adding qualities
+          // Example: updates.qualities = [
+          //   { type: 'embodied', manifestation: 'shoulders tight, jaw clenched' },
+          //   { type: 'spatial', manifestation: 'kitchen suddenly felt too small' }
+          // ]
+          // The Moment type in types.ts already supports this structure
           const updated = await updateMoment(input.id, input.updates);
           if (!updated) {
             throw new McpError(ErrorCode.InternalError, 'Failed to update moment');
@@ -632,15 +642,15 @@ server.setRequestHandler(ListResourcesRequestSchema, async () => {
       },
       {
         uri: 'moments://qualities/guide',
-        name: 'Qualities Guide',
-        description: 'Explore the seven experiential qualities for richer moments',
-        mimeType: 'application/json'
+        name: 'Experiential Qualities Guide',
+        description: 'Understand the seven qualities that weave through every moment',
+        mimeType: 'application/json',
       },
       {
-        uri: 'moments://examples/framed',
+        uri: 'moments://examples',
         name: 'Framed Moments Examples',
-        description: 'Real tested moments and framework examples in action',
-        mimeType: 'application/json'
+        description: 'See how raw experiences transform into rich moments through iteration',
+        mimeType: 'application/json',
       },
     ],
   };
@@ -724,7 +734,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
           }]
         };
       
-      case 'moments://examples/framed':
+      case 'moments://examples':
         return {
           contents: [{
             uri,
