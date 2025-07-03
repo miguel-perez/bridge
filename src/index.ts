@@ -242,7 +242,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   const tools = [
     {
       name: 'capture',
-      description: 'Save an experience, thought, or feeling',
+      description: 'Capture a lived moment - what are you sensing, feeling, noticing right now? Try present tense to stay close to the experience.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -264,7 +264,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     },
     {
       name: 'frame',
-      description: 'Create a moment from sources OR a synthesis from moments. Patterns help identify natural boundaries - like a storyboard artist choosing where to cut. See moments://patterns/guide for pattern selection.',
+      description: 'Frame your experience into a complete moment. Choose the pattern that matches how your attention moved. What was your body feeling? Where were you? Who else was present? (See moments://patterns/guide, moments://qualities/guide and moments://examples)',
       inputSchema: {
         type: 'object',
         properties: {
