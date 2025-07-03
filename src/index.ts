@@ -556,7 +556,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           if (!source) {
             throw new McpError(
               ErrorCode.InvalidParams,
-              `Source not found: ${sourceId}`
+              `Source not found: ${sourceId}. Capture an experience first, then frame it into a moment.`
             );
           }
           validSources.push(source);
@@ -599,7 +599,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           if (!moment) {
             throw new McpError(
               ErrorCode.InvalidParams,
-              `Moment not found: ${momentId}`
+              `Moment not found: ${momentId}. Frame your sources into moments first, then weave moments together.`
             );
           }
         }
@@ -674,7 +674,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         // If not a moment, try source
         const source = await getSource(input.id);
         if (source) {
-          throw new McpError(ErrorCode.InvalidRequest, 'Sources are immutable and cannot be updated');
+          throw new McpError(
+            ErrorCode.InvalidRequest, 
+            'Sources are immutable raw captures. To add depth, use "reflect" to create a linked source, then frame multiple related sources together into a richer moment.'
+          );
         }
         throw new McpError(
           ErrorCode.InvalidParams,
@@ -778,8 +781,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         );
     }
   } catch (error) {
+    // General error enhancer
+    if (error instanceof McpError) {
+      throw error; // Already formatted
+    }
     if (error instanceof z.ZodError) {
-      if (error.issues.some(i => i.path.includes('pattern'))) {
+      // Check for specific validation errors
+      const issues = error.issues;
+      if (issues.some(i => i.path.includes('qualities') && i.code === 'too_small')) {
+        throw new McpError(
+          ErrorCode.InvalidParams,
+          'Please identify at least one experiential quality. What did your body feel? Where was your attention? What emotions were present?'
+        );
+      }
+      if (issues.some(i => i.path.includes('pattern'))) {
         throw new McpError(
           ErrorCode.InvalidParams,
           'Invalid pattern. Valid patterns: moment-of-recognition (sudden clarity), sustained-attention (dwelling in experience), crossing-threshold (transformation), peripheral-awareness (multiple streams), directed-momentum (goal focus), holding-opposites (unresolved tensions)'
