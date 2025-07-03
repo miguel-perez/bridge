@@ -219,9 +219,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           content: [
             {
               type: 'text',
-              text: `✓ Captured: "${input.content.substring(0, 50)}${input.content.length > 50 ? '...' : ''}" (ID: ${source.id})\nType: ${input.contentType} | Perspective: ${input.perspective} | Processing: ${input.processing}`,
+              text: `✓ Captured: "${source.content.substring(0, 50)}${source.content.length > 50 ? '...' : ''}" (ID: ${source.id})`
             },
-          ],
+            {
+              type: 'text',
+              text: `\nFull record:\n${JSON.stringify(source, null, 2)}`
+            }
+          ]
         };
       }
 
@@ -257,9 +261,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           content: [
             {
               type: 'text',
-              text: `Framed moment: ${moment.emoji} ${moment.summary} (ID: ${moment.id})`,
+              text: `✓ Framed moment: ${moment.emoji} ${moment.summary} (ID: ${moment.id})`
             },
-          ],
+            {
+              type: 'text',
+              text: `\nFull record:\n${JSON.stringify(moment, null, 2)}`
+            }
+          ]
         };
       }
 
@@ -278,6 +286,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 type: 'text',
                 text: `Enhanced moment (ID: ${updated.id}) with updates: ${Object.keys(input.updates).join(', ')}`,
               },
+              {
+                type: 'text',
+                text: `\nFull record:\n${JSON.stringify(updated, null, 2)}`
+              }
             ],
             record: updated
           };
@@ -324,6 +336,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               type: 'text',
               text: `Created synthesis: ${synthesis.emoji} ${synthesis.summary} (ID: ${synthesis.id})`,
             },
+            {
+              type: 'text',
+              text: `\nFull record:\n${JSON.stringify(synthesis, null, 2)}`
+            }
           ],
         };
       }
