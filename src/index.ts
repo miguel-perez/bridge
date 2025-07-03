@@ -1,13 +1,9 @@
 #!/usr/bin/env node
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
   ListResourcesRequestSchema,
-  ReadResourceRequestSchema,
-  ListPromptsRequestSchema,
-  GetPromptRequestSchema,
   ErrorCode,
   McpError,
 } from '@modelcontextprotocol/sdk/types.js';
@@ -16,41 +12,38 @@ import {
   generateId,
   saveSource,
   saveMoment,
-  saveSynthesis,
+  saveScene,
   getSource,
   getMoment,
   updateMoment,
-  getSources,
   getMoments,
-  getRecentMoments,
-  getSyntheses,
+  getScenes,
   getUnframedSources,
-  getMomentsByDateRange,
-  searchMoments,
-  getMomentsByPattern,
-  getMomentsBySynthesis,
-  getSynthesis,
+  getScene,
   validateFilePath,
   deleteSource,
   deleteMoment,
-  updateSynthesis,
-  deleteSynthesis,
+  updateScene,
+  deleteScene,
   getAllRecords,
+  setStorageConfig,
 } from './storage.js';
-import { ensureAllEmbeddings } from './embeddings.js';
 import type { SourceRecord, ProcessingLevel } from './types.js';
 import { DESIGNER_MOMENT, WRESTLING_MOMENT, DOLPHIN_MOMENT, BLEH_MOMENT, KETAMINE_MOMENT, SHOT_VARIATIONS, QUALITIES_EXAMPLES, TRANSFORMATION_PRINCIPLES, COMMON_PITFALLS } from './tested-moments-data.js';
 import { search as semanticSearch, SearchOptions, getSearchableText } from './search.js';
+import { setEmbeddingsConfig } from './embeddings.js';
+import { existsSync, readFileSync } from 'fs';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
 // Constants
 const SERVER_NAME = 'captain';
 const SERVER_VERSION = '0.1.0';
 
-// Pattern documentation constant
-const PATTERN_GUIDE = {
-  purpose: "Patterns reveal how your attention moved through the experience - each has its own rhythm and natural boundaries you can feel.",
+// Shot documentation constant (was PATTERN_GUIDE)
+const SHOT_GUIDE = {
+  purpose: "Shots reveal how your attention moved through the experience - each has its own rhythm and natural boundaries you can feel.",
   metaphor: "Think like a storyboard artist deciding frame boundaries",
-  patterns: {
+  shots: {
     "moment-of-recognition": {
       description: "Everything suddenly snaps into focus—the background fades and this one thing becomes crystal clear.",
       feltSignal: "A surge of clarity or insight, like a lightbulb turning on.",
@@ -106,7 +99,7 @@ const PATTERN_GUIDE = {
       keywords: ["but", "yet", "both", "despite", "tension", "conflict"]
     }
   },
-  defaultPattern: "moment-of-recognition"
+  defaultShot: "moment-of-recognition"
 };
 
 const QUALITIES_GUIDE = {
@@ -321,8 +314,8 @@ function getContextualPrompts(toolName: string, unframedCount?: number): string 
       prompts += '• Tree - see how this moment fits your larger experiential patterns\n';
       break;
     case 'weave':
-      prompts += '• Tree - visualize your new synthesis in the larger hierarchy\n';
-      prompts += '• Capture more - explore themes this synthesis revealed\n';
+      prompts += '• Tree - visualize your new scene in the larger hierarchy\n';
+      prompts += '• Capture more - explore themes this scene revealed\n';
       break;
     case 'remember':
       prompts += '• Search - use natural language to find relevant memories, patterns, or relationships\n';
@@ -343,11 +336,26 @@ function getContextualPrompts(toolName: string, unframedCount?: number): string 
 // Helper strings for tool descriptions
 const qualitiesDesc = `Identify which qualities are most alive in this experience (at least one required, typically 1-4):\n"embodied": ${QUALITIES_GUIDE.qualities.embodied.description} Example: ${QUALITIES_GUIDE.qualities.embodied.example}\n"attentional": ${QUALITIES_GUIDE.qualities.attentional.description} Example: ${QUALITIES_GUIDE.qualities.attentional.example}\n"emotional": ${QUALITIES_GUIDE.qualities.emotional.description} Example: ${QUALITIES_GUIDE.qualities.emotional.example}\n"purposive": ${QUALITIES_GUIDE.qualities.purposive.description} Example: ${QUALITIES_GUIDE.qualities.purposive.example}\n"spatial": ${QUALITIES_GUIDE.qualities.spatial.description} Example: ${QUALITIES_GUIDE.qualities.spatial.example}\n"temporal": ${QUALITIES_GUIDE.qualities.temporal.description} Example: ${QUALITIES_GUIDE.qualities.temporal.example}\n"relational": ${QUALITIES_GUIDE.qualities.relational.description} Example: ${QUALITIES_GUIDE.qualities.relational.example}`;
 
-const patternGuide = PATTERN_GUIDE.patterns;
-const shotDesc = `Pattern of attention movement:\n• moment-of-recognition: ${patternGuide["moment-of-recognition"].description} (keywords: ${patternGuide["moment-of-recognition"].keywords.join(", ")}). Start: ${patternGuide["moment-of-recognition"].boundaries}\n• sustained-attention: ${patternGuide["sustained-attention"].description} (keywords: ${patternGuide["sustained-attention"].keywords.join(", ")}). Start: ${patternGuide["sustained-attention"].boundaries}\n• crossing-threshold: ${patternGuide["crossing-threshold"].description} (keywords: ${patternGuide["crossing-threshold"].keywords.join(", ")}). Start: ${patternGuide["crossing-threshold"].boundaries}\n• peripheral-awareness: ${patternGuide["peripheral-awareness"].description} (keywords: ${patternGuide["peripheral-awareness"].keywords.join(", ")}). Start: ${patternGuide["peripheral-awareness"].boundaries}\n• directed-momentum: ${patternGuide["directed-momentum"].description} (keywords: ${patternGuide["directed-momentum"].keywords.join(", ")}). Start: ${patternGuide["directed-momentum"].boundaries}\n• holding-opposites: ${patternGuide["holding-opposites"].description} (keywords: ${patternGuide["holding-opposites"].keywords.join(", ")}). Start: ${patternGuide["holding-opposites"].boundaries}`;
+const shotGuide = SHOT_GUIDE.shots;
+const shotDesc = `Shot (pattern of attention movement):\n• moment-of-recognition: ${shotGuide["moment-of-recognition"].description} (keywords: ${shotGuide["moment-of-recognition"].keywords.join(", ")}). Start: ${shotGuide["moment-of-recognition"].boundaries}\n• sustained-attention: ${shotGuide["sustained-attention"].description} (keywords: ${shotGuide["sustained-attention"].keywords.join(", ")}). Start: ${shotGuide["sustained-attention"].boundaries}\n• crossing-threshold: ${shotGuide["crossing-threshold"].description} (keywords: ${shotGuide["crossing-threshold"].keywords.join(", ")}). Start: ${shotGuide["crossing-threshold"].boundaries}\n• peripheral-awareness: ${shotGuide["peripheral-awareness"].description} (keywords: ${shotGuide["peripheral-awareness"].keywords.join(", ")}). Start: ${shotGuide["peripheral-awareness"].boundaries}\n• directed-momentum: ${shotGuide["directed-momentum"].description} (keywords: ${shotGuide["directed-momentum"].keywords.join(", ")}). Start: ${shotGuide["directed-momentum"].boundaries}\n• holding-opposites: ${shotGuide["holding-opposites"].description} (keywords: ${shotGuide["holding-opposites"].keywords.join(", ")}). Start: ${shotGuide["holding-opposites"].boundaries}`;
 
 const transformationPrinciples = FRAMED_MOMENTS_EXAMPLES.transformationPrinciples.join(" ");
 const critiqueChecklist = `Validation criteria:\n- Voice recognition ("that's how I talk")\n- Experiential completeness\n- Visual anchorability\n- Temporal flow implied\n- Emotional atmosphere preserved\n- Self-containment\n- Narrative coherence\n- Causal logic\n- Temporal knowledge accuracy\n- No invented details\n- Voice pattern fidelity\n- Minimal transformation\n- Physical/sensory grounding\n(2-3 iterations are normal)`;
+
+// Load MCP config and set storage/embeddings file paths
+try {
+  const mcpConfigPath = '.cursor/mcp.json';
+  if (existsSync(mcpConfigPath)) {
+    const mcpConfig = JSON.parse(readFileSync(mcpConfigPath, 'utf8'));
+    const serverConfig = mcpConfig.mcpServers?.moments;
+    if (serverConfig && serverConfig.dataFile) {
+      setStorageConfig({ dataFile: serverConfig.dataFile });
+      setEmbeddingsConfig({ dataFile: serverConfig.dataFile });
+    }
+  }
+} catch (err) {
+  // Ignore config errors, fall back to defaults
+}
 
 // Tool handlers
 server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -411,7 +419,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     },
     {
       name: "weave",
-      description: "Weave multiple moments together to reveal meta-patterns and deeper understanding. Narrative should trace the journey or transformation between moments. Synthesis works best with patterns like crossing-threshold, directed-momentum, or holding-opposites.",
+      description: "Weave multiple moments together to reveal meta-patterns and deeper understanding. Narrative should trace the journey or transformation between moments. Scene works best with patterns like crossing-threshold, directed-momentum, or holding-opposites.",
       inputSchema: {
         type: "object",
         properties: {
@@ -421,7 +429,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           narrative: { type: "string", description: "Narrative tracing the journey or transformation between moments" },
           shot: {
             type: "string",
-            description: "Shot type for the synthesized moment. Synthesis often uses crossing-threshold, directed-momentum, or holding-opposites.",
+            description: "Shot type for the synthesized moment. Scene often uses crossing-threshold, directed-momentum, or holding-opposites.",
             enum: ["moment-of-recognition", "sustained-attention", "crossing-threshold", "peripheral-awareness", "directed-momentum", "holding-opposites"]
           }
         },
@@ -490,7 +498,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     },
     {
       name: "remember",
-      description: "Semantic search across all captured experiences (sources, moments, syntheses). Use natural language to find relevant memories, patterns, or relationships.",
+      description: "Semantic search across all captured experiences (sources, moments, scenes). Use natural language to find relevant memories, patterns, or relationships.",
       inputSchema: {
         type: "object",
         properties: {
@@ -498,7 +506,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           mode: {
             type: "string",
             enum: ["similarity", "temporal", "relationship"],
-            description: "Search mode: similarity (semantic meaning), temporal (time-based), relationship (linked records). Similarity finds records by meaning, temporal finds by time expressions, relationship finds by source/moment/synthesis links."
+            description: "Search mode: similarity (semantic meaning), temporal (time-based), relationship (linked records). Similarity finds records by meaning, temporal finds by time expressions, relationship finds by source/moment/scene links."
           },
           filters: {
             type: "object",
@@ -506,7 +514,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             properties: {
               type: {
                 type: "array",
-                items: { type: "string", enum: ["source", "moment", "synthesis"] },
+                items: { type: "string", enum: ["source", "moment", "scene"] },
                 description: "Filter by record type"
               },
               experiencer: { type: "string", description: "Filter by experiencer" },
@@ -706,13 +714,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             );
           }
         }
-        // Create synthesis record
-        const synthesis = await saveSynthesis({
-          id: generateId('syn'),
+        // Create scene record
+        const scene = await saveScene({
+          id: generateId('sce'),
           emoji: input.emoji,
           summary: input.summary,
           narrative: input.narrative,
-          synthesizedMomentIds: input.momentIds,
+          momentIds: input.momentIds,
           shot: input.shot,
           created: new Date().toISOString(),
         });
@@ -720,11 +728,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           content: [
             {
               type: 'text',
-              text: `✓ Wove moments into: ${synthesis.emoji} ${synthesis.summary} (ID: ${synthesis.id})`
+              text: `✓ Wove moments into: ${scene.emoji} ${scene.summary} (ID: ${scene.id})`
             },
             {
               type: 'text',
-              text: `Full record:\n${JSON.stringify(synthesis, null, 2)}`
+              text: `Full record:\n${JSON.stringify(scene, null, 2)}`
             },
             {
               type: 'text',
@@ -852,20 +860,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               // No sources left, release the moment
               await deleteMoment(moment.id);
               cleanupMessage += `\n  • Released orphaned moment: ${moment.emoji} "${moment.summary}"`;
-              // Also check if this moment was in any syntheses
-              const syntheses = await getSyntheses();
-              for (const synthesis of syntheses) {
-                if (synthesis.synthesizedMomentIds.includes(moment.id)) {
-                  const remainingMoments = synthesis.synthesizedMomentIds.filter(id => id !== moment.id);
+              // Also check if this moment was in any scenes
+              const scenes = await getScenes();
+              for (const scene of scenes) {
+                if (scene.momentIds.includes(moment.id)) {
+                  const remainingMoments = scene.momentIds.filter(id => id !== moment.id);
                   if (remainingMoments.length === 0) {
-                    await deleteSynthesis(synthesis.id);
-                    cleanupMessage += `\n  • Released orphaned synthesis: ${synthesis.emoji} "${synthesis.summary}"`;
+                    await deleteScene(scene.id);
+                    cleanupMessage += `\n  • Released orphaned scene: ${scene.emoji} "${scene.summary}"`;
                   } else {
-                    // Update synthesis to remove the deleted moment
-                    await updateSynthesis(synthesis.id, {
-                      synthesizedMomentIds: remainingMoments
+                    // Update scene to remove the deleted moment
+                    await updateScene(scene.id, {
+                      momentIds: remainingMoments
                     });
-                    cleanupMessage += `\n  • Updated synthesis: ${synthesis.emoji} "${synthesis.summary}"`;
+                    cleanupMessage += `\n  • Updated scene: ${scene.emoji} "${scene.summary}"`;
                   }
                 }
               }
@@ -894,24 +902,24 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const moment = await getMoment(input.id);
         if (moment) {
           await deleteMoment(input.id);
-          // Clean up any orphaned syntheses
-          const syntheses = await getSyntheses();
-          const affectedSyntheses = syntheses.filter(s => 
-            s.synthesizedMomentIds.includes(input.id)
+          // Clean up any orphaned scenes
+          const scenes = await getScenes();
+          const affectedScenes = scenes.filter(s => 
+            s.momentIds.includes(input.id)
           );
           let cleanupMessage = '';
-          for (const synthesis of affectedSyntheses) {
-            const remainingMoments = synthesis.synthesizedMomentIds.filter(id => id !== input.id);
+          for (const scene of affectedScenes) {
+            const remainingMoments = scene.momentIds.filter(id => id !== input.id);
             if (remainingMoments.length === 0) {
-              // No moments left, release the synthesis
-              await deleteSynthesis(synthesis.id);
-              cleanupMessage += `\n  • Released orphaned synthesis: ${synthesis.emoji} "${synthesis.summary}"`;
+              // No moments left, release the scene
+              await deleteScene(scene.id);
+              cleanupMessage += `\n  • Released orphaned scene: ${scene.emoji} "${scene.summary}"`;
             } else {
-              // Update synthesis to remove the released moment
-              await updateSynthesis(synthesis.id, {
-                synthesizedMomentIds: remainingMoments
+              // Update scene to remove the released moment
+              await updateScene(scene.id, {
+                momentIds: remainingMoments
               });
-              cleanupMessage += `\n  • Updated synthesis: ${synthesis.emoji} "${synthesis.summary}" (${remainingMoments.length} moment(s) remain)`;
+              cleanupMessage += `\n  • Updated scene: ${scene.emoji} "${scene.summary}" (${remainingMoments.length} moment(s) remain)`;
             }
           }
           return {
@@ -927,15 +935,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             ]
           };
         }
-        // Check if it's a synthesis
-        const synthesis = await getSynthesis(input.id);
-        if (synthesis) {
-          await deleteSynthesis(input.id);
+        // Check if it's a scene
+        const scene = await getScene(input.id);
+        if (scene) {
+          await deleteScene(input.id);
           return {
             content: [
               {
                 type: 'text',
-                text: `✓ Released synthesis: ${synthesis.emoji} "${synthesis.summary}" (ID: ${input.id})`
+                text: `✓ Released scene: ${scene.emoji} "${scene.summary}" (ID: ${input.id})`
               },
               {
                 type: 'text',
@@ -946,7 +954,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
         throw new McpError(
           ErrorCode.InvalidParams,
-          `No source, moment, or synthesis found with ID: ${input.id}`
+          `No source, moment, or scene found with ID: ${input.id}`
         );
       }
 
@@ -1112,7 +1120,7 @@ shifts, several emotional boundaries, multiple actional completions.`;
             snippet: getSearchableText(record).slice(0, 200),
             source: record.type === 'source' ? record : undefined,
             moment: record.type === 'moment' ? record : undefined,
-            synthesis: record.type === 'synthesis' ? record : undefined,
+            scene: record.type === 'scene' ? record : undefined,
           }));
         }
         if (!results || (Array.isArray(results) && !results.length)) {
@@ -1139,8 +1147,8 @@ shifts, several emotional boundaries, multiple actional completions.`;
                 extra = `\nFull Source: ${JSON.stringify(result.source, null, 2)}`;
               } else if (result.type === 'moment' && result.moment) {
                 extra = `\nFull Moment: ${JSON.stringify(result.moment, null, 2)}`;
-              } else if (result.type === 'synthesis' && result.synthesis) {
-                extra = `\nFull Synthesis: ${JSON.stringify(result.synthesis, null, 2)}`;
+              } else if (result.type === 'scene' && result.scene) {
+                extra = `\nFull Scene: ${JSON.stringify(result.scene, null, 2)}`;
               }
             }
             content.push({
@@ -1160,8 +1168,8 @@ shifts, several emotional boundaries, multiple actional completions.`;
                   extra = `\nFull Source: ${JSON.stringify(result.source, null, 2)}`;
                 } else if (result.type === 'moment' && result.moment) {
                   extra = `\nFull Moment: ${JSON.stringify(result.moment, null, 2)}`;
-                } else if (result.type === 'synthesis' && result.synthesis) {
-                  extra = `\nFull Synthesis: ${JSON.stringify(result.synthesis, null, 2)}`;
+                } else if (result.type === 'scene' && result.scene) {
+                  extra = `\nFull Scene: ${JSON.stringify(result.scene, null, 2)}`;
                 }
               }
               content.push({
@@ -1211,311 +1219,22 @@ shifts, several emotional boundaries, multiple actional completions.`;
 
 // Resource handlers - expose captured data
 server.setRequestHandler(ListResourcesRequestSchema, async () => {
-  const sources = await getSources();
-  const moments = await getMoments();
-  const recentMoments = await getRecentMoments();
-  const syntheses = await getSyntheses();
-  const unframed = await getUnframedSources();
-
   return {
     resources: [
       {
         uri: 'moments://recent',
         name: 'Recent Moments',
-        description: `Last ${recentMoments.length} framed moments (most recent first)`,
-        mimeType: 'application/json',
-      },
-      {
-        uri: 'sources://all',
-        name: 'All Sources',
-        description: `All captured sources (${sources.length} total)`,
-        mimeType: 'application/json',
-      },
-      {
-        uri: 'moments://all',
-        name: 'All Moments',
-        description: `All framed moments (${moments.length} total)`,
-        mimeType: 'application/json',
-      },
-      {
-        uri: 'syntheses://all',
-        name: 'All Syntheses',
-        description: `All syntheses (${syntheses.length} total)`,
-        mimeType: 'application/json',
-      },
-      {
-        uri: 'sources://unframed',
-        name: 'Unframed Sources',
-        description: `Sources not yet framed into moments (${unframed.length} total)`,
-        mimeType: 'application/json',
-      },
-      {
-        uri: 'moments://patterns/guide',
-        name: 'Pattern Selection Guide',
-        description: 'Understand how patterns help identify moment boundaries',
-        mimeType: 'application/json'
-      },
-      {
-        uri: 'moments://qualities/guide',
-        name: 'Experiential Qualities Guide',
-        description: 'Understand the seven qualities that weave through every moment',
-        mimeType: 'application/json',
-      },
-      {
-        uri: 'moments://examples',
-        name: 'Framed Moments Examples',
-        description: 'See how raw experiences transform into rich moments through iteration',
-        mimeType: 'application/json',
+        description: 'Most recent moments',
       },
     ],
   };
 });
 
-server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
-  const { uri } = request.params;
-
-  try {
-    switch (uri) {
-      case 'moments://recent':
-        return {
-          contents: [
-            {
-              uri,
-              mimeType: 'application/json',
-              text: JSON.stringify(await getRecentMoments(), null, 2),
-            },
-          ],
-        };
-        
-      case 'sources://all':
-        return {
-          contents: [
-            {
-              uri,
-              mimeType: 'application/json',
-              text: JSON.stringify(await getSources(), null, 2),
-            },
-          ],
-        };
-      
-      case 'moments://all':
-        return {
-          contents: [
-            {
-              uri,
-              mimeType: 'application/json',
-              text: JSON.stringify(await getMoments(), null, 2),
-            },
-          ],
-        };
-      
-      case 'syntheses://all':
-        return {
-          contents: [
-            {
-              uri,
-              mimeType: 'application/json',
-              text: JSON.stringify(await getSyntheses(), null, 2),
-            },
-          ],
-        };
-      
-      case 'sources://unframed':
-        return {
-          contents: [
-            {
-              uri,
-              mimeType: 'application/json',
-              text: JSON.stringify(await getUnframedSources(), null, 2),
-            },
-          ],
-        };
-      
-      case 'moments://patterns/guide':
-        return {
-          contents: [{
-            uri,
-            mimeType: 'application/json',
-            text: JSON.stringify(PATTERN_GUIDE, null, 2)
-          }]
-        };
-      
-      case 'moments://qualities/guide':
-        return {
-          contents: [{
-            uri,
-            mimeType: 'application/json',
-            text: JSON.stringify(QUALITIES_GUIDE, null, 2)
-          }]
-        };
-      
-      case 'moments://examples':
-        return {
-          contents: [{
-            uri,
-            mimeType: 'application/json',
-            text: JSON.stringify(FRAMED_MOMENTS_EXAMPLES, null, 2)
-          }]
-        };
-      
-      // New resource URIs
-      default: {
-        // Pattern matching for parameterized URIs
-        const dateMatch = uri.match(/^moments:\/\/date\/(\d{4}-\d{2}-\d{2}|\d{4}-\d{2})$/);
-        if (dateMatch) {
-          const dateStr = dateMatch[1];
-          let start: Date, end: Date;
-          if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-            // YYYY-MM-DD
-            start = new Date(dateStr);
-            end = new Date(start);
-            end.setDate(end.getDate() + 1);
-          } else {
-            // YYYY-MM
-            start = new Date(dateStr + '-01');
-            end = new Date(start);
-            end.setMonth(end.getMonth() + 1);
-          }
-          const moments = await getMomentsByDateRange(start, end);
-          return { contents: [{ uri, mimeType: 'application/json', text: JSON.stringify(moments, null, 2) }] };
-        }
-        const yearMatch = uri.match(/^moments:\/\/year\/(\d{4})$/);
-        if (yearMatch) {
-          const year = parseInt(yearMatch[1], 10);
-          const start = new Date(`${year}-01-01`);
-          const end = new Date(`${year + 1}-01-01`);
-          const moments = await getMomentsByDateRange(start, end);
-          return { contents: [{ uri, mimeType: 'application/json', text: JSON.stringify(moments, null, 2) }] };
-        }
-        const searchMatch = uri.match(/^moments:\/\/search\/(.+)$/);
-        if (searchMatch) {
-          const query = decodeURIComponent(searchMatch[1]);
-          const moments = await searchMoments(query);
-          return { contents: [{ uri, mimeType: 'application/json', text: JSON.stringify(moments, null, 2) }] };
-        }
-        const patternMatch = uri.match(/^moments:\/\/pattern\/(.+)$/);
-        if (patternMatch) {
-          const shot = decodeURIComponent(patternMatch[1]);
-          const moments = await getMomentsByPattern(shot);
-          return { contents: [{ uri, mimeType: 'application/json', text: JSON.stringify(moments, null, 2) }] };
-        }
-        const qualityMatch = uri.match(/^moments:\/\/quality\/(.+)$/);
-        if (qualityMatch) {
-          const quality = decodeURIComponent(qualityMatch[1]);
-          const moments = (await getMoments()).filter(m => m.qualities && m.qualities.some(q => q.type === quality));
-          return { contents: [{ uri, mimeType: 'application/json', text: JSON.stringify(moments, null, 2) }] };
-        }
-        const perspectiveMatch = uri.match(/^moments:\/\/perspective\/(.+)$/);
-        if (perspectiveMatch) {
-          const perspective = decodeURIComponent(perspectiveMatch[1]);
-          const moments = await getMoments();
-          const sources = await getSources();
-          const filtered = moments.filter(m => m.sources.some(s => {
-            const src = sources.find(src => src.id === s.sourceId);
-            return src && src.perspective === perspective;
-          }));
-          return { contents: [{ uri, mimeType: 'application/json', text: JSON.stringify(filtered, null, 2) }] };
-        }
-        const experiencerMatch = uri.match(/^moments:\/\/experiencer\/(.+)$/);
-        if (experiencerMatch) {
-          const experiencer = decodeURIComponent(experiencerMatch[1]);
-          const moments = await getMoments();
-          const sources = await getSources();
-          const filtered = moments.filter(m => m.sources.some(s => {
-            const src = sources.find(src => src.id === s.sourceId);
-            return src && src.experiencer === experiencer;
-          }));
-          return { contents: [{ uri, mimeType: 'application/json', text: JSON.stringify(filtered, null, 2) }] };
-        }
-        const processingMatch = uri.match(/^moments:\/\/processing\/(.+)$/);
-        if (processingMatch) {
-          const processing = decodeURIComponent(processingMatch[1]);
-          const moments = await getMoments();
-          const sources = await getSources();
-          const filtered = moments.filter(m => m.sources.some(s => {
-            const src = sources.find(src => src.id === s.sourceId);
-            return src && src.processing === processing;
-          }));
-          return { contents: [{ uri, mimeType: 'application/json', text: JSON.stringify(filtered, null, 2) }] };
-        }
-        const typeMatch = uri.match(/^moments:\/\/type\/(.+)$/);
-        if (typeMatch) {
-          const contentType = decodeURIComponent(typeMatch[1]);
-          const moments = await getMoments();
-          const sources = await getSources();
-          const filtered = moments.filter(m => m.sources.some(s => {
-            const src = sources.find(src => src.id === s.sourceId);
-            return src && src.contentType === contentType;
-          }));
-          return { contents: [{ uri, mimeType: 'application/json', text: JSON.stringify(filtered, null, 2) }] };
-        }
-        if (uri === 'moments://syntheses') {
-          const syntheses = await getSyntheses();
-          return { contents: [{ uri, mimeType: 'application/json', text: JSON.stringify(syntheses, null, 2) }] };
-        }
-        if (uri === 'moments://timeline') {
-          const syntheses = await getSyntheses();
-          const moments = await getMoments();
-          return { contents: [{ uri, mimeType: 'application/json', text: JSON.stringify({ syntheses, moments }, null, 2) }] };
-        }
-        const idMatch = uri.match(/^moments:\/\/id\/([^/]+)$/);
-        if (idMatch) {
-          const id = decodeURIComponent(idMatch[1]);
-          const moment = await getMoment(id);
-          const synthesis = await getSynthesis(id);
-          return { contents: [{ uri, mimeType: 'application/json', text: JSON.stringify(moment || synthesis || null, null, 2) }] };
-        }
-        const childrenMatch = uri.match(/^moments:\/\/id\/([^/]+)\/children$/);
-        if (childrenMatch) {
-          const id = decodeURIComponent(childrenMatch[1]);
-          const children = await getMomentsBySynthesis(id);
-          return { contents: [{ uri, mimeType: 'application/json', text: JSON.stringify(children, null, 2) }] };
-        }
-        throw new McpError(ErrorCode.InvalidParams, `Unknown resource: ${uri}`);
-      }
-    }
-  } catch (error) {
-    throw new McpError(ErrorCode.InternalError, `Failed to read resource: ${error}`);
-  }
-});
-
-// Prompt handlers - provide common workflows
-server.setRequestHandler(ListPromptsRequestSchema, async () => ({
-  prompts: []
-}));
-
-server.setRequestHandler(GetPromptRequestSchema, async () => {
-  throw new McpError(ErrorCode.MethodNotFound, 'No prompts available');
-});
-
-// Error handling
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  process.exit(1);
-});
-
-// Before starting the server, ensure all records have embeddings
-const ensureEmbeddingsOnStartup: () => Promise<void> = async () => {
-  try {
-    const allRecords = await getAllRecords();
-    await ensureAllEmbeddings(allRecords);
-  } catch (err) {
-    // If embeddings can't be initialized, print a warning but continue
-    // (Tool handler will fallback to basic search if needed)
-  }
-};
-
-// Call the function to ensure embeddings on startup
-ensureEmbeddingsOnStartup();
-
-// Start the server
-async function main(): Promise<void> {
-  const transport = new StdioServerTransport();
+const transport = new StdioServerTransport();
+async function main() {
   await server.connect(transport);
-  console.error(`${SERVER_NAME} v${SERVER_VERSION} running on stdio`);
 }
-
-main().catch((error) => {
-  console.error('Server error:', error);
+main().catch((err) => {
+  process.stderr.write(`Server error: ${err instanceof Error ? err.stack : String(err)}\n`);
   process.exit(1);
-}); 
+});
