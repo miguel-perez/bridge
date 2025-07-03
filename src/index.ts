@@ -220,9 +220,9 @@ const captureSchema = z.object({
   file: z.string().optional(),
 });
 
+// Updated frameSchema: only accepts sourceIds
 const frameSchema = z.object({
-  sourceIds: z.array(z.string()).optional(),
-  momentIds: z.array(z.string()).optional(),
+  sourceIds: z.array(z.string()).min(1),
   emoji: z.string(),
   summary: z.string(),
   narrative: z.string().optional(),
@@ -234,10 +234,15 @@ const frameSchema = z.object({
     'directed-momentum',
     'holding-opposites'
   ]).optional().default('moment-of-recognition'),
-}).refine(
-  (data) => Boolean(data.sourceIds) !== Boolean(data.momentIds),
-  { message: "Provide either sourceIds OR momentIds, not both or neither" }
-);
+});
+
+// New weaveSchema: accepts momentIds
+const weaveSchema = z.object({
+  momentIds: z.array(z.string()).min(1),
+  emoji: z.string(),
+  summary: z.string(),
+  narrative: z.string().optional(),
+});
 
 const enhanceSchema = z.object({
   id: z.string(),
@@ -271,19 +276,15 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     },
     {
       name: 'frame',
-      description: 'Frame your experience into a complete moment or synthesis. Pattern type - recognizes how your attention moved (moment-of-recognition, sustained-attention, crossing-threshold, peripheral-awareness, directed-momentum, holding-opposites). Required for both moments and syntheses. See moments://patterns/guide, moments://qualities/guide and moments://examples.',
+      description: 'Frame your experience into a complete moment from one or more sources. Pattern type - recognizes how your attention moved (moment-of-recognition, sustained-attention, crossing-threshold, peripheral-awareness, directed-momentum, holding-opposites). See moments://patterns/guide, moments://qualities/guide and moments://examples.',
       inputSchema: {
         type: 'object',
         properties: {
           sourceIds: { 
             type: 'array', 
             items: { type: 'string' },
-            description: 'Source IDs to frame into a moment (use this OR momentIds)'
-          },
-          momentIds: { 
-            type: 'array', 
-            items: { type: 'string' },
-            description: 'Moment IDs to synthesize into a container moment (use this OR sourceIds)'
+            description: 'Source IDs to frame into a moment',
+            minItems: 1
           },
           emoji: { type: 'string', description: 'Emoji representation' },
           summary: { type: 'string', description: '5-7 word summary' },
@@ -294,7 +295,26 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             default: 'moment-of-recognition'
           }
         },
-        required: ['emoji', 'summary', 'pattern']
+        required: ['sourceIds', 'emoji', 'summary', 'pattern']
+      }
+    },
+    {
+      name: 'weave',
+      description: 'Weave multiple moments together to reveal meta-patterns and deeper understanding. Like a tapestry, individual moments remain visible while creating something larger.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          momentIds: { 
+            type: 'array', 
+            items: { type: 'string' },
+            description: 'Moment IDs to weave together into a larger pattern',
+            minItems: 1
+          },
+          emoji: { type: 'string', description: 'Emoji representation' },
+          summary: { type: 'string', description: '5-7 word summary' },
+          narrative: { type: 'string', description: 'Optional overarching narrative' }
+        },
+        required: ['momentIds', 'emoji', 'summary']
       }
     },
     {
@@ -426,90 +446,81 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'frame': {
         const input = frameSchema.parse(args);
-        if (input.sourceIds) {
-          // Existing moment creation logic
-          const validSources: SourceRecord[] = [];
-          for (let i = 0; i < input.sourceIds.length; i++) {
-            const sourceId = input.sourceIds[i];
-            const source = await getSource(sourceId);
-            if (!source) {
-              throw new McpError(
-                ErrorCode.InvalidParams,
-                `Source not found: ${sourceId}`
-              );
-            }
-            validSources.push(source);
+        // Validate all sources exist
+        const validSources: SourceRecord[] = [];
+        for (const sourceId of input.sourceIds) {
+          const source = await getSource(sourceId);
+          if (!source) {
+            throw new McpError(
+              ErrorCode.InvalidParams,
+              `Source not found: ${sourceId}`
+            );
           }
-          // Create moment record
-          const momentId = generateId('mom');
-          const momentData = {
-            id: momentId,
-            emoji: input.emoji,
-            summary: input.summary,
-            narrative: input.narrative,
-            pattern: input.pattern,
-            sources: input.sourceIds.map((sourceId: string) => ({ sourceId })),
-            created: new Date().toISOString(),
-            when: validSources.find(s => s.when)?.when,
-          };
-          const moment = await saveMoment(momentData);
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `✓ Framed moment: ${moment.emoji} ${moment.summary} (ID: ${moment.id})`
-              },
-              {
-                type: 'text',
-                text: `\nFull record:\n${JSON.stringify(moment, null, 2)}`
-              },
-              {
-                type: 'text',
-                text: '\n✨ Does this capture the lived experience? Consider which qualities feel most alive:\n- Embodied: What your body felt\n- Attentional: Where your focus went\n- Emotional: The feeling atmosphere\n- Spatial: Your sense of place\n- Temporal: How time flowed\n- Relational: Others\' presence\n- Purposive: What you moved toward/away from'
-              }
-            ]
-          };
-        } else if (input.momentIds) {
-          // Synthesis creation logic (from synthesize handler)
-          for (const momentId of input.momentIds) {
-            const moment = await getMoment(momentId);
-            if (!moment) {
-              throw new McpError(
-                ErrorCode.InvalidParams,
-                `Moment not found: ${momentId}`
-              );
-            }
-          }
-          // Require a valid pattern for syntheses (no 'synthesis' allowed)
-          // Create synthesis record
-          const synthesis = await saveSynthesis({
-            id: generateId('syn'),
-            emoji: input.emoji,
-            summary: input.summary,
-            narrative: input.narrative,
-            synthesizedMomentIds: input.momentIds,
-            pattern: input.pattern, // Must be one of the six valid patterns
-            created: new Date().toISOString(),
-          });
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `Created synthesis: ${synthesis.emoji} ${synthesis.summary} (ID: ${synthesis.id})`,
-              },
-              {
-                type: 'text',
-                text: `\nFull record:\n${JSON.stringify(synthesis, null, 2)}`
-              }
-            ],
-          };
-        } else {
-          throw new McpError(
-            ErrorCode.InvalidParams,
-            'You must provide either sourceIds or momentIds.'
-          );
+          validSources.push(source);
         }
-        break;
+        // Create moment record
+        const moment = await saveMoment({
+          id: generateId('mom'),
+          emoji: input.emoji,
+          summary: input.summary,
+          narrative: input.narrative,
+          pattern: input.pattern,
+          sources: input.sourceIds.map(sourceId => ({ sourceId })),
+          created: new Date().toISOString(),
+          when: validSources.find(s => s.when)?.when,
+        });
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `✓ Framed moment: ${moment.emoji} ${moment.summary} (ID: ${moment.id})`
+            },
+            {
+              type: 'text',
+              text: `Full record:\n${JSON.stringify(moment, null, 2)}`
+            },
+            {
+              type: 'text',
+              text: '\n✨ Does this capture the lived experience? Consider which qualities feel most alive:\n- Embodied: What your body felt\n- Attentional: Where your focus went\n- Emotional: The feeling atmosphere\n- Spatial: Your sense of place\n- Temporal: How time flowed\n- Relational: Others\' presence\n- Purposive: What you moved toward/away from'
+            }
+          ]
+        };
+      }
+
+      case 'weave': {
+        const input = weaveSchema.parse(args);
+        // Validate all moments exist
+        for (const momentId of input.momentIds) {
+          const moment = await getMoment(momentId);
+          if (!moment) {
+            throw new McpError(
+              ErrorCode.InvalidParams,
+              `Moment not found: ${momentId}`
+            );
+          }
+        }
+        // Create synthesis record
+        const synthesis = await saveSynthesis({
+          id: generateId('syn'),
+          emoji: input.emoji,
+          summary: input.summary,
+          narrative: input.narrative,
+          synthesizedMomentIds: input.momentIds,
+          pattern: 'synthesis',
+          created: new Date().toISOString(),
+        });
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `✓ Wove moments into: ${synthesis.emoji} ${synthesis.summary} (ID: ${synthesis.id})`
+            },
+            {
+              type: 'text',
+              text: `Full record:\n${JSON.stringify(synthesis, null, 2)}`
+            }
+          ]
+        };
       }
 
       case 'enhance': {
