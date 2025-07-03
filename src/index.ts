@@ -25,7 +25,6 @@ import {
   getRecentMoments,
   getSyntheses,
   getUnframedSources,
-  validateDataIntegrity,
   getMomentsByDateRange,
   searchMoments,
   getMomentsByPattern,
@@ -1092,55 +1091,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               text: getContextualPrompts('critique')
             }
           ]
-        };
-      }
-
-      case 'clear': {
-        const env = process.env.NODE_ENV || process.env.MCP_ENV || 'development';
-        if (env === 'production') {
-          throw new McpError(ErrorCode.InvalidRequest, 'Clear is not available in production');
-        }
-        // No inputSchema validation needed for clear
-        const confirmed = args && args.confirm === true;
-        if (!confirmed) {
-          throw new McpError(ErrorCode.InvalidParams, 'Must confirm to clear data');
-        }
-        // Clear the data file
-        const data = { sources: [], moments: [], syntheses: [] };
-        const fs = await import('fs/promises');
-        const { join, dirname } = await import('path');
-        const { fileURLToPath } = await import('url');
-        const __filename = fileURLToPath(import.meta.url);
-        const __dirname = dirname(__filename);
-        const ENV = process.env.NODE_ENV || process.env.MCP_ENV || 'development';
-        const STORAGE_DIR = join(__dirname, '..', 'data', ENV);
-        const DATA_FILE = join(STORAGE_DIR, 'data.json');
-        await fs.mkdir(STORAGE_DIR, { recursive: true });
-        await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
-        return {
-          content: [{
-            type: 'text',
-            text: `✓ Cleared all data in ${env} environment`
-          }]
-        };
-      }
-
-      case 'status': {
-        const env = process.env.NODE_ENV || process.env.MCP_ENV || 'development';
-        if (env === 'production') {
-          throw new McpError(ErrorCode.InvalidRequest, 'Status is not available in production');
-        }
-        // No inputSchema validation needed for status
-        const stats = await validateDataIntegrity();
-        let message = `System Health Report:\n`;
-        message += `Sources: ${stats.stats.sources}\nMoments: ${stats.stats.moments}\nSyntheses: ${stats.stats.syntheses}`;
-        return {
-          content: [
-            {
-              type: 'text',
-              text: message,
-            },
-          ],
         };
       }
 
