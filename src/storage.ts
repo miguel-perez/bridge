@@ -1,5 +1,5 @@
 import { promises as fs } from 'fs';
-import { join, dirname, resolve, relative } from 'path';
+import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import type { 
   SourceRecord, 
@@ -38,10 +38,28 @@ function sanitize(filename: string): string {
   return filename.replace(/[^a-zA-Z0-9._-]/g, '_');
 }
 
+// Simplified file path validation
+export async function validateFilePath(filePath: string): Promise<boolean> {
+  try {
+    // Check if file exists and is readable
+    await fs.access(filePath, fs.constants.R_OK);
+    // Basic security - no parent directory traversal
+    if (filePath.includes('..')) {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // Store a file in the managed storage directory
 export async function storeFile(sourcePath: string, sourceId: string): Promise<string | null> {
   try {
-    await fs.access(sourcePath);
+    // Validate file
+    if (!await validateFilePath(sourcePath)) {
+      return null;
+    }
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -209,18 +227,6 @@ export async function getMomentsByDateRange(start: Date, end: Date): Promise<Mom
     const when = new Date(m.when || m.created);
     return when >= start && when <= end;
   });
-}
-
-// Add file path validation
-export function validateFilePath(filePath: string, allowedRoots: string[] = []): boolean {
-  const resolvedPath = resolve(filePath);
-  if (allowedRoots.length > 0) {
-    return allowedRoots.some(root => {
-      const relativePath = relative(resolve(root), resolvedPath);
-      return !relativePath.startsWith('..') && !relativePath.startsWith('/');
-    });
-  }
-  return !filePath.includes('..');
 }
 
 // Add data consistency check

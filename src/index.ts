@@ -30,7 +30,8 @@ import {
   searchMoments,
   getMomentsByPattern,
   getMomentsBySynthesis,
-  getSynthesis
+  getSynthesis,
+  validateFilePath
 } from './storage.js';
 import type { SourceRecord, ProcessingLevel } from './types.js';
 
@@ -232,12 +233,38 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
         // For file captures, require content to describe the file
         if (input.file) {
-          if (!input.content || input.content.trim().length < 5) {
+          // Validate file exists and is readable
+          if (!await validateFilePath(input.file)) {
             throw new McpError(
               ErrorCode.InvalidParams,
-              'For file captures, content must describe what the file contains.'
+              `File not found or not readable: ${input.file}`
             );
           }
+          // Create source record
+          const source = await saveSource({
+            id: generateId('src'),
+            content: input.content,
+            contentType: input.contentType,
+            created: new Date().toISOString(),
+            when: input.when,
+            perspective: input.perspective,
+            experiencer: input.experiencer,
+            processing: input.processing as ProcessingLevel,
+            related: input.related,
+            file: input.file,
+          });
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `✓ Captured: "${source.content.substring(0, 50)}${source.content.length > 50 ? '...' : ''}" (ID: ${source.id})`
+              },
+              {
+                type: 'text',
+                text: `\nFull record:\n${JSON.stringify(source, null, 2)}`
+              }
+            ]
+          };
         }
         // Create source record
         const source = await saveSource({
@@ -250,7 +277,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           experiencer: input.experiencer,
           processing: input.processing as ProcessingLevel,
           related: input.related,
-          file: input.file,
         });
         return {
           content: [
