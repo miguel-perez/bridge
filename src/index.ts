@@ -35,9 +35,12 @@ import {
   deleteMoment,
   updateSynthesis,
   deleteSynthesis,
+  getAllRecords,
 } from './storage.js';
+import { ensureAllEmbeddings } from './embeddings.js';
 import type { SourceRecord, ProcessingLevel } from './types.js';
 import { DESIGNER_MOMENT, WRESTLING_MOMENT, DOLPHIN_MOMENT, BLEH_MOMENT, KETAMINE_MOMENT, SHOT_VARIATIONS, QUALITIES_EXAMPLES, TRANSFORMATION_PRINCIPLES, COMMON_PITFALLS } from './tested-moments-data.js';
+import { search as semanticSearch, SearchOptions, getSearchableText } from './search.js';
 
 // Constants
 const SERVER_NAME = 'framed-moments';
@@ -215,10 +218,10 @@ const server = new Server(
 const captureSchema = z.object({
   content: z.string().min(1),
   contentType: z.string().optional().default('text'),
-  perspective: z.string().optional().default('I'),
-  processing: z.string().optional().default('during'),
+  perspective: z.enum(['I', 'we', 'you', 'they']),
+  processing: z.enum(['during', 'right-after', 'long-after', 'crafted']),
   when: z.string().optional(),
-  experiencer: z.string().optional().default('self'),
+  experiencer: z.string(),
   related: z.array(z.string()).optional(),
   file: z.string().optional(),
 });
@@ -415,6 +418,14 @@ function getContextualPrompts(toolName: string, unframedCount?: number): string 
       prompts += '• Frame - combine this reflection with the original source\n';
       prompts += '• Reflect again - if more layers have emerged\n';
       break;
+    case 'remember':
+      prompts += '• Search - use natural language to find relevant memories, patterns, or relationships\n';
+      prompts += '• Filter - refine search results with optional filters\n';
+      prompts += '• Sort - order results by relevance or creation date\n';
+      prompts += '• Group - organize results by type or experiencer\n';
+      prompts += '• Limit - control the number of results returned\n';
+      prompts += '• Context - include full record context in search results\n';
+      break;
     default:
       prompts += '• Capture - record another experience\n';
       prompts += '• Storyboard - review unframed sources\n';
@@ -434,10 +445,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         properties: {
           content: { type: 'string', description: 'The lived moment - try present tense, include what you\'re sensing, feeling, noticing' },
           contentType: { type: 'string', description: 'Type of content (text, voice, image, link)', default: 'text' },
-          perspective: { type: 'string', description: 'Perspective (I, we, you, they)', default: 'I' },
-          processing: { type: 'string', description: 'When captured relative to experience (during, right-after, long-after, crafted)', default: 'during' },
+          perspective: { type: 'string', enum: ['I', 'we', 'you', 'they'], description: 'Perspective (I, we, you, they)' },
+          processing: { type: 'string', enum: ['during', 'right-after', 'long-after', 'crafted'], description: 'When captured relative to experience (during, right-after, long-after, crafted)' },
           when: { type: 'string', description: 'When it happened (ISO timestamp or descriptive)' },
-          experiencer: { type: 'string', description: 'Who experienced this', default: 'self' },
+          experiencer: { type: 'string', description: 'Who experienced this' },
           related: { 
             type: 'array',
             items: { type: 'string' },
@@ -445,7 +456,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           },
           file: { type: 'string', description: 'Path to file (for non-text content)' },
         },
-        required: ['content'],
+        required: ['content', 'perspective', 'processing', 'experiencer'],
       },
     },
     {
@@ -604,6 +615,51 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           rootId: { type: 'string', description: 'Optional: Start from specific moment/synthesis' }
         },
         required: [],
+      },
+    },
+    {
+      name: 'remember',
+      description: 'Semantic search across all captured experiences (sources, moments, syntheses). Use natural language to find relevant memories, patterns, or relationships.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Natural language search query' },
+          mode: {
+            type: 'string',
+            enum: ['similarity', 'temporal', 'relationship'],
+            description: 'Search mode (semantic similarity, temporal, or relationship-based search)',
+          },
+          filters: {
+            type: 'object',
+            description: 'Optional filters (type, experiencer, qualities, etc.)',
+            properties: {
+              type: {
+                type: 'array',
+                items: { type: 'string', enum: ['source', 'moment', 'synthesis'] },
+                description: 'Filter by record type',
+              },
+              experiencer: { type: 'string', description: 'Filter by experiencer' },
+              qualities: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Filter by qualities (for moments)',
+              },
+            },
+          },
+          sort: {
+            type: 'string',
+            enum: ['relevance', 'created', 'when'],
+            description: 'Sort results by this field',
+          },
+          groupBy: {
+            type: 'string',
+            enum: ['type', 'experiencer'],
+            description: 'Group results by this field',
+          },
+          limit: { type: 'number', description: 'Maximum number of results to return' },
+          includeContext: { type: 'boolean', description: 'Include full record context in results' },
+        },
+        required: ['query'],
       },
     },
   ];
@@ -1182,6 +1238,96 @@ shifts, several emotional boundaries, multiple actional completions.`;
         };
       }
 
+      case 'remember': {
+        // Ensure args is always defined and cast properties
+        const safeArgs = args ?? {};
+        const input: SearchOptions = {
+          query: safeArgs.query as string,
+          mode: safeArgs.mode as 'similarity' | 'temporal' | 'relationship' | undefined,
+          filters: safeArgs.filters as Partial<import('./search.js').FilterOptions>,
+          sort: safeArgs.sort as 'relevance' | 'created' | 'when' | undefined,
+          groupBy: safeArgs.groupBy as 'type' | 'experiencer' | undefined,
+          limit: safeArgs.limit as number | undefined,
+          includeContext: safeArgs.includeContext as boolean | undefined,
+        };
+        let results;
+        let errorMsg = '';
+        try {
+          // Try semantic search
+          results = await semanticSearch(input);
+        } catch (err) {
+          // If semantic search fails, fallback to basic text search
+          errorMsg = '⚠️ Semantic search failed (model not loaded or error occurred). Falling back to basic text search.';
+          const allRecords = await getAllRecords();
+          const query = (input.query || '').toLowerCase();
+          results = allRecords.filter(r => getSearchableText(r).toLowerCase().includes(query)).map(record => ({
+            type: record.type,
+            id: record.id,
+            snippet: getSearchableText(record).slice(0, 200),
+            source: record.type === 'source' ? record : undefined,
+            moment: record.type === 'moment' ? record : undefined,
+            synthesis: record.type === 'synthesis' ? record : undefined,
+          }));
+        }
+        if (!results || (Array.isArray(results) && !results.length)) {
+          return {
+            content: [{ type: 'text', text: errorMsg ? errorMsg + '\nNo relevant memories found.' : 'No relevant memories found.' }],
+          };
+        }
+        // Format results for display
+        const content = [];
+        if (errorMsg) {
+          content.push({ type: 'text', text: errorMsg });
+        }
+        content.push({
+          type: 'text',
+          text: `REMEMBER: Top ${Array.isArray(results) ? results.length : (results.groups?.length || 0)} results for "${input.query}":\n`,
+        });
+        if (Array.isArray(results)) {
+          results.forEach((result, idx) => {
+            const header = `#${idx + 1} [${result.type}] (ID: ${result.id})`;
+            const snippet = result.snippet ? `\n${result.snippet}` : '';
+            let extra = '';
+            if (input.includeContext) {
+              if (result.type === 'source' && result.source) {
+                extra = `\nFull Source: ${JSON.stringify(result.source, null, 2)}`;
+              } else if (result.type === 'moment' && result.moment) {
+                extra = `\nFull Moment: ${JSON.stringify(result.moment, null, 2)}`;
+              } else if (result.type === 'synthesis' && result.synthesis) {
+                extra = `\nFull Synthesis: ${JSON.stringify(result.synthesis, null, 2)}`;
+              }
+            }
+            content.push({
+              type: 'text',
+              text: `${header}${snippet}${extra}`,
+            });
+          });
+        } else if (results.groups) {
+          results.groups.forEach((group) => {
+            content.push({ type: 'text', text: `\nGroup: ${group.label} (${group.count})` });
+            group.items.forEach((result, idx) => {
+              const header = `#${idx + 1} [${result.type}] (ID: ${result.id})`;
+              const snippet = result.snippet ? `\n${result.snippet}` : '';
+              let extra = '';
+              if (input.includeContext) {
+                if (result.type === 'source' && result.source) {
+                  extra = `\nFull Source: ${JSON.stringify(result.source, null, 2)}`;
+                } else if (result.type === 'moment' && result.moment) {
+                  extra = `\nFull Moment: ${JSON.stringify(result.moment, null, 2)}`;
+                } else if (result.type === 'synthesis' && result.synthesis) {
+                  extra = `\nFull Synthesis: ${JSON.stringify(result.synthesis, null, 2)}`;
+                }
+              }
+              content.push({
+                type: 'text',
+                text: `${header}${snippet}${extra}`,
+              });
+            });
+          });
+        }
+        return { content };
+      }
+
       default:
         throw new McpError(
           ErrorCode.MethodNotFound,
@@ -1501,6 +1647,20 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
   process.exit(1);
 });
+
+// Before starting the server, ensure all records have embeddings
+const ensureEmbeddingsOnStartup: () => Promise<void> = async () => {
+  try {
+    const allRecords = await getAllRecords();
+    await ensureAllEmbeddings(allRecords);
+  } catch (err) {
+    // If embeddings can't be initialized, print a warning but continue
+    // (Tool handler will fallback to basic search if needed)
+  }
+};
+
+// Call the function to ensure embeddings on startup
+ensureEmbeddingsOnStartup();
 
 // Start the server
 async function main(): Promise<void> {

@@ -6,6 +6,7 @@ import type {
   MomentRecord, 
   SynthesisRecord 
 } from './types.js';
+import { updateRecordEmbedding, removeEmbedding } from './embeddings.js';
 
 // New StorageData interface
 interface StorageData {
@@ -108,6 +109,8 @@ export async function saveSource(source: Omit<SourceRecord, 'type'>): Promise<So
   const data = await readData();
   data.sources.push(record);
   await writeData(data);
+  // NOTE: Embedding update is async and not awaited to avoid slowing down main operations
+  updateRecordEmbedding(record);
   return record;
 }
 
@@ -127,6 +130,8 @@ export async function saveMoment(moment: Omit<MomentRecord, 'type'>): Promise<Mo
   const data = await readData();
   data.moments.push(record);
   await writeData(data);
+  // NOTE: Embedding update is async and not awaited to avoid slowing down main operations
+  updateRecordEmbedding(record);
   return record;
 }
 
@@ -156,6 +161,8 @@ export async function saveSynthesis(synthesis: Omit<SynthesisRecord, 'type'>): P
   const data = await readData();
   data.syntheses.push(record);
   await writeData(data);
+  // NOTE: Embedding update is async and not awaited to avoid slowing down main operations
+  updateRecordEmbedding(record);
   return record;
 }
 
@@ -198,11 +205,13 @@ export async function updateMoment(id: string, updates: Partial<MomentRecord>): 
   if (index === -1) return null;
   data.moments[index] = {
     ...data.moments[index],
-    ...updates,
-    lastModified: new Date().toISOString()
+    ...updates
   };
   await writeData(data);
-  return data.moments[index];
+  const updatedRecord = data.moments[index];
+  // NOTE: Embedding update is async and not awaited to avoid slowing down main operations
+  updateRecordEmbedding(updatedRecord);
+  return updatedRecord;
 }
 
 // Search operations
@@ -257,18 +266,24 @@ export async function deleteSource(id: string): Promise<void> {
   const data = await readData();
   data.sources = data.sources.filter(s => s.id !== id);
   await writeData(data);
+  // NOTE: Embedding removal is async and not awaited to avoid slowing down main operations
+  removeEmbedding(id);
 }
 
 export async function deleteMoment(id: string): Promise<void> {
   const data = await readData();
   data.moments = data.moments.filter(m => m.id !== id);
   await writeData(data);
+  // NOTE: Embedding removal is async and not awaited to avoid slowing down main operations
+  removeEmbedding(id);
 }
 
 export async function deleteSynthesis(id: string): Promise<void> {
   const data = await readData();
   data.syntheses = data.syntheses.filter(s => s.id !== id);
   await writeData(data);
+  // NOTE: Embedding removal is async and not awaited to avoid slowing down main operations
+  removeEmbedding(id);
 }
 
 export async function updateSynthesis(id: string, updates: Partial<SynthesisRecord>): Promise<SynthesisRecord | null> {
@@ -281,4 +296,47 @@ export async function updateSynthesis(id: string, updates: Partial<SynthesisReco
   };
   await writeData(data);
   return data.syntheses[index];
+}
+
+// Helper: Get all records (sources, moments, syntheses) as a single array with type preserved
+export async function getAllRecords(): Promise<Array<SourceRecord | MomentRecord | SynthesisRecord>> {
+  const data = await readData();
+  return [
+    ...data.sources,
+    ...data.moments,
+    ...data.syntheses
+  ];
+}
+
+// Helper: Get any record by ID (search sources, then moments, then syntheses)
+export async function getRecordById(id: string): Promise<SourceRecord | MomentRecord | SynthesisRecord | null> {
+  const data = await readData();
+  const source = data.sources.find(s => s.id === id);
+  if (source) return source;
+  const moment = data.moments.find(m => m.id === id);
+  if (moment) return moment;
+  const synthesis = data.syntheses.find(s => s.id === id);
+  if (synthesis) return synthesis;
+  return null;
+}
+
+// Helper: Extract all searchable text from a record
+export function getSearchableText(record: SourceRecord | MomentRecord | SynthesisRecord): string {
+  if (record.type === 'source') {
+    return record.content;
+  }
+  if (record.type === 'moment') {
+    let text = record.summary || '';
+    if (record.narrative) text += ' ' + record.narrative;
+    if (Array.isArray(record.qualities)) {
+      text += ' ' + record.qualities.map(q => q.manifestation).join(' ');
+    }
+    return text.trim();
+  }
+  if (record.type === 'synthesis') {
+    let text = record.summary || '';
+    if (record.narrative) text += ' ' + record.narrative;
+    return text.trim();
+  }
+  return '';
 } 

@@ -459,3 +459,17 @@ The server stores data in JSON format for human-readable persistence and easy da
 ## License
 
 MIT 
+
+| Field         | Type     | Required? | Description                                                                                 | Default if omitted         |
+|---------------|----------|-----------|---------------------------------------------------------------------------------------------|----------------------------|
+| content       | string   | **Yes**   | The lived moment—try present tense, include what you're sensing, feeling, noticing          | N/A                        |
+| contentType   | string   | No        | Type of content (text, voice, image, link)                                                  | "text"                     |
+| perspective   | string   | **Yes**   | Perspective (I, we, you, they)                                                              | N/A                        |
+| processing    | string   | **Yes**   | When captured relative to experience (during, right-after, long-after, crafted)             | N/A                        |
+| when          | string   | No        | When it happened (ISO timestamp or descriptive)                                             | (none)                     |
+| experiencer   | string   | **Yes**   | Who experienced this                                                                        | N/A                        |
+| related       | string[] | No        | Related source IDs                                                                          | (none)                     |
+| file          | string   | No        | Path to file (for non-text content)                                                         | (none)                     |
+
+**Summary:**  
+You must provide `content`, `perspective`, `processing`, and `experiencer`. All other fields are optional. If you provide a `file`, it must exist and be readable. The tool's response will indicate any defaults it used for optional fields. 
