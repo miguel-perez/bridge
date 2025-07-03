@@ -72,24 +72,20 @@ const captureSchema = z.object({
 });
 
 const frameSchema = z.object({
-  sourceIds: z.array(z.string()),
+  sourceIds: z.array(z.string()).optional(),
+  momentIds: z.array(z.string()).optional(),
   emoji: z.string(),
   summary: z.string(),
   narrative: z.string().optional(),
   pattern: z.string().optional(),
-});
+}).refine(
+  (data) => Boolean(data.sourceIds) !== Boolean(data.momentIds),
+  { message: "Provide either sourceIds OR momentIds, not both or neither" }
+);
 
 const enhanceSchema = z.object({
   id: z.string(),
   updates: z.record(z.any()),
-});
-
-const synthesizeSchema = z.object({
-  momentIds: z.array(z.string()),
-  emoji: z.string(),
-  summary: z.string(),
-  narrative: z.string().optional(),
-  pattern: z.string().optional().default('synthesis'),
 });
 
 // Tool handlers
@@ -119,22 +115,30 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     },
     {
       name: 'frame',
-      description: 'Create a moment from your captures',
+      description: 'Create a moment from sources OR a synthesis from moments. Patterns help identify natural boundaries - like a storyboard artist choosing where to cut. See moments://patterns/guide for pattern selection.',
       inputSchema: {
         type: 'object',
         properties: {
           sourceIds: { 
             type: 'array', 
             items: { type: 'string' },
-            description: 'Source IDs to frame into a moment'
+            description: 'Source IDs to frame into a moment (use this OR momentIds)'
+          },
+          momentIds: { 
+            type: 'array', 
+            items: { type: 'string' },
+            description: 'Moment IDs to synthesize into a container moment (use this OR sourceIds)'
           },
           emoji: { type: 'string', description: 'Emoji representation' },
           summary: { type: 'string', description: '5-7 word summary' },
-          narrative: { type: 'string', description: 'Full experiential narrative' },
-          pattern: { type: 'string', description: 'Frame pattern type' },
+          narrative: { type: 'string', description: 'Full experiential narrative (optional)' },
+          pattern: { 
+            type: 'string', 
+            description: 'Pattern type - helps identify where this moment naturally starts/ends. E.g., "moment-of-recognition" for insights, "sustained-attention" for duration, "crossing-threshold" for transitions. Defaults to "synthesis" when using momentIds.'
+          }
         },
-        required: ['sourceIds', 'emoji', 'summary'],
-      },
+        required: ['emoji', 'summary']
+      }
     },
     {
       name: 'enhance',
@@ -150,25 +154,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           },
         },
         required: ['id', 'updates'],
-      },
-    },
-    {
-      name: 'synthesize',
-      description: 'Create a container moment holding related moments',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          momentIds: { 
-            type: 'array', 
-            items: { type: 'string' },
-            description: 'Moments to group together'
-          },
-          emoji: { type: 'string', description: 'Emoji for the synthesis' },
-          summary: { type: 'string', description: '5-7 words for the synthesis' },
-          narrative: { type: 'string', description: 'Optional overarching narrative' },
-          pattern: { type: 'string', description: 'Pattern type', default: 'synthesis' },
-        },
-        required: ['momentIds', 'emoji', 'summary'],
       },
     }
   ];
@@ -231,44 +216,85 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'frame': {
         const input = frameSchema.parse(args);
-        // Verify all sources exist
-        const validSources: SourceRecord[] = [];
-        for (let i = 0; i < input.sourceIds.length; i++) {
-          const sourceId = input.sourceIds[i];
-          const source = await getSource(sourceId);
-          if (!source) {
-            throw new McpError(
-              ErrorCode.InvalidParams,
-              `Source not found: ${sourceId}`
-            );
-          }
-          validSources.push(source);
-        }
-        // Create moment record
-        const momentId = generateId('mom');
-        const momentData = {
-          id: momentId,
-          emoji: input.emoji,
-          summary: input.summary,
-          narrative: input.narrative,
-          pattern: input.pattern,
-          sources: input.sourceIds.map((sourceId: string) => ({ sourceId })),
-          created: new Date().toISOString(),
-          when: validSources.find(s => s.when)?.when,
-        };
-        const moment = await saveMoment(momentData);
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `✓ Framed moment: ${moment.emoji} ${moment.summary} (ID: ${moment.id})`
-            },
-            {
-              type: 'text',
-              text: `\nFull record:\n${JSON.stringify(moment, null, 2)}`
+        if (input.sourceIds) {
+          // Existing moment creation logic
+          const validSources: SourceRecord[] = [];
+          for (let i = 0; i < input.sourceIds.length; i++) {
+            const sourceId = input.sourceIds[i];
+            const source = await getSource(sourceId);
+            if (!source) {
+              throw new McpError(
+                ErrorCode.InvalidParams,
+                `Source not found: ${sourceId}`
+              );
             }
-          ]
-        };
+            validSources.push(source);
+          }
+          // Create moment record
+          const momentId = generateId('mom');
+          const momentData = {
+            id: momentId,
+            emoji: input.emoji,
+            summary: input.summary,
+            narrative: input.narrative,
+            pattern: input.pattern,
+            sources: input.sourceIds.map((sourceId: string) => ({ sourceId })),
+            created: new Date().toISOString(),
+            when: validSources.find(s => s.when)?.when,
+          };
+          const moment = await saveMoment(momentData);
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `✓ Framed moment: ${moment.emoji} ${moment.summary} (ID: ${moment.id})`
+              },
+              {
+                type: 'text',
+                text: `\nFull record:\n${JSON.stringify(moment, null, 2)}`
+              }
+            ]
+          };
+        } else if (input.momentIds) {
+          // Synthesis creation logic (from synthesize handler)
+          for (const momentId of input.momentIds) {
+            const moment = await getMoment(momentId);
+            if (!moment) {
+              throw new McpError(
+                ErrorCode.InvalidParams,
+                `Moment not found: ${momentId}`
+              );
+            }
+          }
+          // Create synthesis record
+          const synthesis = await saveSynthesis({
+            id: generateId('syn'),
+            emoji: input.emoji,
+            summary: input.summary,
+            narrative: input.narrative,
+            synthesizedMomentIds: input.momentIds,
+            pattern: input.pattern || 'synthesis',
+            created: new Date().toISOString(),
+          });
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Created synthesis: ${synthesis.emoji} ${synthesis.summary} (ID: ${synthesis.id})`,
+              },
+              {
+                type: 'text',
+                text: `\nFull record:\n${JSON.stringify(synthesis, null, 2)}`
+              }
+            ],
+          };
+        } else {
+          throw new McpError(
+            ErrorCode.InvalidParams,
+            'You must provide either sourceIds or momentIds.'
+          );
+        }
+        break;
       }
 
       case 'enhance': {
@@ -303,45 +329,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           ErrorCode.InvalidParams,
           `No source or moment found with ID: ${input.id}`
         );
-      }
-
-      case 'synthesize': {
-        const input = synthesizeSchema.parse(args);
-        
-        // Verify all moments exist
-        for (const momentId of input.momentIds) {
-          const moment = await getMoment(momentId);
-          if (!moment) {
-            throw new McpError(
-              ErrorCode.InvalidParams,
-              `Moment not found: ${momentId}`
-            );
-          }
-        }
-        
-        // Create synthesis record
-        const synthesis = await saveSynthesis({
-          id: generateId('syn'),
-          emoji: input.emoji,
-          summary: input.summary,
-          narrative: input.narrative,
-          synthesizedMomentIds: input.momentIds,
-          pattern: input.pattern,
-          created: new Date().toISOString(),
-        });
-        
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Created synthesis: ${synthesis.emoji} ${synthesis.summary} (ID: ${synthesis.id})`,
-            },
-            {
-              type: 'text',
-              text: `\nFull record:\n${JSON.stringify(synthesis, null, 2)}`
-            }
-          ],
-        };
       }
 
       case 'clear': {
