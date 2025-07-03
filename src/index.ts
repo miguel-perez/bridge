@@ -43,7 +43,7 @@ import { DESIGNER_MOMENT, WRESTLING_MOMENT, DOLPHIN_MOMENT, BLEH_MOMENT, KETAMIN
 import { search as semanticSearch, SearchOptions, getSearchableText } from './search.js';
 
 // Constants
-const SERVER_NAME = 'framed-moments';
+const SERVER_NAME = 'captain';
 const SERVER_VERSION = '0.1.0';
 
 // Pattern documentation constant
