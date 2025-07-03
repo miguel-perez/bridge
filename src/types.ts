@@ -71,7 +71,7 @@ export interface Synthesis {
 }
 
 // Storage record types
-export type RecordType = "source" | "moment" | "synthesis" | "session";
+export type RecordType = "source" | "moment" | "synthesis";
 
 export interface BaseRecord {
   type: RecordType;
@@ -92,13 +92,4 @@ export interface SynthesisRecord extends BaseRecord, Synthesis {
   type: "synthesis";
 }
 
-export interface SessionRecord extends BaseRecord {
-  type: "session";
-  started: string;
-  ended?: string;
-  captureCount: number;
-  frameCount: number;
-  intention?: string;
-}
-
-export type StorageRecord = SourceRecord | MomentRecord | SynthesisRecord | SessionRecord; 
+export type StorageRecord = SourceRecord | MomentRecord | SynthesisRecord; 

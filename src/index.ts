@@ -32,9 +32,9 @@ import {
   getMomentsByPattern,
   getMomentsBySynthesis,
   getSynthesis,
-  saveSession,
   getLatestRecord,
-  storeFile
+  storeFile,
+  writeData
 } from './storage.js';
 import type { SourceRecord, ProcessingLevel } from './types.js';
 
@@ -60,94 +60,35 @@ When helping frame moments:
 const SERVER_NAME = 'framed-moments';
 const SERVER_VERSION = '0.1.0';
 
-// In-memory session tracker
-let currentSession: {
-  id: string;
-  started: string;
-  ended?: string;
-  intention?: string;
-  captures: string[];
-  moments: string[];
-} | null = null;
-
-// In-memory state for guided_capture (single user/session for now)
-let guidedCaptureState: {
-  step: number;
-  answers: Record<string, string>;
-} | null = null;
-
-// In-memory state for guided_frame (single user/session for now)
-interface GuidedFrameState {
-  step: number;
-  answers: Record<string, string | number | boolean | undefined>;
-}
-let guidedFrameState: GuidedFrameState | null = null;
-
-// In-memory state for guided_enhance (single user/session for now)
-interface GuidedEnhanceState {
-  step: number;
-  momentId?: string;
-  fields?: string[];
-  currentFieldIndex?: number;
-  updates: Record<string, unknown>;
-  withAI?: boolean;
-}
-let guidedEnhanceState: GuidedEnhanceState | null = null;
-
-function startSession(intention?: string): void {
-  currentSession = {
-    id: generateId('ses'),
-    started: new Date().toISOString(),
-    intention,
-    captures: [],
-    moments: [],
-  };
-}
-
-function endSession(): void {
-  if (currentSession) {
-    currentSession.ended = new Date().toISOString();
+// Create server instance
+const server = new Server(
+  {
+    name: SERVER_NAME,
+    version: SERVER_VERSION,
+  },
+  {
+    capabilities: {
+      tools: {
+        listChanged: false  // We don't dynamically change tools
+      },
+      resources: {
+        listChanged: false  // We don't dynamically change resources
+      },
+      prompts: {
+        listChanged: false  // We don't dynamically change prompts
+      },
+      sampling: {}, // Enable sampling capability for AI integration
+    },
   }
-}
+);
 
-function trackCapture(id: string): void {
-  if (currentSession) {
-    currentSession.captures.push(id);
-  }
-}
-
-function trackMoment(id: string): void {
-  if (currentSession) {
-    currentSession.moments.push(id);
-  }
-}
-
-// Tool input schemas
-const allowedContentTypes = ['text', 'voice', 'image', 'link'];
-const allowedPerspectives = ['I', 'we', 'you', 'they'];
-const allowedProcessing = ['during', 'right-after', 'long-after', 'crafted'];
-
+// Add schema definitions for tool input validation
 const captureSchema = z.object({
-  content: z.string().min(1, { message: 'Content is required.' }).refine(
-    val => val.trim().length > 0,
-    { message: 'Content cannot be empty or just whitespace.' }
-  ),
-  contentType: z.string().optional().default('text').refine(
-    val => allowedContentTypes.includes(val),
-    { message: `contentType must be one of: ${allowedContentTypes.join(', ')}` }
-  ),
-  perspective: z.string().optional().default('I').refine(
-    val => allowedPerspectives.includes(val),
-    { message: `perspective must be one of: ${allowedPerspectives.join(', ')}` }
-  ),
-  processing: z.string().optional().default('during').refine(
-    val => allowedProcessing.includes(val),
-    { message: `processing must be one of: ${allowedProcessing.join(', ')}` }
-  ),
-  when: z.string().optional().refine(
-    val => !val || !isNaN(Date.parse(val)),
-    { message: 'when must be a valid date string (ISO or YYYY-MM-DD)' }
-  ),
+  content: z.string().min(1),
+  contentType: z.string().optional().default('text'),
+  perspective: z.string().optional().default('I'),
+  processing: z.string().optional().default('during'),
+  when: z.string().optional(),
   experiencer: z.string().optional().default('self'),
   related: z.array(z.string()).optional(),
   file: z.string().optional(),
@@ -176,12 +117,10 @@ const synthesizeSchema = z.object({
   pattern: z.string().optional().default('synthesis'),
 });
 
-// Add diagnostic tool for system health
 const statusSchema = z.object({
   verbose: z.boolean().optional().default(false),
 });
 
-// Zod schema for MCP sampling response
 const SamplingResponseSchema = z.object({
   model: z.string(),
   stopReason: z.string().optional(),
@@ -192,31 +131,10 @@ const SamplingResponseSchema = z.object({
   })
 });
 
-// Create server instance
-const server = new Server(
-  {
-    name: SERVER_NAME,
-    version: SERVER_VERSION,
-  },
-  {
-    capabilities: {
-      tools: {
-        listChanged: false  // We don't dynamically change tools
-      },
-      resources: {
-        listChanged: false  // We don't dynamically change resources
-      },
-      prompts: {
-        listChanged: false  // We don't dynamically change prompts
-      },
-      sampling: {}, // Enable sampling capability for AI integration
-    },
-  }
-);
-
 // Tool handlers
-server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: [
+server.setRequestHandler(ListToolsRequestSchema, async () => {
+  const env = process.env.NODE_ENV || process.env.MCP_ENV || 'development';
+  const tools = [
     {
       name: 'capture',
       description: 'Save an experience, thought, or feeling',
@@ -294,10 +212,27 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         },
         required: ['momentIds', 'emoji', 'summary'],
       },
-    },
-    {
+    }
+  ];
+  if (env !== 'production') {
+    tools.push({
+      name: 'clear',
+      description: 'Clear all data (only available in development/test)',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          confirm: { 
+            type: 'boolean', 
+            description: 'Confirm you want to clear all data',
+            default: false
+          }
+        },
+        required: ['confirm']
+      }
+    });
+    tools.push({
       name: 'status',
-      description: 'Check system health and data integrity',
+      description: 'Check system health and data counts (only available in development/test)',
       inputSchema: {
         type: 'object',
         properties: {
@@ -305,9 +240,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         },
         required: [],
       },
-    },
-  ],
-}));
+    });
+  }
+  return { tools };
+});
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
@@ -360,7 +296,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           related: input.related,
           file: storedFilePath,
         });
-        trackCapture(source.id);
         return {
           content: [
             {
@@ -394,12 +329,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           summary: input.summary,
           narrative: input.narrative,
           pattern: input.pattern,
-          sources: input.sourceIds.map(sourceId => ({ sourceId })),
+          sources: input.sourceIds.map((sourceId: string) => ({ sourceId })),
           created: new Date().toISOString(),
           when: validSources.find(s => s.when)?.when,
         };
         const moment = await saveMoment(momentData);
-        trackMoment(moment.id);
         // AI integration for framing
         if (input.withAI) {
           const progressToken = generateId('progress');
@@ -630,7 +564,29 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      case 'clear': {
+        const env = process.env.NODE_ENV || process.env.MCP_ENV || 'development';
+        if (env === 'production') {
+          throw new McpError(ErrorCode.InvalidRequest, 'Clear is not available in production');
+        }
+        const input = z.object({ confirm: z.boolean() }).parse(args);
+        if (!input.confirm) {
+          throw new McpError(ErrorCode.InvalidParams, 'Must confirm to clear data');
+        }
+        await writeData({ sources: [], moments: [], syntheses: [] });
+        return {
+          content: [{
+            type: 'text',
+            text: `✓ Cleared all data in ${env} environment`
+          }]
+        };
+      }
+
       case 'status': {
+        const env = process.env.NODE_ENV || process.env.MCP_ENV || 'development';
+        if (env === 'production') {
+          throw new McpError(ErrorCode.InvalidRequest, 'Status is not available in production');
+        }
         const input = statusSchema.parse(args);
         const integrity = await validateDataIntegrity();
         
@@ -653,155 +609,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             {
               type: 'text',
               text: message,
-            },
-          ],
-        };
-      }
-
-      case 'guided_enhance': {
-        // Multi-step, stateful guided enhance prompt
-        if (!guidedEnhanceState) {
-          guidedEnhanceState = { step: 0, updates: {} };
-        }
-        // Step 0: Ask for moment/source ID
-        if (guidedEnhanceState.step === 0) {
-          if (args && typeof args.answer === 'string' && args.answer.trim()) {
-            guidedEnhanceState.momentId = args.answer.trim();
-            guidedEnhanceState.step++;
-          } else {
-            return {
-              description: 'Guided enhancement: select moment/source',
-              messages: [
-                {
-                  role: 'assistant',
-                  content: { type: 'text', text: 'Enter the ID of the moment or source you want to enhance.' },
-                },
-              ],
-            };
-          }
-        }
-        // Step 1: Ask which fields to enhance
-        if (guidedEnhanceState.step === 1) {
-          if (args && typeof args.answer === 'string' && args.answer.trim()) {
-            guidedEnhanceState.fields = args.answer.split(',').map((f: string) => f.trim()).filter(Boolean);
-            guidedEnhanceState.currentFieldIndex = 0;
-            guidedEnhanceState.step++;
-          } else {
-            return {
-              description: 'Guided enhancement: choose fields',
-              messages: [
-                {
-                  role: 'assistant',
-                  content: { type: 'text', text: 'Which fields would you like to enhance? (e.g., narrative, summary, pattern, qualities) List as comma-separated values.' },
-                },
-              ],
-            };
-          }
-        }
-        // Step 2: For each field, ask for new value
-        if (guidedEnhanceState.step === 2 && guidedEnhanceState.fields && guidedEnhanceState.currentFieldIndex !== undefined) {
-          const fields = guidedEnhanceState.fields;
-          const idx = guidedEnhanceState.currentFieldIndex;
-          const field = fields[idx];
-          if (args && typeof args.answer === 'string') {
-            if (args.answer.toLowerCase() !== 'skip') {
-              guidedEnhanceState.updates[field] = args.answer;
-            }
-            guidedEnhanceState.currentFieldIndex!++;
-          }
-          // If more fields, ask next
-          if (guidedEnhanceState.currentFieldIndex! < fields.length) {
-            const nextField = fields[guidedEnhanceState.currentFieldIndex!];
-            return {
-              description: 'Guided enhancement: field update',
-              messages: [
-                {
-                  role: 'assistant',
-                  content: { type: 'text', text: `Enter new value for "${nextField}" (or type 'skip'):` },
-                },
-              ],
-            };
-          } else {
-            guidedEnhanceState.step++;
-          }
-        }
-        // Step 3: Offer AI assistance
-        if (guidedEnhanceState.step === 3) {
-          if (args && typeof args.answer === 'string') {
-            guidedEnhanceState.withAI = /^y(es)?$/i.test(args.answer);
-            guidedEnhanceState.step++;
-          } else {
-            return {
-              description: 'Guided enhancement: AI assistance',
-              messages: [
-                {
-                  role: 'assistant',
-                  content: { type: 'text', text: 'Would you like AI suggestions for enhancement? (yes/no, default: no)' },
-                },
-              ],
-            };
-          }
-        }
-        // Step 4: Confirm and save
-        if (guidedEnhanceState.step === 4) {
-          if (args && typeof args.answer === 'string' && args.answer.toLowerCase().startsWith('y')) {
-            // Call enhance tool
-            const input: z.infer<typeof enhanceSchema> = {
-              id: guidedEnhanceState.momentId!,
-              updates: guidedEnhanceState.updates,
-              withAI: guidedEnhanceState.withAI === true,
-            };
-            // Remove undefined/empty fields
-            Object.keys(input.updates).forEach(k => (input.updates[k] === undefined || input.updates[k] === '') && delete input.updates[k]);
-            // Use the correct method signature for server.request
-            const result = await server.request(
-              { method: 'callTool', params: { name: 'enhance', arguments: input } },
-              z.object({ content: z.array(z.object({ type: z.string(), text: z.string() })), isError: z.boolean().optional(), meta: z.any().optional() }),
-              undefined
-            );
-            guidedEnhanceState = null;
-            return {
-              description: 'Guided enhancement complete',
-              messages: [
-                {
-                  role: 'assistant',
-                  content: { type: 'text', text: result.content[0].text },
-                },
-              ],
-            };
-          } else if (args && typeof args.answer === 'string' && args.answer.toLowerCase().startsWith('n')) {
-            guidedEnhanceState = null;
-            return {
-              description: 'Guided enhancement cancelled',
-              messages: [
-                {
-                  role: 'assistant',
-                  content: { type: 'text', text: 'Enhancement cancelled.' },
-                },
-              ],
-            };
-          } else {
-            // Show summary and ask for confirmation
-            const summary = Object.entries(guidedEnhanceState.updates).map(([k, v]) => `${k}: ${v}`).join('\n');
-            return {
-              description: 'Guided enhancement: confirm',
-              messages: [
-                {
-                  role: 'assistant',
-                  content: { type: 'text', text: `You are about to enhance ${guidedEnhanceState.momentId} with:\n${summary}\nProceed? (yes/no)` },
-                },
-              ],
-            };
-          }
-        }
-        // Should not reach here
-        guidedEnhanceState = null;
-        return {
-          description: 'Guided enhancement error',
-          messages: [
-            {
-              role: 'assistant',
-              content: { type: 'text', text: 'Something went wrong in the guided enhance flow.' },
             },
           ],
         };
@@ -1051,335 +858,11 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
 
 // Prompt handlers - provide common workflows
 server.setRequestHandler(ListPromptsRequestSchema, async () => ({
-  prompts: [
-    {
-      name: 'capture-moment',
-      description: 'Help capture a meaningful moment of experience',
-      arguments: [
-        { name: 'experience', description: 'Describe the experience you want to capture', required: true },
-        { name: 'context', description: 'Additional context about when/where this happened', required: false },
-      ],
-    },
-    {
-      name: 'frame-sources',
-      description: 'Help frame captured sources into a meaningful moment',
-      arguments: [
-        { name: 'sourceIds', description: 'Comma-separated source IDs to frame together', required: true },
-      ],
-    },
-    {
-      name: 'begin_reflection',
-      description: 'Open a reflective session',
-      arguments: [
-        { name: 'intention', description: 'What brings you here?', required: false },
-      ],
-    },
-    {
-      name: 'close_reflection',
-      description: 'Close session and review what emerged',
-      arguments: [],
-    },
-    {
-      name: 'guided_capture',
-      description: 'Capture an experience with gentle guidance',
-      arguments: [
-        { name: 'experience_type', description: 'memory, feeling, observation', required: false },
-      ],
-    },
-    {
-      name: 'guided_frame',
-      description: 'Frame moments from your captures',
-      arguments: [
-        { name: 'source_hint', description: 'Which capture(s) to frame', required: false },
-      ],
-    },
-    {
-      name: 'review_captures',
-      description: 'Review your unframed captures',
-      arguments: [],
-    },
-  ],
+  prompts: []
 }));
 
-server.setRequestHandler(GetPromptRequestSchema, async (request) => {
-  const { name, arguments: args } = request.params;
-
-  switch (name) {
-    case 'capture-moment': {
-      const experience = args?.experience || '[experience description]';
-      const context = args?.context || '';
-      
-      return {
-        description: 'Guided prompt for capturing experiential moments',
-        messages: [
-          {
-            role: 'user',
-            content: {
-              type: 'text',
-              text: `Help me capture this moment of experience:
-
-Experience: ${experience}
-${context ? `Context: ${context}` : ''}
-
-Guide me through capturing this as a source, then suggest how to frame it into a moment. Focus on:
-- The embodied, felt sense of this experience
-- What was most alive or present in this moment
-- The experiential qualities that stood out
-- How to preserve the authentic voice and immediacy
-
-Use the capture tool to save this, then suggest framing options.`,
-            },
-          },
-        ],
-      };
-    }
-    
-    case 'frame-sources': {
-      const sourceIds = args?.sourceIds || '';
-      
-      return {
-        description: 'Guided prompt for framing sources into moments',
-        messages: [
-          {
-            role: 'user',
-            content: {
-              type: 'text',
-              text: `Help me frame these sources into a meaningful moment:
-
-Source IDs: ${sourceIds}
-
-First, let me see these sources, then help me:
-- Identify the unified experiential thread connecting them
-- Choose an appropriate emoji and 5-7 word summary
-- Craft a first-person narrative that captures the experiential wholeness
-- Suggest an appropriate frame pattern if one emerges
-
-Use the frame tool when we've crafted something that feels right.`,
-            },
-          },
-        ],
-      };
-    }
-    
-    case 'begin_reflection': {
-      const intention = args?.intention || '';
-      startSession(intention);
-      return {
-        description: 'Begin a new reflective session',
-        messages: [
-          {
-            role: 'assistant',
-            content: {
-              type: 'text',
-              text: `Welcome to your reflection session.${intention ? `\nIntention: ${intention}` : ''}\nWhat would you like to explore or process today?`,
-            },
-          },
-        ],
-      };
-    }
-    case 'close_reflection': {
-      endSession();
-      let summary = 'Session closed.';
-      if (currentSession) {
-        // Persist session
-        await saveSession({
-          id: currentSession.id,
-          started: currentSession.started,
-          ended: currentSession.ended,
-          intention: currentSession.intention,
-          captureCount: currentSession.captures.length,
-          frameCount: currentSession.moments.length,
-        });
-        // Find unframed captures
-        const unframed = currentSession.captures.filter(
-          id => !currentSession!.moments.some(
-            mId => mId === id
-          )
-        );
-        summary = `Session closed.\nCaptures: ${currentSession.captures.length}\nMoments: ${currentSession.moments.length}`;
-        if (unframed.length > 0) {
-          summary += `\nUnframed captures: ${unframed.join(', ')}`;
-          summary += `\nWould you like to review or frame these?`;
-        }
-        currentSession = null;
-      }
-      return {
-        description: 'Close the session and review what emerged',
-        messages: [
-          {
-            role: 'assistant',
-            content: {
-              type: 'text',
-              text: summary,
-            },
-          },
-        ],
-      };
-    }
-    case 'guided_capture': {
-      // Initialize state if not present
-      if (!guidedCaptureState) {
-        guidedCaptureState = { step: 0, answers: {} };
-      }
-      const steps = [
-        { key: 'experience_type', question: 'What type of experience is this? (memory, feeling, observation, etc.)' },
-        { key: 'description', question: 'Describe what happened, in your own words.' },
-        { key: 'when', question: 'When did this happen? (date or time, or "now")' },
-        { key: 'where', question: 'Where did it happen?' },
-        { key: 'who', question: 'Who was involved? (optional)' },
-        { key: 'mood', question: 'What was your mood or feeling in the moment? (optional)' },
-        { key: 'body', question: 'What was happening in your body? (optional)' },
-        { key: 'attention', question: 'Where was your attention focused? (optional)' },
-        { key: 'file', question: 'If you want to attach a file (voice, image), provide the path or say "skip".' },
-      ];
-      // If user provided an answer, store it
-      if (args && args.answer !== undefined && guidedCaptureState.step > 0) {
-        const prevKey = steps[guidedCaptureState.step - 1].key;
-        guidedCaptureState.answers[prevKey] = args.answer;
-      }
-      // If all steps complete, call capture tool
-      if (guidedCaptureState.step >= steps.length) {
-        // Build capture input
-        const input: {
-          content: string;
-          contentType: string;
-          perspective: string;
-          processing: ProcessingLevel;
-          when?: string;
-          experiencer: string;
-          file?: string;
-        } = {
-          content: guidedCaptureState.answers['description'] || '',
-          contentType: 'text',
-          perspective: 'I',
-          processing: 'during' as ProcessingLevel,
-          when: guidedCaptureState.answers['when'] as string,
-          experiencer: (guidedCaptureState.answers['who'] as string) || 'self',
-          file: guidedCaptureState.answers['file'] && guidedCaptureState.answers['file'] !== 'skip' ? (guidedCaptureState.answers['file'] as string) : undefined,
-        };
-        // Call capture tool
-        const source = await saveSource({
-          id: generateId('src'),
-          ...input,
-          created: new Date().toISOString(),
-        });
-        trackCapture(source.id);
-        const summary = `Captured: "${input.content.substring(0, 50)}${input.content.length > 50 ? '...' : ''}" (ID: ${source.id})`;
-        guidedCaptureState = null;
-        return {
-          description: 'Guided capture complete',
-          messages: [
-            {
-              role: 'assistant',
-              content: { type: 'text', text: summary },
-            },
-          ],
-        };
-      }
-      // Ask next question
-      const currentStep = steps[guidedCaptureState.step];
-      guidedCaptureState.step++;
-      return {
-        description: 'Guided capture of an experience',
-        messages: [
-          {
-            role: 'assistant',
-            content: { type: 'text', text: currentStep.question },
-          },
-        ],
-      };
-    }
-    case 'guided_frame': {
-      // Multi-step, stateful guided frame prompt
-      if (!guidedFrameState) {
-        guidedFrameState = { step: 0, answers: {} };
-      }
-      const steps = [
-        { key: 'sourceIds', question: 'Which capture(s) would you like to frame? (comma-separated IDs)' },
-        { key: 'emoji', question: 'Choose an emoji to represent this moment.' },
-        { key: 'summary', question: 'Write a 5-7 word summary for this moment.' },
-        { key: 'narrative', question: 'Optionally, write a full narrative (or say "skip").' },
-        { key: 'pattern', question: 'Optionally, choose a frame pattern (or say "skip").' },
-        { key: 'withAI', question: 'Would you like AI assistance? (yes/no, default: no)' },
-      ];
-      // If user provided an answer, store it
-      if (args && args.answer !== undefined && guidedFrameState.step > 0) {
-        const prevKey = steps[guidedFrameState.step - 1].key;
-        guidedFrameState.answers[prevKey] = args.answer;
-      }
-      // If all steps complete, call frame tool
-      if (guidedFrameState.step >= steps.length) {
-        // Build frame input
-        const inputValidated = frameSchema.parse(guidedFrameState.answers) as z.infer<typeof frameSchema>;
-        // Verify all sources exist
-        const validSources: SourceRecord[] = [];
-        for (let i = 0; i < inputValidated.sourceIds.length; i++) {
-          const sourceId = inputValidated.sourceIds[i];
-          const source = await getSource(sourceId);
-          if (!source) {
-            guidedFrameState = null;
-            throw new McpError(
-              ErrorCode.InvalidParams,
-              `Source not found: ${sourceId}`
-            );
-          }
-          validSources.push(source);
-        }
-        // Create moment record
-        const momentId = generateId('mom');
-        const momentData = {
-          id: momentId,
-          emoji: inputValidated.emoji,
-          summary: inputValidated.summary,
-          narrative: inputValidated.narrative,
-          pattern: inputValidated.pattern,
-          sources: inputValidated.sourceIds.map((sourceId: string) => ({ sourceId })),
-          created: new Date().toISOString(),
-          when: validSources.find(s => s.when)?.when,
-        };
-        const moment = await saveMoment(momentData);
-        trackMoment(moment.id);
-        guidedFrameState = null;
-        return {
-          description: 'Guided frame complete',
-          messages: [
-            {
-              role: 'assistant',
-              content: { type: 'text', text: `Framed moment: ${moment.emoji} ${moment.summary} (ID: ${moment.id})` },
-            },
-          ],
-        };
-      }
-      // Ask next question
-      const currentStep = steps[guidedFrameState.step];
-      guidedFrameState.step++;
-      return {
-        description: 'Guided framing of a moment',
-        messages: [
-          {
-            role: 'assistant',
-            content: { type: 'text', text: currentStep.question },
-          },
-        ],
-      };
-    }
-    case 'review_captures': {
-      return {
-        description: 'Review your unframed captures',
-        messages: [
-          {
-            role: 'assistant',
-            content: {
-              type: 'text',
-              text: `Here are your unframed captures. Which would you like to frame or review?`,
-            },
-          },
-        ],
-      };
-    }
-    default:
-      throw new McpError(ErrorCode.InvalidParams, `Unknown prompt: ${name}`);
-  }
+server.setRequestHandler(GetPromptRequestSchema, async () => {
+  throw new McpError(ErrorCode.MethodNotFound, 'No prompts available');
 });
 
 // Error handling
