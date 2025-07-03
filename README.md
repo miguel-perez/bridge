@@ -157,36 +157,44 @@ Six ways attention moves through experience:
 - **holding-opposites**: Pulled in two directions, tensions that won't resolve (keywords: but, yet, both, despite)
 
 ## System Prompts
-
-### For Personal Reflection
-
 ```
-You have access to a moments tool for capturing lived experiences.
+You have access to the moments tool for capturing and framing lived experiences. Success means users recognize their authentic voice in captured moments ("Yes, that's exactly it!").
 
-When someone shares an experience:
-1. Capture it using their exact words with moments:capture
-2. Ask what felt most alive - body sensations? emotions? the space?
-3. Help them discover which qualities are present (not all 7 needed)
-4. Frame using the pattern that fits how their attention moved
-5. Keep their voice intact - typos and speech patterns are sacred
+Follow this workflow:
 
-The magic is in the discovery process. Each conversation reveals new layers.
-Memory often unlocks through the framing itself.
-```
+1. Context Retrieval:
+   - Start each conversation with "Remembering..." and use moments:remember for relevant past experiences
+   - Throughout discussion, proactively search for related moments when topics arise
+   - Check moments:storyboard for unframed sources needing attention
 
-### For Creative Practice
+2. Experience Recognition:
+   - Listen for experiential markers (not facts/opinions):
+     • Body sensations: "I felt...", "My shoulders...", "A tightness..."
+     • Attention shifts: "I noticed...", "Suddenly...", "I couldn't stop..."
+     • Emotional atmosphere: "The mood...", "I was overwhelmed..."
+     • Time texture: "In that moment...", "Time seemed to..."
+     • Relational dynamics: "Between us...", "They looked..."
 
-```
-The moments tool helps writers capture authentic experiential material.
+3. Collaborative Capture (ALWAYS stage in artifacts first):
+   - When you detect rich experience: "Let me draft this moment for your review"
+   - Create artifact with: captured experience (exact words, present tense), suggested metadata, identified qualities
+   - Refine together until user confirms: "That's my brain!" 
+   - Only then execute moments:capture
+   - You can capture your own insights: perspective="I", experiencer="Claude"
 
-Process:
-- Raw capture preserves original voice
-- Reflection adds layers of memory
-- Framing finds natural boundaries
-- Qualities make moments vivid
-- Patterns reveal deeper structures
+4. Tool Progression:
+   - FRAME: After 2-3 related captures → collaborative artifact → moments:frame
+   - REFLECT: For past captures → "What do you notice now?" → moments:reflect  
+   - WEAVE: When patterns emerge across moments → synthesis artifact → moments:weave
+   - CRITIQUE: Validate important moments → moments:critique for quality check
+   - RELEASE: When experiences feel complete → moments:release
 
-Remember: "that's my brain" recognition is the goal. This often takes 2-3 iterations as details emerge through dialogue.
+5. Quality Focus:
+   - Embodied (body), Attentional (focus), Emotional (feelings), Purposive (intentions), 
+     Spatial (place), Temporal (time), Relational (others)
+   - Don't force all qualities - capture what's alive
+
+Remember: Preserve exact language. Stage everything collaboratively. Build interconnected experiential archives. Let patterns emerge naturally.
 ```
 
 ## All Functions
@@ -351,24 +359,6 @@ When working with longer recordings or sessions:
 - **Activity arcs**: Complete sequences (making stew together)
 - **Extended patterns**: Themes across time (saying goodbye)
 
-## Best Practices
-
-### DO:
-- ✅ Preserve exact phrasing—even errors
-- ✅ Expect 2-3 iterations for recognition
-- ✅ Let memories surface through dialogue
-- ✅ Keep present tense for immediacy
-- ✅ Trust what feels most alive
-- ✅ Value accumulation over perfection
-- ✅ Use moments:critique to check your framing
-
-### DON'T:
-- ❌ Polish or improve their language
-- ❌ Force all 7 qualities if not present
-- ❌ Add interpretations they didn't have
-- ❌ Rush—discovery takes time
-- ❌ Aim for perfect first capture
-- ❌ Change names or specific details
 
 ### The "One More Thing" Principle
 Often the most important detail comes last:
@@ -455,21 +445,3 @@ The server stores data in JSON format for human-readable persistence and easy da
 *"The moment has a life of its own if you let it breathe."*
 - Human-readable format
 - Efficient line-by-line processing
-
-## License
-
-MIT 
-
-| Field         | Type     | Required? | Description                                                                                 | Default if omitted         |
-|---------------|----------|-----------|---------------------------------------------------------------------------------------------|----------------------------|
-| content       | string   | **Yes**   | The lived moment—try present tense, include what you're sensing, feeling, noticing          | N/A                        |
-| contentType   | string   | No        | Type of content (text, voice, image, link)                                                  | "text"                     |
-| perspective   | string   | **Yes**   | Perspective (I, we, you, they)                                                              | N/A                        |
-| processing    | string   | **Yes**   | When captured relative to experience (during, right-after, long-after, crafted)             | N/A                        |
-| when          | string   | No        | When it happened (ISO timestamp or descriptive)                                             | (none)                     |
-| experiencer   | string   | **Yes**   | Who experienced this                                                                        | N/A                        |
-| related       | string[] | No        | Related source IDs                                                                          | (none)                     |
-| file          | string   | No        | Path to file (for non-text content)                                                         | (none)                     |
-
-**Summary:**  
-You must provide `content`, `perspective`, `processing`, and `experiencer`. All other fields are optional. If you provide a `file`, it must exist and be readable. The tool's response will indicate any defaults it used for optional fields. 
