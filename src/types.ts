@@ -29,7 +29,6 @@ export interface Source {
   
   // File reference (for non-text content)
   file?: string; // Path to file, validated against MCP roots
-  ai?: { suggestion: string }; // Optional AI suggestions/analysis
 }
 
 export interface Moment {
@@ -57,7 +56,6 @@ export interface Moment {
   // Timestamps  
   created: string; // When moment was framed
   when?: string; // When experience happened
-  ai?: { suggestion: string }; // Optional AI suggestions/analysis
 }
 
 export interface Synthesis {
@@ -76,8 +74,6 @@ export type RecordType = "source" | "moment" | "synthesis";
 export interface BaseRecord {
   type: RecordType;
   id: string;
-  version?: number; // Version number, 1 for original, incremented for each update
-  previousVersion?: string | null; // Previous record's ID, null for original
 }
 
 export interface SourceRecord extends BaseRecord, Source {
@@ -86,6 +82,7 @@ export interface SourceRecord extends BaseRecord, Source {
 
 export interface MomentRecord extends BaseRecord, Moment {
   type: "moment";
+  lastModified?: string;
 }
 
 export interface SynthesisRecord extends BaseRecord, Synthesis {

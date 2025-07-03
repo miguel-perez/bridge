@@ -19,7 +19,6 @@ import {
   saveSynthesis,
   getSource,
   getMoment,
-  updateSource,
   updateMoment,
   getSources,
   getMoments,
@@ -31,30 +30,9 @@ import {
   searchMoments,
   getMomentsByPattern,
   getMomentsBySynthesis,
-  getSynthesis,
-  getLatestRecord,
-  storeFile,
-  writeData
+  getSynthesis
 } from './storage.js';
 import type { SourceRecord, ProcessingLevel } from './types.js';
-
-// System prompt for AI sampling (from design doc)
-const PHENOMENOLOGICAL_SYSTEM_PROMPT = `
-You are a guide for experiential capture and reflection using the Framed Moment framework.
-
-Core principles:
-- Experience emerges as an indivisible whole with multiple dimensions
-- Preserve the experiencer's authentic voice - use their words, rhythm, and expressions
-- Each moment naturally presents certain dimensions more prominently
-- The body, mood, attention, purpose, place, time, and others mutually constitute experience
-- Discrete moments are practical tools, not claims about consciousness
-
-When helping frame moments:
-- Listen for what's most alive in the experience
-- Use the storyboard metaphor: wide shots (scenes), medium shots (beats), close-ups (micro-moments)
-- Never impose interpretations - draw out what's already there
-- Maintain first-person immediacy and experiential completeness
-`;
 
 // Constants
 const SERVER_NAME = 'framed-moments';
@@ -77,7 +55,6 @@ const server = new Server(
       prompts: {
         listChanged: false  // We don't dynamically change prompts
       },
-      sampling: {}, // Enable sampling capability for AI integration
     },
   }
 );
@@ -100,13 +77,11 @@ const frameSchema = z.object({
   summary: z.string(),
   narrative: z.string().optional(),
   pattern: z.string().optional(),
-  withAI: z.boolean().optional().default(false),
 });
 
 const enhanceSchema = z.object({
   id: z.string(),
   updates: z.record(z.any()),
-  withAI: z.boolean().optional().default(false),
 });
 
 const synthesizeSchema = z.object({
@@ -117,23 +92,8 @@ const synthesizeSchema = z.object({
   pattern: z.string().optional().default('synthesis'),
 });
 
-const statusSchema = z.object({
-  verbose: z.boolean().optional().default(false),
-});
-
-const SamplingResponseSchema = z.object({
-  model: z.string(),
-  stopReason: z.string().optional(),
-  role: z.string(),
-  content: z.object({
-    type: z.string(),
-    text: z.string().optional(),
-  })
-});
-
 // Tool handlers
 server.setRequestHandler(ListToolsRequestSchema, async () => {
-  const env = process.env.NODE_ENV || process.env.MCP_ENV || 'development';
   const tools = [
     {
       name: 'capture',
@@ -172,7 +132,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           summary: { type: 'string', description: '5-7 word summary' },
           narrative: { type: 'string', description: 'Full experiential narrative' },
           pattern: { type: 'string', description: 'Frame pattern type' },
-          withAI: { type: 'boolean', description: 'Use AI assistance', default: false },
         },
         required: ['sourceIds', 'emoji', 'summary'],
       },
@@ -189,7 +148,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             description: 'Fields to update',
             additionalProperties: true 
           },
-          withAI: { type: 'boolean', description: 'Get AI suggestions for enhancement', default: false },
         },
         required: ['id', 'updates'],
       },
@@ -214,34 +172,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
     }
   ];
-  if (env !== 'production') {
-    tools.push({
-      name: 'clear',
-      description: 'Clear all data (only available in development/test)',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          confirm: { 
-            type: 'boolean', 
-            description: 'Confirm you want to clear all data',
-            default: false
-          }
-        },
-        required: ['confirm']
-      }
-    });
-    tools.push({
-      name: 'status',
-      description: 'Check system health and data counts (only available in development/test)',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          verbose: { type: 'boolean', description: 'Include detailed information', default: false },
-        },
-        required: [],
-      },
-    });
-  }
   return { tools };
 });
 
@@ -272,17 +202,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             );
           }
         }
-        let storedFilePath: string | undefined = undefined;
-        if (input.file) {
-          const maybePath = await storeFile(input.file, generateId('srcfile'));
-          if (!maybePath) {
-            throw new McpError(
-              ErrorCode.InvalidParams,
-              `File not found or could not be stored: ${input.file}`
-            );
-          }
-          storedFilePath = maybePath;
-        }
         // Create source record
         const source = await saveSource({
           id: generateId('src'),
@@ -294,7 +213,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           experiencer: input.experiencer,
           processing: input.processing as ProcessingLevel,
           related: input.related,
-          file: storedFilePath,
+          file: input.file,
         });
         return {
           content: [
@@ -334,56 +253,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           when: validSources.find(s => s.when)?.when,
         };
         const moment = await saveMoment(momentData);
-        // AI integration for framing
-        if (input.withAI) {
-          const progressToken = generateId('progress');
-          try {
-            await sendProgress(progressToken, { kind: 'begin', title: 'Analyzing experience...' });
-            await sendProgress(progressToken, { kind: 'report', percentage: 33, message: 'Finding moment boundaries' });
-            const aiResult = await server.request(
-              {
-                method: 'sampling/createMessage',
-                params: {
-                  messages: [
-                    {
-                      role: 'user',
-                      content: {
-                        type: 'text',
-                        text: `Given this moment:\nSummary: ${moment.summary}\n${moment.narrative ? `Narrative: ${moment.narrative}\n` : ''}Suggest the most prominent experiential qualities and a richer narrative, preserving the authentic voice.`
-                      }
-                    }
-                  ],
-                  systemPrompt: PHENOMENOLOGICAL_SYSTEM_PROMPT,
-                  includeContext: 'thisServer',
-                  temperature: 0.7,
-                  maxTokens: 2000,
-                  progressToken,
-                }
-              },
-              SamplingResponseSchema,
-              undefined
-            );
-            await sendProgress(progressToken, { kind: 'report', percentage: 66, message: 'Identifying qualities' });
-            if (aiResult.content && aiResult.content.text) {
-              // Store suggestion in latest version
-              const latest = await getLatestRecord(moment.id);
-              if (latest && latest.type === 'moment') {
-                await updateMoment(latest.id, { ai: { suggestion: aiResult.content.text } });
-              }
-            }
-            await sendProgress(progressToken, { kind: 'end' });
-          } catch (aiError) {
-            await sendProgress(progressToken, { kind: 'end' });
-            return {
-              content: [{
-                type: 'text',
-                text: `Created moment "${moment.summary}" (AI analysis unavailable)`
-              }],
-              isError: false,
-              meta: { partialSuccess: true }
-            };
-          }
-        }
         return {
           content: [
             {
@@ -396,132 +265,27 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'enhance': {
         const input = enhanceSchema.parse(args);
-        // Always enhance the latest version
-        const latestSource = await getLatestRecord(input.id);
-        const latestMoment = await getLatestRecord(input.id);
-        // Try to enhance a source first
-        const enhancedSource = latestSource && latestSource.type === 'source'
-          ? await updateSource(latestSource.id, input.updates)
-          : null;
-        if (enhancedSource) {
-          if (input.withAI) {
-            const progressToken = generateId('progress');
-            try {
-              await sendProgress(progressToken, { kind: 'begin', title: 'Enhancing source...' });
-              await sendProgress(progressToken, { kind: 'report', percentage: 50, message: 'Generating suggestions' });
-              const aiResult = await server.request(
-                {
-                  method: 'sampling/createMessage',
-                  params: {
-                    messages: [
-                      {
-                        role: 'user',
-                        content: {
-                          type: 'text',
-                          text: `Given this source:\n${JSON.stringify(enhancedSource, null, 2)}\nSuggest improvements for: ${Object.keys(input.updates).join(', ')}.`
-                        }
-                      }
-                    ],
-                    systemPrompt: PHENOMENOLOGICAL_SYSTEM_PROMPT,
-                    includeContext: 'thisServer',
-                    temperature: 0.7,
-                    maxTokens: 2000,
-                    progressToken,
-                  }
-                },
-                SamplingResponseSchema,
-                undefined
-              );
-              if (aiResult.content && aiResult.content.text) {
-                const latest = await getLatestRecord(enhancedSource.id);
-                if (latest && latest.type === 'source') {
-                  await updateSource(latest.id, { ai: { suggestion: aiResult.content.text } });
-                }
-              }
-              await sendProgress(progressToken, { kind: 'end' });
-            } catch (aiError) {
-              await sendProgress(progressToken, { kind: 'end' });
-              return {
-                content: [{
-                  type: 'text',
-                  text: `Enhanced source ${enhancedSource.id} (AI suggestion unavailable)`
-                }],
-                isError: false,
-                meta: { partialSuccess: true }
-              };
-            }
+        // Try to enhance a moment first
+        const moment = await getMoment(input.id);
+        if (moment) {
+          const updated = await updateMoment(input.id, input.updates);
+          if (!updated) {
+            throw new McpError(ErrorCode.InternalError, 'Failed to update moment');
           }
           return {
             content: [
               {
                 type: 'text',
-                text: `Enhanced source (new ID: ${enhancedSource.id}, version: ${enhancedSource.version}) with updates: ${Object.keys(input.updates).join(', ')}`,
+                text: `Enhanced moment (ID: ${updated.id}) with updates: ${Object.keys(input.updates).join(', ')}`,
               },
             ],
-            record: enhancedSource
+            record: updated
           };
         }
-        // If not a source, try moment
-        const enhancedMoment = latestMoment && latestMoment.type === 'moment'
-          ? await updateMoment(latestMoment.id, input.updates)
-          : null;
-        if (enhancedMoment) {
-          if (input.withAI) {
-            const progressToken = generateId('progress');
-            try {
-              await sendProgress(progressToken, { kind: 'begin', title: 'Enhancing moment...' });
-              await sendProgress(progressToken, { kind: 'report', percentage: 50, message: 'Generating suggestions' });
-              const aiResult = await server.request(
-                {
-                  method: 'sampling/createMessage',
-                  params: {
-                    messages: [
-                      {
-                        role: 'user',
-                        content: {
-                          type: 'text',
-                          text: `Given this moment:\n${JSON.stringify(enhancedMoment, null, 2)}\nSuggest improvements for: ${Object.keys(input.updates).join(', ')}.`
-                        }
-                      }
-                    ],
-                    systemPrompt: PHENOMENOLOGICAL_SYSTEM_PROMPT,
-                    includeContext: 'thisServer',
-                    temperature: 0.7,
-                    maxTokens: 2000,
-                    progressToken,
-                  }
-                },
-                SamplingResponseSchema,
-                undefined
-              );
-              if (aiResult.content && aiResult.content.text) {
-                const latest = await getLatestRecord(enhancedMoment.id);
-                if (latest && latest.type === 'moment') {
-                  await updateMoment(latest.id, { ai: { suggestion: aiResult.content.text } });
-                }
-              }
-              await sendProgress(progressToken, { kind: 'end' });
-            } catch (aiError) {
-              await sendProgress(progressToken, { kind: 'end' });
-              return {
-                content: [{
-                  type: 'text',
-                  text: `Enhanced moment ${enhancedMoment.id} (AI suggestion unavailable)`
-                }],
-                isError: false,
-                meta: { partialSuccess: true }
-              };
-            }
-          }
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `Enhanced moment (new ID: ${enhancedMoment.id}, version: ${enhancedMoment.version}) with updates: ${Object.keys(input.updates).join(', ')}`,
-              },
-            ],
-            record: enhancedMoment
-          };
+        // If not a moment, try source
+        const source = await getSource(input.id);
+        if (source) {
+          throw new McpError(ErrorCode.InvalidRequest, 'Sources are immutable and cannot be updated');
         }
         throw new McpError(
           ErrorCode.InvalidParams,
@@ -569,11 +333,23 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         if (env === 'production') {
           throw new McpError(ErrorCode.InvalidRequest, 'Clear is not available in production');
         }
-        const input = z.object({ confirm: z.boolean() }).parse(args);
-        if (!input.confirm) {
+        // No inputSchema validation needed for clear
+        const confirmed = args && args.confirm === true;
+        if (!confirmed) {
           throw new McpError(ErrorCode.InvalidParams, 'Must confirm to clear data');
         }
-        await writeData({ sources: [], moments: [], syntheses: [] });
+        // Clear the data file
+        const data = { sources: [], moments: [], syntheses: [] };
+        const fs = await import('fs/promises');
+        const { join, dirname } = await import('path');
+        const { fileURLToPath } = await import('url');
+        const __filename = fileURLToPath(import.meta.url);
+        const __dirname = dirname(__filename);
+        const ENV = process.env.NODE_ENV || process.env.MCP_ENV || 'development';
+        const STORAGE_DIR = join(__dirname, '..', 'data', ENV);
+        const DATA_FILE = join(STORAGE_DIR, 'data.json');
+        await fs.mkdir(STORAGE_DIR, { recursive: true });
+        await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
         return {
           content: [{
             type: 'text',
@@ -587,23 +363,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         if (env === 'production') {
           throw new McpError(ErrorCode.InvalidRequest, 'Status is not available in production');
         }
-        const input = statusSchema.parse(args);
-        const integrity = await validateDataIntegrity();
-        
+        // No inputSchema validation needed for status
+        const stats = await validateDataIntegrity();
         let message = `System Health Report:\n`;
-        message += `✅ Data integrity: ${integrity.valid ? 'GOOD' : 'ISSUES FOUND'}\n`;
-        message += `📊 Stats: ${integrity.stats.sources} sources, ${integrity.stats.moments} moments, ${integrity.stats.syntheses} syntheses\n`;
-        
-        if (!integrity.valid) {
-          message += `🚨 Issues found:\n${integrity.errors.map(e => `  - ${e}`).join('\n')}\n`;
-        }
-        
-        if (input.verbose) {
-          const unframed = await getUnframedSources();
-          message += `📝 Unframed sources: ${unframed.length}\n`;
-          message += `📅 Server uptime: ${process.uptime().toFixed(0)}s\n`;
-        }
-        
+        message += `Sources: ${stats.stats.sources}\nMoments: ${stats.stats.moments}\nSyntheses: ${stats.stats.syntheses}`;
         return {
           content: [
             {
@@ -881,9 +644,4 @@ async function main(): Promise<void> {
 main().catch((error) => {
   console.error('Server error:', error);
   process.exit(1);
-});
-
-// Utility: send progress notification (MCP-compliant)
-async function sendProgress(progressToken: string, progress: object): Promise<void> {
-  await server.notification({ method: 'server/progress', params: { progressToken, progress } });
-} 
+}); 

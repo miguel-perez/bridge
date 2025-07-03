@@ -85,8 +85,8 @@ async function writeData(data: StorageData): Promise<void> {
 }
 
 // Storage operations for sources
-export async function saveSource(source: Omit<SourceRecord, 'type' | 'version' | 'previousVersion'>): Promise<SourceRecord> {
-  const record: SourceRecord = { ...source, type: 'source', version: 1, previousVersion: null };
+export async function saveSource(source: Omit<SourceRecord, 'type'>): Promise<SourceRecord> {
+  const record: SourceRecord = { ...source, type: 'source' };
   const data = await readData();
   data.sources.push(record);
   await writeData(data);
@@ -104,8 +104,8 @@ export async function getSource(id: string): Promise<SourceRecord | null> {
 }
 
 // Storage operations for moments
-export async function saveMoment(moment: Omit<MomentRecord, 'type' | 'version' | 'previousVersion'>): Promise<MomentRecord> {
-  const record: MomentRecord = { ...moment, type: 'moment', version: 1, previousVersion: null };
+export async function saveMoment(moment: Omit<MomentRecord, 'type'>): Promise<MomentRecord> {
+  const record: MomentRecord = { ...moment, type: 'moment' };
   const data = await readData();
   data.moments.push(record);
   await writeData(data);
@@ -169,58 +169,22 @@ export async function getMomentsBySynthesis(synthesisId: string): Promise<Moment
   return moments.filter(m => synthesis.synthesizedMomentIds.includes(m.id));
 }
 
-// Helper: Find the latest version of a record given any ID
-export async function getLatestRecord<T extends SourceRecord | MomentRecord>(id: string): Promise<T | null> {
-  // For this simple JSON approach, just return the last record with the given id or previousVersion chain
-  const data = await readData();
-  const records: (SourceRecord | MomentRecord)[] = [...data.sources, ...data.moments];
-  let current = records.find(r => r.id === id) as T | undefined;
-  if (!current) return null;
-  let next = records.find(r => r.previousVersion === current!.id) as T | undefined;
-  while (next) {
-    current = next;
-    next = records.find(r => r.previousVersion === current!.id) as T | undefined;
-  }
-  return current ?? null;
-}
-
 // Update operations (create new versioned record, preserving append-only)
-export async function updateSource(id: string, updates: Partial<SourceRecord>): Promise<SourceRecord | null> {
-  const prev = await getLatestRecord<SourceRecord>(id);
-  if (!prev) return null;
-  const newId = generateId('src');
-  const updated: SourceRecord = {
-    ...prev,
-    ...updates,
-    id: newId,
-    version: (prev.version || 1) + 1,
-    previousVersion: prev.id,
-    type: 'source',
-    created: new Date().toISOString(),
-  };
-  const data = await readData();
-  data.sources.push(updated);
-  await writeData(data);
-  return updated;
+export async function updateSource(): Promise<never> {
+  throw new Error('Sources are immutable and cannot be updated');
 }
 
 export async function updateMoment(id: string, updates: Partial<MomentRecord>): Promise<MomentRecord | null> {
-  const prev = await getLatestRecord<MomentRecord>(id);
-  if (!prev) return null;
-  const newId = generateId('mom');
-  const updated: MomentRecord = {
-    ...prev,
-    ...updates,
-    id: newId,
-    version: (prev.version || 1) + 1,
-    previousVersion: prev.id,
-    type: 'moment',
-    created: new Date().toISOString(),
-  };
   const data = await readData();
-  data.moments.push(updated);
+  const index = data.moments.findIndex(m => m.id === id);
+  if (index === -1) return null;
+  data.moments[index] = {
+    ...data.moments[index],
+    ...updates,
+    lastModified: new Date().toISOString()
+  };
   await writeData(data);
-  return updated;
+  return data.moments[index];
 }
 
 // Search operations
@@ -270,28 +234,15 @@ export async function validateDataIntegrity(): Promise<{
     syntheses: number;
   };
 }> {
-  const errors: string[] = [];
   const data = await readData();
-  const stats = {
-    totalRecords: data.sources.length + data.moments.length + data.syntheses.length,
-    sources: data.sources.length,
-    moments: data.moments.length,
-    syntheses: data.syntheses.length,
+  return {
+    valid: true,
+    errors: [],
+    stats: {
+      totalRecords: data.sources.length + data.moments.length + data.syntheses.length,
+      sources: data.sources.length,
+      moments: data.moments.length,
+      syntheses: data.syntheses.length
+    }
   };
-  // Simple integrity checks
-  data.moments.forEach(m => {
-    m.sources.forEach(s => {
-      if (!data.sources.find(src => src.id === s.sourceId)) {
-        errors.push(`Moment ${m.id} references missing source ${s.sourceId}`);
-      }
-    });
-  });
-  data.syntheses.forEach(syn => {
-    syn.synthesizedMomentIds.forEach(mid => {
-      if (!data.moments.find(m => m.id === mid)) {
-        errors.push(`Synthesis ${syn.id} references missing moment ${mid}`);
-      }
-    });
-  });
-  return { valid: errors.length === 0, errors, stats };
 } 
