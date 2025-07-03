@@ -34,14 +34,17 @@ async function getModel(): Promise<MinimalFeatureExtractionPipeline> {
 export async function generateEmbedding(text: string): Promise<number[]> {
   const m = await getModel();
   const output = await m(text);
-  // output is a Tensor of shape [1, N]; use .data() or .tolist()
-  if (output.data) {
-    const arr = await output.data();
-    return Array.from(arr);
-  } else if (output.tolist) {
-    return output.tolist()[0];
-  } else if (Array.isArray(output) && Array.isArray(output[0])) {
+  // If output is a nested array (most common case)
+  if (Array.isArray(output) && Array.isArray(output[0])) {
     return output[0];
+  }
+  // If output has a .tolist() method (older versions)
+  if (output && typeof output.tolist === 'function') {
+    return output.tolist()[0];
+  }
+  // If output is a flat array
+  if (Array.isArray(output)) {
+    return output;
   }
   throw new Error('Unknown output format from embedding model');
 }
