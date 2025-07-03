@@ -359,6 +359,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               {
                 type: 'text',
                 text: `\nFull record:\n${JSON.stringify(source, null, 2)}`
+              },
+              {
+                type: 'text',
+                text: '\n💡 To enrich this capture, notice: What was your body experiencing? Where were you? What pulled your attention? Who else was present (even in memory)? Use "enhance" to add these lived details.'
               }
             ]
           };
@@ -384,6 +388,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             {
               type: 'text',
               text: `\nFull record:\n${JSON.stringify(source, null, 2)}`
+            },
+            {
+              type: 'text',
+              text: '\n💡 To enrich this capture, notice: What was your body experiencing? Where were you? What pulled your attention? Who else was present (even in memory)? Use "enhance" to add these lived details.'
             }
           ]
         };
