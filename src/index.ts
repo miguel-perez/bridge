@@ -220,11 +220,23 @@ const captureSchema = z.object({
   file: z.string().optional(),
 });
 
-// Updated frameSchema: only accepts sourceIds
+// Updated frameSchema: only accepts sourceIds and now requires qualities
 const frameSchema = z.object({
   sourceIds: z.array(z.string()).min(1),
   emoji: z.string(),
   summary: z.string(),
+  qualities: z.array(z.object({
+    type: z.enum([
+      'embodied',
+      'attentional',
+      'emotional',
+      'purposive',
+      'spatial',
+      'temporal',
+      'relational',
+    ]),
+    manifestation: z.string().min(1)
+  })).min(1, 'Must identify at least one experiential quality before creating narrative'),
   narrative: z.string().optional(),
   pattern: z.enum([
     'moment-of-recognition',
@@ -299,6 +311,34 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           },
           emoji: { type: 'string', description: 'Emoji representation' },
           summary: { type: 'string', description: '5-7 word summary' },
+          qualities: {
+            type: 'array',
+            minItems: 1,
+            items: {
+              type: 'object',
+              properties: {
+                type: {
+                  type: 'string',
+                  enum: [
+                    'embodied',
+                    'attentional',
+                    'emotional',
+                    'purposive',
+                    'spatial',
+                    'temporal',
+                    'relational',
+                  ],
+                  description: 'Which quality is present'
+                },
+                manifestation: {
+                  type: 'string',
+                  description: 'How this quality shows up in the experience'
+                }
+              },
+              required: ['type', 'manifestation']
+            },
+            description: 'Identify which qualities are most alive in this experience (at least one required)'
+          },
           narrative: { type: 'string', description: 'Full experiential narrative (optional)' },
           pattern: { 
             type: 'string', 
@@ -306,7 +346,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             default: 'moment-of-recognition'
           }
         },
-        required: ['sourceIds', 'emoji', 'summary', 'pattern']
+        required: ['sourceIds', 'emoji', 'summary', 'qualities', 'pattern']
       }
     },
     {
@@ -491,6 +531,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           id: generateId('mom'),
           emoji: input.emoji,
           summary: input.summary,
+          qualities: input.qualities,
           narrative: input.narrative,
           pattern: input.pattern,
           sources: input.sourceIds.map(sourceId => ({ sourceId })),
@@ -505,11 +546,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             },
             {
               type: 'text',
-              text: `Full record:\n${JSON.stringify(moment, null, 2)}`
+              text: `Qualities noticed: ${input.qualities.map(q => q.type).join(', ')}`
             },
             {
               type: 'text',
-              text: '\n✨ Does this capture the lived experience? Consider which qualities feel most alive:\n- Embodied: What your body felt\n- Attentional: Where your focus went\n- Emotional: The feeling atmosphere\n- Spatial: Your sense of place\n- Temporal: How time flowed\n- Relational: Others\' presence\n- Purposive: What you moved toward/away from'
+              text: `Full record:\n${JSON.stringify(moment, null, 2)}`
             }
           ]
         };
@@ -556,12 +597,27 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         // Try to enhance a moment first
         const moment = await getMoment(input.id);
         if (moment) {
-          // TODO: Future enhancement - support adding qualities
-          // Example: updates.qualities = [
-          //   { type: 'embodied', manifestation: 'shoulders tight, jaw clenched' },
-          //   { type: 'spatial', manifestation: 'kitchen suddenly felt too small' }
-          // ]
-          // The Moment type in types.ts already supports this structure
+          // Support adding qualities
+          if (input.updates.qualities) {
+            // Validate qualities structure
+            const qualitiesSchema = z.array(z.object({
+              type: z.enum([
+                'embodied',
+                'attentional',
+                'emotional',
+                'purposive',
+                'spatial',
+                'temporal',
+                'relational',
+              ]),
+              manifestation: z.string()
+            }));
+            try {
+              input.updates.qualities = qualitiesSchema.parse(input.updates.qualities);
+            } catch (e) {
+              throw new McpError(ErrorCode.InvalidParams, 'Invalid qualities structure');
+            }
+          }
           const updated = await updateMoment(input.id, input.updates);
           if (!updated) {
             throw new McpError(ErrorCode.InternalError, 'Failed to update moment');
