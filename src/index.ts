@@ -42,46 +42,58 @@ const SERVER_VERSION = '0.1.0';
 
 // Pattern documentation constant
 const PATTERN_GUIDE = {
-  purpose: "Patterns help identify where moments naturally begin and end in continuous experience",
+  purpose: "Patterns reveal how your attention moved through the experience - each has its own rhythm and natural boundaries you can feel.",
   metaphor: "Think like a storyboard artist deciding frame boundaries",
   patterns: {
     "moment-of-recognition": {
-      description: "A clear focal point of understanding or realization",
+      description: "Everything suddenly snaps into focus—the background fades and this one thing becomes crystal clear.",
+      feltSignal: "A surge of clarity or insight, like a lightbulb turning on.",
+      attentionMoves: "Like a camera zooming in sharply on a single subject, blurring everything else.",
       storyboard: "Reaction panel - tight on the 'aha!' moment",
       boundaries: "Start when attention sharpens toward insight, end when recognition lands",
       example: "Realizing why you chose a certain career path",
       keywords: ["realize", "understand", "click", "aha", "insight", "discover"]
     },
     "sustained-attention": {
-      description: "When duration itself is primary",
+      description: "Time stretches out—your awareness settles and holds steady, everything else recedes to the edges.",
+      feltSignal: "A sense of being absorbed or suspended, as if time slows down.",
+      attentionMoves: "Like a spotlight holding steady on one scene, refusing to move on.",
       storyboard: "Long take - camera holds steady on extended experience",
       boundaries: "Start when awareness settles, end when it shifts away",
       example: "Sitting beside someone in hospital, meditation",
       keywords: ["sitting", "waiting", "watching", "holding", "staying", "duration"]
     },
     "crossing-threshold": {
-      description: "The lived experience of transition",
+      description: "A shift or transformation—suddenly, you're on the other side of something, and everything feels different.",
+      feltSignal: "A jolt or sense of crossing over, like stepping through a doorway.",
+      attentionMoves: "Like a match cut in film—one scene instantly becomes another, and you feel the before and after.",
       storyboard: "Match cut - showing the before→after transition",
       boundaries: "Capture last moment of 'before' through first moment of 'after'",
       example: "The moment understanding clicks after confusion",
       keywords: ["suddenly", "then", "transform", "shift", "become", "transition"]
     },
     "peripheral-awareness": {
-      description: "Multiple streams of attention held simultaneously",  
+      description: "Your attention spreads wide—holding many things at once, tracking the whole field instead of one point.",
+      feltSignal: "A sense of juggling or being everywhere at once, with no single focus.",
+      attentionMoves: "Like a wide-angle lens capturing the whole scene, everything in view but nothing in sharp focus.",
       storyboard: "Wide shot - everything happening at once",
       boundaries: "Start when juggling begins, end when focus narrows",
       example: "Managing all aspects of a dinner party",
       keywords: ["while", "meanwhile", "tracking", "juggling", "multiple", "simultaneous"]
     },
     "directed-momentum": {
-      description: "Experience dominated by single direction",
+      description: "Everything lines up behind a single drive—your focus narrows and you move with unstoppable force toward a goal.",
+      feltSignal: "A rush or tunnel vision, as if nothing else exists but the target.",
+      attentionMoves: "Like a tracking shot racing toward a finish line, all energy moving in one direction.",
       storyboard: "Tracking shot - following movement to completion",
       boundaries: "Start when everything aligns, end at target/interruption",
       example: "Final sprint to the finish line",
       keywords: ["toward", "racing", "focused", "goal", "must", "driven"]
     },
     "holding-opposites": {
-      description: "When contradictions refuse to resolve",
+      description: "You feel pulled in two directions at once—contradictions or tensions refuse to resolve, and you hold both at the same time.",
+      feltSignal: "A sense of inner conflict, like being stretched between two truths.",
+      attentionMoves: "Like a split screen showing both sides at once, unable to choose just one.",
       storyboard: "Split panel - showing both truths at once",
       boundaries: "Start when tension becomes conscious, end when you act despite it",
       example: "Setting boundaries with loved ones",
