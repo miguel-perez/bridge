@@ -249,7 +249,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   const tools = [
     {
       name: 'capture',
-      description: 'Capture a lived moment - what are you sensing, feeling, noticing right now? Try present tense to stay close to the experience.',
+      description: 'Capture a lived moment - what are you sensing, feeling, noticing right now? Try present tense to stay close to the experience. (Defaults: perspective="I", experiencer="self", processing="during")',
       inputSchema: {
         type: 'object',
         properties: {
@@ -357,22 +357,32 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             related: input.related,
             file: input.file,
           });
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `✓ Captured: "${source.content.substring(0, 50)}${source.content.length > 50 ? '...' : ''}" (ID: ${source.id})`
-              },
-              {
-                type: 'text',
-                text: `\nFull record:\n${JSON.stringify(source, null, 2)}`
-              },
-              {
-                type: 'text',
-                text: '\n💡 To enrich this capture, notice: What was your body experiencing? Where were you? What pulled your attention? Who else was present (even in memory)? Use "enhance" to add these lived details.'
-              }
-            ]
-          };
+          const defaultsUsed = [];
+          const safeArgs = args || {};
+          if (!safeArgs.perspective) defaultsUsed.push('perspective="I"');
+          if (!safeArgs.experiencer) defaultsUsed.push('experiencer="self"');
+          if (!safeArgs.processing) defaultsUsed.push('processing="during"');
+          const content = [
+            {
+              type: 'text',
+              text: `✓ Captured: "${source.content.substring(0, 50)}${source.content.length > 50 ? '...' : ''}" (ID: ${source.id})`
+            },
+            {
+              type: 'text',
+              text: `\nFull record:\n${JSON.stringify(source, null, 2)}`
+            }
+          ];
+          if (defaultsUsed.length > 0) {
+            content.push({
+              type: 'text',
+              text: `Defaults applied: ${defaultsUsed.join(', ')}`
+            });
+          }
+          content.push({
+            type: 'text',
+            text: '\n💡 To enrich this capture, notice: What was your body experiencing? Where were you? What pulled your attention? Who else was present (even in memory)? Use "enhance" to add these lived details.'
+          });
+          return { content };
         }
         // Create source record
         const source = await saveSource({
@@ -386,22 +396,32 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           processing: input.processing as ProcessingLevel,
           related: input.related,
         });
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `✓ Captured: "${source.content.substring(0, 50)}${source.content.length > 50 ? '...' : ''}" (ID: ${source.id})`
-            },
-            {
-              type: 'text',
-              text: `\nFull record:\n${JSON.stringify(source, null, 2)}`
-            },
-            {
-              type: 'text',
-              text: '\n💡 To enrich this capture, notice: What was your body experiencing? Where were you? What pulled your attention? Who else was present (even in memory)? Use "enhance" to add these lived details.'
-            }
-          ]
-        };
+        const defaultsUsed = [];
+        const safeArgs = args || {};
+        if (!safeArgs.perspective) defaultsUsed.push('perspective="I"');
+        if (!safeArgs.experiencer) defaultsUsed.push('experiencer="self"');
+        if (!safeArgs.processing) defaultsUsed.push('processing="during"');
+        const content = [
+          {
+            type: 'text',
+            text: `✓ Captured: "${source.content.substring(0, 50)}${source.content.length > 50 ? '...' : ''}" (ID: ${source.id})`
+          },
+          {
+            type: 'text',
+            text: `\nFull record:\n${JSON.stringify(source, null, 2)}`
+          }
+        ];
+        if (defaultsUsed.length > 0) {
+          content.push({
+            type: 'text',
+            text: `Defaults applied: ${defaultsUsed.join(', ')}`
+          });
+        }
+        content.push({
+          type: 'text',
+          text: '\n💡 To enrich this capture, notice: What was your body experiencing? Where were you? What pulled your attention? Who else was present (even in memory)? Use "enhance" to add these lived details.'
+        });
+        return { content };
       }
 
       case 'frame': {
