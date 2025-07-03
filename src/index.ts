@@ -34,6 +34,7 @@ import {
   validateFilePath
 } from './storage.js';
 import type { SourceRecord, ProcessingLevel } from './types.js';
+import { DESIGNER_MOMENT, WRESTLING_MOMENT, DOLPHIN_MOMENT, BLEH_MOMENT, KETAMINE_MOMENT, PATTERN_VARIATIONS, QUALITIES_EXAMPLES, TRANSFORMATION_PRINCIPLES, COMMON_PITFALLS } from './tested-moments-data.js';
 
 // Constants
 const SERVER_NAME = 'framed-moments';
@@ -157,6 +158,21 @@ const QUALITIES_GUIDE = {
       example: "His eyes search mine for forgiveness, but I look away."
     }
   }
+};
+
+const FRAMED_MOMENTS_EXAMPLES = {
+  purpose: 'Real moments from testing show how raw experience transforms into rich experiential capture',
+  examples: [
+    DESIGNER_MOMENT,
+    WRESTLING_MOMENT,
+    DOLPHIN_MOMENT,
+    BLEH_MOMENT,
+    KETAMINE_MOMENT
+  ],
+  patternVariations: PATTERN_VARIATIONS,
+  qualitiesInAction: QUALITIES_EXAMPLES,
+  transformationPrinciples: TRANSFORMATION_PRINCIPLES,
+  commonPitfalls: COMMON_PITFALLS
 };
 
 // Create server instance
@@ -600,6 +616,12 @@ server.setRequestHandler(ListResourcesRequestSchema, async () => {
         description: 'Explore the seven experiential qualities for richer moments',
         mimeType: 'application/json'
       },
+      {
+        uri: 'moments://examples/framed',
+        name: 'Framed Moments Examples',
+        description: 'Real tested moments and framework examples in action',
+        mimeType: 'application/json'
+      },
     ],
   };
 });
@@ -679,6 +701,15 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
             uri,
             mimeType: 'application/json',
             text: JSON.stringify(QUALITIES_GUIDE, null, 2)
+          }]
+        };
+      
+      case 'moments://examples/framed':
+        return {
+          contents: [{
+            uri,
+            mimeType: 'application/json',
+            text: JSON.stringify(FRAMED_MOMENTS_EXAMPLES, null, 2)
           }]
         };
       
