@@ -251,4 +251,34 @@ export async function validateDataIntegrity(): Promise<{
       syntheses: data.syntheses.length
     }
   };
+}
+
+export async function deleteSource(id: string): Promise<void> {
+  const data = await readData();
+  data.sources = data.sources.filter(s => s.id !== id);
+  await writeData(data);
+}
+
+export async function deleteMoment(id: string): Promise<void> {
+  const data = await readData();
+  data.moments = data.moments.filter(m => m.id !== id);
+  await writeData(data);
+}
+
+export async function deleteSynthesis(id: string): Promise<void> {
+  const data = await readData();
+  data.syntheses = data.syntheses.filter(s => s.id !== id);
+  await writeData(data);
+}
+
+export async function updateSynthesis(id: string, updates: Partial<SynthesisRecord>): Promise<SynthesisRecord | null> {
+  const data = await readData();
+  const index = data.syntheses.findIndex(s => s.id === id);
+  if (index === -1) return null;
+  data.syntheses[index] = {
+    ...data.syntheses[index],
+    ...updates
+  };
+  await writeData(data);
+  return data.syntheses[index];
 } 

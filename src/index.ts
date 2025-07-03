@@ -31,7 +31,11 @@ import {
   getMomentsByPattern,
   getMomentsBySynthesis,
   getSynthesis,
-  validateFilePath
+  validateFilePath,
+  deleteSource,
+  deleteMoment,
+  updateSynthesis,
+  deleteSynthesis,
 } from './storage.js';
 import type { SourceRecord, ProcessingLevel } from './types.js';
 import { DESIGNER_MOMENT, WRESTLING_MOMENT, DOLPHIN_MOMENT, BLEH_MOMENT, KETAMINE_MOMENT, PATTERN_VARIATIONS, QUALITIES_EXAMPLES, TRANSFORMATION_PRINCIPLES, COMMON_PITFALLS } from './tested-moments-data.js';
@@ -272,6 +276,10 @@ const enhanceSchema = z.object({
   updates: z.record(z.any()),
 });
 
+const releaseSchema = z.object({
+  id: z.string(),
+});
+
 // Helper: Contextual coaching prompts for captures
 function getContextualPrompts(content: string, contentType: string): string {
   if (contentType === 'link') {
@@ -434,6 +442,17 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           experiencer: { type: 'string', description: 'Who is reflecting (inherits from original if not specified)' }
         },
         required: ['originalId', 'content']
+      }
+    },
+    {
+      name: 'release',
+      description: 'Release (delete) a source or moment by ID. Some experiences are meant to be acknowledged then let go.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', description: 'ID of source or moment to release' }
+        },
+        required: ['id']
       }
     },
   ];
@@ -723,6 +742,124 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             }
           ]
         };
+      }
+
+      case 'release': {
+        const input = releaseSchema.parse(args);
+        // Check if it's a source
+        const source = await getSource(input.id);
+        if (source) {
+          // Delete the source
+          await deleteSource(input.id);
+          // Clean up any orphaned moments
+          const moments = await getMoments();
+          const affectedMoments = moments.filter(m => 
+            m.sources.some(s => s.sourceId === input.id)
+          );
+          let cleanupMessage = '';
+          for (const moment of affectedMoments) {
+            // Remove the released source from the moment
+            const remainingSources = moment.sources.filter(s => s.sourceId !== input.id);
+            if (remainingSources.length === 0) {
+              // No sources left, release the moment
+              await deleteMoment(moment.id);
+              cleanupMessage += `\n  • Released orphaned moment: ${moment.emoji} "${moment.summary}"`;
+              // Also check if this moment was in any syntheses
+              const syntheses = await getSyntheses();
+              for (const synthesis of syntheses) {
+                if (synthesis.synthesizedMomentIds.includes(moment.id)) {
+                  const remainingMoments = synthesis.synthesizedMomentIds.filter(id => id !== moment.id);
+                  if (remainingMoments.length === 0) {
+                    await deleteSynthesis(synthesis.id);
+                    cleanupMessage += `\n  • Released orphaned synthesis: ${synthesis.emoji} "${synthesis.summary}"`;
+                  } else {
+                    // Update synthesis to remove the deleted moment
+                    await updateSynthesis(synthesis.id, {
+                      synthesizedMomentIds: remainingMoments
+                    });
+                    cleanupMessage += `\n  • Updated synthesis: ${synthesis.emoji} "${synthesis.summary}"`;
+                  }
+                }
+              }
+            } else {
+              // Update moment to remove the released source
+              await updateMoment(moment.id, {
+                sources: remainingSources
+              });
+              cleanupMessage += `\n  • Updated moment: ${moment.emoji} "${moment.summary}" (${remainingSources.length} source(s) remain)`;
+            }
+          }
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `✓ Released source: "${source.content.substring(0, 50)}..." (ID: ${input.id})`
+              },
+              {
+                type: 'text',
+                text: cleanupMessage || '\n🌊 The experience has been released'
+              }
+            ]
+          };
+        }
+        // Check if it's a moment
+        const moment = await getMoment(input.id);
+        if (moment) {
+          await deleteMoment(input.id);
+          // Clean up any orphaned syntheses
+          const syntheses = await getSyntheses();
+          const affectedSyntheses = syntheses.filter(s => 
+            s.synthesizedMomentIds.includes(input.id)
+          );
+          let cleanupMessage = '';
+          for (const synthesis of affectedSyntheses) {
+            const remainingMoments = synthesis.synthesizedMomentIds.filter(id => id !== input.id);
+            if (remainingMoments.length === 0) {
+              // No moments left, release the synthesis
+              await deleteSynthesis(synthesis.id);
+              cleanupMessage += `\n  • Released orphaned synthesis: ${synthesis.emoji} "${synthesis.summary}"`;
+            } else {
+              // Update synthesis to remove the released moment
+              await updateSynthesis(synthesis.id, {
+                synthesizedMomentIds: remainingMoments
+              });
+              cleanupMessage += `\n  • Updated synthesis: ${synthesis.emoji} "${synthesis.summary}" (${remainingMoments.length} moment(s) remain)`;
+            }
+          }
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `✓ Released moment: ${moment.emoji} "${moment.summary}" (ID: ${input.id})`
+              },
+              {
+                type: 'text',
+                text: cleanupMessage || '\n🌊 The moment has been released'
+              }
+            ]
+          };
+        }
+        // Check if it's a synthesis
+        const synthesis = await getSynthesis(input.id);
+        if (synthesis) {
+          await deleteSynthesis(input.id);
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `✓ Released synthesis: ${synthesis.emoji} "${synthesis.summary}" (ID: ${input.id})`
+              },
+              {
+                type: 'text',
+                text: '\n🌊 The woven experience has been released'
+              }
+            ]
+          };
+        }
+        throw new McpError(
+          ErrorCode.InvalidParams,
+          `No source, moment, or synthesis found with ID: ${input.id}`
+        );
       }
 
       case 'clear': {
