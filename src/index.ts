@@ -38,6 +38,57 @@ import type { SourceRecord, ProcessingLevel } from './types.js';
 const SERVER_NAME = 'framed-moments';
 const SERVER_VERSION = '0.1.0';
 
+// Pattern documentation constant
+const PATTERN_GUIDE = {
+  purpose: "Patterns help identify where moments naturally begin and end in continuous experience",
+  metaphor: "Think like a storyboard artist deciding frame boundaries",
+  patterns: {
+    "moment-of-recognition": {
+      description: "A clear focal point of understanding or realization",
+      storyboard: "Reaction panel - tight on the 'aha!' moment",
+      boundaries: "Start when attention sharpens toward insight, end when recognition lands",
+      example: "Realizing why you chose a certain career path",
+      keywords: ["realize", "understand", "click", "aha", "insight", "discover"]
+    },
+    "sustained-attention": {
+      description: "When duration itself is primary",
+      storyboard: "Long take - camera holds steady on extended experience",
+      boundaries: "Start when awareness settles, end when it shifts away",
+      example: "Sitting beside someone in hospital, meditation",
+      keywords: ["sitting", "waiting", "watching", "holding", "staying", "duration"]
+    },
+    "crossing-threshold": {
+      description: "The lived experience of transition",
+      storyboard: "Match cut - showing the before→after transition",
+      boundaries: "Capture last moment of 'before' through first moment of 'after'",
+      example: "The moment understanding clicks after confusion",
+      keywords: ["suddenly", "then", "transform", "shift", "become", "transition"]
+    },
+    "peripheral-awareness": {
+      description: "Multiple streams of attention held simultaneously",  
+      storyboard: "Wide shot - everything happening at once",
+      boundaries: "Start when juggling begins, end when focus narrows",
+      example: "Managing all aspects of a dinner party",
+      keywords: ["while", "meanwhile", "tracking", "juggling", "multiple", "simultaneous"]
+    },
+    "directed-momentum": {
+      description: "Experience dominated by single direction",
+      storyboard: "Tracking shot - following movement to completion",
+      boundaries: "Start when everything aligns, end at target/interruption",
+      example: "Final sprint to the finish line",
+      keywords: ["toward", "racing", "focused", "goal", "must", "driven"]
+    },
+    "holding-opposites": {
+      description: "When contradictions refuse to resolve",
+      storyboard: "Split panel - showing both truths at once",
+      boundaries: "Start when tension becomes conscious, end when you act despite it",
+      example: "Setting boundaries with loved ones",
+      keywords: ["but", "yet", "both", "despite", "tension", "conflict"]
+    }
+  },
+  defaultPattern: "moment-of-recognition"
+};
+
 // Create server instance
 const server = new Server(
   {
@@ -134,10 +185,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           narrative: { type: 'string', description: 'Full experiential narrative (optional)' },
           pattern: { 
             type: 'string', 
-            description: 'Pattern type - helps identify where this moment naturally starts/ends. E.g., "moment-of-recognition" for insights, "sustained-attention" for duration, "crossing-threshold" for transitions. Defaults to "synthesis" when using momentIds.'
+            description: 'Pattern type - helps identify where this moment naturally starts/ends (see moments://patterns/guide). Defaults to "moment-of-recognition" for moments, "synthesis" for syntheses.',
+            default: 'moment-of-recognition'
           }
         },
-        required: ['emoji', 'summary']
+        required: ['emoji', 'summary', 'pattern']
       }
     },
     {
@@ -216,6 +268,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'frame': {
         const input = frameSchema.parse(args);
+        // Default pattern based on input type
+        if (!input.pattern) {
+          input.pattern = input.momentIds ? 'synthesis' : 'moment-of-recognition';
+        }
         if (input.sourceIds) {
           // Existing moment creation logic
           const validSources: SourceRecord[] = [];
@@ -437,6 +493,12 @@ server.setRequestHandler(ListResourcesRequestSchema, async () => {
         description: `Sources not yet framed into moments (${unframed.length} total)`,
         mimeType: 'application/json',
       },
+      {
+        uri: 'moments://patterns/guide',
+        name: 'Pattern Selection Guide',
+        description: 'Understand how patterns help identify moment boundaries',
+        mimeType: 'application/json'
+      },
     ],
   };
 });
@@ -499,6 +561,15 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
               text: JSON.stringify(await getUnframedSources(), null, 2),
             },
           ],
+        };
+      
+      case 'moments://patterns/guide':
+        return {
+          contents: [{
+            uri,
+            mimeType: 'application/json',
+            text: JSON.stringify(PATTERN_GUIDE, null, 2)
+          }]
         };
       
       // New resource URIs
