@@ -244,6 +244,17 @@ const weaveSchema = z.object({
   narrative: z.string().optional(),
 });
 
+// New reflectSchema: for reflecting on sources
+const reflectSchema = z.object({
+  originalId: z.string(),
+  content: z.string().min(1),
+  contentType: z.string().optional().default('text'),
+  perspective: z.string().optional(),
+  processing: z.string().optional(),
+  when: z.string().optional(),
+  experiencer: z.string().optional(),
+});
+
 const enhanceSchema = z.object({
   id: z.string(),
   updates: z.record(z.any()),
@@ -332,7 +343,24 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         },
         required: ['id', 'updates'],
       },
-    }
+    },
+    {
+      name: 'reflect',
+      description: 'Add depth to an existing source by capturing further reflection, memories, or insights. Creates a new source linked to the original.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          originalId: { type: 'string', description: 'ID of source being reflected upon' },
+          content: { type: 'string', description: 'New insights, memories, or noticings about the original experience' },
+          contentType: { type: 'string', description: 'Type of content', default: 'text' },
+          perspective: { type: 'string', description: 'Perspective (inherits from original if not specified)' },
+          processing: { type: 'string', description: 'When captured relative to reflection' },
+          when: { type: 'string', description: 'When the reflection occurred' },
+          experiencer: { type: 'string', description: 'Who is reflecting (inherits from original if not specified)' }
+        },
+        required: ['originalId', 'content']
+      }
+    },
   ];
   return { tools };
 });
@@ -561,6 +589,46 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           ErrorCode.InvalidParams,
           `No source or moment found with ID: ${input.id}`
         );
+      }
+
+      case 'reflect': {
+        const input = reflectSchema.parse(args);
+        // Verify original source exists
+        const original = await getSource(input.originalId);
+        if (!original) {
+          throw new McpError(
+            ErrorCode.InvalidParams,
+            `Source not found: ${input.originalId}`
+          );
+        }
+        // Create new source with related link
+        const source = await saveSource({
+          id: generateId('src'),
+          content: input.content,
+          contentType: input.contentType,
+          created: new Date().toISOString(),
+          when: input.when,
+          perspective: input.perspective || original.perspective,
+          experiencer: input.experiencer || original.experiencer,
+          processing: (input.processing as ProcessingLevel) || 'long-after',
+          related: [input.originalId]
+        });
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `✓ Reflected on source ${input.originalId}: "${original.content.substring(0, 30)}..."`
+            },
+            {
+              type: 'text',
+              text: `New reflection (ID: ${source.id}): "${source.content.substring(0, 50)}..."`
+            },
+            {
+              type: 'text',
+              text: '\n💡 Frame these related sources together for a richer, multi-layered moment'
+            }
+          ]
+        };
       }
 
       case 'clear': {
