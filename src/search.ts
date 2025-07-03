@@ -3,8 +3,7 @@ import { getAllRecords, getSearchableText } from './storage.js';
 import { loadEmbeddings, generateEmbedding, cosineSimilarity } from './embeddings.js';
 
 // For temporal parsing
-// @ts-expect-error: No types for chrono-node
-import chrono from 'chrono-node';
+import * as chrono from 'chrono-node';
 
 export interface SearchResult {
   type: 'source' | 'moment' | 'synthesis';
@@ -139,6 +138,10 @@ function getParentId(record: StorageRecord): string | null {
 // Advanced filtering
 export function advancedFilters(results: SearchResult[], filters?: FilterOptions, allRecords?: StorageRecord[]): SearchResult[] {
   if (!filters) return results;
+  // Normalize: treat 'type' and 'types' as aliases
+  if (filters.type && !filters.types) {
+    filters.types = filters.type;
+  }
   return results.filter(result => {
     const rec = result.source || result.moment || result.synthesis;
     if (!rec) return false;
