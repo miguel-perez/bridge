@@ -271,7 +271,7 @@ const reflectSchema = z.object({
   experiencer: z.string().optional(),
 });
 
-const enhanceSchema = z.object({
+const enrichSchema = z.object({
   id: z.string(),
   updates: z.record(z.any()),
 });
@@ -385,12 +385,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       }
     },
     {
-      name: 'enhance',
+      name: 'enrich',
       description: 'Refine or add details to existing captures or moments',
       inputSchema: {
         type: 'object',
         properties: {
-          id: { type: 'string', description: 'Source or moment ID to enhance' },
+          id: { type: 'string', description: 'Source or moment ID to enrich' },
           updates: { 
             type: 'object', 
             description: 'Fields to update',
@@ -619,8 +619,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
-      case 'enhance': {
-        const input = enhanceSchema.parse(args);
+      case 'enrich': {
+        const input = enrichSchema.parse(args);
         // Try to enhance a moment first
         const moment = await getMoment(input.id);
         if (moment) {
@@ -653,7 +653,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             content: [
               {
                 type: 'text',
-                text: `Enhanced moment (ID: ${updated.id}) with updates: ${Object.keys(input.updates).join(', ')}`,
+                text: `Enriched moment (ID: ${updated.id}) with updates: ${Object.keys(input.updates).join(', ')}`,
               },
               {
                 type: 'text',
