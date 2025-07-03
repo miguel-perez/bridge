@@ -294,92 +294,6 @@ const critiqueSchema = z.object({
   momentId: z.string(),
 });
 
-const treeSchema = z.object({
-  rootId: z.string().optional(),
-});
-
-interface TreeNode {
-  type: 'source' | 'moment' | 'synthesis';
-  id: string;
-  emoji?: string;
-  summary?: string;
-  content?: string;
-  when: string;
-  children?: TreeNode[];
-}
-
-async function buildMomentTree(rootId?: string): Promise<TreeNode | TreeNode[]> {
-  const sources = await getSources();
-  const moments = await getMoments();
-  const syntheses = await getSyntheses();
-
-  const sourceMap = new Map(sources.map(s => [s.id, s]));
-  const momentMap = new Map(moments.map(m => [m.id, m]));
-  const synthesisMap = new Map(syntheses.map(s => [s.id, s]));
-
-  function buildSourceNode(sourceId: string): TreeNode | null {
-    const source = sourceMap.get(sourceId);
-    if (!source) return null;
-    return {
-      type: 'source',
-      id: source.id,
-      content: source.content.substring(0, 50) + '...',
-      when: source.when || source.created
-    };
-  }
-
-  function buildMomentNode(momentId: string): TreeNode | null {
-    const moment = momentMap.get(momentId);
-    if (!moment) return null;
-    const children = moment.sources
-      .map(s => buildSourceNode(s.sourceId))
-      .filter(Boolean) as TreeNode[];
-    return {
-      type: 'moment',
-      id: moment.id,
-      emoji: moment.emoji,
-      summary: moment.summary,
-      when: moment.when || moment.created,
-      children
-    };
-  }
-
-  function buildSynthesisNode(synthesisId: string): TreeNode | null {
-    const synthesis = synthesisMap.get(synthesisId);
-    if (!synthesis) return null;
-    const children = synthesis.synthesizedMomentIds
-      .map(id => buildMomentNode(id))
-      .filter(Boolean) as TreeNode[];
-    return {
-      type: 'synthesis',
-      id: synthesis.id,
-      emoji: synthesis.emoji,
-      summary: synthesis.summary,
-      when: synthesis.created,
-      children
-    };
-  }
-
-  // If specific root requested
-  if (rootId) {
-    return buildSynthesisNode(rootId) || 
-           buildMomentNode(rootId) || 
-           buildSourceNode(rootId) || 
-           { type: 'source', id: rootId, content: 'Not found', when: '' };
-  }
-
-  // Otherwise return forest of all top-level items
-  const momentIdsInSyntheses = new Set(
-    syntheses.flatMap(s => s.synthesizedMomentIds)
-  );
-  const topLevelSyntheses = syntheses.map(s => buildSynthesisNode(s.id)).filter(Boolean);
-  const orphanMoments = moments
-    .filter(m => !momentIdsInSyntheses.has(m.id))
-    .map(m => buildMomentNode(m.id))
-    .filter(Boolean);
-  return [...topLevelSyntheses, ...orphanMoments] as TreeNode[];
-}
-
 // Helper: Contextual coaching prompts for captures and tool-to-tool flow
 function getContextualPrompts(toolName: string, unframedCount?: number): string {
   let prompts = '\n✓ Next steps:\n';
@@ -409,14 +323,6 @@ function getContextualPrompts(toolName: string, unframedCount?: number): string 
     case 'weave':
       prompts += '• Tree - visualize your new synthesis in the larger hierarchy\n';
       prompts += '• Capture more - explore themes this synthesis revealed\n';
-      break;
-    case 'tree':
-      prompts += '• Capture - record more experiences in the patterns you notice\n';
-      prompts += '• Weave - connect moments that share themes but aren\'t yet linked\n';
-      break;
-    case 'reflect':
-      prompts += '• Frame - combine this reflection with the original source\n';
-      prompts += '• Reflect again - if more layers have emerged\n';
       break;
     case 'remember':
       prompts += '• Search - use natural language to find relevant memories, patterns, or relationships\n';
@@ -603,17 +509,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       inputSchema: {
         type: 'object',
         properties: {},
-        required: [],
-      },
-    },
-    {
-      name: 'tree',
-      description: 'See how your moments nest and connect hierarchically. Reveals experiential architecture - recurring themes, micro-to-macro patterns, meaning clusters. Essential for understanding your larger story.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          rootId: { type: 'string', description: 'Optional: Start from specific moment/synthesis' }
-        },
         required: [],
       },
     },
@@ -1211,31 +1106,6 @@ shifts, several emotional boundaries, multiple actional completions.`;
           { type: 'text', text: getContextualPrompts('storyboard') }
         );
         return { content };
-      }
-
-      case 'tree': {
-        const input = treeSchema.parse(args);
-        const treeData = await buildMomentTree(input.rootId);
-        return {
-          content: [
-            {
-              type: 'text',
-              text: 'MOMENT HIERARCHY DATA:\n'
-            },
-            {
-              type: 'text',
-              text: JSON.stringify(treeData, null, 2)
-            },
-            {
-              type: 'text',
-              text: '\n\nAsk Claude to render this as a visual tree showing how sources build to moments, moments weave into syntheses.'
-            },
-            {
-              type: 'text',
-              text: getContextualPrompts('tree')
-            }
-          ]
-        };
       }
 
       case 'remember': {
