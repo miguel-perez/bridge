@@ -281,38 +281,11 @@ const releaseSchema = z.object({
 });
 
 // Helper: Contextual coaching prompts for captures
-function getContextualPrompts(content: string, contentType: string): string {
-  if (contentType === 'link') {
-    return '\n💡 For this link: What drew you to save it? How did encountering it feel?';
-  }
-  if (contentType === 'image') {
-    return '\n💡 For this image: What captured your attention? What feelings or memories does it evoke?';
-  }
-  const prompts: string[] = [];
-  const lowerContent = content.toLowerCase();
-  // Check which qualities might be missing
-  const hasEmbodied = /body|shoulder|hand|breath|tense|muscle|heart|chest/.test(lowerContent);
-  const hasSpatial = /room|space|place|here|there|where|corner/.test(lowerContent);
-  const hasEmotional = /feel|emotion|happy|sad|angry|afraid|hope/.test(lowerContent);
-  const hasAttentional = /notice|focus|attention|see|watch|look/.test(lowerContent);
-  // Add up to 3 specific prompts
-  if (!hasEmbodied && contentType === 'text') {
-    prompts.push('What is your body doing or feeling?');
-  }
-  if (!hasSpatial) {
-    prompts.push('Where is this happening?');
-  }
-  if (!hasEmotional) {
-    prompts.push('What feelings are present, even faintly?');
-  }
-  if (!hasAttentional && prompts.length < 3) {
-    prompts.push('What draws your attention most?');
-  }
-  if (prompts.length > 0) {
-    return `\n💡 To enrich this capture, consider:\n${prompts.map(p => `• ${p}`).join('\n')}`;
-  }
-  // Default prompt if many qualities already present
-  return '\n💡 Rich capture! Consider which quality feels most alive to explore further.';
+function getContextualPrompts(): string {
+  // All content types: guide to next steps, not qualities
+  return '\n✓ Captured! You can:\n' +
+         '• Reflect - add memories, insights, or deeper noticings\n' +
+         '• Frame - identify patterns and qualities in this moment';
 }
 
 // Tool handlers
@@ -342,7 +315,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     },
     {
       name: 'frame',
-      description: 'Frame your experience into a complete moment from one or more sources. Pattern type - recognizes how your attention moved (moment-of-recognition, sustained-attention, crossing-threshold, peripheral-awareness, directed-momentum, holding-opposites). See moments://patterns/guide, moments://qualities/guide and moments://examples.',
+      description: 'Frame your experience into a complete moment from one or more sources. Pattern type helps identify where your moment naturally begins and ends—like a storyboard artist choosing frame boundaries. See moments://patterns/guide, moments://qualities/guide and moments://examples.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -385,7 +358,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           narrative: { type: 'string', description: 'Full experiential narrative (optional)' },
           pattern: { 
             type: 'string', 
-            description: 'Pattern type - recognizes how your attention moved (focused, sustained, shifting, juggling). Helps identify natural moment boundaries. See moments://patterns/guide',
+            description: 'Pattern type - helps identify where your moment naturally begins and ends. Like a storyboard artist choosing frame boundaries. See moments://patterns/guide for detailed explanations.',
             default: 'moment-of-recognition'
           }
         },
@@ -522,7 +495,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           }
           content.push({
             type: 'text',
-            text: getContextualPrompts(source.content, source.contentType)
+            text: getContextualPrompts()
           });
           return { content };
         }
@@ -561,7 +534,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
         content.push({
           type: 'text',
-          text: getContextualPrompts(source.content, source.contentType)
+          text: getContextualPrompts()
         });
         return { content };
       }
