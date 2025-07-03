@@ -5,7 +5,7 @@ export type ProcessingLevel = "during" | "right-after" | "long-after" | "crafted
 export type ContentType = "text" | "voice" | "image" | "link" | string;
 export type QualityType = "embodied" | "attentional" | "emotional" | "purposive" | "spatial" | "temporal" | "relational";
 
-export type FramePattern = 
+export type ShotType = 
   | "moment-of-recognition"    // A clear focal point of understanding
   | "sustained-attention"      // When duration itself is primary
   | "crossing-threshold"       // The lived experience of transition
@@ -37,7 +37,7 @@ export interface Moment {
   emoji: string;
   summary: string; // 5-7 word narrative
   narrative?: string; // Full first-person experiential description
-  pattern?: FramePattern; // Optional pattern type
+  shot?: ShotType; // Optional shot type
   
   // Experiential dimensions - include whichever are present
   qualities?: Array<{
@@ -63,7 +63,7 @@ export interface Synthesis {
   summary: string; // 5-7 word summary
   narrative?: string; // Optional overarching narrative
   synthesizedMomentIds: string[]; // The moments contained within
-  pattern: string; // Default: "synthesis"
+  shot: ShotType; // Visual/experiential anchor for the synthesis as a whole
   created: string; // When synthesis was created
 }
 

@@ -107,7 +107,7 @@ export const KETAMINE_MOMENT = {
   userResponse: "Yeah this gave me chills"
 };
 
-export const PATTERN_VARIATIONS = {
+export const SHOT_VARIATIONS = {
   scenario: "Sal's career advice in the car",
   source: "Those car conversations were so great... He turned to me and said 'You should be a designer.'",
   framings: {

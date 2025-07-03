@@ -38,7 +38,7 @@ import {
   deleteSynthesis,
 } from './storage.js';
 import type { SourceRecord, ProcessingLevel } from './types.js';
-import { DESIGNER_MOMENT, WRESTLING_MOMENT, DOLPHIN_MOMENT, BLEH_MOMENT, KETAMINE_MOMENT, PATTERN_VARIATIONS, QUALITIES_EXAMPLES, TRANSFORMATION_PRINCIPLES, COMMON_PITFALLS } from './tested-moments-data.js';
+import { DESIGNER_MOMENT, WRESTLING_MOMENT, DOLPHIN_MOMENT, BLEH_MOMENT, KETAMINE_MOMENT, SHOT_VARIATIONS, QUALITIES_EXAMPLES, TRANSFORMATION_PRINCIPLES, COMMON_PITFALLS } from './tested-moments-data.js';
 
 // Constants
 const SERVER_NAME = 'framed-moments';
@@ -185,7 +185,7 @@ const FRAMED_MOMENTS_EXAMPLES = {
     BLEH_MOMENT,
     KETAMINE_MOMENT
   ],
-  patternVariations: PATTERN_VARIATIONS,
+  patternVariations: SHOT_VARIATIONS,
   qualitiesInAction: QUALITIES_EXAMPLES,
   transformationPrinciples: TRANSFORMATION_PRINCIPLES,
   commonPitfalls: COMMON_PITFALLS
@@ -242,7 +242,7 @@ const frameSchema = z.object({
     manifestation: z.string().min(1)
   })).min(1, 'Must identify at least one experiential quality before creating narrative'),
   narrative: z.string().optional(),
-  pattern: z.enum([
+  shot: z.enum([
     'moment-of-recognition',
     'sustained-attention',
     'crossing-threshold',
@@ -258,6 +258,14 @@ const weaveSchema = z.object({
   emoji: z.string(),
   summary: z.string(),
   narrative: z.string().optional(),
+  shot: z.enum([
+    'moment-of-recognition',
+    'sustained-attention',
+    'crossing-threshold',
+    'peripheral-awareness',
+    'directed-momentum',
+    'holding-opposites'
+  ])
 });
 
 // New reflectSchema: for reflecting on sources
@@ -443,7 +451,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     },
     {
       name: 'frame',
-      description: 'Transform raw sources into a complete experiential moment. Like choosing what belongs in a photograph, identify natural boundaries using pattern types. Requires identifying experiential qualities first.',
+      description: 'Transform raw sources into a complete experiential moment. Like choosing what belongs in a storyboard shot, identify natural boundaries using shot types. Requires identifying experiential qualities first.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -484,13 +492,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             description: 'Identify which qualities are most alive in this experience (at least one required)'
           },
           narrative: { type: 'string', description: 'Full experiential narrative (optional)' },
-          pattern: { 
+          shot: { 
             type: 'string', 
-            description: 'Pattern type - helps identify where your moment naturally begins and ends. Like a storyboard artist choosing frame boundaries. See moments://patterns/guide for detailed explanations.',
+            description: 'Shot type - helps identify where your moment naturally begins and ends. Like a storyboard artist choosing frame boundaries. See moments://patterns/guide for detailed explanations.',
             default: 'moment-of-recognition'
           }
         },
-        required: ['sourceIds', 'emoji', 'summary', 'qualities', 'pattern']
+        required: ['sourceIds', 'emoji', 'summary', 'qualities', 'shot']
       }
     },
     {
@@ -507,9 +515,21 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           },
           emoji: { type: 'string', description: 'Emoji representation' },
           summary: { type: 'string', description: '5-7 word summary' },
-          narrative: { type: 'string', description: 'Optional overarching narrative' }
+          narrative: { type: 'string', description: 'Optional overarching narrative' },
+          shot: {
+            type: 'string',
+            description: 'Shot type for the synthesized moment',
+            enum: [
+              'moment-of-recognition',
+              'sustained-attention',
+              'crossing-threshold',
+              'peripheral-awareness',
+              'directed-momentum',
+              'holding-opposites'
+            ]
+          }
         },
-        required: ['momentIds', 'emoji', 'summary']
+        required: ['momentIds', 'emoji', 'summary', 'narrative', 'shot']
       }
     },
     {
@@ -721,7 +741,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           summary: input.summary,
           qualities: input.qualities,
           narrative: input.narrative,
-          pattern: input.pattern,
+          shot: input.shot,
           sources: input.sourceIds.map(sourceId => ({ sourceId })),
           created: new Date().toISOString(),
           when: validSources.find(s => s.when)?.when,
@@ -767,7 +787,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           summary: input.summary,
           narrative: input.narrative,
           synthesizedMomentIds: input.momentIds,
-          pattern: 'synthesis',
+          shot: input.shot,
           created: new Date().toISOString(),
         });
         return {
@@ -1061,7 +1081,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             },
             {
               type: 'text',
-              text: `Pattern: ${moment.pattern || 'none'}\nQualities: ${moment.qualities?.map(q => q.type).join(', ') || 'none'}\n`
+              text: `Shot: ${moment.shot || 'none'}\nQualities: ${moment.qualities?.map(q => q.type).join(', ') || 'none'}\n`
             },
             {
               type: 'text',
@@ -1232,10 +1252,10 @@ shifts, several emotional boundaries, multiple actional completions.`;
           'Please identify at least one experiential quality. What did your body feel? Where was your attention? What emotions were present?'
         );
       }
-      if (issues.some(i => i.path.includes('pattern'))) {
+      if (issues.some(i => i.path.includes('shot'))) {
         throw new McpError(
           ErrorCode.InvalidParams,
-          'Invalid pattern. Valid patterns: moment-of-recognition (sudden clarity), sustained-attention (dwelling in experience), crossing-threshold (transformation), peripheral-awareness (multiple streams), directed-momentum (goal focus), holding-opposites (unresolved tensions)'
+          'Invalid shot. Valid shots: moment-of-recognition (sudden clarity), sustained-attention (dwelling in experience), crossing-threshold (transformation), peripheral-awareness (multiple streams), directed-momentum (goal focus), holding-opposites (unresolved tensions)'
         );
       }
       throw new McpError(
@@ -1433,8 +1453,8 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
         }
         const patternMatch = uri.match(/^moments:\/\/pattern\/(.+)$/);
         if (patternMatch) {
-          const pattern = decodeURIComponent(patternMatch[1]);
-          const moments = await getMomentsByPattern(pattern);
+          const shot = decodeURIComponent(patternMatch[1]);
+          const moments = await getMomentsByPattern(shot);
           return { contents: [{ uri, mimeType: 'application/json', text: JSON.stringify(moments, null, 2) }] };
         }
         const qualityMatch = uri.match(/^moments:\/\/quality\/(.+)$/);

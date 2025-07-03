@@ -216,9 +216,9 @@ export async function searchMoments(query: string): Promise<MomentRecord[]> {
   );
 }
 
-export async function getMomentsByPattern(pattern: string): Promise<MomentRecord[]> {
+export async function getMomentsByPattern(shot: string): Promise<MomentRecord[]> {
   const moments = await getMoments();
-  return moments.filter(m => m.pattern === pattern);
+  return moments.filter(m => m.shot === shot);
 }
 
 export async function getMomentsByDateRange(start: Date, end: Date): Promise<MomentRecord[]> {
