@@ -11,8 +11,7 @@ export type FramePattern =
   | "crossing-threshold"       // The lived experience of transition
   | "peripheral-awareness"     // Multiple streams held simultaneously  
   | "directed-momentum"        // Experience dominated by direction
-  | "holding-opposites"        // When contradictions refuse to resolve
-  | string;                    // Open for other patterns
+  | "holding-opposites";       // When contradictions refuse to resolve
 
 export interface Source {
   id: string; // Generated

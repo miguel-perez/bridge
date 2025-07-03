@@ -226,7 +226,14 @@ const frameSchema = z.object({
   emoji: z.string(),
   summary: z.string(),
   narrative: z.string().optional(),
-  pattern: z.string().optional(),
+  pattern: z.enum([
+    'moment-of-recognition',
+    'sustained-attention',
+    'crossing-threshold',
+    'peripheral-awareness',
+    'directed-momentum',
+    'holding-opposites'
+  ]).optional().default('moment-of-recognition'),
 }).refine(
   (data) => Boolean(data.sourceIds) !== Boolean(data.momentIds),
   { message: "Provide either sourceIds OR momentIds, not both or neither" }
@@ -264,7 +271,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     },
     {
       name: 'frame',
-      description: 'Frame your experience into a complete moment. Choose the pattern that matches how your attention moved. What was your body feeling? Where were you? Who else was present? (See moments://patterns/guide, moments://qualities/guide and moments://examples)',
+      description: 'Frame your experience into a complete moment or synthesis. Pattern type - recognizes how your attention moved (moment-of-recognition, sustained-attention, crossing-threshold, peripheral-awareness, directed-momentum, holding-opposites). Required for both moments and syntheses. See moments://patterns/guide, moments://qualities/guide and moments://examples.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -399,10 +406,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'frame': {
         const input = frameSchema.parse(args);
-        // Default pattern based on input type
-        if (!input.pattern) {
-          input.pattern = input.momentIds ? 'synthesis' : 'moment-of-recognition';
-        }
         if (input.sourceIds) {
           // Existing moment creation logic
           const validSources: SourceRecord[] = [];
@@ -457,6 +460,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               );
             }
           }
+          // Require a valid pattern for syntheses (no 'synthesis' allowed)
           // Create synthesis record
           const synthesis = await saveSynthesis({
             id: generateId('syn'),
@@ -464,7 +468,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             summary: input.summary,
             narrative: input.narrative,
             synthesizedMomentIds: input.momentIds,
-            pattern: input.pattern || 'synthesis',
+            pattern: input.pattern, // Must be one of the six valid patterns
             created: new Date().toISOString(),
           });
           return {
@@ -585,6 +589,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
   } catch (error) {
     if (error instanceof z.ZodError) {
+      if (error.issues.some(i => i.path.includes('pattern'))) {
+        throw new McpError(
+          ErrorCode.InvalidParams,
+          'Invalid pattern. Valid patterns: moment-of-recognition (sudden clarity), sustained-attention (dwelling in experience), crossing-threshold (transformation), peripheral-awareness (multiple streams), directed-momentum (goal focus), holding-opposites (unresolved tensions)'
+        );
+      }
       throw new McpError(
         ErrorCode.InvalidParams,
         `Invalid parameters: ${error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')}`
