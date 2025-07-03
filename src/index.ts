@@ -90,6 +90,75 @@ const PATTERN_GUIDE = {
   defaultPattern: "moment-of-recognition"
 };
 
+const QUALITIES_GUIDE = {
+  purpose: "Every moment we capture weaves together different experiential qualities—ways of noticing how experience shows up in the body, mind, space, time, and relationships. Attending to these qualities helps evoke richer, more vivid moments.",
+  qualities: {
+    embodied: {
+      description: "How experience is felt in the body—sensations, posture, breath, movement, tension, or ease.",
+      prompts: [
+        "What is your body doing or feeling right now?",
+        "Where do you notice tension, relaxation, or movement?",
+        "How does your breath, heartbeat, or posture shape this moment?"
+      ],
+      example: "My shoulders pull up toward my ears, that familiar armor against judgment."
+    },
+    attentional: {
+      description: "Where and how your attention moves—what draws focus, what drifts to the background, what you notice or ignore.",
+      prompts: [
+        "What is most vivid or clear in your awareness?",
+        "Does your attention jump, settle, or scatter?",
+        "What do you keep returning to, or what fades away?"
+      ],
+      example: "My gaze keeps flicking to the clock, even as I try to listen."
+    },
+    emotional: {
+      description: "The felt sense of mood, feeling, or emotional coloring—subtle or intense, shifting or steady.",
+      prompts: [
+        "What feelings are present, even faintly?",
+        "Is there a mood or emotional weather in this moment?",
+        "How does emotion shape what you notice or do?"
+      ],
+      example: "A tightness blooms in my chest, equal parts hope and dread."
+    },
+    purposive: {
+      description: "The sense of intention, drive, or aim—what you want, avoid, or are drawn toward in this moment.",
+      prompts: [
+        "What are you trying to do, change, or achieve?",
+        "Is there a pull toward or away from something?",
+        "What feels possible or necessary right now?"
+      ],
+      example: "Every muscle leans toward the finish line, nothing else matters."
+    },
+    spatial: {
+      description: "The lived sense of place, position, and environment—how space shapes experience.",
+      prompts: [
+        "Where are you, and what do you notice about the space?",
+        "How does the environment feel—open, closed, crowded, empty?",
+        "What details of place stand out?"
+      ],
+      example: "The kitchen hums around me, tile cool beneath my bare feet."
+    },
+    temporal: {
+      description: "How time is felt—rushing, dragging, suspended, or layered with past and future.",
+      prompts: [
+        "Does time feel fast, slow, or strange?",
+        "Are you aware of before, after, or just now?",
+        "How does memory or anticipation color this moment?"
+      ],
+      example: "Minutes stretch and pool, each breath thick with waiting."
+    },
+    relational: {
+      description: "The presence or absence of others—how relationships, spoken or unspoken, shape the moment.",
+      prompts: [
+        "Who else is present, even in thought?",
+        "How do others' actions, words, or silence affect you?",
+        "Is there a sense of connection, distance, or tension?"
+      ],
+      example: "His eyes search mine for forgiveness, but I look away."
+    }
+  }
+};
+
 // Create server instance
 const server = new Server(
   {
@@ -525,6 +594,12 @@ server.setRequestHandler(ListResourcesRequestSchema, async () => {
         description: 'Understand how patterns help identify moment boundaries',
         mimeType: 'application/json'
       },
+      {
+        uri: 'moments://qualities/guide',
+        name: 'Qualities Guide',
+        description: 'Explore the seven experiential qualities for richer moments',
+        mimeType: 'application/json'
+      },
     ],
   };
 });
@@ -595,6 +670,15 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
             uri,
             mimeType: 'application/json',
             text: JSON.stringify(PATTERN_GUIDE, null, 2)
+          }]
+        };
+      
+      case 'moments://qualities/guide':
+        return {
+          contents: [{
+            uri,
+            mimeType: 'application/json',
+            text: JSON.stringify(QUALITIES_GUIDE, null, 2)
           }]
         };
       
