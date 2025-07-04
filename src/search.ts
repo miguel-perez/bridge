@@ -384,8 +384,10 @@ export async function search(options: SearchOptions): Promise<SearchResult[] | G
           const whenDate = new Date(when);
           return whenDate >= tokenStart! && whenDate < tokenEnd!;
         });
+      } else if (!handled) {
+        // If any token is not recognized, fail gracefully and return empty result set
+        return [];
       }
-      // ... (add time-of-day and specific time filters as needed)
     }
     // If any filters were added, apply them as AND (intersection)
     if (filters.length > 0) {
