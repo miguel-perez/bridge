@@ -762,12 +762,21 @@ shifts, several emotional boundaries, multiple actional completions.`;
           if (results.length === 0) {
             return { content: [{ type: 'text', text: 'No relevant memories found.' }] };
           }
-          return {
-            content: results.map((result: SearchResult, index: number) => ({
-              type: 'text',
-              text: formatSearchResult(result, index)
-            }))
-          };
+          if (input.includeContext) {
+            return {
+              content: results.map((result: SearchResult) => ({
+                type: 'object',
+                data: result
+              }))
+            };
+          } else {
+            return {
+              content: results.map((result: SearchResult, index: number) => ({
+                type: 'text',
+                text: formatSearchResult(result, index)
+              }))
+            };
+          }
         } else {
           // GroupedResults handling (if needed)
           // Add appropriate handling or error message
