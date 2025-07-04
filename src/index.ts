@@ -807,10 +807,13 @@ shifts, several emotional boundaries, multiple actional completions.`;
           }
         }
         // Relationship search (optional pre-filter)
-        let preFilteredRecords: SearchResult[] | undefined = undefined;
+        let preFilteredRecords: any[] | undefined = undefined;
         if (input.relatedTo) {
           const allRecords = await import('./storage.js').then(m => m.getAllRecords());
-          preFilteredRecords = (await import('./search.js')).findReflectsOnRecords(input.relatedTo, await allRecords) as SearchResult[];
+          preFilteredRecords = (await import('./search.js')).findReflectsOnRecords(input.relatedTo, await allRecords);
+          if (preFilteredRecords.length === 0) {
+            return { content: [{ type: 'text', text: `No record found with ID: ${input.relatedTo}` }] };
+          }
         }
         // When calling semanticSearch, construct a SearchOptions object with all required properties and use object spread for optional fields
         const searchOptions: import('./search.js').SearchOptions = {
