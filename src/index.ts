@@ -853,7 +853,7 @@ shifts, several emotional boundaries, multiple actional completions.`;
           }
         } else if (finalResults && typeof finalResults === 'object' && 'groups' in finalResults) {
           // Pretty-print grouped results
-          const groupBlocks = finalResults.groups.map((group: any) => {
+          const groupBlocks = (finalResults as import('./search.js').GroupedResults).groups.map((group: { label: string; count: number; items: SearchResult[] }) => {
             const header = `${group.label} (${group.count})`;
             const items = group.items.map((item: SearchResult, idx: number) => formatSearchResult(item, idx)).join('\n');
             return `${header}\n${items}`;
