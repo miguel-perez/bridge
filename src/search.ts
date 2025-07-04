@@ -149,6 +149,12 @@ export function advancedFilters(results: SearchResult[], filters?: FilterOptions
     if (!rec) return false;
     // Type filter
     if (filters.types && !filters.types.includes(result.type)) return false;
+    // ShotTypes filter: only moments and scenes should be included
+    if (filters.shotTypes) {
+      if (result.type === 'source') return false;
+      if (result.type === 'moment' && !filters.shotTypes.includes(result.moment?.shot || '')) return false;
+      if (result.type === 'scene' && !filters.shotTypes.includes(result.scene?.shot || '')) return false;
+    }
     // Time range filter
     if (filters.timeRange) {
       const recDate = getRecordDate(rec);
@@ -180,11 +186,6 @@ export function advancedFilters(results: SearchResult[], filters?: FilterOptions
     // processing (for sources)
     if (filters.processing && result.type === 'source') {
       if (!filters.processing.includes(result.source?.processing || '')) return false;
-    }
-    // shotTypes (for moments/scenes)
-    if (filters.shotTypes) {
-      if (result.type === 'moment' && !filters.shotTypes.includes(result.moment?.shot || '')) return false;
-      if (result.type === 'scene' && !filters.shotTypes.includes(result.scene?.shot || '')) return false;
     }
     // framed (for sources)
     if (typeof filters.framed === 'boolean' && result.type === 'source' && allRecords) {
