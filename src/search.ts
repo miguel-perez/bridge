@@ -375,8 +375,22 @@ export async function search(options: SearchOptions): Promise<SearchResult[] | G
         tokenEnd = new Date(Date.UTC(utcYear - n + 1, 0, 1, 0, 0, 0, 0));
         handled = true;
       }
-      // --- Time-of-day and specific time logic (reuse previous logic) ---
-      // ... (reuse previous timeWindow, specificTime, etc. logic for each token)
+      // --- chrono-node fallback for unhandled tokens ---
+      if (!handled) {
+        const chronoResults = chrono.parse(token);
+        if (chronoResults.length > 0) {
+          const { start, end } = chronoResults[0];
+          const chronoStart = start.date();
+          const chronoEnd = end ? end.date() : chronoStart;
+          filters.push((r: StorageRecord) => {
+            const when = ('when' in r && r.when) ? r.when : ('created' in r && r.created ? r.created : undefined);
+            if (!when) return false;
+            const whenDate = new Date(when);
+            return whenDate >= chronoStart && whenDate <= chronoEnd;
+          });
+          handled = true;
+        }
+      }
       if (handled && tokenStart && tokenEnd) {
         filters.push((r: StorageRecord) => {
           const when = ('when' in r && r.when) ? r.when : ('created' in r && r.created ? r.created : undefined);
