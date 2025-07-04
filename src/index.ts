@@ -27,7 +27,7 @@ import {
   updateSource,
   getSources,
 } from './storage.js';
-import type { SourceRecord, ProcessingLevel } from './types.js';
+import type { SourceRecord, ProcessingLevel, StorageRecord } from './types.js';
 import { search as semanticSearch } from './search.js';
 import { setEmbeddingsConfig } from './embeddings.js';
 import path from 'path';
@@ -807,7 +807,7 @@ shifts, several emotional boundaries, multiple actional completions.`;
           }
         }
         // Relationship search (optional pre-filter)
-        let preFilteredRecords: any[] | undefined = undefined;
+        let preFilteredRecords: StorageRecord[] | undefined = undefined;
         if (input.relatedTo) {
           const allRecords = await import('./storage.js').then(m => m.getAllRecords());
           preFilteredRecords = (await import('./search.js')).findReflectsOnRecords(input.relatedTo, await allRecords);
@@ -850,6 +850,16 @@ shifts, several emotional boundaries, multiple actional completions.`;
               }))
             };
           }
+        } else if (finalResults && typeof finalResults === 'object' && 'groups' in finalResults) {
+          // Pretty-print grouped results
+          const groupBlocks = finalResults.groups.map((group: any) => {
+            const header = `${group.label} (${group.count})`;
+            const items = group.items.map((item: SearchResult, idx: number) => formatSearchResult(item, idx)).join('\n');
+            return `${header}\n${items}`;
+          });
+          return {
+            content: groupBlocks.map(text => ({ type: 'text', text }))
+          };
         } else {
           return { content: [{ type: 'text', text: 'Grouped results are not yet supported in this view.' }] };
         }
