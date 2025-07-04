@@ -181,7 +181,7 @@ interface SearchToolInput {
   query?: string;
   created?: string | { start: string; end: string };
   when?: string | { start: string; end: string };
-  relatedTo?: string;
+  reflectedOn?: string;
   type?: Array<'source' | 'moment' | 'scene'>;
   experiencer?: string;
   qualities?: string[];
@@ -302,7 +302,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             ],
             description: "Filter by event time (user-supplied 'when')"
           },
-          relatedTo: { type: "string", description: "Record ID to find all related records (traverses reflects_on, sources, moments, scenes)" },
+          reflectedOn: { type: "string", description: "Record ID to find all related records (traverses reflects_on, sources, moments, scenes)" },
           type: { type: "array", items: { type: "string", enum: ["source", "moment", "scene"] }, description: "Restrict to certain record types" },
           experiencer: { type: "string", description: "Only records with this experiencer" },
           qualities: { type: "array", items: { type: "string" }, description: "Only moments with all these qualities" },
@@ -808,11 +808,21 @@ shifts, several emotional boundaries, multiple actional completions.`;
         }
         // Relationship search (optional pre-filter)
         let preFilteredRecords: StorageRecord[] | undefined = undefined;
-        if (input.relatedTo) {
+        if (input.reflectedOn) {
           const allRecords = await import('./storage.js').then(m => m.getAllRecords());
-          preFilteredRecords = (await import('./search.js')).findReflectsOnRecords(input.relatedTo, await allRecords);
+          const searchModule = await import('./search.js');
+          const forward = searchModule.findReflectsOnRecords(input.reflectedOn, await allRecords);
+          const backward = searchModule.findReflectionsAbout(input.reflectedOn, await allRecords);
+          // Union, deduplicated by ID
+          const all = [...forward, ...backward];
+          const seen = new Set();
+          preFilteredRecords = all.filter(r => {
+            if (seen.has(r.id)) return false;
+            seen.add(r.id);
+            return true;
+          });
           if (preFilteredRecords.length === 0) {
-            return { content: [{ type: 'text', text: `No record found with ID: ${input.relatedTo}` }] };
+            return { content: [{ type: 'text', text: `No record found with ID: ${input.reflectedOn}` }] };
           }
         }
         // When calling semanticSearch, construct a SearchOptions object with all required properties and use object spread for optional fields

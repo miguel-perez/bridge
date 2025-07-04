@@ -513,6 +513,11 @@ export function findReflectsOnRecords(recordId: string, allRecords: StorageRecor
   return reflectsOn;
 }
 
+// New: Find all sources that reflect on a given recordId
+export function findReflectionsAbout(recordId: string, allRecords: StorageRecord[]): SourceRecord[] {
+  return allRecords.filter(r => r.type === 'source' && Array.isArray((r as SourceRecord).reflects_on) && (r as SourceRecord).reflects_on!.includes(recordId)) as SourceRecord[];
+}
+
 export { getSearchableText };
 
 // Helper to safely get created/when fields for sorting
