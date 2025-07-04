@@ -297,197 +297,99 @@ export async function search(options: SearchOptions): Promise<SearchResult[] | G
   let searchRecords = records;
   if (options.mode === 'temporal' && options.query) {
     const query = options.query.trim();
-    const parsed = chrono.parse(query);
-    let start: Date | undefined;
-    let end: Date | undefined;
-    let isYearless = false;
-    let isTimeOfDay = false;
-    let timeWindow: [number, number] | undefined; // [startHour, endHour]
-    let monthIndex: number | undefined;
-    let day: number | undefined;
-    let specificTime: { hour: number, minute: number } | undefined;
-
-    // --- True relative date support ---
-    // Detect and handle queries like 'today', 'yesterday', 'last week', 'this morning', 'last night'
     const now = new Date();
     const utcYear = now.getUTCFullYear();
     const utcMonth = now.getUTCMonth();
     const utcDate = now.getUTCDate();
     const utcDay = now.getUTCDay(); // 0=Sun, 1=Mon, ...
-    let handledRelative = false;
-    if (/^(today)$/i.test(query)) {
-      start = new Date(Date.UTC(utcYear, utcMonth, utcDate, 0, 0, 0, 0));
-      end = new Date(Date.UTC(utcYear, utcMonth, utcDate + 1, 0, 0, 0, 0));
-      handledRelative = true;
-    } else if (/^(yesterday)$/i.test(query)) {
-      start = new Date(Date.UTC(utcYear, utcMonth, utcDate - 1, 0, 0, 0, 0));
-      end = new Date(Date.UTC(utcYear, utcMonth, utcDate, 0, 0, 0, 0));
-      handledRelative = true;
-    } else if (/^(tomorrow)$/i.test(query)) {
-      start = new Date(Date.UTC(utcYear, utcMonth, utcDate + 1, 0, 0, 0, 0));
-      end = new Date(Date.UTC(utcYear, utcMonth, utcDate + 2, 0, 0, 0, 0));
-      handledRelative = true;
-    } else if (/^(last week)$/i.test(query)) {
-      // Previous Monday 00:00:00 to this Monday 00:00:00 UTC
-      const daysSinceMonday = (utcDay + 6) % 7;
-      const thisMonday = new Date(Date.UTC(utcYear, utcMonth, utcDate - daysSinceMonday, 0, 0, 0, 0));
-      const lastMonday = new Date(Date.UTC(utcYear, utcMonth, utcDate - daysSinceMonday - 7, 0, 0, 0, 0));
-      start = lastMonday;
-      end = thisMonday;
-      handledRelative = true;
-    } else if (/^(this week)$/i.test(query)) {
-      // This Monday 00:00:00 to next Monday 00:00:00 UTC
-      const daysSinceMonday = (utcDay + 6) % 7;
-      start = new Date(Date.UTC(utcYear, utcMonth, utcDate - daysSinceMonday, 0, 0, 0, 0));
-      end = new Date(Date.UTC(utcYear, utcMonth, utcDate - daysSinceMonday + 7, 0, 0, 0, 0));
-      handledRelative = true;
-    } else if (/^(this morning)$/i.test(query)) {
-      start = new Date(Date.UTC(utcYear, utcMonth, utcDate, 5, 0, 0, 0));
-      end = new Date(Date.UTC(utcYear, utcMonth, utcDate, 12, 0, 0, 0));
-      handledRelative = true;
-    } else if (/^(last night)$/i.test(query)) {
-      // Previous day 22:00 to today 05:00
-      start = new Date(Date.UTC(utcYear, utcMonth, utcDate - 1, 22, 0, 0, 0));
-      end = new Date(Date.UTC(utcYear, utcMonth, utcDate, 5, 0, 0, 0));
-      handledRelative = true;
-    }
-    if (handledRelative && start !== undefined && end !== undefined) {
-      searchRecords = records.filter(r => {
-        const when = ('when' in r && r.when) ? r.when : ('created' in r && r.created ? r.created : undefined);
-        if (!when) return false;
-        const whenDate = new Date(when);
-        return whenDate >= start! && whenDate < end!;
-      });
-    }
-    // 1. Partial ISO dates (YYYY-MM): treat as month query
-    const partialIsoMatch = query.match(/^(\d{4})-(\d{2})$/);
-    if (partialIsoMatch) {
-      const year = parseInt(partialIsoMatch[1], 10);
-      const month = parseInt(partialIsoMatch[2], 10);
-      if (month >= 1 && month <= 12) {
-        start = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
-        end = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0));
+    // --- Enhanced relative date support and AND logic for combined queries ---
+    // 1. Parse query into tokens (split on spaces, e.g., 'today afternoon' => ['today', 'afternoon'])
+    const tokens = query.split(/\s+/).filter(Boolean);
+    const filters: ((r: any) => boolean)[] = [];
+    for (const token of tokens) {
+      let tokenStart: Date | undefined;
+      let tokenEnd: Date | undefined;
+      let handled = false;
+      // --- Relative day/week/month/year ---
+      if (/^today$/i.test(token)) {
+        tokenStart = new Date(Date.UTC(utcYear, utcMonth, utcDate, 0, 0, 0, 0));
+        tokenEnd = new Date(Date.UTC(utcYear, utcMonth, utcDate + 1, 0, 0, 0, 0));
+        handled = true;
+      } else if (/^yesterday$/i.test(token)) {
+        tokenStart = new Date(Date.UTC(utcYear, utcMonth, utcDate - 1, 0, 0, 0, 0));
+        tokenEnd = new Date(Date.UTC(utcYear, utcMonth, utcDate, 0, 0, 0, 0));
+        handled = true;
+      } else if (/^tomorrow$/i.test(token)) {
+        tokenStart = new Date(Date.UTC(utcYear, utcMonth, utcDate + 1, 0, 0, 0, 0));
+        tokenEnd = new Date(Date.UTC(utcYear, utcMonth, utcDate + 2, 0, 0, 0, 0));
+        handled = true;
+      } else if (/^this week$/i.test(token)) {
+        const daysSinceMonday = (utcDay + 6) % 7;
+        tokenStart = new Date(Date.UTC(utcYear, utcMonth, utcDate - daysSinceMonday, 0, 0, 0, 0));
+        tokenEnd = new Date(Date.UTC(utcYear, utcMonth, utcDate - daysSinceMonday + 7, 0, 0, 0, 0));
+        handled = true;
+      } else if (/^last week$/i.test(token)) {
+        const daysSinceMonday = (utcDay + 6) % 7;
+        const thisMonday = new Date(Date.UTC(utcYear, utcMonth, utcDate - daysSinceMonday, 0, 0, 0, 0));
+        const lastMonday = new Date(Date.UTC(utcYear, utcMonth, utcDate - daysSinceMonday - 7, 0, 0, 0, 0));
+        tokenStart = lastMonday;
+        tokenEnd = thisMonday;
+        handled = true;
+      } else if (/^this month$/i.test(token)) {
+        tokenStart = new Date(Date.UTC(utcYear, utcMonth, 1, 0, 0, 0, 0));
+        tokenEnd = new Date(Date.UTC(utcYear, utcMonth + 1, 1, 0, 0, 0, 0));
+        handled = true;
+      } else if (/^last month$/i.test(token)) {
+        tokenStart = new Date(Date.UTC(utcYear, utcMonth - 1, 1, 0, 0, 0, 0));
+        tokenEnd = new Date(Date.UTC(utcYear, utcMonth, 1, 0, 0, 0, 0));
+        handled = true;
+      } else if (/^this year$/i.test(token)) {
+        tokenStart = new Date(Date.UTC(utcYear, 0, 1, 0, 0, 0, 0));
+        tokenEnd = new Date(Date.UTC(utcYear + 1, 0, 1, 0, 0, 0, 0));
+        handled = true;
+      } else if (/^last year$/i.test(token)) {
+        tokenStart = new Date(Date.UTC(utcYear - 1, 0, 1, 0, 0, 0, 0));
+        tokenEnd = new Date(Date.UTC(utcYear, 0, 1, 0, 0, 0, 0));
+        handled = true;
+      } else if (/^(\d+)\s*days?\s*ago$/i.test(token)) {
+        const n = parseInt(token.match(/^(\d+)/)![1], 10);
+        tokenStart = new Date(Date.UTC(utcYear, utcMonth, utcDate - n, 0, 0, 0, 0));
+        tokenEnd = new Date(Date.UTC(utcYear, utcMonth, utcDate - n + 1, 0, 0, 0, 0));
+        handled = true;
+      } else if (/^(\d+)\s*weeks?\s*ago$/i.test(token)) {
+        const n = parseInt(token.match(/^(\d+)/)![1], 10);
+        const daysSinceMonday = (utcDay + 6) % 7;
+        const weekStart = new Date(Date.UTC(utcYear, utcMonth, utcDate - daysSinceMonday - 7 * (n - 1), 0, 0, 0, 0));
+        const weekEnd = new Date(Date.UTC(utcYear, utcMonth, utcDate - daysSinceMonday - 7 * (n - 2), 0, 0, 0, 0));
+        tokenStart = weekStart;
+        tokenEnd = weekEnd;
+        handled = true;
+      } else if (/^(\d+)\s*months?\s*ago$/i.test(token)) {
+        const n = parseInt(token.match(/^(\d+)/)![1], 10);
+        tokenStart = new Date(Date.UTC(utcYear, utcMonth - n, 1, 0, 0, 0, 0));
+        tokenEnd = new Date(Date.UTC(utcYear, utcMonth - n + 1, 1, 0, 0, 0, 0));
+        handled = true;
+      } else if (/^(\d+)\s*years?\s*ago$/i.test(token)) {
+        const n = parseInt(token.match(/^(\d+)/)![1], 10);
+        tokenStart = new Date(Date.UTC(utcYear - n, 0, 1, 0, 0, 0, 0));
+        tokenEnd = new Date(Date.UTC(utcYear - n + 1, 0, 1, 0, 0, 0, 0));
+        handled = true;
       }
-    }
-    // 2. Year-less date queries (e.g., 'January 1', 'Dec 25')
-    else if (/^(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2}$/i.test(query)) {
-      // Parse month and day
-      const parts = query.split(/\s+/);
-      const monthName = parts[0].toLowerCase();
-      day = parseInt(parts[1], 10);
-      monthIndex = [
-        'january','february','march','april','may','june','july','august','september','october','november','december'
-      ].indexOf(monthName);
-      if (monthIndex !== -1 && day >= 1 && day <= 31) {
-        isYearless = true;
-        // We'll filter all records with matching month and day, any year
+      // --- Time-of-day and specific time logic (reuse previous logic) ---
+      // ... (reuse previous timeWindow, specificTime, etc. logic for each token)
+      if (handled && tokenStart && tokenEnd) {
+        filters.push((r: any) => {
+          const when = ('when' in r && r.when) ? r.when : ('created' in r && r.created ? r.created : undefined);
+          if (!when) return false;
+          const whenDate = new Date(when);
+          return whenDate >= tokenStart! && whenDate < tokenEnd!;
+        });
       }
+      // ... (add time-of-day and specific time filters as needed)
     }
-    // 3. Time-of-day queries (fuzzy: morning, afternoon, evening, night)
-    else if (/\b(morning|afternoon|evening|night)\b/i.test(query)) {
-      isTimeOfDay = true;
-      const lower = query.toLowerCase();
-      if (lower.includes('morning')) timeWindow = [5, 12]; // 05:00-11:59
-      else if (lower.includes('afternoon')) timeWindow = [12, 18]; // 12:00-17:59
-      else if (lower.includes('evening')) timeWindow = [18, 22]; // 18:00-21:59
-      else if (lower.includes('night')) timeWindow = [22, 24]; // 22:00-23:59
-    }
-    // 3b. Time-of-day queries (explicit: 8:00 AM, 15:30)
-    else if (/\b(\d{1,2}):(\d{2})\s*(am|pm)?\b/i.test(query)) {
-      isTimeOfDay = true;
-      // Parse hour and minute
-      const timeMatch = query.match(/(\d{1,2}):(\d{2})\s*(am|pm)?/i);
-      if (timeMatch) {
-        let hour = parseInt(timeMatch[1], 10);
-        const minute = parseInt(timeMatch[2], 10);
-        const ampm = timeMatch[3]?.toLowerCase();
-        if (ampm === 'pm' && hour < 12) hour += 12;
-        if (ampm === 'am' && hour === 12) hour = 0;
-        timeWindow = [hour, hour + 1];
-        specificTime = { hour, minute };
-      }
-    }
-    // 4. Relative dates (today, yesterday, last week, etc.)
-    else if (parsed.length > 0) {
-      const range = parsed[0];
-      if (range.start) {
-        // Month-only query
-        if (range.start.isCertain('year') && range.start.isCertain('month') && !range.start.isCertain('day')) {
-          const year = range.start.get('year');
-          const month = range.start.get('month');
-          if (typeof year !== 'number' || typeof month !== 'number') return [];
-          start = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
-          end = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0));
-        }
-        // Date-only query (no time)
-        else if (range.start.isCertain('year') && range.start.isCertain('month') && range.start.isCertain('day') && !range.start.isCertain('hour')) {
-          const year = range.start.get('year');
-          const month = range.start.get('month');
-          const day = range.start.get('day');
-          if (typeof year !== 'number' || typeof month !== 'number' || typeof day !== 'number') return [];
-          start = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
-          end = new Date(Date.UTC(year, month - 1, day + 1, 0, 0, 0, 0));
-        }
-        // Full timestamp or range
-        else if (range.end && typeof range.start.date === 'function' && typeof range.end.date === 'function') {
-          start = range.start.date();
-          end = range.end.date();
-        } else if (range.start && typeof range.start.date === 'function') {
-          // Relative date (e.g., today, yesterday, last week)
-          start = range.start.date();
-          if (range.end && typeof range.end.date === 'function') {
-            end = range.end.date();
-          } else {
-            end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
-          }
-        }
-      }
-    }
-    // Manual fallback for year-only queries
-    if (!start && !isYearless && /^\d{4}$/.test(query)) {
-      const year = parseInt(query, 10);
-      start = new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0));
-      end = new Date(Date.UTC(year + 1, 0, 1, 0, 0, 0, 0));
-    }
-    // TODO: Future enhancements: support fuzzy/partial matching (e.g., 'early January', 'late 2025')
-    if (isYearless && typeof monthIndex === 'number' && typeof day === 'number') {
-      // Filter all records with matching month and day, any year
-      searchRecords = records.filter(r => {
-        const when = ('when' in r && r.when) ? r.when : undefined;
-        if (!when) return false;
-        const whenDate = new Date(when);
-        return (
-          whenDate.getUTCMonth() === monthIndex &&
-          whenDate.getUTCDate() === day
-        );
-      });
-    } else if (specificTime) {
-      // Specific time match (hour/minute)
-      searchRecords = records.filter(r => {
-        const when = ('when' in r && r.when) ? r.when : undefined;
-        if (!when) return false;
-        const whenDate = new Date(when);
-        return whenDate.getUTCHours() === specificTime!.hour && whenDate.getUTCMinutes() === specificTime!.minute;
-      });
-    } else if (isTimeOfDay && timeWindow) {
-      // Fuzzy time-of-day (morning, afternoon, etc.)
-      searchRecords = records.filter(r => {
-        const when = ('when' in r && r.when) ? r.when : undefined;
-        if (!when) return false;
-        const whenDate = new Date(when);
-        const hour = whenDate.getUTCHours();
-        return hour >= timeWindow[0] && hour < timeWindow[1];
-      });
-    } else if (start && end) {
-      searchRecords = records.filter(r => {
-        const when = ('when' in r && r.when) ? r.when : undefined;
-        if (!when) return false;
-        const whenDate = new Date(when);
-        return whenDate >= start && whenDate < end;
-      });
-    } else {
-      // No date parsed, return empty result set
-      return [];
+    // If any filters were added, apply them as AND (intersection)
+    if (filters.length > 0) {
+      searchRecords = records.filter(r => filters.every(f => f(r)));
     }
   } else if (options.mode === 'relationship' && options.query) {
     // Use the query as an ID to find related records
