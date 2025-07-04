@@ -15,7 +15,8 @@
     "test:watch": "npm run test -- --watch",
     "test:coverage": "npm run test -- --coverage",
     "lint": "eslint src/**/*.ts",
-    "format": "prettier --write src/**/*.ts"
+    "format": "prettier --write src/**/*.ts",
+    "rebuild-embeddings": "ts-node scripts/rebuild-embeddings.ts"
   },
   "keywords": [
     "mcp",
