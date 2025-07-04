@@ -843,6 +843,7 @@ shifts, several emotional boundaries, multiple actional completions.`;
               }))
             };
           } else {
+            // Always return an array, even for a single result
             return {
               content: finalResults.map((result: SearchResult, index: number) => ({
                 type: 'text',
