@@ -3,7 +3,6 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
-  ListResourcesRequestSchema,
   ErrorCode,
   McpError,
 } from '@modelcontextprotocol/sdk/types.js';
@@ -18,22 +17,20 @@ import {
   updateMoment,
   getMoments,
   getScenes,
-  getUnframedSources,
   getScene,
   validateFilePath,
   deleteSource,
   deleteMoment,
   updateScene,
   deleteScene,
-  getAllRecords,
   setStorageConfig,
 } from './storage.js';
 import type { SourceRecord, ProcessingLevel } from './types.js';
 import { DESIGNER_MOMENT, WRESTLING_MOMENT, DOLPHIN_MOMENT, BLEH_MOMENT, KETAMINE_MOMENT, SHOT_VARIATIONS, QUALITIES_EXAMPLES, TRANSFORMATION_PRINCIPLES, COMMON_PITFALLS } from './tested-moments-data.js';
-import { search as semanticSearch, SearchOptions, getSearchableText } from './search.js';
+import { search as semanticSearch } from './search.js';
 import { setEmbeddingsConfig } from './embeddings.js';
 import path from 'path';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import type { SearchResult } from './search.js';
 
 // Constants
 const SERVER_NAME = 'captain';
@@ -284,45 +281,27 @@ const reflectSchema = z.object({
 
 const enrichSchema = z.object({
   id: z.string(),
-  updates: z.record(z.any()),
+  updates: z.record(z.unknown()),
 });
 
 const releaseSchema = z.object({
   id: z.string(),
 });
 
-const critiqueSchema = z.object({
-  momentId: z.string(),
-});
-
 // Helper: Contextual coaching prompts for captures and tool-to-tool flow
-function getContextualPrompts(toolName: string, unframedCount?: number): string {
+function getContextualPrompts(toolName: string): string {
   let prompts = '\n✓ Next steps:\n';
   switch(toolName) {
     case 'capture':
       prompts += '• Reflect - add memories, insights, or deeper noticings about this experience\n';
-      if (unframedCount && unframedCount >= 5) {
-        prompts += `• Storyboard - review your ${unframedCount} unframed sources to identify moment boundaries\n`;
-      } else {
-        prompts += '• Frame - transform this into a complete moment with patterns and qualities\n';
-      }
-      break;
-    case 'storyboard':
-      prompts += '• Frame - create individual moments using the boundaries you\'ve identified\n';
-      prompts += '• Capture more - if you need additional raw material\n';
+      prompts += '• Frame - transform this into a complete moment with patterns and qualities\n';
       break;
     case 'frame':
-      prompts += '• Critique - validate this moment against proven quality criteria\n';
       prompts += '• Enrich - add narrative depth or missing experiential qualities\n';
-      prompts += '• Weave - connect with related moments to see larger patterns\n';
-      break;
-    case 'critique':
-      prompts += '• Enrich - add missing elements the validation revealed\n';
-      prompts += '• Reframe - if the moment boundaries feel wrong\n';
-      prompts += '• Tree - see how this moment fits your larger experiential patterns\n';
+      prompts += '• Weave - connect with related moments to see larger narrative threads\n';
       break;
     case 'weave':
-      prompts += '• Tree - visualize your new scene in the larger hierarchy\n';
+      prompts += '• Use hierarchy/group view in search to visualize your new scene in context\n';
       prompts += '• Capture more - explore themes this scene revealed\n';
       break;
     case 'remember':
@@ -335,8 +314,7 @@ function getContextualPrompts(toolName: string, unframedCount?: number): string 
       break;
     default:
       prompts += '• Capture - record another experience\n';
-      prompts += '• Storyboard - review unframed sources\n';
-      prompts += '• Tree - see your moment hierarchy\n';
+      prompts += '• Use hierarchy/group view in search to explore your moments and scenes\n';
   }
   return prompts;
 }
@@ -354,12 +332,33 @@ const critiqueChecklist = `Validation criteria:\n- Voice recognition ("that's ho
 setStorageConfig({ dataFile: DATA_FILE_PATH });
 setEmbeddingsConfig({ dataFile: DATA_FILE_PATH });
 
+// Simple formatter for search results
+function formatSearchResult(result: SearchResult, index: number): string {
+  const label = result.type.toUpperCase();
+  const summary = result.snippet || result.id;
+  return `${index + 1}. [${label}] ${summary}`;
+}
+
+// Helper functions to safely cast string to union types
+function asMode(val: string | undefined): 'similarity' | 'temporal' | 'relationship' | undefined {
+  if (val === 'similarity' || val === 'temporal' || val === 'relationship') return val;
+  return undefined;
+}
+function asSort(val: string | undefined): 'relevance' | 'created' | 'when' | undefined {
+  if (val === 'relevance' || val === 'created' || val === 'when') return val;
+  return undefined;
+}
+function asGroup(val: string | undefined): 'type' | 'experiencer' | undefined {
+  if (val === 'type' || val === 'experiencer') return val;
+  return undefined;
+}
+
 // Tool handlers
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   const tools = [
     {
       name: "capture",
-      description: "Capture a lived moment before it fades. Write in present tense, using sensory detail and raw authenticity (do not polish or interpret). Example: \"Sitting at my desk, fingers hovering over keys. The screen glows softly. There is a sense of focus, of being present with this task.\"",
+      description: "Capture the source of a moment. Break up large sources into shots. Ensure all metadata is accurate, no source is lost.\"",
       inputSchema: {
         type: "object",
         properties: {
@@ -474,26 +473,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       }
     },
     {
-      name: "critique",
-      description: `Validate your framed moments against proven quality criteria. 2-3 iterations are normal. ${critiqueChecklist}`,
-      inputSchema: {
-        type: "object",
-        properties: {
-          momentId: { type: "string", description: "ID of moment to critique" }
-        },
-        required: ["momentId"]
-      }
-    },
-    {
-      name: "storyboard",
-      description: "View all unframed sources to find natural moment boundaries. Like a film editor with rushes, identify where attention shifts, emotions change, or actions complete. Essential for continuous captures.",
-      inputSchema: {
-        type: "object",
-        properties: {},
-        required: []
-      }
-    },
-    {
       name: "remember",
       description: `Semantic search across all captured experiences (sources, moments, scenes). Use natural language to find relevant memories, patterns, or relationships.\n\nTemporal mode: Supports date-only, month, year, partial ISO, time-of-day, specific time, and true relative date queries (e.g., 'today', 'yesterday', 'last week', 'this morning', 'last night'), all UTC-anchored. Uses 'when' if present, otherwise 'created'.`,
       inputSchema: {
@@ -549,6 +528,39 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     switch (name) {
       case 'capture': {
         let input;
+        const framingGuide = `THE TENSION:
+Experience flows continuously - "it cannot be broken into separate moments" (Bergson). 
+Yet for understanding, we need discrete units. You're a storyboard artist facing an 
+impossible but necessary task: finding natural joints in what is inherently seamless.
+
+BOUNDARY TYPES:
+
+1. ATTENTION BOUNDARIES
+   Where awareness fundamentally redirects. The entire field of consciousness 
+   reorganizes around a different center.
+
+2. TEMPORAL BOUNDARIES  
+   Natural segments in lived duration. Where experience has its own beginning, 
+   middle, end. Where "now" becomes "then."
+
+3. SPATIAL BOUNDARIES
+   When the sense of place transforms. Not just moving, but when lived space 
+   - its feeling, meaning, possibilities - becomes different.
+
+4. EMOTIONAL BOUNDARIES
+   Where affective atmosphere shifts. When the whole coloring of experience 
+   changes, like weather fronts moving through.
+
+5. ACTIONAL BOUNDARIES
+   Natural completions and initiations. Where purposive momentum finds its 
+   target or redirects. Reaching vs having reached.
+
+6. RELATIONAL BOUNDARIES
+   When the intersubjective field reconfigures. Others entering, leaving, 
+   or the felt sense of connection fundamentally shifting.
+
+Go as granular as possible. A conversation might contain dozens of attention 
+shifts, several emotional boundaries, multiple actional completions.`;
         try {
           input = captureSchema.parse(args);
         } catch (err) {
@@ -603,10 +615,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               text: `Defaults applied: ${defaultsUsed.join(', ')}`
             });
           }
-          const unframed = await getUnframedSources();
           content.push({
             type: 'text',
-            text: getContextualPrompts('capture', unframed.length)
+            text: getContextualPrompts('capture')
+          });
+          content.push({
+            type: 'text',
+            text: framingGuide
           });
           return { content };
         }
@@ -643,10 +658,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             text: `Defaults applied: ${defaultsUsed.join(', ')}`
           });
         }
-        const unframed = await getUnframedSources();
         content.push({
           type: 'text',
-          text: getContextualPrompts('capture', unframed.length)
+          text: getContextualPrompts('capture')
+        });
+        content.push({
+          type: 'text',
+          text: framingGuide
         });
         return { content };
       }
@@ -696,6 +714,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             {
               type: 'text',
               text: getContextualPrompts('frame')
+            },
+            {
+              type: 'text',
+              text: critiqueChecklist
             }
           ]
         };
@@ -960,287 +982,45 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         );
       }
 
-      case 'critique': {
-        const input = critiqueSchema.parse(args);
-        const moment = await getMoment(input.momentId);
-        if (!moment) {
-          throw new McpError(
-            ErrorCode.InvalidParams,
-            `Moment not found: ${input.momentId}`
-          );
-        }
-        const checklistText = `VALIDATION CHECKLIST:
-
-□ Voice recognition ("that's how I talk")
-  Does this sound like the actual person speaking? Are speech patterns preserved?
-
-□ Experiential completeness  
-  Is this a whole experience, not assembled from parts? Can you feel the unified moment?
-
-□ Visual anchorability
-  Can you imagine this as a specific moment in time? Concrete enough to visualize?
-
-□ Temporal flow implied
-  Does the moment naturally suggest what came before and after?
-
-□ Emotional atmosphere preserved
-  Is the feeling-tone present? Not just named emotions, but the lived quality?
-
-□ Self-containment
-  Could someone understand this without additional context?
-
-□ Narrative coherence
-  Does it flow naturally from beginning to end? No jarring jumps?
-
-□ Causal logic
-  Do actions and reactions make sense? Cause connects to effect?
-
-□ Temporal knowledge accuracy
-  Only what was known/felt THEN, not insights that came later?
-
-□ No invented details
-  Everything described actually in the source? No embellishments?
-
-□ Voice pattern fidelity
-  Exact phrasings and speech quirks preserved from original?
-
-□ Minimal transformation
-  Reordered for flow but not rewritten? Original words kept?
-
-□ Physical/sensory grounding
-  Enough embodied details to anchor in lived experience?`;
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `MOMENT TO CRITIQUE:\n\n${moment.emoji} ${moment.summary} (ID: ${moment.id})`
-            },
-            {
-              type: 'text',
-              text: `Shot: ${moment.shot || 'none'}\nQualities: ${moment.qualities?.map(q => q.type).join(', ') || 'none'}\n`
-            },
-            {
-              type: 'text',
-              text: checklistText
-            },
-            {
-              type: 'text',
-              text: getContextualPrompts('critique')
-            }
-          ]
-        };
-      }
-
-      case 'storyboard': {
-        // No input validation needed
-        const unframedSources = await getUnframedSources();
-        if (unframedSources.length === 0) {
-          return {
-            content: [{
-              type: 'text',
-              text: 'No unframed sources found. All sources have been framed into moments!'
-            }]
-          };
-        }
-        const framingGuide = `THE TENSION:
-Experience flows continuously - "it cannot be broken into separate moments" (Bergson). 
-Yet for understanding, we need discrete units. You're a storyboard artist facing an 
-impossible but necessary task: finding natural joints in what is inherently seamless.
-
-BOUNDARY TYPES:
-
-1. ATTENTION BOUNDARIES
-   Where awareness fundamentally redirects. The entire field of consciousness 
-   reorganizes around a different center.
-
-2. TEMPORAL BOUNDARIES  
-   Natural segments in lived duration. Where experience has its own beginning, 
-   middle, end. Where "now" becomes "then."
-
-3. SPATIAL BOUNDARIES
-   When the sense of place transforms. Not just moving, but when lived space 
-   - its feeling, meaning, possibilities - becomes different.
-
-4. EMOTIONAL BOUNDARIES
-   Where affective atmosphere shifts. When the whole coloring of experience 
-   changes, like weather fronts moving through.
-
-5. ACTIONAL BOUNDARIES
-   Natural completions and initiations. Where purposive momentum finds its 
-   target or redirects. Reaching vs having reached.
-
-6. RELATIONAL BOUNDARIES
-   When the intersubjective field reconfigures. Others entering, leaving, 
-   or the felt sense of connection fundamentally shifting.
-
-Go as granular as possible. A conversation might contain dozens of attention 
-shifts, several emotional boundaries, multiple actional completions.`;
-        const content = [
-          {
-            type: 'text',
-            text: `UNFRAMED SOURCES (${unframedSources.length} total):\n`
-          }
-        ];
-        unframedSources.forEach((source, index) => {
-          content.push({
-            type: 'text',
-            text: `\n--- Source ${index + 1} ---\nID: ${source.id}\nCaptured: ${source.created}\n\n"${source.content}"\n`
-          });
-        });
-        content.push(
-          { type: 'text', text: `\n\nFRAMING GUIDE:\n\n${framingGuide}` },
-          { type: 'text', text: getContextualPrompts('storyboard') }
-        );
-        return { content };
-      }
-
       case 'remember': {
-        // Ensure args is always defined and cast properties
-        const safeArgs = args ?? {};
-        const input: SearchOptions = {
-          query: safeArgs.query as string,
-          mode: safeArgs.mode as 'similarity' | 'temporal' | 'relationship' | undefined,
-          filters: safeArgs.filters as Partial<import('./search.js').FilterOptions>,
-          sort: safeArgs.sort as 'relevance' | 'created' | 'when' | undefined,
-          groupBy: safeArgs.groupBy as 'type' | 'experiencer' | undefined,
-          limit: safeArgs.limit as number | undefined,
-          includeContext: safeArgs.includeContext as boolean | undefined,
-        };
-        let results;
-        let errorMsg = '';
-        try {
-          // Try semantic search
-          results = await semanticSearch(input);
-        } catch (err) {
-          // If semantic search fails, fallback to basic text search
-          errorMsg = '⚠️ Semantic search failed (model not loaded or error occurred). Falling back to basic text search.';
-          const allRecords = await getAllRecords();
-          const query = (input.query || '').toLowerCase();
-          results = allRecords.filter(r => getSearchableText(r).toLowerCase().includes(query)).map(record => ({
-            type: record.type,
-            id: record.id,
-            snippet: getSearchableText(record).slice(0, 200),
-            source: record.type === 'source' ? record : undefined,
-            moment: record.type === 'moment' ? record : undefined,
-            scene: record.type === 'scene' ? record : undefined,
-          }));
-          // Enforce limit for fallback search
-          if (input.limit !== undefined) {
-            results = results.slice(0, input.limit);
-          }
-        }
-        if (!results || (Array.isArray(results) && !results.length)) {
-          return {
-            content: [{ type: 'text', text: errorMsg ? errorMsg + '\nNo relevant memories found.' : 'No relevant memories found.' }],
-          };
-        }
-        // Format results for display
-        const content = [];
-        if (errorMsg) {
-          content.push({ type: 'text', text: errorMsg });
-        }
-        content.push({
-          type: 'text',
-          text: `REMEMBER: Top ${Array.isArray(results) ? results.length : (results.groups?.length || 0)} results for "${input.query}":\n`,
+        const input = args as { query: string; mode: string; filters: Record<string, unknown>; sort: string; groupBy: string; limit: number; includeContext: boolean };
+        const results = await semanticSearch({
+          query: input.query,
+          mode: asMode(input.mode),
+          filters: input.filters,
+          sort: asSort(input.sort),
+          groupBy: asGroup(input.groupBy),
+          limit: input.limit,
+          includeContext: input.includeContext,
         });
         if (Array.isArray(results)) {
-          results.forEach((result, idx) => {
-            const header = `#${idx + 1} [${result.type}] (ID: ${result.id})`;
-            const snippet = result.snippet ? `\n${result.snippet}` : '';
-            let extra = '';
-            if (input.includeContext) {
-              if (result.type === 'source' && result.source) {
-                extra = `\nFull Source: ${JSON.stringify(result.source, null, 2)}`;
-              } else if (result.type === 'moment' && result.moment) {
-                extra = `\nFull Moment: ${JSON.stringify(result.moment, null, 2)}`;
-              } else if (result.type === 'scene' && result.scene) {
-                extra = `\nFull Scene: ${JSON.stringify(result.scene, null, 2)}`;
-              }
-            }
-            content.push({
+          if (results.length === 0) {
+            return { content: [{ type: 'text', text: 'No relevant memories found.' }] };
+          }
+          return {
+            content: results.map((result: SearchResult, index: number) => ({
               type: 'text',
-              text: `${header}${snippet}${extra}`,
-            });
-          });
-        } else if (results.groups) {
-          results.groups.forEach((group) => {
-            content.push({ type: 'text', text: `\nGroup: ${group.label} (${group.count})` });
-            group.items.forEach((result, idx) => {
-              const header = `#${idx + 1} [${result.type}] (ID: ${result.id})`;
-              const snippet = result.snippet ? `\n${result.snippet}` : '';
-              let extra = '';
-              if (input.includeContext) {
-                if (result.type === 'source' && result.source) {
-                  extra = `\nFull Source: ${JSON.stringify(result.source, null, 2)}`;
-                } else if (result.type === 'moment' && result.moment) {
-                  extra = `\nFull Moment: ${JSON.stringify(result.moment, null, 2)}`;
-                } else if (result.type === 'scene' && result.scene) {
-                  extra = `\nFull Scene: ${JSON.stringify(result.scene, null, 2)}`;
-                }
-              }
-              content.push({
-                type: 'text',
-                text: `${header}${snippet}${extra}`,
-              });
-            });
-          });
+              text: formatSearchResult(result, index)
+            }))
+          };
+        } else {
+          // GroupedResults handling (if needed)
+          // Add appropriate handling or error message
+          return { content: [{ type: 'text', text: 'Grouped results are not yet supported in this view.' }] };
         }
-        return { content };
       }
 
-      default:
+      default: {
         throw new McpError(
-          ErrorCode.MethodNotFound,
+          ErrorCode.InvalidParams,
           `Unknown tool: ${name}`
         );
-    }
-  } catch (error) {
-    // General error enhancer
-    if (error instanceof McpError) {
-      throw error; // Already formatted
-    }
-    if (error instanceof z.ZodError) {
-      // Check for specific validation errors
-      const issues = error.issues;
-      if (issues.some(i => i.path.includes('qualities') && i.code === 'too_small')) {
-        throw new McpError(
-          ErrorCode.InvalidParams,
-          'Please identify at least one experiential quality. What did your body feel? Where was your attention? What emotions were present?'
-        );
       }
-      if (issues.some(i => i.path.includes('shot'))) {
-        throw new McpError(
-          ErrorCode.InvalidParams,
-          'Invalid shot. Valid shots: moment-of-recognition (sudden clarity), sustained-attention (dwelling in experience), crossing-threshold (transformation), peripheral-awareness (multiple streams), directed-momentum (goal focus), holding-opposites (unresolved tensions)'
-        );
-      }
-      throw new McpError(
-        ErrorCode.InvalidParams,
-        `Invalid parameters: ${error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')}`
-      );
     }
-    throw error;
+  } catch (err) {
+    if (err instanceof Error) {
+      return { error: err.message };
+    }
+    return { error: 'Unknown error' };
   }
-});
-
-// Resource handlers - expose captured data
-server.setRequestHandler(ListResourcesRequestSchema, async () => {
-  return {
-    resources: [
-      {
-        uri: 'moments://recent',
-        name: 'Recent Moments',
-        description: 'Most recent moments',
-      },
-    ],
-  };
-});
-
-const transport = new StdioServerTransport();
-async function main(): Promise<void> {
-  await server.connect(transport);
-}
-main().catch((err) => {
-  process.stderr.write(`Server error: ${err instanceof Error ? err.stack : String(err)}\n`);
-  process.exit(1);
 });
