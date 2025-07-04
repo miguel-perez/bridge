@@ -25,6 +25,7 @@ import {
   deleteScene,
   setStorageConfig,
   updateSource,
+  getSources,
 } from './storage.js';
 import type { SourceRecord, ProcessingLevel } from './types.js';
 import { search as semanticSearch } from './search.js';
@@ -392,6 +393,9 @@ shifts, several emotional boundaries, multiple actional completions.`;
             reflects_on: input.reflects_on,
             file: input.file,
           });
+          // Check if this is the first source ever captured
+          const sourcesAfter = await getSources();
+          const isFirstSource = sourcesAfter.length === 1;
           const defaultsUsed = [];
           const safeArgs = args || {};
           if (!safeArgs.perspective) defaultsUsed.push('perspective="I"');
@@ -417,10 +421,13 @@ shifts, several emotional boundaries, multiple actional completions.`;
             type: 'text',
             text: getContextualPrompts('capture')
           });
-          content.push({
-            type: 'text',
-            text: framingGuide
-          });
+          // Only show framingGuide if content is long or this is the first source
+          if (source.content.length > 256 || isFirstSource) {
+            content.push({
+              type: 'text',
+              text: framingGuide
+            });
+          }
           return { content };
         }
         // Create source record
@@ -435,6 +442,9 @@ shifts, several emotional boundaries, multiple actional completions.`;
           processing: input.processing as ProcessingLevel,
           reflects_on: input.reflects_on,
         });
+        // Check if this is the first source ever captured
+        const sourcesAfter = await getSources();
+        const isFirstSource = sourcesAfter.length === 1;
         const defaultsUsed = [];
         const safeArgs = args || {};
         if (!safeArgs.perspective) defaultsUsed.push('perspective="I"');
@@ -460,10 +470,13 @@ shifts, several emotional boundaries, multiple actional completions.`;
           type: 'text',
           text: getContextualPrompts('capture')
         });
-        content.push({
-          type: 'text',
-          text: framingGuide
-        });
+        // Only show framingGuide if content is long or this is the first source
+        if (source.content.length > 256 || isFirstSource) {
+          content.push({
+            type: 'text',
+            text: framingGuide
+          });
+        }
         return { content };
       }
 
