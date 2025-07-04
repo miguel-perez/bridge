@@ -391,9 +391,8 @@ export async function search(options: SearchOptions): Promise<SearchResult[] | G
     if (filters.length > 0) {
       searchRecords = records.filter(r => filters.every(f => f(r)));
     } else if (query !== '') {
-      // If no filters were generated and the query is not empty, return all records (or optionally, return [] for strictness)
-      // Here, we choose to return all records for user-friendliness
-      searchRecords = records;
+      // If no filters were generated and the query is not empty, return empty result set
+      return [];
     }
   } else if (options.mode === 'relationship' && options.query) {
     // Use the query as an ID to find related records
