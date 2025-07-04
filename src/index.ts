@@ -24,6 +24,7 @@ import {
   updateScene,
   deleteScene,
   setStorageConfig,
+  updateSource,
 } from './storage.js';
 import type { SourceRecord, ProcessingLevel } from './types.js';
 import { search as semanticSearch } from './search.js';
@@ -623,10 +624,34 @@ shifts, several emotional boundaries, multiple actional completions.`;
         // If not a moment, try source
         const source = await getSource(input.id);
         if (source) {
-          throw new McpError(
-            ErrorCode.InvalidRequest, 
-            'Sources are immutable raw captures. To add depth, use "reflect" to create a linked source, then frame multiple related sources together into a richer moment.'
-          );
+          // Check if this source is referenced by any moments
+          const moments = await getMoments();
+          const referencingMoments = moments.filter(m => m.sources.some(s => s.sourceId === source.id));
+          // Update the source in place
+          const updatedSource = await updateSource(input.id, input.updates);
+          if (!updatedSource) {
+            throw new McpError(ErrorCode.InternalError, 'Failed to update source');
+          }
+          const content = [
+            {
+              type: 'text',
+              text: `Enriched source (ID: ${updatedSource.id}) with updates: ${Object.keys(input.updates).join(', ')}`,
+            },
+            {
+              type: 'text',
+              text: `\nFull record:\n${JSON.stringify(updatedSource, null, 2)}`
+            }
+          ];
+          if (referencingMoments.length > 0) {
+            content.push({
+              type: 'text',
+              text: `Warning: This change will update all moments that include this source (${referencingMoments.length} moment(s)).`
+            });
+          }
+          return {
+            content,
+            record: updatedSource
+          };
         }
         throw new McpError(
           ErrorCode.InvalidParams,

@@ -217,8 +217,18 @@ export async function getMomentsByScene(sceneId: string): Promise<MomentRecord[]
 }
 
 // Update operations (create new versioned record, preserving append-only)
-export async function updateSource(): Promise<never> {
-  throw new Error('Sources are immutable and cannot be updated');
+export async function updateSource(id: string, updates: Partial<SourceRecord>): Promise<SourceRecord | null> {
+  const data = await readData();
+  const index = data.sources.findIndex(s => s.id === id);
+  if (index === -1) return null;
+  data.sources[index] = {
+    ...data.sources[index],
+    ...updates
+  };
+  await writeData(data);
+  // NOTE: Embedding update is async and not awaited to avoid slowing down main operations
+  updateRecordEmbedding(data.sources[index]);
+  return data.sources[index];
 }
 
 export async function updateMoment(id: string, updates: Partial<MomentRecord>): Promise<MomentRecord | null> {
