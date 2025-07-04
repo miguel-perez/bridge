@@ -70,7 +70,7 @@ export async function semanticSearch(query: string, records: Array<SourceRecord 
     if (!emb) continue;
     const relevance = cosineSimilarity(queryEmbedding, emb);
     let snippet = '';
-    if (record.type === 'source') snippet = record.content.slice(0, 200);
+    if (record.type === 'source') snippet = record.content;
     if (record.type === 'moment') snippet = (record.summary || '') + ' ' + (record.narrative || '');
     if (record.type === 'scene') snippet = (record.summary || '') + ' ' + (record.narrative || '');
     results.push({
@@ -403,15 +403,19 @@ export async function search(options: SearchOptions): Promise<SearchResult[] | G
   // --- Main search logic ---
   if (!options.query || options.query.trim() === '' || options.mode === 'temporal') {
     // For temporal mode, we've already filtered searchRecords above
-    results = searchRecords.map(record => ({
-      type: record.type,
-      id: record.id,
-      snippet: getSearchableText(record).slice(0, 200),
-      source: record.type === 'source' ? record as SourceRecord : undefined,
-      moment: record.type === 'moment' ? record as MomentRecord : undefined,
-      scene: record.type === 'scene' ? record as SceneRecord : undefined,
-    }));
-    // Enforce limit for empty queries or temporal mode
+    results = searchRecords.map(record => {
+      // Always show full content in snippet
+      const snippet = getSearchableText(record);
+      return {
+        type: record.type,
+        id: record.id,
+        snippet,
+        source: record.type === 'source' ? record as SourceRecord : undefined,
+        moment: record.type === 'moment' ? record as MomentRecord : undefined,
+        scene: record.type === 'scene' ? record as SceneRecord : undefined,
+      };
+    });
+    // Enforce limit for number of results if specified
     if (options.limit !== undefined) {
       results = results.slice(0, options.limit);
     }

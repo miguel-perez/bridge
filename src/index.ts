@@ -31,6 +31,7 @@ import { search as semanticSearch } from './search.js';
 import { setEmbeddingsConfig } from './embeddings.js';
 import path from 'path';
 import type { SearchResult } from './search.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
 // Constants
 const SERVER_NAME = 'captain';
@@ -44,7 +45,7 @@ const DATA_FILE_PATH = process.env.BRIDGE_FILE_PATH
     : path.resolve(process.cwd(), process.env.BRIDGE_FILE_PATH)
   : defaultDataPath;
 
-// Shot documentation constant (was PATTERN_GUIDE)
+// Shot documentation constant
 const SHOT_GUIDE = {
   purpose: "Shots reveal how your attention moved through the experience - each has its own rhythm and natural boundaries you can feel.",
   metaphor: "Think like a storyboard artist deciding frame boundaries",
@@ -185,7 +186,7 @@ const FRAMED_MOMENTS_EXAMPLES = {
     BLEH_MOMENT,
     KETAMINE_MOMENT
   ],
-  patternVariations: SHOT_VARIATIONS,
+  shotVariations: SHOT_VARIATIONS,
   qualitiesInAction: QUALITIES_EXAMPLES,
   transformationPrinciples: TRANSFORMATION_PRINCIPLES,
   commonPitfalls: COMMON_PITFALLS
@@ -294,7 +295,7 @@ function getContextualPrompts(toolName: string): string {
   switch(toolName) {
     case 'capture':
       prompts += '• Reflect - add memories, insights, or deeper noticings about this experience\n';
-      prompts += '• Frame - transform this into a complete moment with patterns and qualities\n';
+      prompts += '• Frame - transform this into a complete moment with a shot and qualities\n';
       break;
     case 'frame':
       prompts += '• Enrich - add narrative depth or missing experiential qualities\n';
@@ -305,7 +306,7 @@ function getContextualPrompts(toolName: string): string {
       prompts += '• Capture more - explore themes this scene revealed\n';
       break;
     case 'remember':
-      prompts += '• Search - use natural language to find relevant memories, patterns, or relationships\n';
+      prompts += '• Search - use natural language to find relevant sources, moments, scenes or relationships\n';
       prompts += '• Filter - refine search results with optional filters\n';
       prompts += '• Sort - order results by relevance or creation date\n';
       prompts += '• Group - organize results by type or experiencer\n';
@@ -323,10 +324,10 @@ function getContextualPrompts(toolName: string): string {
 const qualitiesDesc = `Identify which qualities are most alive in this experience (at least one required, typically 1-4):\n"embodied": ${QUALITIES_GUIDE.qualities.embodied.description} Example: ${QUALITIES_GUIDE.qualities.embodied.example}\n"attentional": ${QUALITIES_GUIDE.qualities.attentional.description} Example: ${QUALITIES_GUIDE.qualities.attentional.example}\n"emotional": ${QUALITIES_GUIDE.qualities.emotional.description} Example: ${QUALITIES_GUIDE.qualities.emotional.example}\n"purposive": ${QUALITIES_GUIDE.qualities.purposive.description} Example: ${QUALITIES_GUIDE.qualities.purposive.example}\n"spatial": ${QUALITIES_GUIDE.qualities.spatial.description} Example: ${QUALITIES_GUIDE.qualities.spatial.example}\n"temporal": ${QUALITIES_GUIDE.qualities.temporal.description} Example: ${QUALITIES_GUIDE.qualities.temporal.example}\n"relational": ${QUALITIES_GUIDE.qualities.relational.description} Example: ${QUALITIES_GUIDE.qualities.relational.example}`;
 
 const shotGuide = SHOT_GUIDE.shots;
-const shotDesc = `Shot (pattern of attention movement):\n• moment-of-recognition: ${shotGuide["moment-of-recognition"].description} (keywords: ${shotGuide["moment-of-recognition"].keywords.join(", ")}). Start: ${shotGuide["moment-of-recognition"].boundaries}\n• sustained-attention: ${shotGuide["sustained-attention"].description} (keywords: ${shotGuide["sustained-attention"].keywords.join(", ")}). Start: ${shotGuide["sustained-attention"].boundaries}\n• crossing-threshold: ${shotGuide["crossing-threshold"].description} (keywords: ${shotGuide["crossing-threshold"].keywords.join(", ")}). Start: ${shotGuide["crossing-threshold"].boundaries}\n• peripheral-awareness: ${shotGuide["peripheral-awareness"].description} (keywords: ${shotGuide["peripheral-awareness"].keywords.join(", ")}). Start: ${shotGuide["peripheral-awareness"].boundaries}\n• directed-momentum: ${shotGuide["directed-momentum"].description} (keywords: ${shotGuide["directed-momentum"].keywords.join(", ")}). Start: ${shotGuide["directed-momentum"].boundaries}\n• holding-opposites: ${shotGuide["holding-opposites"].description} (keywords: ${shotGuide["holding-opposites"].keywords.join(", ")}). Start: ${shotGuide["holding-opposites"].boundaries}`;
+const shotDesc = `Shot (attention movement):\n• moment-of-recognition: ${shotGuide["moment-of-recognition"].description} (keywords: ${shotGuide["moment-of-recognition"].keywords.join(", ")}). Start: ${shotGuide["moment-of-recognition"].boundaries}\n• sustained-attention: ${shotGuide["sustained-attention"].description} (keywords: ${shotGuide["sustained-attention"].keywords.join(", ")}). Start: ${shotGuide["sustained-attention"].boundaries}\n• crossing-threshold: ${shotGuide["crossing-threshold"].description} (keywords: ${shotGuide["crossing-threshold"].keywords.join(", ")}). Start: ${shotGuide["crossing-threshold"].boundaries}\n• peripheral-awareness: ${shotGuide["peripheral-awareness"].description} (keywords: ${shotGuide["peripheral-awareness"].keywords.join(", ")}). Start: ${shotGuide["peripheral-awareness"].boundaries}\n• directed-momentum: ${shotGuide["directed-momentum"].description} (keywords: ${shotGuide["directed-momentum"].keywords.join(", ")}). Start: ${shotGuide["directed-momentum"].boundaries}\n• holding-opposites: ${shotGuide["holding-opposites"].description} (keywords: ${shotGuide["holding-opposites"].keywords.join(", ")}). Start: ${shotGuide["holding-opposites"].boundaries}`;
 
 const transformationPrinciples = FRAMED_MOMENTS_EXAMPLES.transformationPrinciples.join(" ");
-const critiqueChecklist = `Validation criteria:\n- Voice recognition ("that's how I talk")\n- Experiential completeness\n- Visual anchorability\n- Temporal flow implied\n- Emotional atmosphere preserved\n- Self-containment\n- Narrative coherence\n- Causal logic\n- Temporal knowledge accuracy\n- No invented details\n- Voice pattern fidelity\n- Minimal transformation\n- Physical/sensory grounding\n(2-3 iterations are normal)`;
+const critiqueChecklist = `Validation criteria:\n- Voice recognition ("that's how I talk")\n- Experiential completeness\n- Visual anchorability\n- Temporal flow implied\n- Emotional atmosphere preserved\n- Self-containment\n- Narrative coherence\n- Causal logic\n- Temporal knowledge accuracy\n- No invented details\n- Voice fidelity\n- Minimal transformation\n- Physical/sensory grounding\n(2-3 iterations are normal)`;
 
 // Set storage and embeddings config to use DATA_FILE_PATH
 setStorageConfig({ dataFile: DATA_FILE_PATH });
@@ -415,11 +416,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     },
     {
       name: "weave",
-      description: "Weave multiple moments together to reveal meta-patterns and deeper understanding. Narrative should trace the journey or transformation between moments. Scene works best with patterns like crossing-threshold, directed-momentum, or holding-opposites.",
+      description: "Weave multiple moments together to reveal narrative journeys.",
       inputSchema: {
         type: "object",
         properties: {
-          momentIds: { type: "array", items: { type: "string" }, description: "Moment IDs to weave together into a larger pattern", minItems: 1 },
+          momentIds: { type: "array", items: { type: "string" }, description: "Moment IDs to weave together into a larger narrative", minItems: 1 },
           emoji: { type: "string", description: "Emoji representation" },
           summary: { type: "string", description: "5-7 word summary" },
           narrative: { type: "string", description: "Narrative tracing the journey or transformation between moments" },
@@ -474,7 +475,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     },
     {
       name: "remember",
-      description: `Semantic search across all captured experiences (sources, moments, scenes). Use natural language to find relevant memories, patterns, or relationships.\n\nTemporal mode: Supports date-only, month, year, partial ISO, time-of-day, specific time, and true relative date queries (e.g., 'today', 'yesterday', 'last week', 'this morning', 'last night'), all UTC-anchored. Uses 'when' if present, otherwise 'created'.`,
+      description: `Semantic search across all captured experiences (sources, moments, scenes). Use natural language to find relevant sources, moments, or relationships.\n\nTemporal mode: Supports date-only, month, year, partial ISO, time-of-day, specific time, and true relative date queries (e.g., 'today', 'yesterday', 'last week', 'this morning', 'last night'), all UTC-anchored. Uses 'when' if present, otherwise 'created'.`,
       inputSchema: {
         type: "object",
         properties: {
@@ -565,10 +566,11 @@ shifts, several emotional boundaries, multiple actional completions.`;
           input = captureSchema.parse(args);
         } catch (err) {
           if (err instanceof z.ZodError) {
-            throw new McpError(
-              ErrorCode.InvalidParams,
-              err.errors.map(e => e.message).join('; ')
-            );
+            // User-friendly error for missing/invalid fields
+            const details = err.errors.map(e =>
+              e.path.length ? `Missing or invalid field: ${e.path.join('.')}` : e.message
+            ).join('; ');
+            throw new McpError(ErrorCode.InvalidParams, details);
           }
           throw err;
         }
@@ -678,7 +680,7 @@ shifts, several emotional boundaries, multiple actional completions.`;
           if (!source) {
             throw new McpError(
               ErrorCode.InvalidParams,
-              `Source not found: ${sourceId}. Capture an experience first, then frame it into a moment.`
+              `Source with ID '${sourceId}' not found. Capture an experience first, then frame it into a moment.`
             );
           }
           validSources.push(source);
@@ -1018,9 +1020,24 @@ shifts, several emotional boundaries, multiple actional completions.`;
       }
     }
   } catch (err) {
+    // Improved error reporting for user clarity
+    if (err instanceof McpError) {
+      return { error: err.message };
+    }
+    if (err instanceof z.ZodError) {
+      const details = err.errors.map(e =>
+        e.path.length ? `Missing or invalid field: ${e.path.join('.')}` : e.message
+      ).join('; ');
+      return { error: details };
+    }
     if (err instanceof Error) {
       return { error: err.message };
     }
     return { error: 'Unknown error' };
   }
 });
+
+(async () => {
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+})();
