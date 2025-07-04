@@ -189,6 +189,25 @@ function asGroup(val: string | undefined): 'type' | 'experiencer' | undefined {
   return undefined;
 }
 
+// Define SearchToolInput for the new search tool
+interface SearchToolInput {
+  query?: string;
+  created?: string | { start: string; end: string };
+  when?: string | { start: string; end: string };
+  relatedTo?: string;
+  type?: Array<'source' | 'moment' | 'scene'>;
+  experiencer?: string;
+  qualities?: string[];
+  perspective?: string;
+  processing?: string;
+  shot?: string;
+  framed?: boolean;
+  groupBy?: 'type' | 'experiencer' | 'day' | 'week' | 'month' | 'hierarchy';
+  sort?: 'relevance' | 'created' | 'when';
+  limit?: number;
+  includeContext?: boolean;
+}
+
 // Tool handlers
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   const tools = [
@@ -297,6 +316,42 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           id: { type: "string", description: "ID of source or moment to release" }
         },
         required: ["id"]
+      }
+    },
+    {
+      name: "search",
+      description: "Unified faceted search across all records. Supports semantic, temporal, relationship, and metadata filters. Use 'created' for capture time and 'when' for event time.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Semantic search query (natural language or keywords)" },
+          created: {
+            oneOf: [
+              { type: "string", description: "ISO date, date string, or natural language (e.g., '2023-03-15', 'last week')" },
+              { type: "object", properties: { start: { type: "string" }, end: { type: "string" } }, required: ["start", "end"] }
+            ],
+            description: "Filter by record creation time (when captured)"
+          },
+          when: {
+            oneOf: [
+              { type: "string", description: "ISO date, date string, or natural language (e.g., '2023-03-15', 'last week')" },
+              { type: "object", properties: { start: { type: "string" }, end: { type: "string" } }, required: ["start", "end"] }
+            ],
+            description: "Filter by event time (user-supplied 'when')"
+          },
+          relatedTo: { type: "string", description: "Record ID to find all related records (traverses reflects_on, sources, moments, scenes)" },
+          type: { type: "array", items: { type: "string", enum: ["source", "moment", "scene"] }, description: "Restrict to certain record types" },
+          experiencer: { type: "string", description: "Only records with this experiencer" },
+          qualities: { type: "array", items: { type: "string" }, description: "Only moments with all these qualities" },
+          perspective: { type: "string", description: "Only records with this perspective" },
+          processing: { type: "string", description: "Only records with this processing level" },
+          shot: { type: "string", description: "Only moments/scenes with this shot type" },
+          framed: { type: "boolean", description: "Only sources that are (or are not) framed" },
+          groupBy: { type: "string", enum: ["type", "experiencer", "day", "week", "month", "hierarchy"], description: "Group results by this field" },
+          sort: { type: "string", enum: ["relevance", "created", "when"], description: "Sort by field" },
+          limit: { type: "number", description: "Maximum results to return" },
+          includeContext: { type: "boolean", description: "Return full record metadata" }
+        }
       }
     }
   ];
@@ -780,6 +835,81 @@ shifts, several emotional boundaries, multiple actional completions.`;
         } else {
           // GroupedResults handling (if needed)
           // Add appropriate handling or error message
+          return { content: [{ type: 'text', text: 'Grouped results are not yet supported in this view.' }] };
+        }
+      }
+
+      case 'search': {
+        // Parse input
+        const input = args as SearchToolInput;
+        // Build filters for created and when (explicit, no fallback)
+        const filters: Record<string, unknown> = {};
+        if (Array.isArray(input.type) && input.type.length > 0) filters.type = input.type;
+        if (typeof input.experiencer === 'string' && input.experiencer.length > 0) filters.experiencer = input.experiencer;
+        if (input.qualities) filters.qualities = input.qualities;
+        if (typeof input.perspective === 'string' && input.perspective.length > 0) filters.perspectives = [input.perspective];
+        if (typeof input.processing === 'string' && input.processing.length > 0) filters.processing = [input.processing];
+        if (typeof input.shot === 'string' && input.shot.length > 0) filters.shotTypes = [input.shot];
+        if (typeof input.framed === 'boolean') filters.framed = input.framed;
+
+        // Explicitly filter by 'created' (system timestamp, UTC)
+        if (input.created) {
+          if (typeof input.created === 'string') {
+            filters.createdRange = { start: input.created, end: input.created };
+          } else if (typeof input.created === 'object' && input.created.start && input.created.end) {
+            filters.createdRange = { start: input.created.start, end: input.created.end };
+          }
+        }
+        // Explicitly filter by 'when' (user-supplied, UTC)
+        if (input.when) {
+          if (typeof input.when === 'string') {
+            filters.whenRange = { start: input.when, end: input.when };
+          } else if (typeof input.when === 'object' && input.when.start && input.when.end) {
+            filters.whenRange = { start: input.when.start, end: input.when.end };
+          }
+        }
+        // Relationship search (optional pre-filter)
+        let preFilteredRecords: SearchResult[] | undefined = undefined;
+        if (input.relatedTo) {
+          const allRecords = await import('./storage.js').then(m => m.getAllRecords());
+          preFilteredRecords = (await import('./search.js')).findReflectsOnRecords(input.relatedTo, await allRecords) as SearchResult[];
+        }
+        // When calling semanticSearch, construct a mutable SearchOptions object with all required properties
+        const searchOptions: any = {
+          query: input.query ?? '',
+          filters,
+          limit: input.limit,
+          includeContext: input.includeContext,
+        };
+        if (typeof input.sort === 'string') searchOptions.sort = input.sort;
+        if (typeof input.groupBy === 'string') searchOptions.groupBy = input.groupBy;
+        const results = await semanticSearch(searchOptions);
+        // If preFilteredRecords is set, filter results to only those in preFilteredRecords
+        let finalResults = results;
+        if (preFilteredRecords) {
+          const allowedIds = new Set(preFilteredRecords.map((r) => r.id));
+          finalResults = (Array.isArray(results) ? results : results.groups.flatMap((g) => g.items)).filter((r) => allowedIds.has(r.id));
+        }
+        if (Array.isArray(finalResults)) {
+          if (finalResults.length === 0) {
+            return { content: [{ type: 'text', text: 'No relevant memories found.' }] };
+          }
+          if (input.includeContext) {
+            return {
+              content: finalResults.map((result: SearchResult) => ({
+                type: 'object',
+                data: result
+              }))
+            };
+          } else {
+            return {
+              content: finalResults.map((result: SearchResult, index: number) => ({
+                type: 'text',
+                text: formatSearchResult(result, index)
+              }))
+            };
+          }
+        } else {
           return { content: [{ type: 'text', text: 'Grouped results are not yet supported in this view.' }] };
         }
       }
