@@ -384,17 +384,16 @@ export async function search(options: SearchOptions): Promise<SearchResult[] | G
           const whenDate = new Date(when);
           return whenDate >= tokenStart! && whenDate < tokenEnd!;
         });
-      } else if (!handled) {
-        // If any token is not recognized, fail gracefully and return empty result set
-        return [];
       }
+      // If not handled, skip this token (do not add a filter, do not return early)
     }
     // If any filters were added, apply them as AND (intersection)
     if (filters.length > 0) {
       searchRecords = records.filter(r => filters.every(f => f(r)));
-    } else {
-      // If no filters were generated, return empty result set
-      return [];
+    } else if (query !== '') {
+      // If no filters were generated and the query is not empty, return all records (or optionally, return [] for strictness)
+      // Here, we choose to return all records for user-friendliness
+      searchRecords = records;
     }
   } else if (options.mode === 'relationship' && options.query) {
     // Use the query as an ID to find related records
