@@ -495,7 +495,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     },
     {
       name: "remember",
-      description: `Semantic search across all captured experiences (sources, moments, scenes). Use natural language to find relevant memories, patterns, or relationships.\n\nTemporal mode: Supports date-only, month, and year queries as ranges (e.g., '2025-01-31' matches all records on that day, 'January 2025' matches all records in that month, '2025' matches all records in that year).`,
+      description: `Semantic search across all captured experiences (sources, moments, scenes). Use natural language to find relevant memories, patterns, or relationships.\n\nTemporal mode: Supports date-only, month, year, partial ISO, time-of-day, specific time, and true relative date queries (e.g., 'today', 'yesterday', 'last week', 'this morning', 'last night'), all UTC-anchored. Uses 'when' if present, otherwise 'created'.`,
       inputSchema: {
         type: "object",
         properties: {

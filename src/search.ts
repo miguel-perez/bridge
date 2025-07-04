@@ -307,6 +307,58 @@ export async function search(options: SearchOptions): Promise<SearchResult[] | G
     let day: number | undefined;
     let specificTime: { hour: number, minute: number } | undefined;
 
+    // --- True relative date support ---
+    // Detect and handle queries like 'today', 'yesterday', 'last week', 'this morning', 'last night'
+    const now = new Date();
+    const utcYear = now.getUTCFullYear();
+    const utcMonth = now.getUTCMonth();
+    const utcDate = now.getUTCDate();
+    const utcDay = now.getUTCDay(); // 0=Sun, 1=Mon, ...
+    let handledRelative = false;
+    if (/^(today)$/i.test(query)) {
+      start = new Date(Date.UTC(utcYear, utcMonth, utcDate, 0, 0, 0, 0));
+      end = new Date(Date.UTC(utcYear, utcMonth, utcDate + 1, 0, 0, 0, 0));
+      handledRelative = true;
+    } else if (/^(yesterday)$/i.test(query)) {
+      start = new Date(Date.UTC(utcYear, utcMonth, utcDate - 1, 0, 0, 0, 0));
+      end = new Date(Date.UTC(utcYear, utcMonth, utcDate, 0, 0, 0, 0));
+      handledRelative = true;
+    } else if (/^(tomorrow)$/i.test(query)) {
+      start = new Date(Date.UTC(utcYear, utcMonth, utcDate + 1, 0, 0, 0, 0));
+      end = new Date(Date.UTC(utcYear, utcMonth, utcDate + 2, 0, 0, 0, 0));
+      handledRelative = true;
+    } else if (/^(last week)$/i.test(query)) {
+      // Previous Monday 00:00:00 to this Monday 00:00:00 UTC
+      const daysSinceMonday = (utcDay + 6) % 7;
+      const thisMonday = new Date(Date.UTC(utcYear, utcMonth, utcDate - daysSinceMonday, 0, 0, 0, 0));
+      const lastMonday = new Date(Date.UTC(utcYear, utcMonth, utcDate - daysSinceMonday - 7, 0, 0, 0, 0));
+      start = lastMonday;
+      end = thisMonday;
+      handledRelative = true;
+    } else if (/^(this week)$/i.test(query)) {
+      // This Monday 00:00:00 to next Monday 00:00:00 UTC
+      const daysSinceMonday = (utcDay + 6) % 7;
+      start = new Date(Date.UTC(utcYear, utcMonth, utcDate - daysSinceMonday, 0, 0, 0, 0));
+      end = new Date(Date.UTC(utcYear, utcMonth, utcDate - daysSinceMonday + 7, 0, 0, 0, 0));
+      handledRelative = true;
+    } else if (/^(this morning)$/i.test(query)) {
+      start = new Date(Date.UTC(utcYear, utcMonth, utcDate, 5, 0, 0, 0));
+      end = new Date(Date.UTC(utcYear, utcMonth, utcDate, 12, 0, 0, 0));
+      handledRelative = true;
+    } else if (/^(last night)$/i.test(query)) {
+      // Previous day 22:00 to today 05:00
+      start = new Date(Date.UTC(utcYear, utcMonth, utcDate - 1, 22, 0, 0, 0));
+      end = new Date(Date.UTC(utcYear, utcMonth, utcDate, 5, 0, 0, 0));
+      handledRelative = true;
+    }
+    if (handledRelative && start !== undefined && end !== undefined) {
+      searchRecords = records.filter(r => {
+        const when = ('when' in r && r.when) ? r.when : ('created' in r && r.created ? r.created : undefined);
+        if (!when) return false;
+        const whenDate = new Date(when);
+        return whenDate >= start! && whenDate < end!;
+      });
+    }
     // 1. Partial ISO dates (YYYY-MM): treat as month query
     const partialIsoMatch = query.match(/^(\d{4})-(\d{2})$/);
     if (partialIsoMatch) {
