@@ -1,4 +1,5 @@
-import type { SourceRecord, MomentRecord, SynthesisRecord } from './types.js';
+import type { SourceRecord, MomentRecord, SceneRecord } from './types.js';
+import type { QualityType } from './types.js';
 import { getAllRecords, getSearchableText } from './storage.js';
 import { loadEmbeddings, generateEmbedding, cosineSimilarity } from './embeddings.js';
 
@@ -6,21 +7,21 @@ import { loadEmbeddings, generateEmbedding, cosineSimilarity } from './embedding
 import * as chrono from 'chrono-node';
 
 export interface SearchResult {
-  type: 'source' | 'moment' | 'synthesis';
+  type: 'source' | 'moment' | 'scene';
   id: string;
   relevance?: number;
   snippet?: string;
   source?: SourceRecord;
   moment?: MomentRecord;
-  synthesis?: SynthesisRecord;
+  scene?: SceneRecord;
 }
 
 export interface FilterOptions {
-  type?: Array<'source' | 'moment' | 'synthesis'>;
+  type?: Array<'source' | 'moment' | 'scene'>;
   experiencer?: string;
   qualities?: string[];
   // Advanced filters
-  types?: Array<'source' | 'moment' | 'synthesis'>;
+  types?: Array<'source' | 'moment' | 'scene'>;
   timeRange?: { start?: string; end?: string };
   hasQualities?: string[]; // QualityType[]
   experiencers?: string[];
@@ -48,7 +49,7 @@ export interface DateRange {
   end: Date;
 }
 
-export type StorageRecord = SourceRecord | MomentRecord | SynthesisRecord;
+export type StorageRecord = SourceRecord | MomentRecord | SceneRecord;
 
 export interface GroupedResults {
   groups: Array<{
@@ -60,7 +61,7 @@ export interface GroupedResults {
 }
 
 // 1. Core semantic similarity search
-export async function semanticSearch(query: string, records: Array<SourceRecord | MomentRecord | SynthesisRecord>, embeddings: Record<string, number[]>, limit = 20): Promise<SearchResult[]> {
+export async function semanticSearch(query: string, records: Array<SourceRecord | MomentRecord | SceneRecord>, embeddings: Record<string, number[]>, limit = 20): Promise<SearchResult[]> {
   const queryEmbedding = await generateEmbedding(query);
   const results: SearchResult[] = [];
   for (const record of records) {
@@ -71,7 +72,7 @@ export async function semanticSearch(query: string, records: Array<SourceRecord 
     let snippet = '';
     if (record.type === 'source') snippet = record.content.slice(0, 200);
     if (record.type === 'moment') snippet = (record.summary || '') + ' ' + (record.narrative || '');
-    if (record.type === 'synthesis') snippet = (record.summary || '') + ' ' + (record.narrative || '');
+    if (record.type === 'scene') snippet = (record.summary || '') + ' ' + (record.narrative || '');
     results.push({
       type: record.type,
       id,
@@ -79,7 +80,7 @@ export async function semanticSearch(query: string, records: Array<SourceRecord 
       snippet: snippet.trim(),
       source: record.type === 'source' ? record as SourceRecord : undefined,
       moment: record.type === 'moment' ? record as MomentRecord : undefined,
-      synthesis: record.type === 'synthesis' ? record as SynthesisRecord : undefined,
+      scene: record.type === 'scene' ? record as SceneRecord : undefined,
     });
   }
   // Sort by relevance descending
@@ -98,12 +99,12 @@ export function applyFilters(results: SearchResult[], filters?: FilterOptions): 
         // TODO: To filter moments by experiencer, need to look up full source records by sourceId
         // Skipping for now to avoid linter error
       }
-      if (result.type === 'synthesis') return false; // Not applicable
+      if (result.type === 'scene') return false; // Not applicable
     }
     if (filters.qualities && result.type === 'moment') {
-      const momentQualities = result.moment?.qualities?.map(q => q.type) || [];
-      // Cast q to any to avoid type error
-      if (!filters.qualities.every(q => momentQualities.includes(q as any))) return false;
+      const momentQualities: QualityType[] = result.moment?.qualities?.map(q => q.type as QualityType) || [];
+      const filterQualities: QualityType[] = filters.qualities as QualityType[];
+      if (!filterQualities.every(q => momentQualities.includes(q))) return false;
     }
     // Add more filters as needed
     return true;
@@ -129,8 +130,8 @@ function getParentId(record: StorageRecord): string | null {
   if (record.type === 'moment' && Array.isArray(record.sources) && record.sources.length > 0) {
     return record.sources[0].sourceId;
   }
-  if (record.type === 'synthesis' && Array.isArray(record.synthesizedMomentIds) && record.synthesizedMomentIds.length > 0) {
-    return record.synthesizedMomentIds[0];
+  if (record.type === 'scene' && Array.isArray(record.momentIds) && record.momentIds.length > 0) {
+    return record.momentIds[0];
   }
   return null;
 }
@@ -143,7 +144,7 @@ export function advancedFilters(results: SearchResult[], filters?: FilterOptions
     filters.types = filters.type;
   }
   return results.filter(result => {
-    const rec = result.source || result.moment || result.synthesis;
+    const rec = result.source || result.moment || result.scene;
     if (!rec) return false;
     // Type filter
     if (filters.types && !filters.types.includes(result.type)) return false;
@@ -162,8 +163,13 @@ export function advancedFilters(results: SearchResult[], filters?: FilterOptions
     // experiencers (for sources, moments)
     if (filters.experiencers) {
       if (result.type === 'source' && !filters.experiencers.includes(result.source?.experiencer || '')) return false;
-      if (result.type === 'moment' && result.moment?.sources) {
-        // TODO: Lookup full source records for experiencer
+      if (result.type === 'moment' && result.moment?.sources && allRecords) {
+        // Check if any related source has the experiencer
+        const sourceExperiencers = result.moment.sources.map(src => {
+          const srcRec = allRecords.find(r => r.id === src.sourceId && r.type === 'source') as SourceRecord | undefined;
+          return srcRec?.experiencer;
+        }).filter(Boolean);
+        if (!filters.experiencers.some(exp => sourceExperiencers.includes(exp))) return false;
       }
     }
     // perspectives (for sources)
@@ -174,15 +180,36 @@ export function advancedFilters(results: SearchResult[], filters?: FilterOptions
     if (filters.processing && result.type === 'source') {
       if (!filters.processing.includes(result.source?.processing || '')) return false;
     }
-    // shotTypes (for moments/syntheses)
+    // shotTypes (for moments/scenes)
     if (filters.shotTypes) {
       if (result.type === 'moment' && !filters.shotTypes.includes(result.moment?.shot || '')) return false;
-      if (result.type === 'synthesis' && !filters.shotTypes.includes(result.synthesis?.shot || '')) return false;
+      if (result.type === 'scene' && !filters.shotTypes.includes(result.scene?.shot || '')) return false;
     }
     // framed (for sources)
     if (typeof filters.framed === 'boolean' && result.type === 'source' && allRecords) {
       const isFramed = allRecords.some(r => r.type === 'moment' && Array.isArray((r as MomentRecord).sources) && (r as MomentRecord).sources.some(s => s.sourceId === result.id));
       if (filters.framed !== isFramed) return false;
+    }
+    // qualities (for sources and moments)
+    if (filters.qualities) {
+      if (result.type === 'moment') {
+        const momentQualities: string[] = result.moment?.qualities?.map(q => q.type) || [];
+        if (!filters.qualities.every(q => momentQualities.includes(q))) return false;
+      } else if (result.type === 'source') {
+        // If sources ever have qualities, implement here
+        // (currently not in schema)
+      }
+    }
+    // experiencer (legacy single)
+    if (filters.experiencer) {
+      if (result.type === 'source' && result.source?.experiencer !== filters.experiencer) return false;
+      if (result.type === 'moment' && result.moment?.sources && allRecords) {
+        const sourceExperiencers = result.moment.sources.map(src => {
+          const srcRec = allRecords.find(r => r.id === src.sourceId && r.type === 'source') as SourceRecord | undefined;
+          return srcRec?.experiencer;
+        }).filter(Boolean);
+        if (!sourceExperiencers.includes(filters.experiencer)) return false;
+      }
     }
     return true;
   });
@@ -224,7 +251,7 @@ export function groupResults(results: SearchResult[], groupBy: GroupOption = 'no
   } else if (groupBy === 'day' || groupBy === 'week' || groupBy === 'month') {
     const byTime: Record<string, SearchResult[]> = {};
     for (const r of results) {
-      const rec = r.source || r.moment || r.synthesis;
+      const rec = r.source || r.moment || r.scene;
       if (!rec) continue;
       const date = getRecordDate(rec);
       if (!date) continue;
@@ -246,7 +273,7 @@ export function groupResults(results: SearchResult[], groupBy: GroupOption = 'no
     // Group by parent-child relationships
     const byParent: Record<string, SearchResult[]> = {};
     for (const r of results) {
-      const rec = r.source || r.moment || r.synthesis;
+      const rec = r.source || r.moment || r.scene;
       if (!rec) continue;
       const parentId = getParentId(rec);
       const label = parentId || 'root';
@@ -265,23 +292,53 @@ export async function search(options: SearchOptions): Promise<SearchResult[] | G
   const records = await getAllRecords();
   const embeddings = await loadEmbeddings();
   let results: SearchResult[] = [];
+
+  // --- Mode handling ---
+  let searchRecords = records;
+  if (options.mode === 'temporal') {
+    // Use chrono-node to parse dates from the query
+    const { dateRange, cleanQuery } = parseTemporalQuery(options.query);
+    if (dateRange) {
+      searchRecords = records.filter(r => {
+        const date = getRecordDate(r);
+        return date && isWithinRange(date, dateRange.start, dateRange.end);
+      });
+    }
+    options.query = cleanQuery;
+  } else if (options.mode === 'relationship' && options.query) {
+    // Use the query as an ID to find related records
+    searchRecords = findRelatedRecords(options.query, records);
+  }
+  // For similarity or default, use all records
+
+  // --- Main search logic ---
   if (!options.query || options.query.trim() === '') {
     // No query: return all records as results (no relevance)
-    results = records.map(record => ({
+    results = searchRecords.map(record => ({
       type: record.type,
       id: record.id,
       snippet: getSearchableText(record).slice(0, 200),
       source: record.type === 'source' ? record as SourceRecord : undefined,
       moment: record.type === 'moment' ? record as MomentRecord : undefined,
-      synthesis: record.type === 'synthesis' ? record as SynthesisRecord : undefined,
+      scene: record.type === 'scene' ? record as SceneRecord : undefined,
     }));
+    // Enforce limit for empty queries
+    if (options.limit !== undefined) {
+      results = results.slice(0, options.limit);
+    }
   } else {
     // Semantic search
-    results = await semanticSearch(options.query, records, embeddings, options.limit || 20);
+    results = await semanticSearch(options.query, searchRecords, embeddings, options.limit || 20);
   }
-  // Apply advanced filters
+
+  // --- Apply advanced filters ---
   results = advancedFilters(results, options.filters, records);
-  // Group if requested
+  // Enforce limit after filtering (in case filters reduce the set)
+  if (options.limit !== undefined) {
+    results = results.slice(0, options.limit);
+  }
+
+  // --- Group if requested ---
   if (options.groupBy && options.groupBy !== 'none') {
     return groupResults(results, options.groupBy as GroupOption);
   }
@@ -328,8 +385,8 @@ export function findRelatedRecords(recordId: string, allRecords: StorageRecord[]
         if (src.sourceId && !visited.has(src.sourceId)) queue.push(src.sourceId);
       }
     }
-    if (rec.type === 'synthesis' && Array.isArray((rec as SynthesisRecord).synthesizedMomentIds)) {
-      for (const momId of (rec as SynthesisRecord).synthesizedMomentIds) {
+    if (rec.type === 'scene' && Array.isArray((rec as SceneRecord).momentIds)) {
+      for (const momId of (rec as SceneRecord).momentIds) {
         if (!visited.has(momId)) queue.push(momId);
       }
     }

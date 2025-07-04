@@ -1,10 +1,10 @@
 import { promises as fs } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import type { SourceRecord, MomentRecord, SynthesisRecord } from './types.js';
+import type { SourceRecord, MomentRecord, SceneRecord } from './types.js';
 
 // Type for any record
-export type StorageRecord = SourceRecord | MomentRecord | SynthesisRecord;
+export type StorageRecord = SourceRecord | MomentRecord | SceneRecord;
 
 // Get the directory of the current module
 const __filename = fileURLToPath(import.meta.url);
@@ -12,12 +12,33 @@ const __dirname = dirname(__filename);
 
 // Storage configuration (match storage.ts)
 const ENV = process.env.NODE_ENV || process.env.MCP_ENV || 'development';
-const STORAGE_DIR = join(__dirname, '..', 'data', ENV);
-const EMBEDDINGS_FILE = join(STORAGE_DIR, 'embeddings.json');
+let customEmbeddingsFile: string | null = null;
+let customStorageDir: string | null = null;
+let pairedDataFile: string | null = null;
+
+export function setEmbeddingsConfig({ embeddingsFile, storageDir, dataFile }: { embeddingsFile?: string; storageDir?: string; dataFile?: string }): void {
+  if (embeddingsFile) customEmbeddingsFile = embeddingsFile;
+  if (storageDir) customStorageDir = storageDir;
+  if (dataFile) pairedDataFile = dataFile;
+}
+
+function getStorageDir(): string {
+  if (customStorageDir) return customStorageDir;
+  return join(__dirname, '..', 'data', ENV);
+}
+
+function getEmbeddingsFile(): string {
+  if (customEmbeddingsFile) return customEmbeddingsFile;
+  if (pairedDataFile) {
+    const base = pairedDataFile.replace(/(\.jsonl?|\.json)$/i, '');
+    return base + '.embeddings.json';
+  }
+  return join(getStorageDir(), 'embeddings.json');
+}
 
 // Try to use a minimal interface for the pipeline if types are missing
 interface MinimalFeatureExtractionPipeline {
-  (text: string): Promise<any>;
+  (text: string): Promise<unknown>;
 }
 // The actual type from @xenova/transformers would be better, but is not available
 let model: MinimalFeatureExtractionPipeline | null = null;
@@ -39,8 +60,8 @@ export async function generateEmbedding(text: string): Promise<number[]> {
     return output[0];
   }
   // If output has a .tolist() method (older versions)
-  if (output && typeof output.tolist === 'function') {
-    return output.tolist()[0];
+  if (output && typeof output === 'object' && 'tolist' in output && typeof (output as { tolist?: unknown }).tolist === 'function') {
+    return (output as { tolist: () => number[][] }).tolist()[0];
   }
   // If output is a flat array
   if (Array.isArray(output)) {
@@ -52,7 +73,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
 // 2. Load all embeddings from file
 export async function loadEmbeddings(): Promise<Record<string, number[]>> {
   try {
-    const content = await fs.readFile(EMBEDDINGS_FILE, 'utf8');
+    const content = await fs.readFile(getEmbeddingsFile(), 'utf8');
     return JSON.parse(content);
   } catch (err) {
     return {};
@@ -61,8 +82,8 @@ export async function loadEmbeddings(): Promise<Record<string, number[]>> {
 
 // 3. Save all embeddings to file
 export async function saveEmbeddings(embeddings: Record<string, number[]>): Promise<void> {
-  await fs.mkdir(STORAGE_DIR, { recursive: true });
-  await fs.writeFile(EMBEDDINGS_FILE, JSON.stringify(embeddings, null, 2), 'utf8');
+  await fs.mkdir(getStorageDir(), { recursive: true });
+  await fs.writeFile(getEmbeddingsFile(), JSON.stringify(embeddings, null, 2), 'utf8');
 }
 
 // 4. Cosine similarity

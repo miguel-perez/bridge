@@ -27,28 +27,28 @@ describe('Storage Layer', () => {
   });
 
   describe('File Path Validation', () => {
-    it('should reject dangerous paths', () => {
-      expect(validateFilePath('../../../etc/passwd')).toBe(false);
-      expect(validateFilePath('../../secrets.txt')).toBe(false);
-      expect(validateFilePath('../config.ini')).toBe(false);
+    it('should reject dangerous paths', async () => {
+      expect(await validateFilePath('../../../etc/passwd')).toBe(false);
+      expect(await validateFilePath('../../secrets.txt')).toBe(false);
+      expect(await validateFilePath('../config.ini')).toBe(false);
     });
 
-    it('should accept safe paths', () => {
-      expect(validateFilePath('normal-file.txt')).toBe(true);
-      expect(validateFilePath('folder/file.txt')).toBe(true);
-      expect(validateFilePath('deep/folder/structure/file.md')).toBe(true);
+    it('should accept safe paths', async () => {
+      expect(await validateFilePath('normal-file.txt')).toBe(true);
+      expect(await validateFilePath('folder/file.txt')).toBe(true);
+      expect(await validateFilePath('deep/folder/structure/file.md')).toBe(true);
     });
 
-    it('should validate against allowed roots when provided', () => {
+    it('should validate against allowed roots when provided', async () => {
       // When allowed roots are provided, only files within those roots should be allowed
       const allowedRoots = [process.cwd()]; // Use current working directory as allowed root
       
-      expect(validateFilePath('valid-file.txt', allowedRoots)).toBe(true);
-      expect(validateFilePath('../../../etc/passwd', allowedRoots)).toBe(false);
+      expect(await validateFilePath('valid-file.txt', allowedRoots)).toBe(true);
+      expect(await validateFilePath('../../../etc/passwd', allowedRoots)).toBe(false);
       
       // Test with empty allowed roots - should fall back to basic validation
-      expect(validateFilePath('safe-file.txt', [])).toBe(true);
-      expect(validateFilePath('../dangerous.txt', [])).toBe(false);
+      expect(await validateFilePath('safe-file.txt', [])).toBe(true);
+      expect(await validateFilePath('../dangerous.txt', [])).toBe(false);
     });
   });
 

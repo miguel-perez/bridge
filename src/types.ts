@@ -57,18 +57,8 @@ export interface Moment {
   when?: string; // When experience happened
 }
 
-export interface Synthesis {
-  id: string; // Generated
-  emoji: string;
-  summary: string; // 5-7 word summary
-  narrative?: string; // Optional overarching narrative
-  synthesizedMomentIds: string[]; // The moments contained within
-  shot: ShotType; // Visual/experiential anchor for the synthesis as a whole
-  created: string; // When synthesis was created
-}
-
 // Storage record types
-export type RecordType = "source" | "moment" | "synthesis";
+export type RecordType = "source" | "moment" | "scene";
 
 export interface BaseRecord {
   type: RecordType;
@@ -84,8 +74,14 @@ export interface MomentRecord extends BaseRecord, Moment {
   lastModified?: string;
 }
 
-export interface SynthesisRecord extends BaseRecord, Synthesis {
-  type: "synthesis";
+export interface SceneRecord extends BaseRecord {
+  type: "scene";
+  emoji: string;
+  summary: string;
+  narrative?: string;
+  momentIds: string[];
+  shot: ShotType;
+  created: string;
 }
 
-export type StorageRecord = SourceRecord | MomentRecord | SynthesisRecord; 
+export type StorageRecord = SourceRecord | MomentRecord | SceneRecord; 

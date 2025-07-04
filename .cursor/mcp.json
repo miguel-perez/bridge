@@ -6,7 +6,8 @@
       "cwd": "C:\\Users\\Miguel\\Git\\bridge",
       "env": {
         "NODE_ENV": "development"
-      }
+      },
+      "dataFile": "./data/development.json"
     }
   }
 } 

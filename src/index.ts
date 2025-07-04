@@ -1122,6 +1122,10 @@ shifts, several emotional boundaries, multiple actional completions.`;
             moment: record.type === 'moment' ? record : undefined,
             scene: record.type === 'scene' ? record : undefined,
           }));
+          // Enforce limit for fallback search
+          if (input.limit !== undefined) {
+            results = results.slice(0, input.limit);
+          }
         }
         if (!results || (Array.isArray(results) && !results.length)) {
           return {
@@ -1231,7 +1235,7 @@ server.setRequestHandler(ListResourcesRequestSchema, async () => {
 });
 
 const transport = new StdioServerTransport();
-async function main() {
+async function main(): Promise<void> {
   await server.connect(transport);
 }
 main().catch((err) => {
