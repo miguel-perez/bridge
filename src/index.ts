@@ -146,7 +146,7 @@ function getContextualPrompts(toolName: string): string {
       prompts += '• Use hierarchy/group view in search to visualize your new scene in context\n';
       prompts += '• Capture more - explore themes this scene revealed\n';
       break;
-    case 'remember':
+    case 'search':
       prompts += '• Search - use natural language to find relevant sources, moments, scenes or relationships\n';
       prompts += '• Filter - refine search results with optional filters\n';
       prompts += '• Sort - order results by relevance or creation date\n';
@@ -173,20 +173,6 @@ function formatSearchResult(result: SearchResult, index: number): string {
   const label = result.type.toUpperCase();
   const summary = result.snippet || result.id;
   return `${index + 1}. [${label}] ${summary}`;
-}
-
-// Helper functions to safely cast string to union types
-function asMode(val: string | undefined): 'similarity' | 'temporal' | 'relationship' | undefined {
-  if (val === 'similarity' || val === 'temporal' || val === 'relationship') return val;
-  return undefined;
-}
-function asSort(val: string | undefined): 'relevance' | 'created' | 'when' | undefined {
-  if (val === 'relevance' || val === 'created' || val === 'when') return val;
-  return undefined;
-}
-function asGroup(val: string | undefined): 'type' | 'experiencer' | undefined {
-  if (val === 'type' || val === 'experiencer') return val;
-  return undefined;
 }
 
 // Define SearchToolInput for the new search tool
@@ -269,30 +255,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           shot: { type: "string", enum: ["moment-of-recognition", "sustained-attention", "crossing-threshold", "peripheral-awareness", "directed-momentum", "holding-opposites"], description: "Overall attention pattern of the woven scene" }
         },
         required: ["momentIds", "emoji", "summary", "narrative", "shot"]
-      }
-    },
-    {
-      name: "remember",
-      description: "Search across all captured experiences using different modes.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          query: { type: "string", description: "Natural language search query" },
-          mode: { type: "string", enum: ["similarity", "temporal", "relationship"], description: "Search mode" },
-          filters: {
-            type: "object",
-            description: "Filter results",
-            properties: {
-              type: { type: "array", items: { type: "string", enum: ["source", "moment", "scene"] }, description: "Filter by record type" },
-              experiencer: { type: "string", description: "Filter by who experienced it" },
-              qualities: { type: "array", items: { type: "string" }, description: "Array of quality types for moments" }
-            }
-          },
-          limit: { type: "number", description: "Maximum results to return" },
-          includeContext: { type: "boolean", description: "Include full record details" },
-          sort: { type: "string", enum: ["relevance", "created", "when"], description: "Sort by field" }
-        },
-        required: ["query"]
       }
     },
     {
@@ -802,43 +764,6 @@ shifts, several emotional boundaries, multiple actional completions.`;
         );
       }
 
-      case 'remember': {
-        const input = args as { query: string; mode: string; filters: Record<string, unknown>; sort: string; groupBy: string; limit: number; includeContext: boolean };
-        const results = await semanticSearch({
-          query: input.query,
-          mode: asMode(input.mode),
-          filters: input.filters,
-          sort: asSort(input.sort),
-          groupBy: asGroup(input.groupBy),
-          limit: input.limit,
-          includeContext: input.includeContext,
-        });
-        if (Array.isArray(results)) {
-          if (results.length === 0) {
-            return { content: [{ type: 'text', text: 'No relevant memories found.' }] };
-          }
-          if (input.includeContext) {
-            return {
-              content: results.map((result: SearchResult) => ({
-                type: 'object',
-                data: result
-              }))
-            };
-          } else {
-            return {
-              content: results.map((result: SearchResult, index: number) => ({
-                type: 'text',
-                text: formatSearchResult(result, index)
-              }))
-            };
-          }
-        } else {
-          // GroupedResults handling (if needed)
-          // Add appropriate handling or error message
-          return { content: [{ type: 'text', text: 'Grouped results are not yet supported in this view.' }] };
-        }
-      }
-
       case 'search': {
         // Parse input
         const input = args as SearchToolInput;
@@ -874,8 +799,8 @@ shifts, several emotional boundaries, multiple actional completions.`;
           const allRecords = await import('./storage.js').then(m => m.getAllRecords());
           preFilteredRecords = (await import('./search.js')).findReflectsOnRecords(input.relatedTo, await allRecords) as SearchResult[];
         }
-        // When calling semanticSearch, construct a mutable SearchOptions object with all required properties
-        const searchOptions: any = {
+        // When calling semanticSearch, construct a SearchOptions object with all required properties and use object spread for optional fields
+        const searchOptions: import('./search.js').SearchOptions = {
           query: input.query ?? '',
           filters,
           limit: input.limit,
