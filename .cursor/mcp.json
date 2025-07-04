@@ -7,7 +7,7 @@
       "env": {
         "NODE_ENV": "development"
       },
-      "dataFile": "./data/development.json"
+      "dataFile": "C:\\Users\\Miguel\\Git\\bridge\\data\\development.json"
     }
   }
 } 

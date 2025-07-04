@@ -32,12 +32,20 @@ import type { SourceRecord, ProcessingLevel } from './types.js';
 import { DESIGNER_MOMENT, WRESTLING_MOMENT, DOLPHIN_MOMENT, BLEH_MOMENT, KETAMINE_MOMENT, SHOT_VARIATIONS, QUALITIES_EXAMPLES, TRANSFORMATION_PRINCIPLES, COMMON_PITFALLS } from './tested-moments-data.js';
 import { search as semanticSearch, SearchOptions, getSearchableText } from './search.js';
 import { setEmbeddingsConfig } from './embeddings.js';
-import { existsSync, readFileSync } from 'fs';
+import path from 'path';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
 // Constants
 const SERVER_NAME = 'captain';
 const SERVER_VERSION = '0.1.0';
+
+// Define data file path using environment variable with fallback in project root
+const defaultDataPath = path.resolve(process.cwd(), 'bridge.json');
+const DATA_FILE_PATH = process.env.BRIDGE_FILE_PATH
+  ? path.isAbsolute(process.env.BRIDGE_FILE_PATH)
+    ? process.env.BRIDGE_FILE_PATH
+    : path.resolve(process.cwd(), process.env.BRIDGE_FILE_PATH)
+  : defaultDataPath;
 
 // Shot documentation constant (was PATTERN_GUIDE)
 const SHOT_GUIDE = {
@@ -342,20 +350,9 @@ const shotDesc = `Shot (pattern of attention movement):\n• moment-of-recogniti
 const transformationPrinciples = FRAMED_MOMENTS_EXAMPLES.transformationPrinciples.join(" ");
 const critiqueChecklist = `Validation criteria:\n- Voice recognition ("that's how I talk")\n- Experiential completeness\n- Visual anchorability\n- Temporal flow implied\n- Emotional atmosphere preserved\n- Self-containment\n- Narrative coherence\n- Causal logic\n- Temporal knowledge accuracy\n- No invented details\n- Voice pattern fidelity\n- Minimal transformation\n- Physical/sensory grounding\n(2-3 iterations are normal)`;
 
-// Load MCP config and set storage/embeddings file paths
-try {
-  const mcpConfigPath = '.cursor/mcp.json';
-  if (existsSync(mcpConfigPath)) {
-    const mcpConfig = JSON.parse(readFileSync(mcpConfigPath, 'utf8'));
-    const serverConfig = mcpConfig.mcpServers?.moments;
-    if (serverConfig && serverConfig.dataFile) {
-      setStorageConfig({ dataFile: serverConfig.dataFile });
-      setEmbeddingsConfig({ dataFile: serverConfig.dataFile });
-    }
-  }
-} catch (err) {
-  // Ignore config errors, fall back to defaults
-}
+// Set storage and embeddings config to use DATA_FILE_PATH
+setStorageConfig({ dataFile: DATA_FILE_PATH });
+setEmbeddingsConfig({ dataFile: DATA_FILE_PATH });
 
 // Tool handlers
 server.setRequestHandler(ListToolsRequestSchema, async () => {

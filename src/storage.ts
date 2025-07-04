@@ -7,6 +7,7 @@ import type {
   SceneRecord 
 } from './types.js';
 import { updateRecordEmbedding, removeEmbedding } from './embeddings.js';
+import path from 'path';
 
 // New StorageData interface
 interface StorageData {
@@ -36,7 +37,8 @@ function getStorageDir(): string {
 
 function getDataFile(): string {
   if (customDataFile) return customDataFile;
-  return join(getStorageDir(), 'data.json');
+  // Fallback to bridge.json in the script directory
+  return path.join(path.dirname(fileURLToPath(import.meta.url)), 'bridge.json');
 }
 
 // Ensure storage directory exists

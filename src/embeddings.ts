@@ -2,6 +2,7 @@ import { promises as fs } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import type { SourceRecord, MomentRecord, SceneRecord } from './types.js';
+import path from 'path';
 
 // Type for any record
 export type StorageRecord = SourceRecord | MomentRecord | SceneRecord;
@@ -33,7 +34,8 @@ function getEmbeddingsFile(): string {
     const base = pairedDataFile.replace(/(\.jsonl?|\.json)$/i, '');
     return base + '.embeddings.json';
   }
-  return join(getStorageDir(), 'embeddings.json');
+  // Fallback to bridge.embeddings.json in the script directory
+  return path.join(path.dirname(fileURLToPath(import.meta.url)), 'bridge.embeddings.json');
 }
 
 // Try to use a minimal interface for the pipeline if types are missing
