@@ -417,6 +417,7 @@ export async function search(options: SearchOptions): Promise<SearchResult[] | G
   // For similarity or default, use all records
 
   // --- Main search logic ---
+  const effectiveLimit = options.limit !== undefined ? options.limit : 20;
   if (!options.query || options.query.trim() === '' || options.mode === 'temporal') {
     // For temporal mode, we've already filtered searchRecords above
     results = searchRecords.map(record => {
@@ -431,21 +432,17 @@ export async function search(options: SearchOptions): Promise<SearchResult[] | G
         scene: record.type === 'scene' ? record as SceneRecord : undefined,
       };
     });
-    // Enforce limit for number of results if specified
-    if (options.limit !== undefined) {
-      results = results.slice(0, options.limit);
-    }
+    // Enforce limit for number of results if specified or default
+    results = results.slice(0, effectiveLimit);
   } else {
     // Semantic search
-    results = await semanticSearch(options.query, searchRecords, embeddings, options.limit || 20);
+    results = await semanticSearch(options.query, searchRecords, embeddings, effectiveLimit);
   }
 
   // --- Apply advanced filters ---
   results = advancedFilters(results, options.filters, records);
   // Enforce limit after filtering (in case filters reduce the set)
-  if (options.limit !== undefined) {
-    results = results.slice(0, options.limit);
-  }
+  results = results.slice(0, effectiveLimit);
 
   // After filtering, implement sort options
   if (options.sort === 'created') {

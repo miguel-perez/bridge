@@ -85,7 +85,9 @@ export async function loadEmbeddings(): Promise<Record<string, number[]>> {
 // 3. Save all embeddings to file
 export async function saveEmbeddings(embeddings: Record<string, number[]>): Promise<void> {
   await fs.mkdir(getStorageDir(), { recursive: true });
-  await fs.writeFile(getEmbeddingsFile(), JSON.stringify(embeddings, null, 2), 'utf8');
+  const json = JSON.stringify(embeddings); // No pretty-printing
+  console.error('Embeddings JSON size (bytes):', Buffer.byteLength(json));
+  await fs.writeFile(getEmbeddingsFile(), json, 'utf8');
 }
 
 // 4. Cosine similarity
