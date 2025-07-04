@@ -72,6 +72,7 @@ export interface SourceRecord extends BaseRecord, Source {
 export interface MomentRecord extends BaseRecord, Moment {
   type: "moment";
   lastModified?: string;
+  experiencer?: string;
 }
 
 export interface SceneRecord extends BaseRecord {
@@ -82,6 +83,7 @@ export interface SceneRecord extends BaseRecord {
   momentIds: string[];
   shot: ShotType;
   created: string;
+  experiencer?: string;
 }
 
 export type StorageRecord = SourceRecord | MomentRecord | SceneRecord; 

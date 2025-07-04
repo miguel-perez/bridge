@@ -191,14 +191,12 @@ export function advancedFilters(results: SearchResult[], filters?: FilterOptions
       if (filters.framed !== isFramed) return false;
     }
     // qualities (for sources and moments)
-    if (filters.qualities) {
-      if (result.type === 'moment') {
-        const momentQualities: string[] = result.moment?.qualities?.map(q => q.type) || [];
-        if (!filters.qualities.every(q => momentQualities.includes(q))) return false;
-      } else if (result.type === 'source') {
-        // If sources ever have qualities, implement here
-        // (currently not in schema)
-      }
+    if (filters.qualities && filters.qualities.length > 0) {
+      // Only consider moments
+      if (result.type !== 'moment') return false;
+      // AND logic: all qualities must be present
+      const momentQualities: string[] = result.moment?.qualities?.map(q => q.type) || [];
+      if (!filters.qualities.every(q => momentQualities.includes(q))) return false;
     }
     // experiencer (legacy single)
     if (filters.experiencer) {
@@ -295,16 +293,21 @@ export async function search(options: SearchOptions): Promise<SearchResult[] | G
 
   // --- Mode handling ---
   let searchRecords = records;
-  if (options.mode === 'temporal') {
-    // Use chrono-node to parse dates from the query
-    const { dateRange, cleanQuery } = parseTemporalQuery(options.query);
-    if (dateRange) {
-      searchRecords = records.filter(r => {
-        const date = getRecordDate(r);
-        return date && isWithinRange(date, dateRange.start, dateRange.end);
+  if (options.mode === 'temporal' && options.query) {
+    const parsed = chrono.parse(options.query);
+    if (parsed.length > 0) {
+      const range = parsed[0];
+      const start = range.start?.date();
+      const end = range.end?.date() || start;
+      results = results.filter(r => {
+        const when = getWhen(r) || getCreated(r);
+        if (!when) return false;
+        const whenDate = new Date(when);
+        return whenDate >= start && whenDate <= end;
       });
+    } else {
+      results = [];
     }
-    options.query = cleanQuery;
   } else if (options.mode === 'relationship' && options.query) {
     // Use the query as an ID to find related records
     searchRecords = findRelatedRecords(options.query, records);
@@ -336,6 +339,16 @@ export async function search(options: SearchOptions): Promise<SearchResult[] | G
   // Enforce limit after filtering (in case filters reduce the set)
   if (options.limit !== undefined) {
     results = results.slice(0, options.limit);
+  }
+
+  // After filtering, implement sort options
+  if (options.sort === 'created') {
+    results.sort((a, b) => new Date(getCreated(b)).getTime() - new Date(getCreated(a)).getTime());
+  } else if (options.sort === 'when') {
+    results.sort((a, b) => new Date(getWhen(b)).getTime() - new Date(getWhen(a)).getTime());
+  } else {
+    // Default: sort by relevance (if available)
+    results.sort((a, b) => (b.relevance || 0) - (a.relevance || 0));
   }
 
   // --- Group if requested ---
@@ -394,4 +407,12 @@ export function findRelatedRecords(recordId: string, allRecords: StorageRecord[]
   return related;
 }
 
-export { getSearchableText }; 
+export { getSearchableText };
+
+// Helper to safely get created/when fields for sorting
+function getCreated(result: any): string {
+  return result.created || result.source?.created || result.moment?.created || result.scene?.created || '';
+}
+function getWhen(result: any): string {
+  return result.when || result.source?.when || result.moment?.when || result.scene?.when || getCreated(result);
+} 

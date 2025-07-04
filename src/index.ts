@@ -666,6 +666,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           validSources.push(source);
         }
         // Create moment record
+        const experiencer = validSources[0]?.experiencer || '';
         const moment = await saveMoment({
           id: generateId('mom'),
           emoji: input.emoji,
@@ -676,6 +677,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           sources: input.sourceIds.map(sourceId => ({ sourceId })),
           created: new Date().toISOString(),
           when: validSources.find(s => s.when)?.when,
+          experiencer,
         });
         return {
           content: [
@@ -712,6 +714,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           }
         }
         // Create scene record
+        const validMoments = await Promise.all(input.momentIds.map(getMoment));
+        const sceneExperiencer = validMoments[0]?.experiencer || '';
         const scene = await saveScene({
           id: generateId('sce'),
           emoji: input.emoji,
@@ -720,6 +724,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           momentIds: input.momentIds,
           shot: input.shot,
           created: new Date().toISOString(),
+          experiencer: sceneExperiencer,
         });
         return {
           content: [
