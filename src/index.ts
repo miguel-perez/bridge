@@ -290,7 +290,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     },
     {
       name: "reflect",
-      description: "Add layers of meaning to existing captures - how you see it now, what you remember differently.",
+      description: "Add a new interpretive, memory, or meaning layer to an existing source—without changing the original. Creates a new source linked to the original, representing how your understanding or perspective has evolved over time.",
       inputSchema: {
         type: "object",
         properties: {
@@ -306,7 +306,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     },
     {
       name: "enrich",
-      description: "Refine or add details to existing captures or moments.",
+      description: "Correct or update an existing source or moment (content, metadata, etc.). Use for factual corrections, typos, or missing details. This directly edits the original record. If a source is referenced by moments, those moments will reflect the updated content.",
       inputSchema: {
         type: "object",
         properties: {
