@@ -422,7 +422,7 @@ shifts, several emotional boundaries, multiple actional completions.`;
             text: getContextualPrompts('capture')
           });
           // Only show framingGuide if content is long or this is the first source
-          if (source.content.length > 256 || isFirstSource) {
+          if (source.content.length > 1024 || isFirstSource) {
             content.push({
               type: 'text',
               text: framingGuide
@@ -471,7 +471,7 @@ shifts, several emotional boundaries, multiple actional completions.`;
           text: getContextualPrompts('capture')
         });
         // Only show framingGuide if content is long or this is the first source
-        if (source.content.length > 256 || isFirstSource) {
+        if (source.content.length > 1024 || isFirstSource) {
           content.push({
             type: 'text',
             text: framingGuide
