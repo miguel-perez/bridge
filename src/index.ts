@@ -204,7 +204,7 @@ function asGroup(val: string | undefined): 'type' | 'experiencer' | undefined {
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   const tools = [
     {
-      name: "bridge:capture",
+      name: "capture",
       description: "Capture a lived experience as a source - the raw material of memory.",
       inputSchema: {
         type: "object",
@@ -221,7 +221,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       }
     },
     {
-      name: "bridge:frame",
+      name: "frame",
       description: "Transform raw sources into complete experiential moments by identifying their qualities and attention patterns.",
       inputSchema: {
         type: "object",
@@ -249,7 +249,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       }
     },
     {
-      name: "bridge:weave",
+      name: "weave",
       description: "Connect multiple moments to reveal narrative journeys and transformations.",
       inputSchema: {
         type: "object",
@@ -264,7 +264,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       }
     },
     {
-      name: "bridge:remember",
+      name: "remember",
       description: "Search across all captured experiences using different modes.",
       inputSchema: {
         type: "object",
@@ -288,7 +288,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       }
     },
     {
-      name: "bridge:reflect",
+      name: "reflect",
       description: "Add layers of meaning to existing captures - how you see it now, what you remember differently.",
       inputSchema: {
         type: "object",
@@ -304,7 +304,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       }
     },
     {
-      name: "bridge:enrich",
+      name: "enrich",
       description: "Refine or add details to existing captures or moments.",
       inputSchema: {
         type: "object",
@@ -316,7 +316,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       }
     },
     {
-      name: "bridge:release",
+      name: "release",
       description: "Release (delete) a source or moment - some experiences are meant to be acknowledged then let go.",
       inputSchema: {
         type: "object",
