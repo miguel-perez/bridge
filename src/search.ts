@@ -305,7 +305,7 @@ export async function search(options: SearchOptions): Promise<SearchResult[] | G
     // --- Enhanced relative date support and AND logic for combined queries ---
     // 1. Parse query into tokens (split on spaces, e.g., 'today afternoon' => ['today', 'afternoon'])
     const tokens = query.split(/\s+/).filter(Boolean);
-    const filters: ((r: any) => boolean)[] = [];
+    const filters: ((r: StorageRecord) => boolean)[] = [];
     for (const token of tokens) {
       let tokenStart: Date | undefined;
       let tokenEnd: Date | undefined;
@@ -378,7 +378,7 @@ export async function search(options: SearchOptions): Promise<SearchResult[] | G
       // --- Time-of-day and specific time logic (reuse previous logic) ---
       // ... (reuse previous timeWindow, specificTime, etc. logic for each token)
       if (handled && tokenStart && tokenEnd) {
-        filters.push((r: any) => {
+        filters.push((r: StorageRecord) => {
           const when = ('when' in r && r.when) ? r.when : ('created' in r && r.created ? r.created : undefined);
           if (!when) return false;
           const whenDate = new Date(when);
