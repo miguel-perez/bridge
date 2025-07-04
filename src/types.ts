@@ -24,7 +24,7 @@ export interface Source {
   perspective?: Perspective; // Default: "I"
   experiencer?: string; // Default: "self"
   processing?: ProcessingLevel; // Default: "during"
-  related?: string[]; // Relationships to other sources
+  reflects_on?: string[]; // IDs of sources this record reflects on (formerly 'related')
   
   // File reference (for non-text content)
   file?: string; // Path to file, validated against MCP roots

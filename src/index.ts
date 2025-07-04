@@ -74,7 +74,7 @@ const captureSchema = z.object({
   processing: z.enum(['during', 'right-after', 'long-after', 'crafted']),
   when: z.string().optional(),
   experiencer: z.string(),
-  related: z.array(z.string()).optional(),
+  reflects_on: z.array(z.string()).optional(),
   file: z.string().optional(),
 });
 
@@ -122,17 +122,6 @@ const weaveSchema = z.object({
   ])
 });
 
-// New reflectSchema: for reflecting on sources
-const reflectSchema = z.object({
-  originalId: z.string(),
-  content: z.string().min(1),
-  contentType: z.string().optional().default('text'),
-  perspective: z.string().optional(),
-  processing: z.string().optional(),
-  when: z.string().optional(),
-  experiencer: z.string().optional(),
-});
-
 const enrichSchema = z.object({
   id: z.string(),
   updates: z.record(z.unknown()),
@@ -147,12 +136,11 @@ function getContextualPrompts(toolName: string): string {
   let prompts = '\n✓ Next steps:\n';
   switch(toolName) {
     case 'capture':
-      prompts += '• Reflect - add memories, insights, or deeper noticings about this experience\n';
       prompts += '• Frame - transform this into a complete moment with a shot and qualities\n';
       break;
     case 'frame':
       prompts += '• Enrich - add narrative depth or missing experiential qualities\n';
-      prompts += '• Weave - connect with related moments to see larger narrative threads\n';
+      prompts += '• Weave - connect with moments that reflect on each other (see larger narrative threads)\n';
       break;
     case 'weave':
       prompts += '• Use hierarchy/group view in search to visualize your new scene in context\n';
@@ -216,7 +204,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           processing: { type: "string", enum: ["during", "right-after", "long-after", "crafted"], description: "When captured relative to experience" },
           contentType: { type: "string", description: "Type of content", default: "text" },
           when: { type: "string", description: "When it happened (ISO timestamp or descriptive like 'yesterday morning')" },
-          related: { type: "array", items: { type: "string" }, description: "Array of related source IDs" }
+          reflects_on: { type: "array", items: { type: "string" }, description: "Array of source IDs this record reflects on (use for reflections)" }
         },
         required: ["content", "experiencer", "perspective", "processing"]
       }
@@ -289,22 +277,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       }
     },
     {
-      name: "reflect",
-      description: "Add a new interpretive, memory, or meaning layer to an existing source—without changing the original. Creates a new source linked to the original, representing how your understanding or perspective has evolved over time.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          originalId: { type: "string", description: "ID of source being reflected upon" },
-          content: { type: "string", description: "New insights or memories about the original" },
-          experiencer: { type: "string", description: "Who is reflecting (inherits from original)" },
-          perspective: { type: "string", description: "Perspective used (inherits from original)" },
-          processing: { type: "string", description: "When this reflection occurred" },
-          when: { type: "string", description: "When the reflection happened" }
-        },
-        required: ["originalId", "content"]
-      }
-    },
-    {
       name: "enrich",
       description: "Correct or update an existing source or moment (content, metadata, etc.). Use for factual corrections, typos, or missing details. This directly edits the original record. If a source is referenced by moments, those moments will reflect the updated content.",
       inputSchema: {
@@ -338,12 +310,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     switch (name) {
       case 'capture': {
         let input;
-        const framingGuide = `THE TENSION:
-Experience flows continuously - "it cannot be broken into separate moments" (Bergson). 
-Yet for understanding, we need discrete units. You're a storyboard artist facing an 
+        const framingGuide = `Break up sources into smaller units when possible by imagining you're a storyboard artist facing an 
 impossible but necessary task: finding natural joints in what is inherently seamless.
 
-BOUNDARY TYPES:
+Example Shot Types:
 
 1. ATTENTION BOUNDARIES
    Where awareness fundamentally redirects. The entire field of consciousness 
@@ -402,7 +372,7 @@ shifts, several emotional boundaries, multiple actional completions.`;
             perspective: input.perspective,
             experiencer: input.experiencer,
             processing: input.processing as ProcessingLevel,
-            related: input.related,
+            reflects_on: input.reflects_on,
             file: input.file,
           });
           const defaultsUsed = [];
@@ -446,7 +416,7 @@ shifts, several emotional boundaries, multiple actional completions.`;
           perspective: input.perspective,
           experiencer: input.experiencer,
           processing: input.processing as ProcessingLevel,
-          related: input.related,
+          reflects_on: input.reflects_on,
         });
         const defaultsUsed = [];
         const safeArgs = args || {};
@@ -657,46 +627,6 @@ shifts, several emotional boundaries, multiple actional completions.`;
           ErrorCode.InvalidParams,
           `No source or moment found with ID: ${input.id}`
         );
-      }
-
-      case 'reflect': {
-        const input = reflectSchema.parse(args);
-        // Verify original source exists
-        const original = await getSource(input.originalId);
-        if (!original) {
-          throw new McpError(
-            ErrorCode.InvalidParams,
-            `Source not found: ${input.originalId}`
-          );
-        }
-        // Create new source with related link
-        const source = await saveSource({
-          id: generateId('src'),
-          content: input.content,
-          contentType: input.contentType,
-          created: new Date().toISOString(),
-          when: input.when,
-          perspective: input.perspective || original.perspective,
-          experiencer: input.experiencer || original.experiencer,
-          processing: (input.processing as ProcessingLevel) || 'long-after',
-          related: [input.originalId]
-        });
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `✓ Reflected on source ${input.originalId}: "${original.content.substring(0, 30)}..."`
-            },
-            {
-              type: 'text',
-              text: `New reflection (ID: ${source.id}): "${source.content.substring(0, 50)}..."`
-            },
-            {
-              type: 'text',
-              text: getContextualPrompts('reflect')
-            }
-          ]
-        };
       }
 
       case 'release': {

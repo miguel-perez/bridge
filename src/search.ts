@@ -409,8 +409,8 @@ export async function search(options: SearchOptions): Promise<SearchResult[] | G
       return [];
     }
   } else if (options.mode === 'relationship' && options.query) {
-    // Use the query as an ID to find related records
-    searchRecords = findRelatedRecords(options.query, records);
+    // Use the query as an ID to find reflects_on records
+    searchRecords = findReflectsOnRecords(options.query, records);
   }
   // For similarity or default, use all records
 
@@ -481,9 +481,9 @@ export function parseTemporalQuery(query: string): { dateRange?: DateRange, clea
 }
 
 // --- Relationship search helpers ---
-export function findRelatedRecords(recordId: string, allRecords: StorageRecord[]): StorageRecord[] {
+export function findReflectsOnRecords(recordId: string, allRecords: StorageRecord[]): StorageRecord[] {
+  const reflectsOn: StorageRecord[] = [];
   const visited = new Set<string>();
-  const related: StorageRecord[] = [];
   const queue: string[] = [recordId];
   while (queue.length > 0) {
     const currentId = queue.shift()!;
@@ -491,9 +491,9 @@ export function findRelatedRecords(recordId: string, allRecords: StorageRecord[]
     visited.add(currentId);
     const rec = allRecords.find(r => r.id === currentId);
     if (!rec) continue;
-    related.push(rec);
-    if (rec.type === 'source' && Array.isArray((rec as SourceRecord).related)) {
-      for (const relId of (rec as SourceRecord).related!) {
+    reflectsOn.push(rec);
+    if (rec.type === 'source' && Array.isArray((rec as SourceRecord).reflects_on)) {
+      for (const relId of (rec as SourceRecord).reflects_on!) {
         if (!visited.has(relId)) queue.push(relId);
       }
     }
@@ -508,7 +508,7 @@ export function findRelatedRecords(recordId: string, allRecords: StorageRecord[]
       }
     }
   }
-  return related;
+  return reflectsOn;
 }
 
 export { getSearchableText };
