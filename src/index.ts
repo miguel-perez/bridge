@@ -822,8 +822,8 @@ shifts, several emotional boundaries, multiple actional completions.`;
           if (input.includeContext) {
             return {
               content: finalResults.map((result: SearchResult) => ({
-                type: 'object',
-                data: result
+                type: 'text',
+                text: JSON.stringify(result, null, 2)
               }))
             };
           } else {

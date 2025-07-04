@@ -1,3 +1,4 @@
+// When returning search results with includeContext, the UI expects type: 'text' and a JSON string, not type: 'object'. This is handled in index.ts.
 import type { SourceRecord, MomentRecord, SceneRecord } from './types.js';
 import type { QualityType } from './types.js';
 import { getAllRecords, getSearchableText } from './storage.js';
