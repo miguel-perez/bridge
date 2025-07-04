@@ -392,6 +392,9 @@ export async function search(options: SearchOptions): Promise<SearchResult[] | G
     // If any filters were added, apply them as AND (intersection)
     if (filters.length > 0) {
       searchRecords = records.filter(r => filters.every(f => f(r)));
+    } else {
+      // If no filters were generated, return empty result set
+      return [];
     }
   } else if (options.mode === 'relationship' && options.query) {
     // Use the query as an ID to find related records
