@@ -26,7 +26,6 @@ import {
   setStorageConfig,
 } from './storage.js';
 import type { SourceRecord, ProcessingLevel } from './types.js';
-import { DESIGNER_MOMENT, WRESTLING_MOMENT, DOLPHIN_MOMENT, BLEH_MOMENT, KETAMINE_MOMENT, SHOT_VARIATIONS, QUALITIES_EXAMPLES, TRANSFORMATION_PRINCIPLES, COMMON_PITFALLS } from './tested-moments-data.js';
 import { search as semanticSearch } from './search.js';
 import { setEmbeddingsConfig } from './embeddings.js';
 import path from 'path';
@@ -44,153 +43,6 @@ const DATA_FILE_PATH = process.env.BRIDGE_FILE_PATH
     ? process.env.BRIDGE_FILE_PATH
     : path.resolve(process.cwd(), process.env.BRIDGE_FILE_PATH)
   : defaultDataPath;
-
-// Shot documentation constant
-const SHOT_GUIDE = {
-  purpose: "Shots reveal how your attention moved through the experience - each has its own rhythm and natural boundaries you can feel.",
-  metaphor: "Think like a storyboard artist deciding frame boundaries",
-  shots: {
-    "moment-of-recognition": {
-      description: "Everything suddenly snaps into focus—the background fades and this one thing becomes crystal clear.",
-      feltSignal: "A surge of clarity or insight, like a lightbulb turning on.",
-      attentionMoves: "Like a camera zooming in sharply on a single subject, blurring everything else.",
-      storyboard: "Reaction panel - tight on the 'aha!' moment",
-      boundaries: "Start when attention sharpens toward insight, end when recognition lands",
-      example: "Realizing why you chose a certain career path",
-      keywords: ["realize", "understand", "click", "aha", "insight", "discover"]
-    },
-    "sustained-attention": {
-      description: "Time stretches out—your awareness settles and holds steady, everything else recedes to the edges.",
-      feltSignal: "A sense of being absorbed or suspended, as if time slows down.",
-      attentionMoves: "Like a spotlight holding steady on one scene, refusing to move on.",
-      storyboard: "Long take - camera holds steady on extended experience",
-      boundaries: "Start when awareness settles, end when it shifts away",
-      example: "Sitting beside someone in hospital, meditation",
-      keywords: ["sitting", "waiting", "watching", "holding", "staying", "duration"]
-    },
-    "crossing-threshold": {
-      description: "A shift or transformation—suddenly, you're on the other side of something, and everything feels different.",
-      feltSignal: "A jolt or sense of crossing over, like stepping through a doorway.",
-      attentionMoves: "Like a match cut in film—one scene instantly becomes another, and you feel the before and after.",
-      storyboard: "Match cut - showing the before→after transition",
-      boundaries: "Capture last moment of 'before' through first moment of 'after'",
-      example: "The moment understanding clicks after confusion",
-      keywords: ["suddenly", "then", "transform", "shift", "become", "transition"]
-    },
-    "peripheral-awareness": {
-      description: "Your attention spreads wide—holding many things at once, tracking the whole field instead of one point.",
-      feltSignal: "A sense of juggling or being everywhere at once, with no single focus.",
-      attentionMoves: "Like a wide-angle lens capturing the whole scene, everything in view but nothing in sharp focus.",
-      storyboard: "Wide shot - everything happening at once",
-      boundaries: "Start when juggling begins, end when focus narrows",
-      example: "Managing all aspects of a dinner party",
-      keywords: ["while", "meanwhile", "tracking", "juggling", "multiple", "simultaneous"]
-    },
-    "directed-momentum": {
-      description: "Everything lines up behind a single drive—your focus narrows and you move with unstoppable force toward a goal.",
-      feltSignal: "A rush or tunnel vision, as if nothing else exists but the target.",
-      attentionMoves: "Like a tracking shot racing toward a finish line, all energy moving in one direction.",
-      storyboard: "Tracking shot - following movement to completion",
-      boundaries: "Start when everything aligns, end at target/interruption",
-      example: "Final sprint to the finish line",
-      keywords: ["toward", "racing", "focused", "goal", "must", "driven"]
-    },
-    "holding-opposites": {
-      description: "You feel pulled in two directions at once—contradictions or tensions refuse to resolve, and you hold both at the same time.",
-      feltSignal: "A sense of inner conflict, like being stretched between two truths.",
-      attentionMoves: "Like a split screen showing both sides at once, unable to choose just one.",
-      storyboard: "Split panel - showing both truths at once",
-      boundaries: "Start when tension becomes conscious, end when you act despite it",
-      example: "Setting boundaries with loved ones",
-      keywords: ["but", "yet", "both", "despite", "tension", "conflict"]
-    }
-  },
-  defaultShot: "moment-of-recognition"
-};
-
-const QUALITIES_GUIDE = {
-  purpose: "Every moment we capture weaves together different experiential qualities—ways of noticing how experience shows up in the body, mind, space, time, and relationships. Attending to these qualities helps evoke richer, more vivid moments.",
-  qualities: {
-    embodied: {
-      description: "How experience is felt in the body—sensations, posture, breath, movement, tension, or ease.",
-      prompts: [
-        "What is your body doing or feeling right now?",
-        "Where do you notice tension, relaxation, or movement?",
-        "How does your breath, heartbeat, or posture shape this moment?"
-      ],
-      example: "My shoulders pull up toward my ears, that familiar armor against judgment."
-    },
-    attentional: {
-      description: "Where and how your attention moves—what draws focus, what drifts to the background, what you notice or ignore.",
-      prompts: [
-        "What is most vivid or clear in your awareness?",
-        "Does your attention jump, settle, or scatter?",
-        "What do you keep returning to, or what fades away?"
-      ],
-      example: "My gaze keeps flicking to the clock, even as I try to listen."
-    },
-    emotional: {
-      description: "The felt sense of mood, feeling, or emotional coloring—subtle or intense, shifting or steady.",
-      prompts: [
-        "What feelings are present, even faintly?",
-        "Is there a mood or emotional weather in this moment?",
-        "How does emotion shape what you notice or do?"
-      ],
-      example: "A tightness blooms in my chest, equal parts hope and dread."
-    },
-    purposive: {
-      description: "The sense of intention, drive, or aim—what you want, avoid, or are drawn toward in this moment.",
-      prompts: [
-        "What are you trying to do, change, or achieve?",
-        "Is there a pull toward or away from something?",
-        "What feels possible or necessary right now?"
-      ],
-      example: "Every muscle leans toward the finish line, nothing else matters."
-    },
-    spatial: {
-      description: "The lived sense of place, position, and environment—how space shapes experience.",
-      prompts: [
-        "Where are you, and what do you notice about the space?",
-        "How does the environment feel—open, closed, crowded, empty?",
-        "What details of place stand out?"
-      ],
-      example: "The kitchen hums around me, tile cool beneath my bare feet."
-    },
-    temporal: {
-      description: "How time is felt—rushing, dragging, suspended, or layered with past and future.",
-      prompts: [
-        "Does time feel fast, slow, or strange?",
-        "Are you aware of before, after, or just now?",
-        "How does memory or anticipation color this moment?"
-      ],
-      example: "Minutes stretch and pool, each breath thick with waiting."
-    },
-    relational: {
-      description: "The presence or absence of others—how relationships, spoken or unspoken, shape the moment.",
-      prompts: [
-        "Who else is present, even in thought?",
-        "How do others' actions, words, or silence affect you?",
-        "Is there a sense of connection, distance, or tension?"
-      ],
-      example: "His eyes search mine for forgiveness, but I look away."
-    }
-  }
-};
-
-const FRAMED_MOMENTS_EXAMPLES = {
-  purpose: 'Real moments from testing show how raw experience transforms into rich experiential capture',
-  examples: [
-    DESIGNER_MOMENT,
-    WRESTLING_MOMENT,
-    DOLPHIN_MOMENT,
-    BLEH_MOMENT,
-    KETAMINE_MOMENT
-  ],
-  shotVariations: SHOT_VARIATIONS,
-  qualitiesInAction: QUALITIES_EXAMPLES,
-  transformationPrinciples: TRANSFORMATION_PRINCIPLES,
-  commonPitfalls: COMMON_PITFALLS
-};
 
 // Create server instance
 const server = new Server(
@@ -321,12 +173,6 @@ function getContextualPrompts(toolName: string): string {
 }
 
 // Helper strings for tool descriptions
-const qualitiesDesc = `Identify which qualities are most alive in this experience (at least one required, typically 1-4):\n"embodied": ${QUALITIES_GUIDE.qualities.embodied.description} Example: ${QUALITIES_GUIDE.qualities.embodied.example}\n"attentional": ${QUALITIES_GUIDE.qualities.attentional.description} Example: ${QUALITIES_GUIDE.qualities.attentional.example}\n"emotional": ${QUALITIES_GUIDE.qualities.emotional.description} Example: ${QUALITIES_GUIDE.qualities.emotional.example}\n"purposive": ${QUALITIES_GUIDE.qualities.purposive.description} Example: ${QUALITIES_GUIDE.qualities.purposive.example}\n"spatial": ${QUALITIES_GUIDE.qualities.spatial.description} Example: ${QUALITIES_GUIDE.qualities.spatial.example}\n"temporal": ${QUALITIES_GUIDE.qualities.temporal.description} Example: ${QUALITIES_GUIDE.qualities.temporal.example}\n"relational": ${QUALITIES_GUIDE.qualities.relational.description} Example: ${QUALITIES_GUIDE.qualities.relational.example}`;
-
-const shotGuide = SHOT_GUIDE.shots;
-const shotDesc = `Shot (attention movement):\n• moment-of-recognition: ${shotGuide["moment-of-recognition"].description} (keywords: ${shotGuide["moment-of-recognition"].keywords.join(", ")}). Start: ${shotGuide["moment-of-recognition"].boundaries}\n• sustained-attention: ${shotGuide["sustained-attention"].description} (keywords: ${shotGuide["sustained-attention"].keywords.join(", ")}). Start: ${shotGuide["sustained-attention"].boundaries}\n• crossing-threshold: ${shotGuide["crossing-threshold"].description} (keywords: ${shotGuide["crossing-threshold"].keywords.join(", ")}). Start: ${shotGuide["crossing-threshold"].boundaries}\n• peripheral-awareness: ${shotGuide["peripheral-awareness"].description} (keywords: ${shotGuide["peripheral-awareness"].keywords.join(", ")}). Start: ${shotGuide["peripheral-awareness"].boundaries}\n• directed-momentum: ${shotGuide["directed-momentum"].description} (keywords: ${shotGuide["directed-momentum"].keywords.join(", ")}). Start: ${shotGuide["directed-momentum"].boundaries}\n• holding-opposites: ${shotGuide["holding-opposites"].description} (keywords: ${shotGuide["holding-opposites"].keywords.join(", ")}). Start: ${shotGuide["holding-opposites"].boundaries}`;
-
-const transformationPrinciples = FRAMED_MOMENTS_EXAMPLES.transformationPrinciples.join(" ");
 const critiqueChecklist = `Validation criteria:\n- Voice recognition ("that's how I talk")\n- Experiential completeness\n- Visual anchorability\n- Temporal flow implied\n- Emotional atmosphere preserved\n- Self-containment\n- Narrative coherence\n- Causal logic\n- Temporal knowledge accuracy\n- No invented details\n- Voice fidelity\n- Minimal transformation\n- Physical/sensory grounding\n(2-3 iterations are normal)`;
 
 // Set storage and embeddings config to use DATA_FILE_PATH
@@ -358,164 +204,126 @@ function asGroup(val: string | undefined): 'type' | 'experiencer' | undefined {
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   const tools = [
     {
-      name: "capture",
-      description: "Capture the source of a moment. Break up large sources into shots. Ensure all metadata is accurate, no source is lost.\"",
+      name: "bridge:capture",
+      description: "Capture a lived experience as a source - the raw material of memory.",
       inputSchema: {
         type: "object",
         properties: {
           content: { type: "string", description: "The lived moment—try present tense, include what you are sensing, feeling, noticing." },
-          contentType: { type: "string", description: "Type of content (text, voice, image, link)", default: "text" },
-          perspective: { type: "string", enum: ["I", "we", "you", "they"], description: "Perspective (I, we, you, they)" },
-          processing: { type: "string", enum: ["during", "right-after", "long-after", "crafted"], description: "When captured relative to experience (during, right-after, long-after, crafted)" },
-          when: { type: "string", description: "When it happened (ISO timestamp or descriptive)" },
-          experiencer: { type: "string", description: "Who experienced this" },
-          related: { type: "array", items: { type: "string" }, description: "Related source IDs" },
-          file: { type: "string", description: "Path to file (for non-text content)" }
+          experiencer: { type: "string", description: "Who experienced this (e.g., 'Claude', 'Sarah', 'Team')" },
+          perspective: { type: "string", enum: ["I", "we", "you", "they"], description: "Perspective used" },
+          processing: { type: "string", enum: ["during", "right-after", "long-after", "crafted"], description: "When captured relative to experience" },
+          contentType: { type: "string", description: "Type of content", default: "text" },
+          when: { type: "string", description: "When it happened (ISO timestamp or descriptive like 'yesterday morning')" },
+          related: { type: "array", items: { type: "string" }, description: "Array of related source IDs" }
         },
-        required: ["content", "perspective", "processing", "experiencer"]
+        required: ["content", "experiencer", "perspective", "processing"]
       }
     },
     {
-      name: "frame",
-      description: `Transform raw sources into a complete experiential moment. Identify natural boundaries using shot types. Key principles: Preserve exact phrases from sources, reorder for flow but do not rewrite, and aim for voice recognition ("that's my brain!") as the success metric. ${transformationPrinciples}`,
+      name: "bridge:frame",
+      description: "Transform raw sources into complete experiential moments by identifying their qualities and attention patterns.",
       inputSchema: {
         type: "object",
         properties: {
-          sourceIds: { type: "array", items: { type: "string" }, description: "Source IDs to frame into a moment", minItems: 1 },
-          emoji: { type: "string", description: "Emoji representation" },
+          sourceIds: { type: "array", items: { type: "string" }, description: "Array of source IDs to frame together", minItems: 1 },
+          emoji: { type: "string", description: "Single emoji that captures the essence" },
           summary: { type: "string", description: "5-7 word summary" },
+          shot: { type: "string", enum: ["moment-of-recognition", "sustained-attention", "crossing-threshold", "peripheral-awareness", "directed-momentum", "holding-opposites"], description: "How attention moved in this experience" },
           qualities: {
             type: "array",
             minItems: 1,
             items: {
               type: "object",
               properties: {
-                type: {
-                  type: "string",
-                  enum: ["embodied", "attentional", "emotional", "purposive", "spatial", "temporal", "relational"],
-                  description: "Which quality is present"
-                },
-                manifestation: {
-                  type: "string",
-                  description: "How this quality shows up in the experience"
-                }
+                type: { type: "string", enum: ["embodied", "attentional", "emotional", "purposive", "spatial", "temporal", "relational"], description: "Which quality is present" },
+                manifestation: { type: "string", description: "How this quality shows up in the experience" }
               },
               required: ["type", "manifestation"]
             },
-            description: qualitiesDesc
+            description: "Array of experiential qualities present, with at least one"
           },
-          narrative: { type: "string", description: "Full experiential narrative (optional)" },
-          shot: {
-            type: "string",
-            description: shotDesc,
-            default: "moment-of-recognition"
-          }
+          narrative: { type: "string", description: "Full experiential narrative" }
         },
-        required: ["sourceIds", "emoji", "summary", "qualities", "shot"]
+        required: ["sourceIds", "emoji", "summary", "shot", "qualities"]
       }
     },
     {
-      name: "weave",
-      description: "Weave multiple moments together to reveal narrative journeys.",
+      name: "bridge:weave",
+      description: "Connect multiple moments to reveal narrative journeys and transformations.",
       inputSchema: {
         type: "object",
         properties: {
-          momentIds: { type: "array", items: { type: "string" }, description: "Moment IDs to weave together into a larger narrative", minItems: 1 },
-          emoji: { type: "string", description: "Emoji representation" },
-          summary: { type: "string", description: "5-7 word summary" },
-          narrative: { type: "string", description: "Narrative tracing the journey or transformation between moments" },
-          shot: {
-            type: "string",
-            description: "Shot type for the synthesized moment. Scene often uses crossing-threshold, directed-momentum, or holding-opposites.",
-            enum: ["moment-of-recognition", "sustained-attention", "crossing-threshold", "peripheral-awareness", "directed-momentum", "holding-opposites"]
-          }
+          momentIds: { type: "array", items: { type: "string" }, description: "Array of moment IDs to weave together", minItems: 1 },
+          emoji: { type: "string", description: "Emoji representing the journey" },
+          summary: { type: "string", description: "5-7 word summary of the arc" },
+          narrative: { type: "string", description: "The story that connects these moments" },
+          shot: { type: "string", enum: ["moment-of-recognition", "sustained-attention", "crossing-threshold", "peripheral-awareness", "directed-momentum", "holding-opposites"], description: "Overall attention pattern of the woven scene" }
         },
         required: ["momentIds", "emoji", "summary", "narrative", "shot"]
       }
     },
     {
-      name: "enrich",
-      description: "Refine or add details to existing captures or moments",
+      name: "bridge:remember",
+      description: "Search across all captured experiences using different modes.",
       inputSchema: {
         type: "object",
         properties: {
-          id: { type: "string", description: "Source or moment ID to enrich" },
-          updates: { type: "object", description: "Fields to update", additionalProperties: true }
+          query: { type: "string", description: "Natural language search query" },
+          mode: { type: "string", enum: ["similarity", "temporal", "relationship"], description: "Search mode" },
+          filters: {
+            type: "object",
+            description: "Filter results",
+            properties: {
+              type: { type: "array", items: { type: "string", enum: ["source", "moment", "scene"] }, description: "Filter by record type" },
+              experiencer: { type: "string", description: "Filter by who experienced it" },
+              qualities: { type: "array", items: { type: "string" }, description: "Array of quality types for moments" }
+            }
+          },
+          limit: { type: "number", description: "Maximum results to return" },
+          includeContext: { type: "boolean", description: "Include full record details" },
+          sort: { type: "string", enum: ["relevance", "created", "when"], description: "Sort by field" }
         },
-        required: ["id", "updates"]
+        required: ["query"]
       }
     },
     {
-      name: "reflect",
-      description: "Add layers to an existing capture—how you see it now, what you remember differently, what meanings emerge. Creates linked sources for richer moments. Example: 'Looking back, I realize this was when I shifted from doing to being-while-doing.'",
+      name: "bridge:reflect",
+      description: "Add layers of meaning to existing captures - how you see it now, what you remember differently.",
       inputSchema: {
         type: "object",
         properties: {
           originalId: { type: "string", description: "ID of source being reflected upon" },
-          content: { type: "string", description: "New insights, memories, or noticings about the original experience. Example: 'Looking back, I realize this was when I shifted from doing to being-while-doing.'" },
-          contentType: { type: "string", description: "Type of content", default: "text" },
-          perspective: { type: "string", description: "Perspective (inherits from original if not specified)" },
-          processing: { type: "string", description: "When captured relative to reflection" },
-          when: { type: "string", description: "When the reflection occurred" },
-          experiencer: { type: "string", description: "Who is reflecting (inherits from original if not specified)" }
+          content: { type: "string", description: "New insights or memories about the original" },
+          experiencer: { type: "string", description: "Who is reflecting (inherits from original)" },
+          perspective: { type: "string", description: "Perspective used (inherits from original)" },
+          processing: { type: "string", description: "When this reflection occurred" },
+          when: { type: "string", description: "When the reflection happened" }
         },
         required: ["originalId", "content"]
       }
     },
     {
-      name: "release",
-      description: "Release (delete) a source or moment by ID. Some experiences are meant to be acknowledged then let go.",
+      name: "bridge:enrich",
+      description: "Refine or add details to existing captures or moments.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          id: { type: "string", description: "Source or moment ID to enrich" },
+          updates: { type: "object", description: "Object with fields to update", additionalProperties: true }
+        },
+        required: ["id", "updates"]
+      }
+    },
+    {
+      name: "bridge:release",
+      description: "Release (delete) a source or moment - some experiences are meant to be acknowledged then let go.",
       inputSchema: {
         type: "object",
         properties: {
           id: { type: "string", description: "ID of source or moment to release" }
         },
         required: ["id"]
-      }
-    },
-    {
-      name: "remember",
-      description: `Semantic search across all captured experiences (sources, moments, scenes). Use natural language to find relevant sources, moments, or relationships.\n\nTemporal mode: Supports date-only, month, year, partial ISO, time-of-day, specific time, and true relative date queries (e.g., 'today', 'yesterday', 'last week', 'this morning', 'last night'), all UTC-anchored. Uses 'when' if present, otherwise 'created'.`,
-      inputSchema: {
-        type: "object",
-        properties: {
-          query: { type: "string", description: "Natural language search query" },
-          mode: {
-            type: "string",
-            enum: ["similarity", "temporal", "relationship"],
-            description: "Search mode: similarity (semantic meaning), temporal (time-based), relationship (linked records). Similarity finds records by meaning, temporal finds by time expressions, relationship finds by source/moment/scene links."
-          },
-          filters: {
-            type: "object",
-            description: "Optional filters (type, experiencer, qualities, etc.)",
-            properties: {
-              type: {
-                type: "array",
-                items: { type: "string", enum: ["source", "moment", "scene"] },
-                description: "Filter by record type"
-              },
-              experiencer: { type: "string", description: "Filter by experiencer" },
-              qualities: {
-                type: "array",
-                items: { type: "string" },
-                description: "Filter by qualities (for moments)"
-              }
-            }
-          },
-          sort: {
-            type: "string",
-            enum: ["relevance", "created", "when"],
-            description: "Sort results by this field"
-          },
-          groupBy: {
-            type: "string",
-            enum: ["type", "experiencer"],
-            description: "Group results by this field"
-          },
-          limit: { type: "number", description: "Maximum number of results to return" },
-          includeContext: { type: "boolean", description: "Include full record context in results" }
-        },
-        required: ["query"]
       }
     }
   ];
