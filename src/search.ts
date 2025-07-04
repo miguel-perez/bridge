@@ -213,6 +213,15 @@ export function advancedFilters(results: SearchResult[], filters?: FilterOptions
   });
 }
 
+// Helper to get experiencer for grouping
+function getExperiencer(result: SearchResult): string {
+  if ('experiencer' in result && typeof result.experiencer === 'string' && result.experiencer) return result.experiencer;
+  if (result.source && 'experiencer' in result.source && typeof result.source.experiencer === 'string' && result.source.experiencer) return result.source.experiencer;
+  if (result.moment && 'experiencer' in result.moment && typeof result.moment.experiencer === 'string' && result.moment.experiencer) return result.moment.experiencer;
+  if (result.scene && 'experiencer' in result.scene && typeof result.scene.experiencer === 'string' && result.scene.experiencer) return result.scene.experiencer;
+  return 'unknown';
+}
+
 // Grouping
 export function groupResults(results: SearchResult[], groupBy: GroupOption = 'none'): GroupedResults {
   const groups: Array<{ label: string; count: number; items: SearchResult[] }> = [];
@@ -228,24 +237,17 @@ export function groupResults(results: SearchResult[], groupBy: GroupOption = 'no
       groups.push({ label: type, count: byType[type].length, items: byType[type] });
     }
   } else if (groupBy === 'experiencer') {
-    const byExp: Record<string, SearchResult[]> = {};
-    for (const r of results) {
-      let exp = '';
-      if (r.type === 'source') {
-        exp = r.source?.experiencer || 'unknown';
-      } else if (r.type === 'moment' && r.moment?.sources && r.moment.sources.length > 0) {
-        // Lookup the actual source record for experiencer
-        // const firstSourceId = r.moment.sources[0].sourceId;
-        // This is a sync function, so we can't await getRecordById. Instead, require the caller to pass allRecords and look up there.
-        // For now, fallback to 'unknown'.
-        exp = 'unknown';
-      }
-      if (!byExp[exp]) byExp[exp] = [];
-      byExp[exp].push(r);
+    const groups: { [label: string]: SearchResult[] } = {};
+    for (const result of results) {
+      const label = getExperiencer(result);
+      if (!groups[label]) groups[label] = [];
+      groups[label].push(result);
     }
-    for (const exp in byExp) {
-      groups.push({ label: exp, count: byExp[exp].length, items: byExp[exp] });
-    }
+    const groupArr = Object.entries(groups).map(([label, items]) => ({ label, count: items.length, items }));
+    return {
+      groups: groupArr,
+      totalResults: results.length
+    };
   } else if (groupBy === 'day' || groupBy === 'week' || groupBy === 'month') {
     const byTime: Record<string, SearchResult[]> = {};
     for (const r of results) {
@@ -294,19 +296,146 @@ export async function search(options: SearchOptions): Promise<SearchResult[] | G
   // --- Mode handling ---
   let searchRecords = records;
   if (options.mode === 'temporal' && options.query) {
-    const parsed = chrono.parse(options.query);
-    if (parsed.length > 0) {
+    const query = options.query.trim();
+    const parsed = chrono.parse(query);
+    let start: Date | undefined;
+    let end: Date | undefined;
+    let isYearless = false;
+    let isTimeOfDay = false;
+    let timeWindow: [number, number] | undefined; // [startHour, endHour]
+    let monthIndex: number | undefined;
+    let day: number | undefined;
+    let specificTime: { hour: number, minute: number } | undefined;
+
+    // 1. Partial ISO dates (YYYY-MM): treat as month query
+    const partialIsoMatch = query.match(/^(\d{4})-(\d{2})$/);
+    if (partialIsoMatch) {
+      const year = parseInt(partialIsoMatch[1], 10);
+      const month = parseInt(partialIsoMatch[2], 10);
+      if (month >= 1 && month <= 12) {
+        start = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
+        end = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0));
+      }
+    }
+    // 2. Year-less date queries (e.g., 'January 1', 'Dec 25')
+    else if (/^(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2}$/i.test(query)) {
+      // Parse month and day
+      const parts = query.split(/\s+/);
+      const monthName = parts[0].toLowerCase();
+      day = parseInt(parts[1], 10);
+      monthIndex = [
+        'january','february','march','april','may','june','july','august','september','october','november','december'
+      ].indexOf(monthName);
+      if (monthIndex !== -1 && day >= 1 && day <= 31) {
+        isYearless = true;
+        // We'll filter all records with matching month and day, any year
+      }
+    }
+    // 3. Time-of-day queries (fuzzy: morning, afternoon, evening, night)
+    else if (/\b(morning|afternoon|evening|night)\b/i.test(query)) {
+      isTimeOfDay = true;
+      const lower = query.toLowerCase();
+      if (lower.includes('morning')) timeWindow = [5, 12]; // 05:00-11:59
+      else if (lower.includes('afternoon')) timeWindow = [12, 18]; // 12:00-17:59
+      else if (lower.includes('evening')) timeWindow = [18, 22]; // 18:00-21:59
+      else if (lower.includes('night')) timeWindow = [22, 24]; // 22:00-23:59
+    }
+    // 3b. Time-of-day queries (explicit: 8:00 AM, 15:30)
+    else if (/\b(\d{1,2}):(\d{2})\s*(am|pm)?\b/i.test(query)) {
+      isTimeOfDay = true;
+      // Parse hour and minute
+      const timeMatch = query.match(/(\d{1,2}):(\d{2})\s*(am|pm)?/i);
+      if (timeMatch) {
+        let hour = parseInt(timeMatch[1], 10);
+        const minute = parseInt(timeMatch[2], 10);
+        const ampm = timeMatch[3]?.toLowerCase();
+        if (ampm === 'pm' && hour < 12) hour += 12;
+        if (ampm === 'am' && hour === 12) hour = 0;
+        timeWindow = [hour, hour + 1];
+        specificTime = { hour, minute };
+      }
+    }
+    // 4. Relative dates (today, yesterday, last week, etc.)
+    else if (parsed.length > 0) {
       const range = parsed[0];
-      const start = range.start?.date();
-      const end = range.end?.date() || start;
-      results = results.filter(r => {
-        const when = getWhen(r) || getCreated(r);
+      if (range.start) {
+        // Month-only query
+        if (range.start.isCertain('year') && range.start.isCertain('month') && !range.start.isCertain('day')) {
+          const year = range.start.get('year');
+          const month = range.start.get('month');
+          if (typeof year !== 'number' || typeof month !== 'number') return [];
+          start = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
+          end = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0));
+        }
+        // Date-only query (no time)
+        else if (range.start.isCertain('year') && range.start.isCertain('month') && range.start.isCertain('day') && !range.start.isCertain('hour')) {
+          const year = range.start.get('year');
+          const month = range.start.get('month');
+          const day = range.start.get('day');
+          if (typeof year !== 'number' || typeof month !== 'number' || typeof day !== 'number') return [];
+          start = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+          end = new Date(Date.UTC(year, month - 1, day + 1, 0, 0, 0, 0));
+        }
+        // Full timestamp or range
+        else if (range.end && typeof range.start.date === 'function' && typeof range.end.date === 'function') {
+          start = range.start.date();
+          end = range.end.date();
+        } else if (range.start && typeof range.start.date === 'function') {
+          // Relative date (e.g., today, yesterday, last week)
+          start = range.start.date();
+          if (range.end && typeof range.end.date === 'function') {
+            end = range.end.date();
+          } else {
+            end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+          }
+        }
+      }
+    }
+    // Manual fallback for year-only queries
+    if (!start && !isYearless && /^\d{4}$/.test(query)) {
+      const year = parseInt(query, 10);
+      start = new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0));
+      end = new Date(Date.UTC(year + 1, 0, 1, 0, 0, 0, 0));
+    }
+    // TODO: Future enhancements: support fuzzy/partial matching (e.g., 'early January', 'late 2025')
+    if (isYearless && typeof monthIndex === 'number' && typeof day === 'number') {
+      // Filter all records with matching month and day, any year
+      searchRecords = records.filter(r => {
+        const when = ('when' in r && r.when) ? r.when : undefined;
         if (!when) return false;
         const whenDate = new Date(when);
-        return whenDate >= start && whenDate <= end;
+        return (
+          whenDate.getUTCMonth() === monthIndex &&
+          whenDate.getUTCDate() === day
+        );
+      });
+    } else if (specificTime) {
+      // Specific time match (hour/minute)
+      searchRecords = records.filter(r => {
+        const when = ('when' in r && r.when) ? r.when : undefined;
+        if (!when) return false;
+        const whenDate = new Date(when);
+        return whenDate.getUTCHours() === specificTime!.hour && whenDate.getUTCMinutes() === specificTime!.minute;
+      });
+    } else if (isTimeOfDay && timeWindow) {
+      // Fuzzy time-of-day (morning, afternoon, etc.)
+      searchRecords = records.filter(r => {
+        const when = ('when' in r && r.when) ? r.when : undefined;
+        if (!when) return false;
+        const whenDate = new Date(when);
+        const hour = whenDate.getUTCHours();
+        return hour >= timeWindow[0] && hour < timeWindow[1];
+      });
+    } else if (start && end) {
+      searchRecords = records.filter(r => {
+        const when = ('when' in r && r.when) ? r.when : undefined;
+        if (!when) return false;
+        const whenDate = new Date(when);
+        return whenDate >= start && whenDate < end;
       });
     } else {
-      results = [];
+      // No date parsed, return empty result set
+      return [];
     }
   } else if (options.mode === 'relationship' && options.query) {
     // Use the query as an ID to find related records
@@ -315,8 +444,8 @@ export async function search(options: SearchOptions): Promise<SearchResult[] | G
   // For similarity or default, use all records
 
   // --- Main search logic ---
-  if (!options.query || options.query.trim() === '') {
-    // No query: return all records as results (no relevance)
+  if (!options.query || options.query.trim() === '' || options.mode === 'temporal') {
+    // For temporal mode, we've already filtered searchRecords above
     results = searchRecords.map(record => ({
       type: record.type,
       id: record.id,
@@ -325,7 +454,7 @@ export async function search(options: SearchOptions): Promise<SearchResult[] | G
       moment: record.type === 'moment' ? record as MomentRecord : undefined,
       scene: record.type === 'scene' ? record as SceneRecord : undefined,
     }));
-    // Enforce limit for empty queries
+    // Enforce limit for empty queries or temporal mode
     if (options.limit !== undefined) {
       results = results.slice(0, options.limit);
     }
@@ -410,9 +539,17 @@ export function findRelatedRecords(recordId: string, allRecords: StorageRecord[]
 export { getSearchableText };
 
 // Helper to safely get created/when fields for sorting
-function getCreated(result: any): string {
-  return result.created || result.source?.created || result.moment?.created || result.scene?.created || '';
+function getCreated(result: SearchResult): string {
+  if ('created' in result && typeof result.created === 'string') return result.created;
+  if (result.source && 'created' in result.source && typeof result.source.created === 'string') return result.source.created;
+  if (result.moment && 'created' in result.moment && typeof result.moment.created === 'string') return result.moment.created;
+  if (result.scene && 'created' in result.scene && typeof result.scene.created === 'string') return result.scene.created;
+  return '';
 }
-function getWhen(result: any): string {
-  return result.when || result.source?.when || result.moment?.when || result.scene?.when || getCreated(result);
+function getWhen(result: SearchResult): string {
+  if ('when' in result && typeof result.when === 'string') return result.when;
+  if (result.source && 'when' in result.source && typeof result.source.when === 'string') return result.source.when;
+  if (result.moment && 'when' in result.moment && typeof result.moment.when === 'string') return result.moment.when;
+  if (result.scene && 'when' in result.scene && typeof result.scene.when === 'string') return result.scene.when;
+  return getCreated(result);
 } 
