@@ -61,31 +61,44 @@ export interface GroupedResults {
   totalResults: number;
 }
 
+// Remove all console.log and console.warn. Collect debug info in an array.
+const debugLogs: string[] = [];
+function addDebugLog(msg: string) { debugLogs.push(msg); }
+export function getSearchDebugLogs() { return debugLogs; }
+
 // 1. Core semantic similarity search
-export async function semanticSearch(query: string, records: Array<SourceRecord | MomentRecord | SceneRecord>, embeddings: Record<string, number[]>, limit = 20): Promise<SearchResult[]> {
+export async function semanticSearch(query: string, records: Array<SourceRecord | MomentRecord | SceneRecord>, embeddings: Record<string, number[]>, limit = 20, queryType?: string): Promise<SearchResult[]> {
   const queryEmbedding = await generateEmbedding(query);
+  // Log embedding stats
+  const embeddingKeys = Object.keys(embeddings);
+  addDebugLog(`[semanticSearch] Embeddings loaded: ${embeddingKeys.length}`);
+  if (embeddingKeys.length > 0) {
+    addDebugLog(`[semanticSearch] Sample embedding length: ${embeddings[embeddingKeys[0]].length}`);
+  }
+  // Debug: print IDs of records being searched
+  addDebugLog(`[semanticSearch] Record IDs being searched: ${records.map(r => r.id).join(', ')}`);
   const results: SearchResult[] = [];
   for (const record of records) {
     const id = record.id;
     const emb = embeddings[id];
     if (!emb) continue;
     const relevance = cosineSimilarity(queryEmbedding, emb);
-    let snippet = '';
-    if (record.type === 'source') snippet = record.content;
-    if (record.type === 'moment') snippet = (record.summary || '') + ' ' + (record.narrative || '');
-    if (record.type === 'scene') snippet = (record.summary || '') + ' ' + (record.narrative || '');
-    results.push({
-      type: record.type,
-      id,
-      relevance,
-      snippet: snippet.trim(),
-      source: record.type === 'source' ? record as SourceRecord : undefined,
-      moment: record.type === 'moment' ? record as MomentRecord : undefined,
-      scene: record.type === 'scene' ? record as SceneRecord : undefined,
-    });
+    addDebugLog(`[semanticSearch] (${queryType || 'default'}) Record: ${id}, Relevance: ${relevance}`);
+    results.push({ ...record, relevance });
   }
   // Sort by relevance descending
   results.sort((a, b) => (b.relevance ?? 0) - (a.relevance ?? 0));
+  // Debug: log top 5 results
+  for (let i = 0; i < Math.min(5, results.length); i++) {
+    const r = results[i];
+    let snippet = '';
+    if (r.source && r.source.content) snippet = r.source.content.slice(0, 80);
+    else if (r.moment && r.moment.summary) snippet = r.moment.summary.slice(0, 80);
+    else if (r.scene && r.scene.summary) snippet = r.scene.summary.slice(0, 80);
+    else if (r.moment && r.moment.narrative) snippet = r.moment.narrative.slice(0, 80);
+    else if (r.scene && r.scene.narrative) snippet = r.scene.narrative.slice(0, 80);
+    addDebugLog(`[semanticSearch] Top ${i + 1}: ID=${r.id}, Relevance=${r.relevance}, Snippet="${snippet}"`);
+  }
   return results.slice(0, limit);
 }
 
@@ -436,7 +449,7 @@ export async function search(options: SearchOptions): Promise<SearchResult[] | G
     results = results.slice(0, effectiveLimit);
   } else {
     // Semantic search
-    results = await semanticSearch(options.query, searchRecords, embeddings, effectiveLimit);
+    results = await semanticSearch(options.query, searchRecords, embeddings, effectiveLimit, options.mode);
   }
 
   // --- Apply advanced filters ---

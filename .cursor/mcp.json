@@ -5,9 +5,8 @@
       "args": ["C:\\Users\\Miguel\\Git\\bridge\\dist\\index.js"],
       "cwd": "C:\\Users\\Miguel\\Git\\bridge",
       "env": {
-        "NODE_ENV": "development"
-      },
-      "dataFile": "C:\\Users\\Miguel\\Git\\bridge\\data\\development.json"
+        "BRIDGE_FILE_PATH": "C:\\Users\\Miguel\\Git\\bridge\\data\\development.json"
+      }
     }
   }
 } 

@@ -75,8 +75,14 @@ export async function generateEmbedding(text: string): Promise<number[]> {
 // 2. Load all embeddings from file
 export async function loadEmbeddings(): Promise<Record<string, number[]>> {
   try {
-    const content = await fs.readFile(getEmbeddingsFile(), 'utf8');
-    return JSON.parse(content);
+    const file = getEmbeddingsFile();
+    // Debug: print embeddings file path
+    console.error('[embeddings] Loading embeddings from:', file);
+    const content = await fs.readFile(file, 'utf8');
+    const obj = JSON.parse(content);
+    // Debug: print keys
+    console.error('[embeddings] Embedding keys:', Object.keys(obj));
+    return obj;
   } catch (err) {
     return {};
   }

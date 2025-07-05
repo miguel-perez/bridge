@@ -33,6 +33,9 @@ import { setEmbeddingsConfig } from './embeddings.js';
 import path from 'path';
 import type { SearchResult } from './search.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { AutoProcessor } from './auto-processing.js';
+import { statusMonitor } from './status.js';
+import { getConfig } from './config.js';
 
 // Constants
 const SERVER_NAME = 'captain';
@@ -315,6 +318,36 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           limit: { type: "number", description: "Maximum results to return" },
           includeContext: { type: "boolean", description: "Return full record metadata" }
         }
+      }
+    },
+    {
+      name: "auto-frame",
+      description: "Automatically frame unframed sources into moments using OpenAI. Creates moments marked as unreviewed for human oversight.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          sourceIds: { type: "array", items: { type: "string" }, description: "Array of source IDs to auto-frame (optional - if not provided, will use unframed sources)" },
+          batchSize: { type: "number", description: "Number of sources to process in this batch (optional)" }
+        }
+      }
+    },
+    {
+      name: "auto-weave",
+      description: "Automatically weave unweaved moments into scenes using OpenAI. Creates scenes marked as unreviewed for human oversight.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          momentIds: { type: "array", items: { type: "string" }, description: "Array of moment IDs to auto-weave (optional - if not provided, will use unweaved moments)" },
+          batchSize: { type: "number", description: "Number of moments to process in this batch (optional)" }
+        }
+      }
+    },
+    {
+      name: "status",
+      description: "Get a high-level status report of the system, including counts of unframed sources, unreviewed content, and processing errors.",
+      inputSchema: {
+        type: "object",
+        properties: {}
       }
     }
   ];
@@ -874,6 +907,142 @@ shifts, several emotional boundaries, multiple actional completions.`;
         } else {
           return { content: [{ type: 'text', text: 'Grouped results are not yet supported in this view.' }] };
         }
+      }
+
+      case 'auto-frame': {
+        const autoProcessor = new AutoProcessor();
+        const config = getConfig();
+        const safeArgs = args || {};
+        
+        // Get unframed sources if no specific sourceIds provided
+        let sourceIds = (safeArgs.sourceIds as string[]) || [];
+        if (sourceIds.length === 0) {
+          const sources = await getSources();
+          const moments = await getMoments();
+          
+          // Find sources not referenced by any moment
+          const framedSourceIds = new Set<string>();
+          moments.forEach(moment => {
+            moment.sources.forEach(source => {
+              framedSourceIds.add(source.sourceId);
+            });
+          });
+          
+          sourceIds = sources
+            .filter(source => !framedSourceIds.has(source.id))
+            .slice(0, (safeArgs.batchSize as number) || config.openai.autoFrame.batchSize)
+            .map(source => source.id);
+        }
+
+        if (sourceIds.length === 0) {
+          return { content: [{ type: 'text', text: 'No unframed sources found to process.' }] };
+        }
+
+        const results = await autoProcessor.autoFrameSources({ sourceIds });
+        const successes = results.filter(r => r.success && r.created);
+        if (successes.length > 0) {
+          // Only show the first successful result for now
+          const result = successes[0];
+          // TODO: For future safety, consider runtime check or error if created is undefined
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `✓ Auto-framed ${sourceIds.length} source(s) into moment: ${result.created!.emoji} "${result.created!.summary}" (ID: ${result.created!.id})`
+              },
+              {
+                type: 'text',
+                text: `⚠️ This moment is marked as unreviewed. Use the enrich tool to review and approve it.`
+              },
+              {
+                type: 'text',
+                text: `\nFull record:\n${JSON.stringify(result.created!, null, 2)}`
+              }
+            ]
+          };
+        } else {
+          const firstError = results.find(r => r.error) || { error: 'Unknown error' };
+          statusMonitor.recordError('framing', firstError.error || 'Unknown error');
+          return { error: `Auto-framing failed: ${firstError.error}` };
+        }
+      }
+
+      case 'auto-weave': {
+        const autoProcessor = new AutoProcessor();
+        const safeArgs = args || {};
+        
+        // Get unweaved moments if no specific momentIds provided
+        let momentIds = (safeArgs.momentIds as string[]) || [];
+        if (momentIds.length === 0) {
+          const moments = await getMoments();
+          const scenes = await getScenes();
+          
+          // Find moments not part of any scene
+          const weavedMomentIds = new Set<string>();
+          scenes.forEach(scene => {
+            scene.momentIds.forEach(momentId => {
+              weavedMomentIds.add(momentId);
+            });
+          });
+          
+          momentIds = moments
+            .filter(moment => !weavedMomentIds.has(moment.id))
+            .slice(0, (safeArgs.batchSize as number) || 5) // Default batch size for auto-weaving
+            .map(moment => moment.id);
+        }
+
+        if (momentIds.length === 0) {
+          return { content: [{ type: 'text', text: 'No unweaved moments found to process.' }] };
+        }
+
+        const result = await autoProcessor.autoWeaveMoments(momentIds);
+        
+        if (result.success && result.created) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `✓ Auto-wove ${momentIds.length} moment(s) into scene: ${result.created.emoji} "${result.created.summary}" (ID: ${result.created.id})`
+              },
+              {
+                type: 'text',
+                text: `⚠️ This scene is marked as unreviewed. Use the enrich tool to review and approve it.`
+              },
+              {
+                type: 'text',
+                text: `\nFull record:\n${JSON.stringify(result.created, null, 2)}`
+              }
+            ]
+          };
+        } else {
+          statusMonitor.recordError('weaving', result.error || 'Unknown error');
+          return { error: `Auto-weaving failed: ${result.error}` };
+        }
+      }
+
+      case 'status': {
+        const report = await statusMonitor.generateStatusReport();
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `📊 System Status Report\n\n` +
+                    `📝 Unframed sources: ${report.unframed_sources_count}\n` +
+                    `🔍 Unreviewed moments: ${report.unreviewed_moments_count}\n` +
+                    `🎭 Unreviewed scenes: ${report.unreviewed_scenes_count}\n` +
+                    `🧵 Unweaved moments: ${report.unweaved_moments_count}\n` +
+                    `⚙️ Auto-weave threshold: ${report.auto_weave_threshold}\n` +
+                    `🤖 Auto-framing: ${report.auto_framing_enabled ? 'enabled' : 'disabled'}\n` +
+                    `🤖 Auto-weaving: ${report.auto_weaving_enabled ? 'enabled' : 'disabled'}\n\n` +
+                    `${report.processing_errors.length > 0 ? 
+                      `❌ Processing Errors:\n${report.processing_errors.map(e => 
+                        `  • ${e.type}: ${e.count} error(s), last: ${e.lastError}`
+                      ).join('\n')}` : 
+                      '✅ No processing errors'
+                    }`
+            }
+          ]
+        };
       }
 
       default: {

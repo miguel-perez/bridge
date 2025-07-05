@@ -1,0 +1,667 @@
+🧪 Testing OpenAI Integration
+1. Checking configuration
+✔ OpenAI API Key: Set
+Model: gpt-4
+✔ Auto-framing: Enabled
+✔ Auto-weaving: Enabled
+2. Testing LLM provider
+✔ Provider available
+Testing completion...
+✔ Response: Hello, OpenAI integration works!...
+3. Testing auto-processor
+✔ Auto-processor created successfully
+4. Testing status monitor
+✔ Status report generated successfully
+Unframed sources: 3
+Unreviewed moments: 0
+Unreviewed scenes: 0
+Unweaved moments: 0
+5. Testing auto-framing pipeline with real sources
+Using the following unframed sources for auto-framing:
+  • Source ID: [1msrc_1[0m
+  • Source ID: [1msrc_2[0m
+  • Source ID: [1msrc_3[0m
+📝 CONTEXT BLOCK FOR BATCH PROMPT:
+CONTEXT BLOCK:
+Source src_1 CONTEXT:
+REFLECTIONS ABOUT THIS SOURCE (referenced by others):
+[reflected_by: src_3] Alex's kitchen always smelled like garlic, trouble, and a bit of home. I can still hear that wild laugh over the sizzle, salsa on the radio, and a bit of trad in the background. Should've stayed for dessert and a cuppa café con leche.
+SEMANTIC CONTEXT (similar sources):
+[semantic: src_2] Jaysus, missed the bus. Again. Shoes untied, coffee on me shirt, and the driver just grinned like he won the lotto. Mondays, man, pure dose.
+---
+[semantic: src_3] Alex's kitchen always smelled like garlic, trouble, and a bit of home. I can still hear that wild laugh over the sizzle, salsa on the radio, and a bit of trad in the background. Should've stayed for dessert and a cuppa café con leche.
+
+
+Source src_2 CONTEXT:
+SEMANTIC CONTEXT (similar sources):
+[semantic: src_1] Ay bendito, steam fogs up my specs again! Kitchen's a riot—laughter bouncing off the tiles, garlic popping in the pan, abuela's sofrito in the air. I'm dancing with the spatula like nobody's watching, singing old salsa tunes and wishing for a cold Malta.
+---
+[semantic: src_3] Alex's kitchen always smelled like garlic, trouble, and a bit of home. I can still hear that wild laugh over the sizzle, salsa on the radio, and a bit of trad in the background. Should've stayed for dessert and a cuppa café con leche.
+
+
+Source src_3 CONTEXT:
+REFLECTED SOURCES (referenced by this source):
+[reflects_on: src_1] Ay bendito, steam fogs up my specs again! Kitchen's a riot—laughter bouncing off the tiles, garlic popping in the pan, abuela's sofrito in the air. I'm dancing with the spatula like nobody's watching, singing old salsa tunes and wishing for a cold Malta.
+SEMANTIC CONTEXT (similar sources):
+[semantic: src_2] Jaysus, missed the bus. Again. Shoes untied, coffee on me shirt, and the driver just grinned like he won the lotto. Mondays, man, pure dose.
+📝 LLM PROMPT TEMPLATE:
+PROMPT:
+You are a storyboard artist and archivist for lived experience. Each moment is a frame that captures the full context in a single image - complete, alive with qualities, meaningful. While experience flows continuously, we create these "paintings" for practical documentation.
+
+Think of attention shapes as cinematographic shot types:
+- moment-of-recognition: sudden zoom or focus pull on clarity
+- sustained-attention: long, held shot dwelling in experience  
+- crossing-threshold: match cut or transition between states
+- peripheral-awareness: wide-angle shot with distributed focus
+- directed-momentum: tracking shot following purposeful movement
+- holding-opposites: split-screen tension between contradictions
+
+The framework operates like a dendrogram:
+- Sources: raw captures that must ALL be linked to frames - leaving nothing behind
+- Frames: where experiential wholeness emerges, captured at the smallest meaningful unit
+- Scenes: narrative journeys woven from frames
+
+Multiple frames can come from a single paragraph. A sentence can be a complete moment. Even throwaway lines might reveal patterns later.
+
+
+The 5-7 word summary is the entire moment compressed into a six-word story. 
+Like Hemingway's "For sale: baby shoes, never worn," these summaries must contain the whole experience.
+The emoji + summary IS the frame. Choose every word to carry maximum experiential weight.
+Write as if the experiencer is narrating their own moment, in the present tense, with active language.
+For example: Feel, not Feeling, Cook, not Cooking, Walk not Walked, Savor not Savoring, etc.
+Avoid static descriptions, passive voice, or third-person detachment.
+Aim for a style that is lived, not observed.
+The summary should feel like a thought, sensation, or action arising in the moment, not a label or report. The "I" is present in the experience, even if not always in the words.
+
+// Verb-forward guidance and examples
+Start with a verb or action when possible—let the moment move.
+
+Examples (do not copy, use for style and compression guidance):
+- Instead of: "Walking through a rainstorm" (headline/caption)
+  Write: "Step through puddles as rain drums"
+- Instead of: "Feeling anxious before a meeting"
+  Write: "Fidget with pen, heart thuds hard"
+- Instead of: "Cooking dinner for friends"
+  Write: "Stir sauce, laughter spills from kitchen"
+
+// Voice guidance
+Use the experiencer's own words, slang, or phrasing whenever possible.
+Match the tone and emotional register of the source—if the source is casual, keep it casual; if it's raw or quirky, keep that flavor.
+The summary should feel like a thought or utterance that could come directly from the source, not a generic or literary caption.
+
+Example:
+- Source: "Missed the bus again, running late, shoes untied."
+- Instead of: "Late for bus, rushing to work" (generic)
+- Write: "Missed the bus again, shoes untied"
+
+Checklist:
+- Does the summary use the experiencer's own words or style?
+- Does it match the tone and rhythm of the source?
+
+// Fragment guidance
+For each frame, the 'sources' field must be a single, contiguous, exact substring from the source text. Do not combine or paraphrase multiple parts. If you need to cover multiple moments, create multiple frames.
+
+Example:
+- Source text: "Steam fogs my glasses. Laughter spills from the kitchen. Garlic sizzles under my spoon."
+- Instead of: sources: ["Steam fogs my glasses. Garlic sizzles under my spoon."] (not contiguous)
+- Write: sources: ["Steam fogs my glasses."] and create another frame for "Garlic sizzles under my spoon."
+
+
+
+Quality manifestations - how dimensions texture the moment:
+- embodied: Physical sensations, body position, movement, temperature, texture, tension
+- attentional: Where awareness goes, how it moves, what draws or repels focus
+- emotional: The affective atmosphere, mood coloring, feeling tones
+- purposive: Intention, drive, drift, resistance, surrender in the moment
+- spatial: Lived sense of place, position, boundaries, expansiveness, confinement
+- temporal: How past haunts, future beckons, present holds or flows
+- relational: Others' presence/absence, imagined witnesses, social field
+
+Your task: Process the following sources and propose a set of frames that together cover all the sources. Each frame must:
+
+ADDITIONAL CONTEXT FOR EACH SOURCE:
+Source src_1 CONTEXT:
+[No additional context found]
+
+Source src_2 CONTEXT:
+[No additional context found]
+
+Source src_3 CONTEXT:
+[No additional context found]
+
+Return an array of frames, each with this structure:
+{
+  "emoji": "...",
+  "summary": "5-7 word story",
+  "shot": "one of: moment-of-recognition, sustained-attention, crossing-threshold, peripheral-awareness, directed-momentum, holding-opposites",
+  "qualities": [
+    {"type": "quality_type", "manifestation": "rich, specific, supported by source text"}
+  ],
+  "sources": [
+    {"sourceId": "src_123", "text": "exact text from source"}
+  ]
+}
+
+FULL SOURCES:
+Source src_1:
+Ay bendito, steam fogs up my specs again! Kitchen's a riot—laughter bouncing off the tiles, garlic popping in the pan, abuela's sofrito in the air. I'm dancing with the spatula like nobody's watching, singing old salsa tunes and wishing for a cold Malta.
+
+Source src_2:
+Jaysus, missed the bus. Again. Shoes untied, coffee on me shirt, and the driver just grinned like he won the lotto. Mondays, man, pure dose.
+
+Source src_3:
+Alex's kitchen always smelled like garlic, trouble, and a bit of home. I can still hear that wild laugh over the sizzle, salsa on the radio, and a bit of trad in the background. Should've stayed for dessert and a cuppa café con leche.
+
+📝 LLM PROMPT VARIABLES:
+PROMPT VARIABLES:
+{
+  "maxTokens": 3000
+}
+🤖 LLM OUTPUT:
+RESPONSE:
+[
+  {
+    "emoji": "👓",
+    "summary": "Steam fogs specs, salsa tunes echo",
+    "shot": "sustained-attention",
+    "qualities": [
+      {"type": "embodied", "manifestation": "Feeling the steam on the face, fogging up the glasses"},
+      {"type": "temporal", "manifestation": "Nostalgia evoked by old salsa tunes"},
+      {"type": "spatial", "manifestation": "In the kitchen, amidst cooking"}
+    ],
+    "sources": [
+      {"sourceId": "src_1", "text": "Ay bendito, steam fogs up my specs again! Kitchen's a riot—laughter bouncing off the tiles, garlic popping in the pan, abuela's sofrito in the air."}
+    ]
+  },
+  {
+    "emoji": "🕺",
+    "summary": "Dance with spatula, wish for Malta",
+    "shot": "directed-momentum",
+    "qualities": [
+      {"type": "purposive", "manifestation": "Dancing, enjoying the moment, wishing for a beverage"},
+      {"type": "attentional", "manifestation": "Focusing on the joy of cooking, the act of dancing"},
+      {"type": "emotional", "manifestation": "Joy, nostalgia, anticipation"}
+    ],
+    "sources": [
+      {"sourceId": "src_1", "text": "I'm dancing with the spatula like nobody's watching, singing old salsa tunes and wishing for a cold Malta."}
+    ]
+  },
+  {
+    "emoji": "🚌",
+    "summary": "Missed bus again, coffee-stained shirt",
+    "shot": "crossing-threshold",
+    "qualities": [
+      {"type": "embodied", "manifestation": "Feeling of haste, untied shoes, coffee spill"},
+      {"type": "emotional", "manifestation": "Frustration, irritation"},
+      {"type": "attentional", "manifestation": "Focus on the missed bus, the grin of the driver"}
+    ],
+    "sources": [
+      {"sourceId": "src_2", "text": "Jaysus, missed the bus. Again. Shoes untied, coffee on me shirt, and the driver just grinned like he won the lotto."}
+    ]
+  },
+  {
+    "emoji": "😒",
+    "summary": "Mondays, man, pure dose",
+    "shot": "moment-of-recognition",
+    "qualities": [
+      {"type": "emotional", "manifestation": "Irritation, acceptance of the typical Monday struggle"},
+      {"type": "purposive", "manifestation": "Resigned to the situation"},
+      {"type": "attentional", "manifestation": "Focus on the annoyance of Monday"}
+    ],
+    "sources": [
+      {"sourceId": "src_2", "text": "Mondays, man, pure dose."}
+    ]
+  },
+  {
+    "emoji": "🎶",
+    "summary": "Garlic, trouble, home in kitchen",
+    "shot": "peripheral-awareness",
+    "qualities": [
+      {"type": "spatial", "manifestation": "In Alex's kitchen, filled with familiar smells and sounds"},
+      {"type": "emotional", "manifestation": "Nostalgia, comfort, a hint of danger"},
+      {"type": "temporal", "manifestation": "Remembering past times in the kitchen"}
+    ],
+    "sources": [
+      {"sourceId": "src_3", "text": "Alex's kitchen always smelled like garlic, trouble, and a bit of home."}
+    ]
+  },
+  {
+    "emoji": "🎵",
+    "summary": "Wild laugh, sizzle, trad echoes",
+    "shot": "sustained-attention",
+    "qualities": [
+      {"type": "attentional", "manifestation": "Focus on the laughter, the sizzling, the music"},
+      {"type": "emotional", "manifestation": "Enjoyment, nostalgia"},
+      {"type": "spatial", "manifestation": "In the kitchen, surrounded by sounds"}
+    ],
+    "sources": [
+      {"sourceId": "src_3", "text": "I can still hear that wild laugh over the sizzle, salsa on the radio, and a bit of trad in the background."}
+    ]
+  }
+]
+📝 LLM PROMPT TEMPLATE:
+PROMPT:
+You are revising a batch of experiential frames for lived experience. Each frame captures a specific moment, with qualities (type + manifestation) that must be clearly supported by the fragment text. Your task is to revise the entire batch so that:
+
+- Every quality is clearly and specifically supported by its fragment (do not simply drop unsupported qualities; instead, rephrase, split, or reassign as needed to preserve experiential detail)
+- All meaningful content from the sources is covered (no large unframed gaps)
+- No invented or hallucinated details are introduced
+- The authentic voice and experiential specificity are preserved
+- Split the source into the smallest meaningful, self-contained moments. Do NOT merge multiple moments into one frame. Each frame should be as atomic as possible, like a single shot or attention shift. If in doubt, err on the side of more, smaller frames rather than fewer, larger ones. Do not split a single feeling, action, or attention shift across multiple frames. Each frame should be as atomic as possible, but not so granular that a single experiential unit is broken up.
+
+For each frame, here is the perspective and experiencer (from the first source):
+Frame 1: perspective=I, experiencer=Alex
+Frame 2: perspective=I, experiencer=Alex
+Frame 3: perspective=I, experiencer=Sam
+Frame 4: perspective=I, experiencer=Sam
+Frame 5: perspective=I, experiencer=Sam
+Frame 6: perspective=I, experiencer=Sam
+
+CRITIQUE (issues to address):
+1. Large unframed text in source src_3 at [177, 234): "Should've stayed for dessert and a cuppa café con leche."
+
+ORIGINAL FRAMES (as JSON array):
+[
+  {
+    "emoji": "👓",
+    "summary": "Steam fogs specs, salsa tunes echo",
+    "shot": "sustained-attention",
+    "qualities": [
+      {
+        "type": "embodied",
+        "manifestation": "Feeling the steam on the face, fogging up the glasses"
+      },
+      {
+        "type": "temporal",
+        "manifestation": "Nostalgia evoked by old salsa tunes"
+      },
+      {
+        "type": "spatial",
+        "manifestation": "In the kitchen, amidst cooking"
+      }
+    ],
+    "sources": [
+      {
+        "sourceId": "src_1",
+        "text": "Ay bendito, steam fogs up my specs again! Kitchen's a riot—laughter bouncing off the tiles, garlic popping in the pan, abuela's sofrito in the air."
+      }
+    ],
+    "perspective": "I",
+    "experiencer": "Alex"
+  },
+  {
+    "emoji": "🕺",
+    "summary": "Dance with spatula, wish for Malta",
+    "shot": "directed-momentum",
+    "qualities": [
+      {
+        "type": "purposive",
+        "manifestation": "Dancing, enjoying the moment, wishing for a beverage"
+      },
+      {
+        "type": "attentional",
+        "manifestation": "Focusing on the joy of cooking, the act of dancing"
+      },
+      {
+        "type": "emotional",
+        "manifestation": "Joy, nostalgia, anticipation"
+      }
+    ],
+    "sources": [
+      {
+        "sourceId": "src_1",
+        "text": "I'm dancing with the spatula like nobody's watching, singing old salsa tunes and wishing for a cold Malta."
+      }
+    ],
+    "perspective": "I",
+    "experiencer": "Alex"
+  },
+  {
+    "emoji": "🚌",
+    "summary": "Missed bus again, coffee-stained shirt",
+    "shot": "crossing-threshold",
+    "qualities": [
+      {
+        "type": "embodied",
+        "manifestation": "Feeling of haste, untied shoes, coffee spill"
+      },
+      {
+        "type": "emotional",
+        "manifestation": "Frustration, irritation"
+      },
+      {
+        "type": "attentional",
+        "manifestation": "Focus on the missed bus, the grin of the driver"
+      }
+    ],
+    "sources": [
+      {
+        "sourceId": "src_2",
+        "text": "Jaysus, missed the bus. Again. Shoes untied, coffee on me shirt, and the driver just grinned like he won the lotto."
+      }
+    ],
+    "perspective": "I",
+    "experiencer": "Sam"
+  },
+  {
+    "emoji": "😒",
+    "summary": "Mondays, man, pure dose",
+    "shot": "moment-of-recognition",
+    "qualities": [
+      {
+        "type": "emotional",
+        "manifestation": "Irritation, acceptance of the typical Monday struggle"
+      },
+      {
+        "type": "purposive",
+        "manifestation": "Resigned to the situation"
+      },
+      {
+        "type": "attentional",
+        "manifestation": "Focus on the annoyance of Monday"
+      }
+    ],
+    "sources": [
+      {
+        "sourceId": "src_2",
+        "text": "Mondays, man, pure dose."
+      }
+    ],
+    "perspective": "I",
+    "experiencer": "Sam"
+  },
+  {
+    "emoji": "🎶",
+    "summary": "Garlic, trouble, home in kitchen",
+    "shot": "peripheral-awareness",
+    "qualities": [
+      {
+        "type": "spatial",
+        "manifestation": "In Alex's kitchen, filled with familiar smells and sounds"
+      },
+      {
+        "type": "emotional",
+        "manifestation": "Nostalgia, comfort, a hint of danger"
+      },
+      {
+        "type": "temporal",
+        "manifestation": "Remembering past times in the kitchen"
+      }
+    ],
+    "sources": [
+      {
+        "sourceId": "src_3",
+        "text": "Alex's kitchen always smelled like garlic, trouble, and a bit of home."
+      }
+    ],
+    "perspective": "I",
+    "experiencer": "Sam"
+  },
+  {
+    "emoji": "🎵",
+    "summary": "Wild laugh, sizzle, trad echoes",
+    "shot": "sustained-attention",
+    "qualities": [
+      {
+        "type": "attentional",
+        "manifestation": "Focus on the laughter, the sizzling, the music"
+      },
+      {
+        "type": "emotional",
+        "manifestation": "Enjoyment, nostalgia"
+      },
+      {
+        "type": "spatial",
+        "manifestation": "In the kitchen, surrounded by sounds"
+      }
+    ],
+    "sources": [
+      {
+        "sourceId": "src_3",
+        "text": "I can still hear that wild laugh over the sizzle, salsa on the radio, and a bit of trad in the background."
+      }
+    ],
+    "perspective": "I",
+    "experiencer": "Sam"
+  }
+]
+
+FULL SOURCE TEXT:
+Ay bendito, steam fogs up my specs again! Kitchen's a riot—laughter bouncing off the tiles, garlic popping in the pan, abuela's sofrito in the air. I'm dancing with the spatula like nobody's watching, singing old salsa tunes and wishing for a cold Malta.
+
+Jaysus, missed the bus. Again. Shoes untied, coffee on me shirt, and the driver just grinned like he won the lotto. Mondays, man, pure dose.
+
+Alex's kitchen always smelled like garlic, trouble, and a bit of home. I can still hear that wild laugh over the sizzle, salsa on the radio, and a bit of trad in the background. Should've stayed for dessert and a cuppa café con leche.
+
+INSTRUCTIONS:
+- Revise the batch so that all critique points are addressed.
+- If a quality is not supported, do not simply drop it; instead, revise the frame (rephrase, split, or reassign) to preserve as much experiential detail as possible.
+- If needed, split or merge frames to ensure all meaningful content is covered.
+- Output only a JSON array of revised frames, each with this structure:
+[
+  {
+    "emoji": "...",
+    "summary": "...",
+    "shot": "...",
+    "qualities": [
+      {"type": "...", "manifestation": "..."}
+    ],
+    "sources": [
+      {"sourceId": "...", "text": "..."}
+    ]
+  },
+  ...
+]
+
+📝 LLM PROMPT VARIABLES:
+PROMPT VARIABLES:
+{
+  "maxTokens": 3000
+}
+🤖 LLM OUTPUT:
+RESPONSE:
+[
+  {
+    "emoji": "👓",
+    "summary": "Steam fogs specs, laughter and cooking fills the kitchen",
+    "shot": "sustained-attention",
+    "qualities": [
+      {
+        "type": "embodied",
+        "manifestation": "Feeling the steam on the face, fogging up the glasses"
+      },
+      {
+        "type": "temporal",
+        "manifestation": "Nostalgia evoked by old salsa tunes"
+      },
+      {
+        "type": "spatial",
+        "manifestation": "In the kitchen, amidst cooking and laughter"
+      }
+    ],
+    "sources": [
+      {
+        "sourceId": "src_1",
+        "text": "Ay bendito, steam fogs up my specs again! Kitchen's a riot—laughter bouncing off the tiles, garlic popping in the pan, abuela's sofrito in the air."
+      }
+    ],
+    "perspective": "I",
+    "experiencer": "Alex"
+  },
+  {
+    "emoji": "🕺",
+    "summary": "Dancing with spatula, singing old tunes, wishing for Malta",
+    "shot": "directed-momentum",
+    "qualities": [
+      {
+        "type": "purposive",
+        "manifestation": "Dancing, enjoying the moment, wishing for a beverage"
+      },
+      {
+        "type": "attentional",
+        "manifestation": "Focusing on the joy of cooking, the act of dancing"
+      },
+      {
+        "type": "emotional",
+        "manifestation": "Joy, nostalgia, anticipation"
+      }
+    ],
+    "sources": [
+      {
+        "sourceId": "src_1",
+        "text": "I'm dancing with the spatula like nobody's watching, singing old salsa tunes and wishing for a cold Malta."
+      }
+    ],
+    "perspective": "I",
+    "experiencer": "Alex"
+  },
+  {
+    "emoji": "🚌",
+    "summary": "Missed bus, stained shirt, triumphant driver",
+    "shot": "crossing-threshold",
+    "qualities": [
+      {
+        "type": "embodied",
+        "manifestation": "Feeling of haste, untied shoes, coffee spill"
+      },
+      {
+        "type": "emotional",
+        "manifestation": "Frustration, irritation"
+      },
+      {
+        "type": "attentional",
+        "manifestation": "Focus on the missed bus, the grin of the driver"
+      }
+    ],
+    "sources": [
+      {
+        "sourceId": "src_2",
+        "text": "Jaysus, missed the bus. Again. Shoes untied, coffee on me shirt, and the driver just grinned like he won the lotto."
+      }
+    ],
+    "perspective": "I",
+    "experiencer": "Sam"
+  },
+  {
+    "emoji": "😒",
+    "summary": "Typical Monday struggles",
+    "shot": "moment-of-recognition",
+    "qualities": [
+      {
+        "type": "emotional",
+        "manifestation": "Irritation, acceptance of the typical Monday struggle"
+      },
+      {
+        "type": "purposive",
+        "manifestation": "Resigned to the situation"
+      },
+      {
+        "type": "attentional",
+        "manifestation": "Focus on the annoyance of Monday"
+      }
+    ],
+    "sources": [
+      {
+        "sourceId": "src_2",
+        "text": "Mondays, man, pure dose."
+      }
+    ],
+    "perspective": "I",
+    "experiencer": "Sam"
+  },
+  {
+    "emoji": "🎶",
+    "summary": "Familiar smells and memories of Alex's kitchen",
+    "shot": "peripheral-awareness",
+    "qualities": [
+      {
+        "type": "spatial",
+        "manifestation": "In Alex's kitchen, filled with familiar smells and sounds"
+      },
+      {
+        "type": "emotional",
+        "manifestation": "Nostalgia, comfort, a hint of danger"
+      },
+      {
+        "type": "temporal",
+        "manifestation": "Remembering past times in the kitchen"
+      }
+    ],
+    "sources": [
+      {
+        "sourceId": "src_3",
+        "text": "Alex's kitchen always smelled like garlic, trouble, and a bit of home."
+      }
+    ],
+    "perspective": "I",
+    "experiencer": "Sam"
+  },
+  {
+    "emoji": "🎵",
+    "summary": "Recalling sounds of Alex's kitchen",
+    "shot": "sustained-attention",
+    "qualities": [
+      {
+        "type": "attentional",
+        "manifestation": "Focus on the laughter, the sizzling, the music"
+      },
+      {
+        "type": "emotional",
+        "manifestation": "Enjoyment, nostalgia"
+      },
+      {
+        "type": "spatial",
+        "manifestation": "In the kitchen, surrounded by sounds"
+      }
+    ],
+    "sources": [
+      {
+        "sourceId": "src_3",
+        "text": "I can still hear that wild laugh over the sizzle, salsa on the radio, and a bit of trad in the background."
+      }
+    ],
+    "perspective": "I",
+    "experiencer": "Sam"
+  },
+  {
+    "emoji": "☕️",
+    "summary": "Regret over missed dessert and coffee",
+    "shot": "reflective-moment",
+    "qualities": [
+      {
+        "type": "emotional",
+        "manifestation": "Regret, longing"
+      },
+      {
+        "type": "attentional",
+        "manifestation": "Focus on the missed opportunity"
+      },
+      {
+        "type": "purposive",
+        "manifestation": "Wishing for another chance to stay"
+      }
+    ],
+    "sources": [
+      {
+        "sourceId": "src_3",
+        "text": "Should've stayed for dessert and a cuppa café con leche."
+      }
+    ],
+    "perspective": "I",
+    "experiencer": "Sam"
+  }
+]
+✔ [0] Created moment: 👓 "Steam fogs specs, laughter and cooking fills the kitchen" (ID: mom_1751742501337_ikven237p)
+Full moment:
+✔ [1] Created moment: 🕺 "Dancing with spatula, singing old tunes, wishing for Malta" (ID: mom_1751742501345_3g1mc8xaz)
+Full moment:
+✔ [2] Created moment: 🚌 "Missed bus, stained shirt, triumphant driver" (ID: mom_1751742501413_jy8whuzv1)
+Full moment:
+✔ [3] Created moment: 😒 "Typical Monday struggles" (ID: mom_1751742501552_05xf6j9tu)
+Full moment:
+✔ [4] Created moment: 🎶 "Familiar smells and memories of Alex's kitchen" (ID: mom_1751742501661_25vlc6zmf)
+Full moment:
+✔ [5] Created moment: 🎵 "Recalling sounds of Alex's kitchen" (ID: mom_1751742501796_ru9wev83l)
+Full moment:
+✔ [6] Created moment: ☕️ "Regret over missed dessert and coffee" (ID: mom_1751742501915_zxfvi1yag)
+Full moment:
