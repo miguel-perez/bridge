@@ -159,6 +159,30 @@ export async function saveMoment(moment: Omit<MomentRecord, 'type'>): Promise<Mo
   } catch (err) {
     // Fail silently
   }
+  // --- Autoweave trigger logic ---
+  try {
+    const { getConfig } = await import('./config.js');
+    const config = getConfig();
+    if (config.openai.autoWeave && config.openai.autoWeave.enabled) {
+      const { getMoments, getScenes } = await import('./storage.js');
+      const moments = await getMoments();
+      const scenes = await getScenes();
+      // Find unweaved moments (not in any scene)
+      const weavedMomentIds = new Set<string>();
+      scenes.forEach(scene => {
+        (scene.momentIds || []).forEach(id => weavedMomentIds.add(id));
+      });
+      const unweavedMoments = moments.filter(m => !weavedMomentIds.has(m.id));
+      if (unweavedMoments.length >= config.openai.autoWeave.threshold) {
+        // Dynamically import autoWeaveMoments to avoid circular deps
+        const { AutoProcessor } = await import('./auto-processing.js');
+        const autoProcessor = new AutoProcessor();
+        await autoProcessor.autoWeaveMoments(unweavedMoments.map(m => m.id));
+      }
+    }
+  } catch (err) {
+    // Fail silently
+  }
   return record;
 }
 
