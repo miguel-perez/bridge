@@ -77,7 +77,7 @@ const captureSchema = z.object({
   experiencer: z.string(),
   reflects_on: z.array(z.string()).optional(),
   file: z.string().optional(),
-  autoframe: z.boolean().optional().default(true),
+  autoframe: z.boolean().optional().default(false), // Changed from true to false - opt-in by default
 });
 
 // Helper function for flexible date validation using chrono-node
@@ -164,7 +164,9 @@ function getContextualPrompts(toolName: string): string {
   let prompts = '\n✓ Next steps:\n';
   switch(toolName) {
     case 'capture':
-      prompts += '• Frame - transform this into a complete moment (smart default: just provide sourceIds)\n';
+      prompts += '• Frame - transform this into a complete moment (manual control recommended)\n';
+      prompts += '• Search - explore your captured experiences\n';
+      prompts += '• Set autoframe: true in capture to enable AI framing\n';
       break;
     case 'frame':
       prompts += '• Smart default: just provide sourceIds for AI-generated framing\n';
@@ -253,7 +255,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   const tools = [
     {
       name: "capture",
-      description: "Capture raw experiential text as a source record. This is for unprocessed, in-the-moment entries—such as journal notes, chat messages, or direct transcripts—before any framing or analysis.",
+      description: "Capture raw experiential text as a source record. This is for unprocessed, in-the-moment entries—such as journal notes, chat messages, or direct transcripts—before any framing or analysis. Auto-framing is disabled by default to preserve user control.",
       inputSchema: {
         type: "object",
         properties: {
@@ -265,7 +267,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           when: { type: "string", description: "When it happened (ISO timestamp or descriptive like 'yesterday morning')" },
           reflects_on: { type: "array", items: { type: "string" }, description: "Array of source IDs this record reflects on (use for reflections)" },
           file: { type: "string", description: "Optional file path for file-based captures" },
-          autoframe: { type: "boolean", description: "Whether to automatically frame this capture into moments (default: true)" }
+          autoframe: { type: "boolean", description: "Whether to automatically frame this capture into moments (default: false - set to true to enable AI framing)" }
         },
         required: ["content", "experiencer", "perspective", "processing"]
       },
@@ -680,7 +682,7 @@ bridge:capture {
         } else {
           content.push({
             type: 'text',
-            text: `⏸️ AI framing skipped. Use the frame tool to manually frame this source when ready.`
+            text: `📝 Source captured successfully. Use the frame tool to manually frame this experience when ready, or set autoframe: true to enable AI framing.`
           });
         }
         return { content };
@@ -1659,8 +1661,14 @@ Optional: add 'when' to override temporal inheritance from moments.`
 🌀 Reframed moments: ${report.reframed_moments_count}
 🌀 Reframed scenes: ${report.reframed_scenes_count}
 ⚙️ Auto-weave threshold: ${report.auto_weave_threshold}
-🤖 Auto-framing: ${report.auto_framing_enabled ? 'enabled' : 'disabled'}
-🤖 Auto-weaving: ${report.auto_weaving_enabled ? 'enabled' : 'disabled'}
+
+🤖 Auto-processing (disabled by default for user control):
+  • Auto-framing: ${report.auto_framing_enabled ? 'enabled' : 'disabled'}
+  • Auto-weaving: ${report.auto_weaving_enabled ? 'enabled' : 'disabled'}
+
+💡 To enable auto-processing:
+  • Set autoframe: true in capture calls
+  • Configure auto-processing in environment variables
 
 ${report.processing_errors.length > 0 ? 
   `❌ Processing Errors:

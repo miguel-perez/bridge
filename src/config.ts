@@ -29,12 +29,12 @@ const defaultConfig: IntegrationConfig = {
     apiKey: process.env.OPENAI_API_KEY,
     model: process.env.OPENAI_MODEL || 'gpt-4',
     autoFrame: {
-      enabled: true,
+      enabled: false,
       batchSize: 10,
       threshold: 5,
     },
     autoWeave: {
-      enabled: true,
+      enabled: false,
       threshold: 5,
     },
   },
