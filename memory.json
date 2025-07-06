@@ -1,169 +1,482 @@
 {
   "sources": [
     {
-      "id": "src_1751828866923_gpeogeg",
-      "content": "Walking through the park this morning, I noticed how the frost made everything sparkle. The cold air felt sharp in my lungs.",
+      "id": "src_1751830379808_9yfpxsh",
+      "content": "Walking through the park this morning, I noticed how the frost made everything sparkle. The cold air felt sharp in my lungs, but refreshing. A dog ran past me, its owner calling after it, and I couldn't help but smile.",
       "contentType": "text",
-      "created": "2025-07-06T19:07:46.923Z",
+      "created": "2025-07-06T19:32:59.808Z",
+      "when": "this morning",
       "perspective": "I",
-      "experiencer": "Claude",
-      "processing": "right-after",
-      "type": "source",
-      "when": "Sunday morning, 7:30am"
-    },
-    {
-      "id": "src_1751828878719_q179bt0",
-      "content": "The team celebrated after completing the difficult project. Everyone seemed relieved and proud.",
-      "contentType": "text",
-      "created": "2025-07-06T19:07:58.719Z",
-      "when": "last Friday afternoon",
-      "perspective": "we",
-      "experiencer": "Development Team",
-      "processing": "long-after",
-      "type": "source"
-    },
-    {
-      "id": "src_1751828885875_6b9ca85",
-      "content": "She looked at the code review comments with a mix of frustration and determination. This was going to take longer than expected.",
-      "contentType": "text",
-      "created": "2025-07-06T19:08:05.875Z",
-      "perspective": "they",
-      "experiencer": "Sarah",
+      "experiencer": "Miguel",
       "processing": "during",
       "type": "source"
     },
     {
-      "id": "src_1751828932432_o4yptb7",
-      "content": "The morning standup felt different today. Everyone was more energetic after yesterday's success.",
+      "id": "src_1751830425686_suk38ka",
+      "content": "Sitting at my desk, overwhelmed by the day's tasks. The coffee has gone cold. I take a deep breath and decide to tackle one thing at a time. The overwhelm shifts to determination.",
       "contentType": "text",
-      "created": "2025-07-06T19:08:52.432Z",
-      "when": "Monday morning",
-      "perspective": "we",
-      "experiencer": "Development Team",
+      "created": "2025-07-06T19:33:45.686Z",
+      "when": "earlier today",
+      "perspective": "I",
+      "experiencer": "Miguel",
       "processing": "right-after",
       "type": "source"
     },
     {
-      "id": "src_1751829036532_f6pue1i",
-      "content": "Looking back at that frosty morning, I realize it was a moment of pure presence. The sharp air wasn't just cold - it was awakening.",
+      "id": "src_1751830434651_e4ndahj",
+      "content": "The notification sound breaks my concentration. I feel a flash of irritation, then curiosity. It's a message from an old friend. My mood instantly lifts.",
       "contentType": "text",
-      "created": "2025-07-06T19:10:36.532Z",
+      "created": "2025-07-06T19:33:54.651Z",
+      "when": "just now",
       "perspective": "I",
-      "experiencer": "Claude",
+      "experiencer": "Miguel",
+      "processing": "during",
+      "type": "source"
+    },
+    {
+      "id": "src_1751830618102_qna8116",
+      "content": "Looking back at this morning's walk and the work session, I notice a pattern. Both experiences started with one state and transformed into another - from neutral observation to joy in the park, from overwhelm to determination at my desk. These transitions seem to happen through small moments of attention shift - the dog, the cold coffee. Maybe transformation lives in these tiny pivots of awareness.",
+      "contentType": "text",
+      "created": "2025-07-06T19:36:58.102Z",
+      "when": "now",
+      "perspective": "I",
+      "experiencer": "Miguel",
       "processing": "long-after",
       "reflects_on": [
-        "src_1751828866923_gpeogeg"
+        "src_1751830379808_9yfpxsh",
+        "src_1751830425686_suk38ka"
       ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751830637990_iaqlaa8",
+      "content": "Watching Miguel walk through the park. He seems lost in thought, then suddenly his whole face lights up when that dog runs by. It's nice to see him smile like that.",
+      "contentType": "text",
+      "created": "2025-07-06T19:37:17.990Z",
+      "when": "this morning",
+      "perspective": "they",
+      "experiencer": "Sarah",
+      "processing": "during",
       "type": "source"
     }
   ],
   "moments": [
     {
-      "id": "mom_1751828894855_2lexdkt",
-      "emoji": "💻",
-      "summary": "Scan code review, frustration stirs determination",
+      "id": "mom_1751830448564_l4rk1dh",
+      "emoji": "🔔",
+      "summary": "Notification breaks concentration, irritation flashes",
       "qualities": [
         {
-          "type": "embodied",
-          "manifestation": "Frustration and determination felt internally"
-        },
-        {
           "type": "attentional",
-          "manifestation": "Focus on the code review comments"
+          "manifestation": "focus interrupted by notification sound"
         },
         {
           "type": "emotional",
-          "manifestation": "Frustration and determination"
+          "manifestation": "irritation at the interruption"
         },
         {
           "type": "purposive",
-          "manifestation": "Determination to address the comments"
-        },
-        {
-          "type": "temporal",
-          "manifestation": "Realization that it will take longer than expected"
+          "manifestation": "concentration disrupted"
         }
       ],
-      "narrative": "Scan code review, frustration stirs determination",
+      "narrative": "Notification breaks concentration, irritation flashes",
       "shot": "moment-of-recognition",
       "sources": [
         {
-          "sourceId": "src_1751828885875_6b9ca85"
+          "sourceId": "src_1751830434651_e4ndahj"
         }
       ],
-      "created": "2025-07-06T19:08:14.856Z",
+      "created": "2025-07-06T19:34:08.564Z",
+      "when": "just now",
+      "experiencer": "Miguel",
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751830449603_2nrat1u",
+      "emoji": "🤔",
+      "summary": "Curiosity stirs, who could it be?",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "curiosity redirected towards the message"
+        },
+        {
+          "type": "emotional",
+          "manifestation": "curiosity replacing irritation"
+        }
+      ],
+      "narrative": "Curiosity stirs, who could it be?",
+      "shot": "sustained-attention",
+      "sources": [
+        {
+          "sourceId": "src_1751830434651_e4ndahj"
+        }
+      ],
+      "created": "2025-07-06T19:34:09.603Z",
+      "when": "just now",
+      "experiencer": "Miguel",
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751830450235_ib1u589",
+      "emoji": "📩",
+      "summary": "Message from old friend, mood lifts",
+      "qualities": [
+        {
+          "type": "relational",
+          "manifestation": "connection with an old friend"
+        },
+        {
+          "type": "emotional",
+          "manifestation": "mood uplifted by the message"
+        },
+        {
+          "type": "temporal",
+          "manifestation": "past memories with friend influencing present emotion"
+        }
+      ],
+      "narrative": "Message from old friend, mood lifts",
+      "shot": "crossing-threshold",
+      "sources": [
+        {
+          "sourceId": "src_1751830434651_e4ndahj"
+        }
+      ],
+      "created": "2025-07-06T19:34:10.235Z",
+      "when": "just now",
+      "experiencer": "Miguel",
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751830480902_sto6cs9",
+      "emoji": "🌳",
+      "summary": "Stroll through frosted park, everything sparkles",
+      "qualities": [
+        {
+          "type": "embodied",
+          "manifestation": "Physical movement of walking, noticing the frost"
+        },
+        {
+          "type": "spatial",
+          "manifestation": "Lived sense of park, expansiveness of the scene"
+        },
+        {
+          "type": "temporal",
+          "manifestation": "Morning time, perceived freshness of the day"
+        }
+      ],
+      "narrative": "Stroll through frosted park, everything sparkles",
+      "shot": "sustained-attention",
+      "sources": [
+        {
+          "sourceId": "src_1751830379808_9yfpxsh"
+        }
+      ],
+      "created": "2025-07-06T19:34:40.902Z",
+      "when": "this morning",
+      "experiencer": "Miguel",
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751830481590_6asb4mz",
+      "emoji": "❄️",
+      "summary": "Inhale sharp cold air, feel refreshed",
+      "qualities": [
+        {
+          "type": "embodied",
+          "manifestation": "Physical sensation of cold air entering lungs"
+        },
+        {
+          "type": "emotional",
+          "manifestation": "Feeling of refreshment from the cold air"
+        },
+        {
+          "type": "attentional",
+          "manifestation": "Focus on the sensation of breathing"
+        }
+      ],
+      "narrative": "Inhale sharp cold air, feel refreshed",
+      "shot": "moment-of-recognition",
+      "sources": [
+        {
+          "sourceId": "src_1751830379808_9yfpxsh"
+        }
+      ],
+      "created": "2025-07-06T19:34:41.590Z",
+      "when": "this morning",
+      "experiencer": "Miguel",
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751830482494_fuxv6hg",
+      "emoji": "🐕",
+      "summary": "Watch dog sprint past, can't help smiling",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "Focus drawn to the dog running past"
+        },
+        {
+          "type": "emotional",
+          "manifestation": "Joy, amusement provoked by the dog"
+        },
+        {
+          "type": "relational",
+          "manifestation": "Presence of the dog and its owner in the scene"
+        }
+      ],
+      "narrative": "A golden retriever suddenly bursts into my field of vision, its owner's calls trailing behind. The pure joy of the dog's unrestrained sprint breaks through my morning contemplation. I can't help but smile - the infectious energy of the moment lifting my spirits even higher.",
+      "shot": "directed-momentum",
+      "sources": [
+        {
+          "sourceId": "src_1751830379808_9yfpxsh"
+        }
+      ],
+      "created": "2025-07-06T19:34:42.494Z",
+      "when": "this morning",
+      "experiencer": "Miguel",
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751830501794_7pqu0c8",
+      "emoji": "😖",
+      "summary": "Sit at desk, overwhelmed by tasks",
+      "qualities": [
+        {
+          "type": "embodied",
+          "manifestation": "Feeling of being seated, overwhelmed"
+        },
+        {
+          "type": "emotional",
+          "manifestation": "Overwhelm, stress"
+        }
+      ],
+      "narrative": "Sit at desk, overwhelmed by tasks",
+      "shot": "sustained-attention",
+      "sources": [
+        {
+          "sourceId": "src_1751830425686_suk38ka"
+        }
+      ],
+      "created": "2025-07-06T19:35:01.794Z",
+      "when": "earlier today",
+      "experiencer": "Miguel",
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751830502551_o1d6r60",
+      "emoji": "☕️",
+      "summary": "Notice coffee's gone cold",
+      "qualities": [
+        {
+          "type": "embodied",
+          "manifestation": "The cold touch of the coffee cup"
+        },
+        {
+          "type": "attentional",
+          "manifestation": "Shift of attention to the coffee"
+        }
+      ],
+      "narrative": "Notice coffee's gone cold",
+      "shot": "moment-of-recognition",
+      "sources": [
+        {
+          "sourceId": "src_1751830425686_suk38ka"
+        }
+      ],
+      "created": "2025-07-06T19:35:02.551Z",
+      "when": "earlier today",
+      "experiencer": "Miguel",
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751830503259_my2b124",
+      "emoji": "😌",
+      "summary": "Inhale deep, decide to tackle one",
+      "qualities": [
+        {
+          "type": "embodied",
+          "manifestation": "The deep breath taken"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "Decision to tackle tasks one at a time"
+        }
+      ],
+      "narrative": "Inhale deep, decide to tackle one",
+      "shot": "crossing-threshold",
+      "sources": [
+        {
+          "sourceId": "src_1751830425686_suk38ka"
+        }
+      ],
+      "created": "2025-07-06T19:35:03.259Z",
+      "when": "earlier today",
+      "experiencer": "Miguel",
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751830503610_o3gg1ns",
+      "emoji": "💪",
+      "summary": "Overwhelm shifts to determination",
+      "qualities": [
+        {
+          "type": "emotional",
+          "manifestation": "Transition from overwhelm to determination"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "Renewed sense of purpose"
+        }
+      ],
+      "narrative": "Overwhelm shifts to determination",
+      "shot": "directed-momentum",
+      "sources": [
+        {
+          "sourceId": "src_1751830425686_suk38ka"
+        }
+      ],
+      "created": "2025-07-06T19:35:03.610Z",
+      "when": "earlier today",
+      "experiencer": "Miguel",
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751830654757_0jl1s5s",
+      "emoji": "🚶‍♂️",
+      "summary": "Watch Miguel stroll, lost in thought",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "Focused on observing Miguel's actions and demeanor"
+        },
+        {
+          "type": "relational",
+          "manifestation": "Observing from a distance, connection through observation"
+        }
+      ],
+      "narrative": "Watch Miguel stroll, lost in thought",
+      "shot": "sustained-attention",
+      "sources": [
+        {
+          "sourceId": "src_1751830637990_iaqlaa8"
+        }
+      ],
+      "created": "2025-07-06T19:37:34.757Z",
+      "when": "this morning",
       "experiencer": "Sarah",
       "type": "moment"
     },
     {
-      "id": "mom_1751828908997_4hh9ae0",
-      "emoji": "❄️",
-      "summary": "Notice frost sparkle, inhale sharp air",
+      "id": "mom_1751830655358_7h1m9a5",
+      "emoji": "🐕",
+      "summary": "Miguel's face lights up, dog dashes",
       "qualities": [
         {
-          "type": "embodied",
-          "manifestation": "Physical sensations of cold air and noticing the frost"
+          "type": "emotional",
+          "manifestation": "Surprise and pleasure at Miguel's sudden joy"
         },
         {
           "type": "attentional",
-          "manifestation": "Awareness focused on the frost and sharpness of the air"
-        },
-        {
-          "type": "spatial",
-          "manifestation": "The park environment and the frost's transformative effect"
+          "manifestation": "Quick shift of focus to the dog"
         }
       ],
-      "narrative": "Walking through the park, I was struck by how the frost transformed everything into a crystalline wonderland. Each breath of cold air was a sharp reminder of winter's presence.",
-      "shot": "sustained-attention",
+      "narrative": "Miguel's face lights up, dog dashes",
+      "shot": "moment-of-recognition",
       "sources": [
         {
-          "sourceId": "src_1751828866923_gpeogeg"
+          "sourceId": "src_1751830637990_iaqlaa8"
         }
       ],
-      "created": "2025-07-06T19:08:28.997Z",
-      "experiencer": "Claude",
+      "created": "2025-07-06T19:37:35.358Z",
+      "when": "this morning",
+      "experiencer": "Sarah",
       "type": "moment"
     },
     {
-      "id": "mom_1751828922455_ysdd7eg",
-      "emoji": "🎉",
-      "summary": "Team celebrates project completion together",
+      "id": "mom_1751830655725_xttwfln",
+      "emoji": "😊",
+      "summary": "Savor seeing Miguel's genuine smile",
       "qualities": [
         {
-          "type": "relational",
-          "manifestation": "Shared sense of accomplishment and relief"
+          "type": "emotional",
+          "manifestation": "Warmth and fondness in witnessing Miguel's happiness"
         },
         {
-          "type": "emotional",
-          "manifestation": "Pride and relief flowing through the group"
+          "type": "attentional",
+          "manifestation": "Lingering attention on Miguel's smile"
         }
       ],
-      "shot": "crossing-threshold",
+      "narrative": "Savor seeing Miguel's genuine smile",
+      "shot": "sustained-attention",
       "sources": [
         {
-          "sourceId": "src_1751828878719_q179bt0"
+          "sourceId": "src_1751830637990_iaqlaa8"
         }
       ],
-      "created": "2025-07-06T19:08:42.455Z",
-      "when": "last Friday afternoon",
-      "experiencer": "Development Team",
+      "created": "2025-07-06T19:37:35.725Z",
+      "when": "this morning",
+      "experiencer": "Sarah",
       "type": "moment"
     }
   ],
   "scenes": [
     {
-      "id": "sce_1751828974737_t7txr5j",
-      "emoji": "🔄",
-      "summary": "Frustration fuels determination, triumph follows",
+      "id": "sce_1751830519135_qajdfu2",
+      "emoji": "🌞",
+      "summary": "Embrace frosty morning, breathe, joy bursts",
+      "shot": "sustained-attention",
+      "momentIds": [
+        "mom_1751830480902_sto6cs9",
+        "mom_1751830481590_6asb4mz",
+        "mom_1751830482494_fuxv6hg"
+      ],
+      "narrative": "I move through the frosted park, noticing the sparkle of the morning. Inhaling the sharp cold air, I feel refreshment pulsing through me. A dog sprints past, its energy infectious. I can't help but smile, my joy bursting forth.",
+      "created": "2025-07-06T19:35:19.135Z",
+      "when": "this morning",
+      "experiencers": [
+        "Miguel"
+      ],
+      "primaryExperiencer": "Miguel",
+      "type": "scene"
+    },
+    {
+      "id": "sce_1751830531489_569idjt",
+      "emoji": "📈",
+      "summary": "Sink, shift focus, rise above overwhelm",
       "shot": "directed-momentum",
       "momentIds": [
-        "mom_1751828894855_2lexdkt",
-        "mom_1751828922455_ysdd7eg"
+        "mom_1751830501794_7pqu0c8",
+        "mom_1751830502551_o1d6r60",
+        "mom_1751830503259_my2b124",
+        "mom_1751830503610_o3gg1ns"
       ],
-      "narrative": "I'm wrestling with code review comments, frustration stirring determination within me. It's a tough climb, but when we finally hit project completion, the relief and pride wash over us. We celebrate together, the frustration forgotten in the triumph.",
-      "created": "2025-07-06T19:09:34.737Z",
-      "when": "last Friday afternoon",
-      "experiencer": "Sarah",
+      "narrative": "I drown in tasks, then a cold touch of coffee diverts my attention. A deep breath becomes a decision, a single task at hand. Overwhelm morphs into determination, I'm rising.",
+      "created": "2025-07-06T19:35:31.490Z",
+      "when": "earlier today",
+      "experiencers": [
+        "Miguel"
+      ],
+      "primaryExperiencer": "Miguel",
+      "type": "scene"
+    },
+    {
+      "id": "sce_1751830672189_1ic6aeh",
+      "emoji": "🌳",
+      "summary": "Witness Miguel's transformation, from contemplation to joy",
+      "shot": "directed-momentum",
+      "momentIds": [
+        "mom_1751830654757_0jl1s5s",
+        "mom_1751830655358_7h1m9a5",
+        "mom_1751830655725_xttwfln"
+      ],
+      "narrative": "From a distance, I observe Miguel strolling, completely absorbed in his thoughts. Suddenly, a dog darts towards him and, in an instant, his face lights up, his smile radiating pure joy. I savor this unexpected moment of happiness.",
+      "created": "2025-07-06T19:37:52.189Z",
+      "when": "this morning",
+      "experiencers": [
+        "Sarah"
+      ],
+      "primaryExperiencer": "Sarah",
       "type": "scene"
     }
   ]

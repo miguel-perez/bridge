@@ -462,8 +462,25 @@ export class AutoProcessor {
         results.push({ success: false, error: `Scene summary not 5-7 words: "${scene.summary}"` });
         continue;
       }
-      // Optionally: check for verb-forward (could use a simple regex for now)
-      // Save the scene
+      
+      // Detect multiple experiencers and handle appropriately
+      const uniqueExperiencers = [...new Set(batch.map(m => m.experiencer).filter(Boolean))] as string[];
+      const isMultiExperiencer = uniqueExperiencers.length > 1;
+      
+      // For multi-experiencer scenes, ensure the narrative acknowledges different perspectives
+      if (isMultiExperiencer && scene.narrative) {
+        // Check if narrative already acknowledges multiple perspectives
+        const hasMultiPerspective = uniqueExperiencers.some(exp => 
+          scene.narrative!.toLowerCase().includes(exp.toLowerCase())
+        );
+        
+        if (!hasMultiPerspective) {
+          // Add a note about multi-experiencer composition
+          scene.narrative = `[Multi-experiencer scene: ${uniqueExperiencers.join(', ')}] ${scene.narrative}`;
+        }
+      }
+      
+      // Save the scene with multi-experiencer support
       const saved = await saveScene({
         id: generateId('sce'),
         emoji: scene.emoji,
@@ -473,7 +490,8 @@ export class AutoProcessor {
         narrative: scene.narrative,
         created: new Date().toISOString(),
         when: this.inheritWhenFromMoments(scene.momentIds, batch),
-        experiencer: batch[0]?.experiencer || 'unknown',
+        experiencers: uniqueExperiencers,
+        primaryExperiencer: uniqueExperiencers[0] || 'unknown',
         reframedBy: undefined,
       });
       // --- ReframedBy logic for scenes ---

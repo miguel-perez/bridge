@@ -216,7 +216,7 @@ export function advancedFilters(results: SearchResult[], filters?: FilterOptions
         }).filter(Boolean);
         if (!filters.experiencers.some(exp => sourceExperiencers.includes(exp))) return false;
       }
-      if (result.type === 'scene' && result.scene?.experiencer && !filters.experiencers.includes(result.scene.experiencer)) return false;
+      if (result.type === 'scene' && result.scene?.experiencers && filters.experiencers && !filters.experiencers.some(exp => result.scene!.experiencers!.includes(exp))) return false;
     }
     // perspectives (for sources, and moments/scenes inherit from their sources)
     if (filters.perspectives) {
@@ -287,7 +287,7 @@ export function advancedFilters(results: SearchResult[], filters?: FilterOptions
         }).filter(Boolean);
         if (!sourceExperiencers.includes(experiencerValue)) return false;
       }
-      if (result.type === 'scene' && result.scene?.experiencer && result.scene.experiencer !== experiencerValue) return false;
+      if (result.type === 'scene' && result.scene?.experiencers && !result.scene.experiencers.includes(experiencerValue)) return false;
     }
     return true;
   });
@@ -298,7 +298,8 @@ function getExperiencer(result: SearchResult): string {
   if ('experiencer' in result && typeof result.experiencer === 'string' && result.experiencer) return result.experiencer;
   if (result.source && 'experiencer' in result.source && typeof result.source.experiencer === 'string' && result.source.experiencer) return result.source.experiencer;
   if (result.moment && 'experiencer' in result.moment && typeof result.moment.experiencer === 'string' && result.moment.experiencer) return result.moment.experiencer;
-  if (result.scene && 'experiencer' in result.scene && typeof result.scene.experiencer === 'string' && result.scene.experiencer) return result.scene.experiencer;
+  if (result.scene && result.scene.experiencers && result.scene.experiencers.length > 0) return result.scene.experiencers[0];
+  if (result.scene && result.scene.primaryExperiencer) return result.scene.primaryExperiencer;
   return 'unknown';
 }
 

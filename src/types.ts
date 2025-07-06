@@ -94,7 +94,8 @@ export interface SceneRecord extends BaseRecord {
   shot: ShotType;
   created: string;
   when?: string; // When the scene happened (inherited from moments or manually set)
-  experiencer?: string;
+  experiencers?: string[]; // Array of all experiencers in this scene
+  primaryExperiencer?: string; // Primary experiencer for backward compatibility and display
   reframedBy?: string; // ID of the new scene that reframed this one
 }
 

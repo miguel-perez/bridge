@@ -69,7 +69,7 @@ const server = new Server(
 
 // Add schema definitions for tool input validation
 const captureSchema = z.object({
-  content: z.string().min(1),
+  content: z.string().optional(), // Make content optional to allow file auto-read
   contentType: z.string().optional().default('text'),
   perspective: z.enum(['I', 'we', 'you', 'they']),
   processing: z.enum(['during', 'right-after', 'long-after', 'crafted']),
@@ -78,6 +78,14 @@ const captureSchema = z.object({
   reflects_on: z.array(z.string()).optional(),
   file: z.string().optional(),
   autoframe: z.boolean().optional().default(false), // Changed from true to false - opt-in by default
+}).refine((data) => {
+  // Ensure either content or file is provided
+  if (!data.content && !data.file) {
+    throw new Error('Either content or file must be provided');
+  }
+  return true;
+}, {
+  message: 'Either content or file must be provided'
 });
 
 // Helper function for flexible date validation using chrono-node
@@ -373,7 +381,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     },
     {
       name: "weave",
-      description: "Connect moments into scenes. Provide only momentIds for AI-generated weaving, or include additional parameters for manual control.",
+      description: "Connect moments into scenes. Provide only momentIds for AI-generated weaving, or include additional parameters for manual control. When weaving moments from different experiencers, the system creates multi-experiencer scenes with narratives that acknowledge different perspectives. The scene will include all experiencers and use the first as the primary experiencer for display purposes.",
       inputSchema: {
         type: "object",
         properties: {
@@ -539,8 +547,8 @@ shifts, several emotional boundaries, multiple actional completions.`;
             throw new McpError(ErrorCode.InvalidParams, details);
           }
           if (err instanceof Error) {
-            throw err;
-          }
+          throw err;
+        }
           throw new Error(String(err));
         }
         // For file captures, read file contents if no content provided
@@ -552,12 +560,12 @@ shifts, several emotional boundaries, multiple actional completions.`;
             try {
               const fs = await import('fs/promises');
               
-              // Validate file exists and is readable
+          // Validate file exists and is readable
               try {
                 await fs.access(input.file);
               } catch (error) {
-                throw new McpError(
-                  ErrorCode.InvalidParams,
+            throw new McpError(
+              ErrorCode.InvalidParams,
                   `File not found or not accessible: ${input.file}`
                 );
               }
@@ -678,6 +686,14 @@ shifts, several emotional boundaries, multiple actional completions.`;
           return { content };
         }
         // Create source record
+        // Ensure we have content - if not provided and no file, this should have been caught by schema validation
+        if (!input.content) {
+          throw new McpError(
+            ErrorCode.InvalidParams,
+            'Content is required when no file is provided'
+          );
+        }
+        
         const source = await saveSource({
           id: generateId('src'),
           content: input.content,
@@ -801,8 +817,8 @@ shifts, several emotional boundaries, multiple actional completions.`;
         
         // Report specific validation errors
         if (missingSources.length > 0) {
-          throw new McpError(
-            ErrorCode.InvalidParams,
+            throw new McpError(
+              ErrorCode.InvalidParams,
             `Source ID(s) not found: ${missingSources.join(', ')}. Please check the IDs and try again.`
           );
         }
@@ -927,8 +943,8 @@ Optional: add 'when' to override temporal inheritance from sources.`
             );
           }
           
-          // Create moment record
-          const experiencer = validSources[0]?.experiencer || '';
+        // Create moment record
+        const experiencer = validSources[0]?.experiencer || '';
           
           // Inherit 'when' from sources if not provided
           let whenValue = input.when;
@@ -937,45 +953,45 @@ Optional: add 'when' to override temporal inheritance from sources.`
             whenValue = validSources[0].when || validSources[0].created;
           }
           
-          const moment = await saveMoment({
-            id: generateId('mom'),
-            ...( {
-              emoji: input.emoji,
-              summary: input.summary,
-              qualities: input.qualities,
-              narrative: input.narrative,
-              shot: input.shot,
-              sources: input.sourceIds.map(sourceId => ({ sourceId })),
-              created: new Date().toISOString(),
+        const moment = await saveMoment({
+          id: generateId('mom'),
+          ...( {
+            emoji: input.emoji,
+            summary: input.summary,
+            qualities: input.qualities,
+            narrative: input.narrative,
+            shot: input.shot,
+            sources: input.sourceIds.map(sourceId => ({ sourceId })),
+            created: new Date().toISOString(),
               when: whenValue,
-              experiencer,
-            } as any ),
-          });
+            experiencer,
+          } as any ),
+        });
           
-          return {
-            content: [
-              {
-                type: 'text',
+        return {
+          content: [
+            {
+              type: 'text',
                 text: `✓ Manually framed moment: ${moment.emoji} ${moment.summary} (ID: ${moment.id})`
-              },
-              {
-                type: 'text',
-                text: `Qualities noticed: ${input.qualities.map(q => q.type).join(', ')}`
-              },
-              {
-                type: 'text',
-                text: `Full record:\n${JSON.stringify(moment, null, 2)}`
-              },
-              {
-                type: 'text',
-                text: getContextualPrompts('frame')
-              },
-              {
-                type: 'text',
-                text: critiqueChecklist
-              }
-            ]
-          };
+            },
+            {
+              type: 'text',
+              text: `Qualities noticed: ${input.qualities.map(q => q.type).join(', ')}`
+            },
+            {
+              type: 'text',
+              text: `Full record:\n${JSON.stringify(moment, null, 2)}`
+            },
+            {
+              type: 'text',
+              text: getContextualPrompts('frame')
+            },
+            {
+              type: 'text',
+              text: critiqueChecklist
+            }
+          ]
+        };
         }
       }
 
@@ -1012,8 +1028,8 @@ Optional: add 'when' to override temporal inheritance from sources.`
         
         // Report specific validation errors
         if (missingMoments.length > 0) {
-          throw new McpError(
-            ErrorCode.InvalidParams,
+            throw new McpError(
+              ErrorCode.InvalidParams,
             `Moment ID(s) not found: ${missingMoments.join(', ')}. Please check the IDs and try again.`
           );
         }
@@ -1046,6 +1062,15 @@ Optional: add 'when' to override temporal inheritance from sources.`
             scenesArr.forEach((scene, idx) => {
               summary += `  - Scene ${idx + 1}: ${scene.emoji || '❓'} "${scene.summary || '[no summary]'}" (moments: ${(scene.momentIds || []).join(', ')})\n`;
             });
+            
+            // Add multi-experiencer info if any scenes have multiple experiencers
+            const multiExperiencerScenes = scenesArr.filter(s => s.experiencers && s.experiencers.length > 1);
+            if (multiExperiencerScenes.length > 0) {
+              summary += `\n⚠️ Multi-experiencer scenes created:\n`;
+              multiExperiencerScenes.forEach((scene, idx) => {
+                summary += `  - Scene ${idx + 1}: ${scene.experiencers?.join(', ')} (narrative adjusted for multiple perspectives)\n`;
+              });
+            }
             
             // Add reframed scenes info if any
             const reframedArr = scenesArr.flatMap(s => (s && Array.isArray((s as any)["_reframed"])) ? (s as any)["_reframed"] : []);
@@ -1115,9 +1140,24 @@ Optional: add 'when' to override temporal inheritance from moments.`
             );
           }
           
-          // Create scene record
-          const validMoments = await Promise.all(input.momentIds.map(getMoment));
-          const sceneExperiencer = validMoments[0]?.experiencer || '';
+        // Create scene record
+        const validMoments = await Promise.all(input.momentIds.map(getMoment));
+          const uniqueExperiencers = [...new Set(validMoments.map(m => m?.experiencer).filter(Boolean))] as string[];
+          const isMultiExperiencer = uniqueExperiencers.length > 1;
+          
+          // For multi-experiencer scenes, ensure the narrative acknowledges different perspectives
+          let narrative = input.narrative;
+          if (isMultiExperiencer && narrative) {
+            // Check if narrative already acknowledges multiple perspectives
+            const hasMultiPerspective = uniqueExperiencers.some(exp => 
+              narrative!.toLowerCase().includes(exp.toLowerCase())
+            );
+            
+            if (!hasMultiPerspective) {
+              // Add a note about multi-experiencer composition
+              narrative = `[Multi-experiencer scene: ${uniqueExperiencers.join(', ')}] ${narrative}`;
+            }
+          }
           
           // Inherit 'when' from moments if not provided
           let whenValue = input.when;
@@ -1126,36 +1166,42 @@ Optional: add 'when' to override temporal inheritance from moments.`
             whenValue = validMoments[0].when || validMoments[0].created;
           }
           
-          const scene = await saveScene({
-            id: generateId('sce'),
-            emoji: input.emoji,
-            summary: input.summary,
-            ...( {
-              narrative: input.narrative,
-              momentIds: input.momentIds,
-              shot: input.shot,
+        const scene = await saveScene({
+          id: generateId('sce'),
+          emoji: input.emoji,
+          summary: input.summary,
+          ...( {
+              narrative: narrative,
+            momentIds: input.momentIds,
+            shot: input.shot,
               when: whenValue,
-              created: new Date().toISOString(),
-              experiencer: sceneExperiencer,
-            } as any ),
-          });
+            created: new Date().toISOString(),
+              experiencers: uniqueExperiencers,
+              primaryExperiencer: uniqueExperiencers[0] || 'unknown',
+          } as any ),
+        });
           
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `✓ Manually wove moments into: ${scene.emoji || '❓'} ${scene.summary || '[no summary]'} (ID: ${scene.id})`
-              },
-              {
-                type: 'text',
-                text: `Full record:\n${JSON.stringify(scene, null, 2)}`
-              },
-              {
-                type: 'text',
-                text: getContextualPrompts('weave')
-              }
-            ]
-          };
+          const content = [
+            {
+              type: 'text',
+              text: `✓ Manually wove moments into: ${scene.emoji || '❓'} ${scene.summary || '[no summary]'} (ID: ${scene.id})`
+            },
+            // Add multi-experiencer warning if applicable
+            ...(isMultiExperiencer ? [{
+              type: 'text',
+              text: `⚠️ Multi-experiencer scene created: ${uniqueExperiencers.join(', ')}. The narrative has been adjusted to acknowledge different perspectives.`
+            }] : []),
+            {
+              type: 'text',
+              text: `Full record:\n${JSON.stringify(scene, null, 2)}`
+            },
+            {
+              type: 'text',
+              text: getContextualPrompts('weave')
+            }
+          ];
+          
+          return { content };
         }
       }
 
@@ -1371,123 +1417,123 @@ Optional: add 'when' to override temporal inheritance from moments.`
         
         // Check if it's a source
         if (input.id) {
-          const source = await getSource(input.id);
-          if (source) {
-            // Delete the source
-            await deleteSource(input.id);
-            // Clean up any orphaned moments
-            const moments = await getMoments();
-            const affectedMoments = moments.filter(m => 
-              m.sources.some(s => s.sourceId === input.id)
-            );
-            let cleanupMessage = '';
-            for (const moment of affectedMoments) {
-              // Remove the released source from the moment
-              const remainingSources = moment.sources.filter(s => s.sourceId !== input.id);
-              if (remainingSources.length === 0) {
-                // No sources left, release the moment
-                await deleteMoment(moment.id);
-                cleanupMessage += `\n  • Released orphaned moment: ${moment.emoji} "${moment.summary}"`;
-                // Also check if this moment was in any scenes
-                const scenes = await getScenes();
+        const source = await getSource(input.id);
+        if (source) {
+          // Delete the source
+          await deleteSource(input.id);
+          // Clean up any orphaned moments
+          const moments = await getMoments();
+          const affectedMoments = moments.filter(m => 
+            m.sources.some(s => s.sourceId === input.id)
+          );
+          let cleanupMessage = '';
+          for (const moment of affectedMoments) {
+            // Remove the released source from the moment
+            const remainingSources = moment.sources.filter(s => s.sourceId !== input.id);
+            if (remainingSources.length === 0) {
+              // No sources left, release the moment
+              await deleteMoment(moment.id);
+              cleanupMessage += `\n  • Released orphaned moment: ${moment.emoji} "${moment.summary}"`;
+              // Also check if this moment was in any scenes
+              const scenes = await getScenes();
                 let affectedScenes: SceneRecord[] = [];
                 if (typeof input.id === 'string') {
                   affectedScenes = scenes.filter(s => s.momentIds.includes(input.id!));
                 }
                 for (const scene of affectedScenes) {
-                  if (scene.momentIds.includes(moment.id)) {
-                    const remainingMoments = scene.momentIds.filter(id => id !== moment.id);
-                    if (remainingMoments.length === 0) {
-                      await deleteScene(scene.id);
-                      cleanupMessage += `\n  • Released orphaned scene: ${scene.emoji} "${scene.summary}"`;
-                    } else {
-                      // Update scene to remove the deleted moment
-                      await updateScene(scene.id, {
-                        momentIds: remainingMoments
-                      });
-                      cleanupMessage += `\n  • Updated scene: ${scene.emoji} "${scene.summary}"`;
-                    }
+                if (scene.momentIds.includes(moment.id)) {
+                  const remainingMoments = scene.momentIds.filter(id => id !== moment.id);
+                  if (remainingMoments.length === 0) {
+                    await deleteScene(scene.id);
+                    cleanupMessage += `\n  • Released orphaned scene: ${scene.emoji} "${scene.summary}"`;
+                  } else {
+                    // Update scene to remove the deleted moment
+                    await updateScene(scene.id, {
+                      momentIds: remainingMoments
+                    });
+                    cleanupMessage += `\n  • Updated scene: ${scene.emoji} "${scene.summary}"`;
                   }
                 }
-              } else {
-                // Update moment to remove the released source
-                await updateMoment(moment.id, {
-                  sources: remainingSources
-                });
-                cleanupMessage += `\n  • Updated moment: ${moment.emoji} "${moment.summary}" (${remainingSources.length} source(s) remain)`;
               }
+            } else {
+              // Update moment to remove the released source
+              await updateMoment(moment.id, {
+                sources: remainingSources
+              });
+              cleanupMessage += `\n  • Updated moment: ${moment.emoji} "${moment.summary}" (${remainingSources.length} source(s) remain)`;
             }
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: `✓ Released source: "${source.content.substring(0, 50)}..." (ID: ${input.id})`
-                },
-                {
-                  type: 'text',
-                  text: cleanupMessage || '\n🌊 The experience has been released'
-                }
-              ]
-            };
           }
-          // Check if it's a moment
-          const moment = await getMoment(input.id);
-          if (moment) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `✓ Released source: "${source.content.substring(0, 50)}..." (ID: ${input.id})`
+              },
+              {
+                type: 'text',
+                text: cleanupMessage || '\n🌊 The experience has been released'
+              }
+            ]
+          };
+        }
+        // Check if it's a moment
+        const moment = await getMoment(input.id);
+        if (moment) {
             // Clean up reframed records first
             const reframedCleanup = await cleanupReframedRecords(input.id, 'moment');
-            await deleteMoment(input.id);
-            // Clean up any orphaned scenes
-            const scenes = await getScenes();
+          await deleteMoment(input.id);
+          // Clean up any orphaned scenes
+          const scenes = await getScenes();
             let affectedScenes: SceneRecord[] = [];
             if (typeof input.id === 'string') {
               affectedScenes = scenes.filter(s => s.momentIds.includes(input.id!));
             }
-            let cleanupMessage = '';
-            for (const scene of affectedScenes) {
-              const remainingMoments = scene.momentIds.filter(id => id !== input.id);
-              if (remainingMoments.length === 0) {
-                // No moments left, release the scene
-                await deleteScene(scene.id);
-                cleanupMessage += `\n  • Released orphaned scene: ${scene.emoji} "${scene.summary}"`;
-              } else {
-                // Update scene to remove the released moment
-                await updateScene(scene.id, {
-                  momentIds: remainingMoments
-                });
-                cleanupMessage += `\n  • Updated scene: ${scene.emoji} "${scene.summary}" (${remainingMoments.length} moment(s) remain)`;
-              }
+          let cleanupMessage = '';
+          for (const scene of affectedScenes) {
+            const remainingMoments = scene.momentIds.filter(id => id !== input.id);
+            if (remainingMoments.length === 0) {
+              // No moments left, release the scene
+              await deleteScene(scene.id);
+              cleanupMessage += `\n  • Released orphaned scene: ${scene.emoji} "${scene.summary}"`;
+            } else {
+              // Update scene to remove the released moment
+              await updateScene(scene.id, {
+                momentIds: remainingMoments
+              });
+              cleanupMessage += `\n  • Updated scene: ${scene.emoji} "${scene.summary}" (${remainingMoments.length} moment(s) remain)`;
             }
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: `✓ Released moment: ${moment.emoji} "${moment.summary}" (ID: ${input.id})`
-                },
-                {
-                  type: 'text',
-                  text: reframedCleanup + cleanupMessage || '\n🌊 The moment has been released'
-                }
-              ]
-            };
           }
-          // Check if it's a scene
-          const scene = await getScene(input.id);
-          if (scene) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `✓ Released moment: ${moment.emoji} "${moment.summary}" (ID: ${input.id})`
+              },
+              {
+                type: 'text',
+                  text: reframedCleanup + cleanupMessage || '\n🌊 The moment has been released'
+              }
+            ]
+          };
+        }
+        // Check if it's a scene
+        const scene = await getScene(input.id);
+        if (scene) {
             // Clean up reframed records first
             const reframedCleanup = await cleanupReframedRecords(input.id, 'scene');
-            await deleteScene(input.id);
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: `✓ Released scene: ${scene.emoji} "${scene.summary}" (ID: ${input.id})`
-                },
-                {
-                  type: 'text',
+          await deleteScene(input.id);
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `✓ Released scene: ${scene.emoji} "${scene.summary}" (ID: ${input.id})`
+              },
+              {
+                type: 'text',
                   text: reframedCleanup || '\n🌊 The woven experience has been released'
-                }
-              ]
-            };
+              }
+            ]
+          };
           }
         }
         throw new McpError(
@@ -1742,9 +1788,9 @@ Optional: add 'when' to override temporal inheritance from moments.`
 ${report.processing_errors.length > 0 ? 
   `❌ Processing Errors:
 ${report.processing_errors.map(e => 
-  `  • ${e.type}: ${e.count} error(s), last: ${e.lastError}`
-).join('\n')}` : 
-  '✅ No processing errors'
+                        `  • ${e.type}: ${e.count} error(s), last: ${e.lastError}`
+                      ).join('\n')}` : 
+                      '✅ No processing errors'
 }
 ` + recentSection
             }

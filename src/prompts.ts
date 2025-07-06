@@ -444,8 +444,22 @@ INSTRUCTIONS:
 // Batch weaving prompt for auto-weaving scenes from moments
 export function createBatchWeavePrompt(batch: any[]): string {
   const momentList = batch.map(m => {
-    return `ID: ${m.id}\nEmoji: ${m.emoji}\nSummary: ${m.summary}\nQualities: ${m.qualities && m.qualities.length ? m.qualities.map((q: any) => `${q.type}: ${q.manifestation}`).join('; ') : ''}`;
+    return `ID: ${m.id}\nEmoji: ${m.emoji}\nSummary: ${m.summary}\nExperiencer: ${m.experiencer || 'unknown'}\nQualities: ${m.qualities && m.qualities.length ? m.qualities.map((q: any) => `${q.type}: ${q.manifestation}`).join('; ') : ''}`;
   }).join('\n\n');
+
+  // Detect multiple experiencers
+  const uniqueExperiencers = [...new Set(batch.map(m => m.experiencer).filter(Boolean))];
+  const isMultiExperiencer = uniqueExperiencers.length > 1;
+  
+  const multiExperiencerGuidance = isMultiExperiencer ? `
+MULTI-EXPERIENCER SCENE GUIDANCE:
+This scene combines moments from different experiencers: ${uniqueExperiencers.join(', ')}
+- Create narratives that acknowledge multiple perspectives
+- Use phrases like "Sarah wrestles with the code while the team celebrates their earlier victory"
+- Avoid forcing a single unified voice when perspectives differ
+- Consider how different experiencers' moments relate to each other
+- The narrative should reflect the complexity of multiple viewpoints
+` : '';
 
   return `You are a narrative weaver, connecting lived moments into scenes. Each scene is a higher-level frame, capturing the arc, transformation, or pattern that emerges from the selected moments.
 
@@ -456,6 +470,8 @@ Given the following moments, propose one or more scenes. Each scene should:
 - Include a short, present-tense, first-person narrative describing the journey or pattern across these moments.
 - Assign a shot type that best fits the overall attention pattern.
 - List the momentIds that belong to the scene (in order).
+
+${multiExperiencerGuidance}
 
 Guidance:
 - Do not invent or hallucinate content—use only what is present in the selected moments.
