@@ -136,6 +136,7 @@ const enrichSchema = z.object({
 
 const releaseSchema = z.object({
   id: z.string(),
+  cleanupReframed: z.boolean().optional().default(false),
 });
 
 // Helper: Contextual coaching prompts for captures and tool-to-tool flow
@@ -319,11 +320,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     },
     {
       name: "release",
-      description: "Release (delete) a source or moment - some experiences are meant to be acknowledged then let go.",
+      description: "Release (delete) a source, moment, or scene. Optionally clean up reframed records that were superseded by this record.",
       inputSchema: {
         type: "object",
         properties: {
-          id: { type: "string", description: "ID of source or moment to release" }
+          id: { type: "string", description: "ID of source, moment, or scene to release" },
+          cleanupReframed: { type: "boolean", description: "Also delete any reframed records that were superseded by this record (default: false)" }
         },
         required: ["id"]
       },
@@ -926,6 +928,37 @@ shifts, several emotional boundaries, multiple actional completions.`;
 
       case 'release': {
         const input = releaseSchema.parse(args);
+        
+        // Helper function to clean up reframed records
+        const cleanupReframedRecords = async (recordId: string, recordType: 'moment' | 'scene') => {
+          if (!input.cleanupReframed) return '';
+          
+          let cleanupMessage = '';
+          const { deleteEmbedding } = await import('./embeddings.js');
+          
+          if (recordType === 'moment') {
+            // Find and delete moments that were reframed by this moment
+            const allMoments = await getMoments();
+            const reframedMoments = allMoments.filter(m => m.reframedBy === recordId);
+            for (const reframed of reframedMoments) {
+              await deleteMoment(reframed.id);
+              await deleteEmbedding(reframed.id);
+              cleanupMessage += `\n  • Cleaned up reframed moment: ${reframed.emoji} "${reframed.summary}" (ID: ${reframed.id})`;
+            }
+          } else if (recordType === 'scene') {
+            // Find and delete scenes that were reframed by this scene
+            const allScenes = await getScenes();
+            const reframedScenes = allScenes.filter(s => s.reframedBy === recordId);
+            for (const reframed of reframedScenes) {
+              await deleteScene(reframed.id);
+              await deleteEmbedding(reframed.id);
+              cleanupMessage += `\n  • Cleaned up reframed scene: ${reframed.emoji} "${reframed.summary}" (ID: ${reframed.id})`;
+            }
+          }
+          
+          return cleanupMessage;
+        };
+        
         // Check if it's a source
         const source = await getSource(input.id);
         if (source) {
@@ -985,6 +1018,9 @@ shifts, several emotional boundaries, multiple actional completions.`;
         // Check if it's a moment
         const moment = await getMoment(input.id);
         if (moment) {
+          // Clean up reframed records first
+          const reframedCleanup = await cleanupReframedRecords(input.id, 'moment');
+          
           await deleteMoment(input.id);
           // Clean up any orphaned scenes
           const scenes = await getScenes();
@@ -1014,7 +1050,7 @@ shifts, several emotional boundaries, multiple actional completions.`;
               },
               {
                 type: 'text',
-                text: cleanupMessage || '\n🌊 The moment has been released'
+                text: reframedCleanup + cleanupMessage || '\n🌊 The moment has been released'
               }
             ]
           };
@@ -1022,6 +1058,9 @@ shifts, several emotional boundaries, multiple actional completions.`;
         // Check if it's a scene
         const scene = await getScene(input.id);
         if (scene) {
+          // Clean up reframed records first
+          const reframedCleanup = await cleanupReframedRecords(input.id, 'scene');
+          
           await deleteScene(input.id);
           return {
             content: [
@@ -1031,7 +1070,7 @@ shifts, several emotional boundaries, multiple actional completions.`;
               },
               {
                 type: 'text',
-                text: '\n🌊 The woven experience has been released'
+                text: reframedCleanup || '\n🌊 The woven experience has been released'
               }
             ]
           };
