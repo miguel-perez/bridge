@@ -80,11 +80,13 @@ const captureSchema = z.object({
   file: z.string().optional(),
 });
 
-// Updated frameSchema: only accepts sourceIds and now requires qualities
+// Smart frameSchema: accepts sourceIds for AI generation OR full parameters for manual control
 const frameSchema = z.object({
   sourceIds: z.array(z.string()).min(1),
-  emoji: z.string(),
-  summary: z.string(),
+  // Smart default mode: only sourceIds provided
+  // Manual override mode: provide additional parameters
+  emoji: z.string().optional(),
+  summary: z.string().optional(),
   qualities: z.array(z.object({
     type: z.enum([
       'embodied',
@@ -96,7 +98,7 @@ const frameSchema = z.object({
       'relational',
     ]),
     manifestation: z.string().min(1)
-  })).min(1, 'Must identify at least one experiential quality before creating narrative'),
+  })).optional(),
   narrative: z.string().optional(),
   shot: z.enum([
     'moment-of-recognition',
@@ -105,14 +107,16 @@ const frameSchema = z.object({
     'peripheral-awareness',
     'directed-momentum',
     'holding-opposites'
-  ]).optional().default('moment-of-recognition'),
+  ]).optional(),
 });
 
-// New weaveSchema: accepts momentIds
+// Smart weaveSchema: accepts momentIds for AI generation OR full parameters for manual control
 const weaveSchema = z.object({
   momentIds: z.array(z.string()).min(1),
-  emoji: z.string(),
-  summary: z.string(),
+  // Smart default mode: only momentIds provided
+  // Manual override mode: provide additional parameters
+  emoji: z.string().optional(),
+  summary: z.string().optional(),
   narrative: z.string().optional(),
   shot: z.enum([
     'moment-of-recognition',
@@ -121,7 +125,7 @@ const weaveSchema = z.object({
     'peripheral-awareness',
     'directed-momentum',
     'holding-opposites'
-  ])
+  ]).optional(),
 });
 
 const enrichSchema = z.object({
@@ -138,13 +142,17 @@ function getContextualPrompts(toolName: string): string {
   let prompts = '\n✓ Next steps:\n';
   switch(toolName) {
     case 'capture':
-      prompts += '• Frame - transform this into a complete moment with a shot and qualities\n';
+      prompts += '• Frame - transform this into a complete moment (smart default: just provide sourceIds)\n';
       break;
     case 'frame':
+      prompts += '• Smart default: just provide sourceIds for AI-generated framing\n';
+      prompts += '• Manual control: include emoji, summary, qualities, narrative, shot\n';
       prompts += '• Enrich - add narrative depth or missing experiential qualities\n';
       prompts += '• Weave - connect with moments that reflect on each other (see larger narrative threads)\n';
       break;
     case 'weave':
+      prompts += '• Smart default: just provide momentIds for AI-generated weaving\n';
+      prompts += '• Manual control: include emoji, summary, narrative, shot\n';
       prompts += '• Use hierarchy/group view in search to visualize your new scene in context\n';
       prompts += '• Capture more - explore themes this scene revealed\n';
       break;
@@ -234,17 +242,16 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     },
     {
       name: "frame",
-      description: "Transform raw sources into complete experiential moments by identifying their qualities and attention patterns.",
+      description: "Transform sources into moments. Provide only sourceIds for AI-generated framing, or include additional parameters for manual control.",
       inputSchema: {
         type: "object",
         properties: {
           sourceIds: { type: "array", items: { type: "string" }, minItems: 1, description: "Array of source IDs to frame together" },
-          emoji: { type: "string", description: "Single emoji that captures the essence" },
-          summary: { type: "string", description: "5-7 word summary" },
-          shot: { type: "string", enum: ["moment-of-recognition", "sustained-attention", "crossing-threshold", "peripheral-awareness", "directed-momentum", "holding-opposites"], description: "How attention moved in this experience" },
+          emoji: { type: "string", description: "Single emoji that captures the essence (optional - AI generates if not provided)" },
+          summary: { type: "string", description: "5-7 word summary (optional - AI generates if not provided)" },
+          shot: { type: "string", enum: ["moment-of-recognition", "sustained-attention", "crossing-threshold", "peripheral-awareness", "directed-momentum", "holding-opposites"], description: "How attention moved in this experience (optional - AI generates if not provided)" },
           qualities: {
             type: "array",
-            minItems: 1,
             items: {
               type: "object",
               properties: {
@@ -253,11 +260,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               },
               required: ["type", "manifestation"]
             },
-            description: "Array of experiential qualities present, with at least one"
+            description: "Array of experiential qualities present (optional - AI generates if not provided)"
           },
-          narrative: { type: "string", description: "Full experiential narrative" }
+          narrative: { type: "string", description: "Full experiential narrative (optional - AI generates if not provided)" }
         },
-        required: ["sourceIds", "emoji", "summary", "shot", "qualities"]
+        required: ["sourceIds"]
       },
       annotations: {
         title: "Frame Moment",
@@ -269,17 +276,17 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     },
     {
       name: "weave",
-      description: "Connect multiple moments to reveal narrative journeys and transformations.",
+      description: "Connect moments into scenes. Provide only momentIds for AI-generated weaving, or include additional parameters for manual control.",
       inputSchema: {
         type: "object",
         properties: {
           momentIds: { type: "array", items: { type: "string" }, minItems: 1, description: "Array of moment IDs to weave together" },
-          emoji: { type: "string", description: "Emoji representing the journey" },
-          summary: { type: "string", description: "5-7 word summary of the arc" },
-          narrative: { type: "string", description: "The story that connects these moments" },
-          shot: { type: "string", enum: ["moment-of-recognition", "sustained-attention", "crossing-threshold", "peripheral-awareness", "directed-momentum", "holding-opposites"], description: "Overall attention pattern of the woven scene" }
+          emoji: { type: "string", description: "Emoji representing the journey (optional - AI generates if not provided)" },
+          summary: { type: "string", description: "5-7 word summary of the arc (optional - AI generates if not provided)" },
+          narrative: { type: "string", description: "The story that connects these moments (optional - AI generates if not provided)" },
+          shot: { type: "string", enum: ["moment-of-recognition", "sustained-attention", "crossing-threshold", "peripheral-awareness", "directed-momentum", "holding-opposites"], description: "Overall attention pattern of the woven scene (optional - AI generates if not provided)" }
         },
-        required: ["momentIds", "emoji", "summary", "narrative", "shot"]
+        required: ["momentIds"]
       },
       annotations: {
         title: "Weave Scene",
@@ -358,42 +365,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         openWorldHint: false
       }
     },
-    {
-      name: "autoframe",
-      description: "Automatically frame a source and its reflections into moments using OpenAI. Creates moments marked as unreviewed for human oversight.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          sourceId: { type: "string", description: "ID of the source to auto-frame (required)" },
-        },
-        required: ["sourceId"]
-      },
-      annotations: {
-        title: "Auto-Frame Moment",
-        readOnlyHint: false,
-        destructiveHint: false,
-        idempotentHint: false,
-        openWorldHint: false
-      }
-    },
-    {
-      name: "autoweave",
-      description: "Automatically weave moments or scenes into higher-level scenes using OpenAI. Creates scenes marked as unreviewed for human oversight.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          momentIds: { type: "array", items: { type: "string" }, description: "Array of moment IDs to auto-weave (optional)" },
-          sceneIds: { type: "array", items: { type: "string" }, description: "Array of scene IDs to auto-weave (optional)" },
-        }
-      },
-      annotations: {
-        title: "Auto-Weave Scene",
-        readOnlyHint: false,
-        destructiveHint: false,
-        idempotentHint: false,
-        openWorldHint: false
-      }
-    },
+
     {
       name: "status",
       description: "Get a high-level status report of the system, including counts of unframed sources, unreviewed content, and processing errors.",
@@ -630,103 +602,203 @@ shifts, several emotional boundaries, multiple actional completions.`;
 
       case 'frame': {
         const input = frameSchema.parse(args);
-        // Validate all sources exist
-        const validSources: SourceRecord[] = [];
-        for (const sourceId of input.sourceIds) {
-          const source = await getSource(sourceId);
-          if (!source) {
+        
+        // Determine mode based on provided parameters
+        const isSmartDefault = !input.emoji && !input.summary && !input.qualities && !input.narrative && !input.shot;
+        
+        if (isSmartDefault) {
+          // Smart default: use AutoProcessor
+          const autoProcessor = new AutoProcessor();
+          const result = await autoProcessor.autoFrameSources({ sourceIds: input.sourceIds });
+          const successes = result.filter(r => r.success && r.created);
+          
+          if (successes.length > 0) {
+            let summary = `✓ Smart-framed ${input.sourceIds.length} source(s) into ${successes.length} moment(s):\n`;
+            successes.forEach((r, idx) => {
+              if (r.created) {
+                summary += `  - Moment ${idx + 1}: ${r.created.emoji} "${r.created.summary}" (ID: ${r.created.id})\n`;
+              } else {
+                summary += `  - Moment ${idx + 1}: [no data]\n`;
+              }
+            });
+            
+            // Add reframed moments info if any
+            const reframedArr = successes.flatMap(r => (r.created && Array.isArray((r.created as any)["_reframed"])) ? (r.created as any)["_reframed"] : []);
+            if (reframedArr.length > 0) {
+              summary += `\n🌀 Reframed (superseded) earlier moments:\n`;
+              reframedArr.forEach((m) => {
+                summary += `  - ${m.summary} (ID: ${m.id})\n`;
+              });
+            }
+            
+            return {
+              content: [
+                { type: 'text', text: summary },
+                { type: 'text', text: `⚠️ These moments are marked as unreviewed. Use the enrich tool to review and approve them.` },
+                { type: 'text', text: `\nFull records:\n${JSON.stringify(successes.map(r => r.created), null, 2)}` },
+                { type: 'text', text: getContextualPrompts('frame') }
+              ]
+            };
+          } else {
+            const firstError = result.find(r => r.error) || { error: 'Unknown error' };
+            return { content: [{ type: 'text', text: `Smart-framing failed: ${String(firstError.error)}` }] };
+          }
+        } else {
+          // Manual override: validate all sources exist
+          const validSources: SourceRecord[] = [];
+          for (const sourceId of input.sourceIds) {
+            const source = await getSource(sourceId);
+            if (!source) {
+              throw new McpError(
+                ErrorCode.InvalidParams,
+                `Source with ID '${sourceId}' not found. Capture an experience first, then frame it into a moment.`
+              );
+            }
+            validSources.push(source);
+          }
+          
+          // Validate that all required manual parameters are provided
+          if (!input.emoji || !input.summary || !input.qualities || !input.shot) {
             throw new McpError(
               ErrorCode.InvalidParams,
-              `Source with ID '${sourceId}' not found. Capture an experience first, then frame it into a moment.`
+              `Manual framing requires emoji, summary, qualities, and shot. For AI-generated framing, provide only sourceIds.`
             );
           }
-          validSources.push(source);
+          
+          // Create moment record
+          const experiencer = validSources[0]?.experiencer || '';
+          const moment = await saveMoment({
+            id: generateId('mom'),
+            ...( {
+              emoji: input.emoji,
+              summary: input.summary,
+              qualities: input.qualities,
+              narrative: input.narrative,
+              shot: input.shot,
+              sources: input.sourceIds.map(sourceId => ({ sourceId })),
+              created: new Date().toISOString(),
+              when: validSources.find(s => s.when)?.when,
+              experiencer,
+            } as any ),
+          });
+          
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `✓ Manually framed moment: ${moment.emoji} ${moment.summary} (ID: ${moment.id})`
+              },
+              {
+                type: 'text',
+                text: `Qualities noticed: ${input.qualities.map(q => q.type).join(', ')}`
+              },
+              {
+                type: 'text',
+                text: `Full record:\n${JSON.stringify(moment, null, 2)}`
+              },
+              {
+                type: 'text',
+                text: getContextualPrompts('frame')
+              },
+              {
+                type: 'text',
+                text: critiqueChecklist
+              }
+            ]
+          };
         }
-        // Create moment record
-        const experiencer = validSources[0]?.experiencer || '';
-        const moment = await saveMoment({
-          id: generateId('mom'),
-          ...( {
-            emoji: input.emoji,
-            summary: input.summary,
-            qualities: input.qualities,
-            narrative: input.narrative,
-            shot: input.shot,
-            sources: input.sourceIds.map(sourceId => ({ sourceId })),
-            created: new Date().toISOString(),
-            when: validSources.find(s => s.when)?.when,
-            experiencer,
-          } as any ),
-        });
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `✓ Framed moment: ${moment.emoji} ${moment.summary} (ID: ${moment.id})`
-            },
-            {
-              type: 'text',
-              text: `Qualities noticed: ${input.qualities.map(q => q.type).join(', ')}`
-            },
-            {
-              type: 'text',
-              text: `Full record:\n${JSON.stringify(moment, null, 2)}`
-            },
-            {
-              type: 'text',
-              text: getContextualPrompts('frame')
-            },
-            {
-              type: 'text',
-              text: critiqueChecklist
-            }
-          ]
-        };
       }
 
       case 'weave': {
         const input = weaveSchema.parse(args);
-        // Validate all moments exist
-        for (const momentId of input.momentIds) {
-          const moment = await getMoment(momentId);
-          if (!moment) {
+        
+        // Determine mode based on provided parameters
+        const isSmartDefault = !input.emoji && !input.summary && !input.narrative && !input.shot;
+        
+        if (isSmartDefault) {
+          // Smart default: use AutoProcessor
+          const autoProcessor = new AutoProcessor();
+          const result = await autoProcessor.autoWeaveMoments(input.momentIds);
+          const scenesArr = Array.isArray(result.created) ? result.created : (result.created ? [result.created] : []);
+          
+          if (scenesArr.length > 0) {
+            let summary = `✓ Smart-wove ${input.momentIds.length} moment(s) into ${scenesArr.length} scene(s):\n`;
+            scenesArr.forEach((scene, idx) => {
+              summary += `  - Scene ${idx + 1}: ${scene.emoji || '❓'} "${scene.summary || '[no summary]'}" (moments: ${(scene.momentIds || []).join(', ')})\n`;
+            });
+            
+            // Add reframed scenes info if any
+            const reframedArr = scenesArr.flatMap(s => (s && Array.isArray((s as any)["_reframed"])) ? (s as any)["_reframed"] : []);
+            if (reframedArr.length > 0) {
+              summary += `\n🌀 Reframed (superseded) earlier scenes:\n`;
+              reframedArr.forEach((sc) => {
+                summary += `  - ${sc.summary} (ID: ${sc.id})\n`;
+              });
+            }
+            
+            return {
+              content: [
+                { type: 'text', text: summary },
+                { type: 'text', text: `\nFull records:\n${JSON.stringify(scenesArr, null, 2)}` },
+                { type: 'text', text: getContextualPrompts('weave') }
+              ]
+            };
+          } else {
+            return { content: [{ type: 'text', text: `Smart-weaving failed: ${String(result.error)}` }] };
+          }
+        } else {
+          // Manual override: validate all moments exist
+          for (const momentId of input.momentIds) {
+            const moment = await getMoment(momentId);
+            if (!moment) {
+              throw new McpError(
+                ErrorCode.InvalidParams,
+                `Moment not found: ${momentId}. Frame your sources into moments first, then weave moments together.`
+              );
+            }
+          }
+          
+          // Validate that all required manual parameters are provided
+          if (!input.emoji || !input.summary || !input.narrative || !input.shot) {
             throw new McpError(
               ErrorCode.InvalidParams,
-              `Moment not found: ${momentId}. Frame your sources into moments first, then weave moments together.`
+              `Manual weaving requires emoji, summary, narrative, and shot. For AI-generated weaving, provide only momentIds.`
             );
           }
+          
+          // Create scene record
+          const validMoments = await Promise.all(input.momentIds.map(getMoment));
+          const sceneExperiencer = validMoments[0]?.experiencer || '';
+          const scene = await saveScene({
+            id: generateId('sce'),
+            emoji: input.emoji,
+            summary: input.summary,
+            ...( {
+              narrative: input.narrative,
+              momentIds: input.momentIds,
+              shot: input.shot,
+              created: new Date().toISOString(),
+              experiencer: sceneExperiencer,
+            } as any ),
+          });
+          
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `✓ Manually wove moments into: ${scene.emoji || '❓'} ${scene.summary || '[no summary]'} (ID: ${scene.id})`
+              },
+              {
+                type: 'text',
+                text: `Full record:\n${JSON.stringify(scene, null, 2)}`
+              },
+              {
+                type: 'text',
+                text: getContextualPrompts('weave')
+              }
+            ]
+          };
         }
-        // Create scene record
-        const validMoments = await Promise.all(input.momentIds.map(getMoment));
-        const sceneExperiencer = validMoments[0]?.experiencer || '';
-        const scene = await saveScene({
-          id: generateId('sce'),
-          emoji: input.emoji,
-          summary: input.summary,
-          ...( {
-            narrative: input.narrative,
-            momentIds: input.momentIds,
-            shot: input.shot,
-            created: new Date().toISOString(),
-            experiencer: sceneExperiencer,
-          } as any ),
-        });
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `✓ Wove moments into: ${scene.emoji || '❓'} ${scene.summary || '[no summary]'} (ID: ${scene.id})`
-            },
-            {
-              type: 'text',
-              text: `Full record:\n${JSON.stringify(scene, null, 2)}`
-            },
-            {
-              type: 'text',
-              text: getContextualPrompts('weave')
-            }
-          ]
-        };
       }
 
       case 'enrich': {
@@ -1084,84 +1156,7 @@ shifts, several emotional boundaries, multiple actional completions.`;
         }
       }
 
-      case 'autoframe': {
-        const autoProcessor = new (await import('./auto-processing.js')).AutoProcessor();
-        const safeArgs = args || {};
-        const sourceId = safeArgs.sourceId;
-        if (typeof sourceId !== 'string' || !sourceId) {
-          return { content: [{ type: 'text', text: 'Missing or invalid sourceId for auto-frame.' }] };
-        }
-        // Only normal (non-preview) mode
-        const result = await autoProcessor.autoFrameSources({ sourceIds: [sourceId] });
-        const successes = result.filter(r => r.success && r.created);
-        if (successes.length > 0) {
-          // Always return all created moments, even if only one
-          let summary = `✓ Auto-framed source ${sourceId} into ${successes.length} moment(s):\n`;
-          successes.forEach((r, idx) => {
-            if (r.created) {
-              summary += `  - Moment ${idx + 1}: ${r.created.emoji} "${r.created.summary}" (ID: ${r.created.id})\n`;
-            } else {
-              summary += `  - Moment ${idx + 1}: [no data]\n`;
-            }
-          });
-          // Add reframed moments info if any
-          const reframedArr = successes.flatMap(r => (r.created && Array.isArray((r.created as any)["_reframed"])) ? (r.created as any)["_reframed"] : []);
-          if (reframedArr.length > 0) {
-            summary += `\n🌀 Reframed (superseded) earlier moments:\n`;
-            reframedArr.forEach((m) => {
-              summary += `  - ${m.summary} (ID: ${m.id})\n`;
-            });
-          }
-          return {
-            content: [
-              { type: 'text', text: summary },
-              { type: 'text', text: `⚠️ These moments are marked as unreviewed. Use the enrich tool to review and approve them.` },
-              { type: 'text', text: `\nFull records:\n${JSON.stringify(successes.map(r => r.created), null, 2)}` }
-            ]
-          };
-        } else {
-          const firstError = result.find(r => r.error) || { error: 'Unknown error' };
-          return { content: [{ type: 'text', text: `Auto-framing failed: ${String(firstError.error)}` }] };
-        }
-      }
 
-      case 'autoweave': {
-        const autoProcessor = new (await import('./auto-processing.js')).AutoProcessor();
-        const safeArgs = args || {};
-        const momentIds: string[] = Array.isArray(safeArgs.momentIds) ? safeArgs.momentIds : [];
-        // Only normal (non-preview) mode
-        if (!momentIds.length) {
-          return { content: [{ type: 'text', text: 'No momentIds provided for autoweave.' }] };
-        }
-        const result = await autoProcessor.autoWeaveMoments(momentIds);
-        // Always return all created scenes, even if only one
-        const scenesArr = Array.isArray(result.created) ? result.created : (result.created ? [result.created] : []);
-        if (scenesArr.length > 0) {
-          let summary = `✓ Autoweave analyzed ${momentIds.length} moment(s) and created ${scenesArr.length} scene(s):\n`;
-          scenesArr.forEach((scene, idx) => {
-            summary += `  - Scene ${idx + 1}: ${scene.emoji || '❓'} "${scene.summary || '[no summary]'}" (moments: ${(scene.momentIds || []).join(', ')})\n`;
-          });
-          // Add reframed scenes info if any
-          const reframedArr = scenesArr.flatMap(s => (s && Array.isArray((s as any)["_reframed"])) ? (s as any)["_reframed"] : []);
-          if (reframedArr.length > 0) {
-            summary += `\n🌀 Reframed (superseded) earlier scenes:\n`;
-            reframedArr.forEach((sc) => {
-              summary += `  - ${sc.summary} (ID: ${sc.id})\n`;
-            });
-          }
-          if (result.error) {
-            summary += `Error: ${result.error}\n`;
-          }
-          return {
-            content: [
-              { type: 'text', text: summary },
-              { type: 'text', text: `\nFull records:\n${JSON.stringify(scenesArr, null, 2)}` }
-            ]
-          };
-        } else {
-          return { content: [{ type: 'text', text: `Auto-weaving failed: ${String(result.error)}` }] };
-        }
-      }
 
       case 'status': {
         const report = await statusMonitor.generateStatusReport();
