@@ -179,7 +179,7 @@ export function advancedFilters(results: SearchResult[], filters?: FilterOptions
       const momentQualities: string[] = result.moment?.qualities?.map(q => q.type) || [];
       if (!filters.hasQualities.every((q: string) => momentQualities.includes(q))) return false;
     }
-    // experiencers (for sources, moments)
+    // experiencers (for sources, moments, scenes)
     if (filters.experiencers) {
       if (result.type === 'source' && !filters.experiencers.includes(result.source?.experiencer || '')) return false;
       if (result.type === 'moment' && result.moment?.sources && allRecords) {
@@ -190,6 +190,7 @@ export function advancedFilters(results: SearchResult[], filters?: FilterOptions
         }).filter(Boolean);
         if (!filters.experiencers.some(exp => sourceExperiencers.includes(exp))) return false;
       }
+      if (result.type === 'scene' && result.scene?.experiencer && !filters.experiencers.includes(result.scene.experiencer)) return false;
     }
     // perspectives (for sources)
     if (filters.perspectives && result.type === 'source') {
@@ -218,16 +219,18 @@ export function advancedFilters(results: SearchResult[], filters?: FilterOptions
       const momentQualities: string[] = result.moment?.qualities?.map(q => q.type) || [];
       if (!filters.qualities.every(q => momentQualities.includes(q))) return false;
     }
-    // experiencer (legacy single)
-    if (filters.experiencer) {
-      if (result.type === 'source' && result.source?.experiencer !== filters.experiencer) return false;
+    // experiencer (legacy single - convert to array format for consistency)
+    if (filters.experiencer && !filters.experiencers) {
+      const experiencerValue = filters.experiencer;
+      if (result.type === 'source' && result.source?.experiencer !== experiencerValue) return false;
       if (result.type === 'moment' && result.moment?.sources && allRecords) {
         const sourceExperiencers = result.moment.sources.map(src => {
           const srcRec = allRecords.find(r => r.id === src.sourceId && r.type === 'source') as SourceRecord | undefined;
           return srcRec?.experiencer;
         }).filter(Boolean);
-        if (!sourceExperiencers.includes(filters.experiencer)) return false;
+        if (!sourceExperiencers.includes(experiencerValue)) return false;
       }
+      if (result.type === 'scene' && result.scene?.experiencer && result.scene.experiencer !== experiencerValue) return false;
     }
     return true;
   });

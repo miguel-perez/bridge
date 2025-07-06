@@ -1191,7 +1191,7 @@ shifts, several emotional boundaries, multiple actional completions.`;
         // Build filters for created and when (explicit, no fallback)
         const filters: Record<string, unknown> = {};
         if (Array.isArray(input.type) && input.type.length > 0) filters.type = input.type;
-        if (typeof input.experiencer === 'string' && input.experiencer.length > 0) filters.experiencer = input.experiencer;
+        if (typeof input.experiencer === 'string' && input.experiencer.length > 0) filters.experiencers = [input.experiencer];
         if (input.qualities) filters.qualities = input.qualities;
         if (typeof input.perspective === 'string' && input.perspective.length > 0) filters.perspectives = [input.perspective];
         if (typeof input.processing === 'string' && input.processing.length > 0) filters.processing = [input.processing];
