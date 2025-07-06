@@ -28,7 +28,7 @@ import {
   getSources,
 } from './storage.js';
 import type { SourceRecord, ProcessingLevel, StorageRecord, MomentRecord, SceneRecord } from './types.js';
-import { search as semanticSearch } from './search.js';
+
 import path from 'path';
 import type { SearchResult } from './search.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -1039,7 +1039,7 @@ shifts, several emotional boundaries, multiple actional completions.`;
         };
         if (typeof input.sort === 'string') searchOptions.sort = input.sort;
         if (typeof input.groupBy === 'string') searchOptions.groupBy = input.groupBy;
-        const results = await semanticSearch(searchOptions);
+        const results = await (await import('./search.js')).search(searchOptions);
         // If preFilteredRecords is set, filter results to only those in preFilteredRecords
         let finalResults = results;
         if (preFilteredRecords) {
