@@ -30,6 +30,17 @@ async function main() {
   }
   console.log('If this is not correct, set BRIDGE_FILE_PATH to your desired bridge.json path before running this script.');
 
+  // Clear all Pinecone vectors before upserting
+  const { getPineconeIndex } = await import('../src/embeddings.js');
+  const pineconeIndex = await getPineconeIndex();
+  try {
+    await pineconeIndex.deleteAll();
+    console.log('Cleared all vectors from Pinecone index.');
+  } catch (err) {
+    console.error('Error clearing Pinecone index:', err);
+    process.exit(1);
+  }
+
   const records = await getAllRecords();
   const { updateRecordEmbedding } = await import('../src/embeddings.js');
   let count = 0;
