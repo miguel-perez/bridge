@@ -1717,7 +1717,8 @@ Optional: add 'when' to override temporal inheritance from moments.`
         };
         if (typeof input.sort === 'string') searchOptions.sort = input.sort;
         if (typeof input.groupBy === 'string') searchOptions.groupBy = input.groupBy;
-        const results = await (await import('./search.js')).search(searchOptions);
+        const searchResult = await (await import('./search.js')).search(searchOptions);
+        const { results, stats } = searchResult;
         // If preFilteredRecords is set, filter results to only those in preFilteredRecords
         let finalResults = results;
         if (preFilteredRecords) {
@@ -1726,7 +1727,68 @@ Optional: add 'when' to override temporal inheritance from moments.`
         }
         if (Array.isArray(finalResults)) {
           if (finalResults.length === 0) {
-            // Provide more helpful error message when no results found
+            // Provide filter impact analysis when no results found
+            if (stats && stats.initial > 0) {
+              const filterImpacts = [];
+              if (stats.afterType !== undefined && stats.initial !== stats.afterType) {
+                filterImpacts.push(`Type filter: ${stats.initial} → ${stats.afterType}`);
+              }
+              if (stats.afterShotTypes !== undefined && (stats.afterType || stats.initial) !== stats.afterShotTypes) {
+                const before = stats.afterType || stats.initial;
+                filterImpacts.push(`Shot types filter: ${before} → ${stats.afterShotTypes}`);
+              }
+              if (stats.afterTimeRange !== undefined && (stats.afterShotTypes || stats.afterType || stats.initial) !== stats.afterTimeRange) {
+                const before = stats.afterShotTypes || stats.afterType || stats.initial;
+                filterImpacts.push(`Time range filter: ${before} → ${stats.afterTimeRange}`);
+              }
+              if (stats.afterCreatedRange !== undefined && (stats.afterTimeRange || stats.afterShotTypes || stats.afterType || stats.initial) !== stats.afterCreatedRange) {
+                const before = stats.afterTimeRange || stats.afterShotTypes || stats.afterType || stats.initial;
+                filterImpacts.push(`Created range filter: ${before} → ${stats.afterCreatedRange}`);
+              }
+              if (stats.afterWhenRange !== undefined && (stats.afterCreatedRange || stats.afterTimeRange || stats.afterShotTypes || stats.afterType || stats.initial) !== stats.afterWhenRange) {
+                const before = stats.afterCreatedRange || stats.afterTimeRange || stats.afterShotTypes || stats.afterType || stats.initial;
+                filterImpacts.push(`When range filter: ${before} → ${stats.afterWhenRange}`);
+              }
+              if (stats.afterHasQualities !== undefined && (stats.afterWhenRange || stats.afterCreatedRange || stats.afterTimeRange || stats.afterShotTypes || stats.afterType || stats.initial) !== stats.afterHasQualities) {
+                const before = stats.afterWhenRange || stats.afterCreatedRange || stats.afterTimeRange || stats.afterShotTypes || stats.afterType || stats.initial;
+                filterImpacts.push(`Has qualities filter: ${before} → ${stats.afterHasQualities}`);
+              }
+              if (stats.afterExperiencers !== undefined && (stats.afterHasQualities || stats.afterWhenRange || stats.afterCreatedRange || stats.afterTimeRange || stats.afterShotTypes || stats.afterType || stats.initial) !== stats.afterExperiencers) {
+                const before = stats.afterHasQualities || stats.afterWhenRange || stats.afterCreatedRange || stats.afterTimeRange || stats.afterShotTypes || stats.afterType || stats.initial;
+                filterImpacts.push(`Experiencers filter: ${before} → ${stats.afterExperiencers}`);
+              }
+              if (stats.afterPerspectives !== undefined && (stats.afterExperiencers || stats.afterHasQualities || stats.afterWhenRange || stats.afterCreatedRange || stats.afterTimeRange || stats.afterShotTypes || stats.afterType || stats.initial) !== stats.afterPerspectives) {
+                const before = stats.afterExperiencers || stats.afterHasQualities || stats.afterWhenRange || stats.afterCreatedRange || stats.afterTimeRange || stats.afterShotTypes || stats.afterType || stats.initial;
+                filterImpacts.push(`Perspectives filter: ${before} → ${stats.afterPerspectives}`);
+              }
+              if (stats.afterProcessing !== undefined && (stats.afterPerspectives || stats.afterExperiencers || stats.afterHasQualities || stats.afterWhenRange || stats.afterCreatedRange || stats.afterTimeRange || stats.afterShotTypes || stats.afterType || stats.initial) !== stats.afterProcessing) {
+                const before = stats.afterPerspectives || stats.afterExperiencers || stats.afterHasQualities || stats.afterWhenRange || stats.afterCreatedRange || stats.afterTimeRange || stats.afterShotTypes || stats.afterType || stats.initial;
+                filterImpacts.push(`Processing filter: ${before} → ${stats.afterProcessing}`);
+              }
+              if (stats.afterFramed !== undefined && (stats.afterProcessing || stats.afterPerspectives || stats.afterExperiencers || stats.afterHasQualities || stats.afterWhenRange || stats.afterCreatedRange || stats.afterTimeRange || stats.afterShotTypes || stats.afterType || stats.initial) !== stats.afterFramed) {
+                const before = stats.afterProcessing || stats.afterPerspectives || stats.afterExperiencers || stats.afterHasQualities || stats.afterWhenRange || stats.afterCreatedRange || stats.afterTimeRange || stats.afterShotTypes || stats.afterType || stats.initial;
+                filterImpacts.push(`Framed filter: ${before} → ${stats.afterFramed}`);
+              }
+              if (stats.afterQualities !== undefined && (stats.afterFramed || stats.afterProcessing || stats.afterPerspectives || stats.afterExperiencers || stats.afterHasQualities || stats.afterWhenRange || stats.afterCreatedRange || stats.afterTimeRange || stats.afterShotTypes || stats.afterType || stats.initial) !== stats.afterQualities) {
+                const before = stats.afterFramed || stats.afterProcessing || stats.afterPerspectives || stats.afterExperiencers || stats.afterHasQualities || stats.afterWhenRange || stats.afterCreatedRange || stats.afterTimeRange || stats.afterShotTypes || stats.afterType || stats.initial;
+                filterImpacts.push(`Qualities filter: ${before} → ${stats.afterQualities}`);
+              }
+              if (stats.afterExperiencer !== undefined && (stats.afterQualities || stats.afterFramed || stats.afterProcessing || stats.afterPerspectives || stats.afterExperiencers || stats.afterHasQualities || stats.afterWhenRange || stats.afterCreatedRange || stats.afterTimeRange || stats.afterShotTypes || stats.afterType || stats.initial) !== stats.afterExperiencer) {
+                const before = stats.afterQualities || stats.afterFramed || stats.afterProcessing || stats.afterPerspectives || stats.afterExperiencers || stats.afterHasQualities || stats.afterWhenRange || stats.afterCreatedRange || stats.afterTimeRange || stats.afterShotTypes || stats.afterType || stats.initial;
+                filterImpacts.push(`Experiencer filter: ${before} → ${stats.afterExperiencer}`);
+              }
+              
+              if (filterImpacts.length > 0) {
+                return {
+                  content: [{
+                    type: 'text',
+                    text: `No results found. Filter impacts:\n${filterImpacts.join('\n')}\n\nTry removing the most restrictive filter or broadening your search criteria.`
+                  }]
+                };
+              }
+            }
+            
+            // Fallback to existing temporal filter message
             if (input.when) {
               return {
                 content: [{
@@ -1735,55 +1797,15 @@ Optional: add 'when' to override temporal inheritance from moments.`
                 }]
               };
             }
-            if (input.includeContext) {
-              return {
-                content: finalResults.map((result: SearchResult) => ({
-                  type: 'text',
-                  text: JSON.stringify(formatStructuredSearchResult(result), null, 2)
-                }))
-              };
-            } else {
-              // Always return an array, even for a single result
-              return {
-                content: finalResults
-                  .filter((result: any) => typeof result === 'object' && result !== null && typeof result.type === 'string')
-                  .map((result: SearchResult, index: number) => ({
-                    type: 'text',
-                    text: formatDetailedSearchResult(result, index)
-                  }))
-              };
-            }
-          }
-          if (input.includeContext) {
+            
+            // Generic no results message
             return {
-              content: finalResults.map((result: SearchResult) => ({
+              content: [{
                 type: 'text',
-                text: JSON.stringify(formatStructuredSearchResult(result), null, 2)
-              }))
-            };
-          } else {
-            // Always return an array, even for a single result
-            return {
-              content: finalResults
-                .filter((result: any) => typeof result === 'object' && result !== null && typeof result.type === 'string')
-                .map((result: SearchResult, index: number) => ({
-                  type: 'text',
-                  text: formatDetailedSearchResult(result, index)
-                }))
+                text: 'No results found. Try broadening your search criteria or removing some filters.'
+              }]
             };
           }
-        } else if (finalResults && typeof finalResults === 'object' && 'groups' in finalResults) {
-          // Pretty-print grouped results
-          const groupBlocks = (finalResults as import('./search.js').GroupedResults).groups.map((group: { label: string; count: number; items: SearchResult[] }) => {
-            const header = `${group.label} (${group.count})`;
-            const items = group.items.map((item: SearchResult, idx: number) => formatSearchResult(item, idx)).join('\n');
-            return `${header}\n${items}`;
-          });
-          return {
-            content: groupBlocks.map(text => ({ type: 'text', text: String(text) }))
-          };
-        } else {
-          return { content: [{ type: 'text', text: 'Grouped results are not yet supported in this view.' }] };
         }
       }
 

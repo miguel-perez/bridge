@@ -63,6 +63,24 @@ export interface GroupedResults {
   totalResults: number;
 }
 
+// Filter impact tracking interface
+export interface FilterStats {
+  initial: number;
+  afterType?: number;
+  afterShotTypes?: number;
+  afterTimeRange?: number;
+  afterCreatedRange?: number;
+  afterWhenRange?: number;
+  afterHasQualities?: number;
+  afterExperiencers?: number;
+  afterPerspectives?: number;
+  afterProcessing?: number;
+  afterFramed?: number;
+  afterQualities?: number;
+  afterExperiencer?: number; // Legacy single experiencer
+  final: number;
+}
+
 // 1. Core semantic similarity search
 // (Deprecated: replaced by Pinecone logic in search())
 export async function semanticSearch(): Promise<SearchResult[]> {
@@ -139,96 +157,144 @@ function getParentId(record: StorageRecord): string | null {
   return null;
 }
 
-// Advanced filtering
-export function advancedFilters(results: SearchResult[], filters?: FilterOptions, allRecords?: StorageRecord[]): SearchResult[] {
-  if (!filters) return results;
+// Advanced filtering with impact tracking
+export function advancedFilters(results: SearchResult[], filters?: FilterOptions, allRecords?: StorageRecord[]): { filtered: SearchResult[], stats: FilterStats } {
+  if (!filters) return { filtered: results, stats: { initial: results.length, final: results.length } };
+  
+  const stats: FilterStats = {
+    initial: results.length,
+    final: results.length
+  };
+  
+  let filtered = results;
+  
   // Normalize: treat 'type' and 'types' as aliases
   if (filters.type && !filters.types) {
     filters.types = filters.type;
   }
-  return results.filter(result => {
-    const rec = result.source || result.moment || result.scene;
-    if (!rec) return false;
-    // Type filter
-    if (filters.types && !filters.types.includes(result.type)) return false;
-    // ShotTypes filter: only moments and scenes should be included
-    if (filters.shotTypes) {
+  
+  // Type filter
+  if (filters.types && filters.types.length > 0) {
+    filtered = filtered.filter(result => filters.types!.includes(result.type));
+    stats.afterType = filtered.length;
+  }
+  
+  // ShotTypes filter: only moments and scenes should be included
+  if (filters.shotTypes && filters.shotTypes.length > 0) {
+    filtered = filtered.filter(result => {
       if (result.type === 'source') return false;
-      if (result.type === 'moment' && !filters.shotTypes.includes(result.moment?.shot || '')) return false;
-      if (result.type === 'scene' && !filters.shotTypes.includes(result.scene?.shot || '')) return false;
-    }
-    // Time range filter (timeRange)
-    if (filters.timeRange) {
+      if (result.type === 'moment' && !filters.shotTypes!.includes(result.moment?.shot || '')) return false;
+      if (result.type === 'scene' && !filters.shotTypes!.includes(result.scene?.shot || '')) return false;
+      return true;
+    });
+    stats.afterShotTypes = filtered.length;
+  }
+  
+  // Time range filter (timeRange)
+  if (filters.timeRange) {
+    filtered = filtered.filter(result => {
+      const rec = result.source || result.moment || result.scene;
+      if (!rec) return false;
       const recDate = getRecordDate(rec);
-      const start = filters.timeRange.start ? new Date(filters.timeRange.start) : undefined;
-      const end = filters.timeRange.end ? new Date(filters.timeRange.end) : undefined;
-      if (!recDate || !isWithinRange(recDate, start, end)) return false;
-    }
-    // Created range filter (createdRange)
-    if (filters.createdRange) {
+      const start = filters.timeRange!.start ? new Date(filters.timeRange!.start) : undefined;
+      const end = filters.timeRange!.end ? new Date(filters.timeRange!.end) : undefined;
+      return recDate && isWithinRange(recDate, start, end);
+    });
+    stats.afterTimeRange = filtered.length;
+  }
+  
+  // Created range filter (createdRange)
+  if (filters.createdRange) {
+    filtered = filtered.filter(result => {
+      const rec = result.source || result.moment || result.scene;
+      if (!rec) return false;
       const recDate = getCreatedDate(rec);
       if (!recDate) return false;
       
-      const start = new Date(filters.createdRange.start);
-      const end = new Date(filters.createdRange.end);
+      const start = new Date(filters.createdRange!.start);
+      const end = new Date(filters.createdRange!.end);
       
       // If start and end are the same day, treat as full day range
       if (start.toDateString() === end.toDateString()) {
         const normalizedRecDate = normalizeToStartOfDay(recDate);
         const normalizedStart = normalizeToStartOfDay(start);
         const normalizedEnd = normalizeToEndOfDay(end);
-        if (!isWithinRange(normalizedRecDate, normalizedStart, normalizedEnd)) return false;
+        return isWithinRange(normalizedRecDate, normalizedStart, normalizedEnd);
       } else {
-        if (!isWithinRange(recDate, start, end)) return false;
+        return isWithinRange(recDate, start, end);
       }
-    }
-    // When range filter (whenRange)
-    if (filters.whenRange) {
+    });
+    stats.afterCreatedRange = filtered.length;
+  }
+  
+  // When range filter (whenRange)
+  if (filters.whenRange) {
+    filtered = filtered.filter(result => {
+      const rec = result.source || result.moment || result.scene;
+      if (!rec) return false;
       const recDate = getWhenDate(rec);
       if (!recDate) return false;
       
-      const start = new Date(filters.whenRange.start);
-      const end = new Date(filters.whenRange.end);
+      const start = new Date(filters.whenRange!.start);
+      const end = new Date(filters.whenRange!.end);
       
       // If start and end are the same day, treat as full day range
       if (start.toDateString() === end.toDateString()) {
         const normalizedRecDate = normalizeToStartOfDay(recDate);
         const normalizedStart = normalizeToStartOfDay(start);
         const normalizedEnd = normalizeToEndOfDay(end);
-        if (!isWithinRange(normalizedRecDate, normalizedStart, normalizedEnd)) return false;
+        return isWithinRange(normalizedRecDate, normalizedStart, normalizedEnd);
       } else {
-        if (!isWithinRange(recDate, start, end)) return false;
+        return isWithinRange(recDate, start, end);
       }
-    }
-    // hasQualities (for moments)
-    if (filters.hasQualities && result.type === 'moment') {
+    });
+    stats.afterWhenRange = filtered.length;
+  }
+  
+  // hasQualities (for moments)
+  if (filters.hasQualities && filters.hasQualities.length > 0) {
+    filtered = filtered.filter(result => {
+      if (result.type !== 'moment') return false;
       const momentQualities: string[] = result.moment?.qualities?.map(q => q.type) || [];
-      if (!filters.hasQualities.every((q: string) => momentQualities.includes(q))) return false;
-    }
-    // experiencers (for sources, moments, scenes)
-    if (filters.experiencers) {
-      if (result.type === 'source' && !filters.experiencers.includes(result.source?.experiencer || '')) return false;
+      return filters.hasQualities!.every((q: string) => momentQualities.includes(q));
+    });
+    stats.afterHasQualities = filtered.length;
+  }
+  
+  // experiencers (for sources, moments, scenes)
+  if (filters.experiencers && filters.experiencers.length > 0) {
+    filtered = filtered.filter(result => {
+      if (result.type === 'source') {
+        return filters.experiencers!.includes(result.source?.experiencer || '');
+      }
       if (result.type === 'moment' && result.moment?.sources && allRecords) {
         // Check if any related source has the experiencer
         const sourceExperiencers = result.moment.sources.map(src => {
           const srcRec = allRecords.find(r => r.id === src.sourceId && r.type === 'source') as SourceRecord | undefined;
           return srcRec?.experiencer;
         }).filter(Boolean);
-        if (!filters.experiencers.some(exp => sourceExperiencers.includes(exp))) return false;
+        return filters.experiencers!.some(exp => sourceExperiencers.includes(exp));
       }
-      if (result.type === 'scene' && result.scene?.experiencers && filters.experiencers && !filters.experiencers.some(exp => result.scene!.experiencers!.includes(exp))) return false;
-    }
-    // perspectives (for sources, and moments/scenes inherit from their sources)
-    if (filters.perspectives) {
+      if (result.type === 'scene' && result.scene?.experiencers) {
+        return filters.experiencers!.some(exp => result.scene!.experiencers!.includes(exp));
+      }
+      return false;
+    });
+    stats.afterExperiencers = filtered.length;
+  }
+  
+  // perspectives (for sources, and moments/scenes inherit from their sources)
+  if (filters.perspectives && filters.perspectives.length > 0) {
+    filtered = filtered.filter(result => {
       if (result.type === 'source') {
-        if (!filters.perspectives.includes(result.source?.perspective || '')) return false;
+        return filters.perspectives!.includes(result.source?.perspective || '');
       } else if (result.type === 'moment' && result.moment?.sources && allRecords) {
         // Check if any related source has the perspective
         const sourcePerspectives = result.moment.sources.map(src => {
           const srcRec = allRecords.find(r => r.id === src.sourceId && r.type === 'source') as SourceRecord | undefined;
           return srcRec?.perspective;
         }).filter(Boolean);
-        if (!filters.perspectives.some(p => sourcePerspectives.includes(p))) return false;
+        return filters.perspectives!.some(p => sourcePerspectives.includes(p));
       } else if (result.type === 'scene' && result.scene?.momentIds && allRecords) {
         // Check if any related moment's sources have the perspective
         const scenePerspectives: string[] = [];
@@ -243,15 +309,26 @@ export function advancedFilters(results: SearchResult[], filters?: FilterOptions
             }
           }
         }
-        if (!filters.perspectives.some(p => scenePerspectives.includes(p))) return false;
+        return filters.perspectives!.some(p => scenePerspectives.includes(p));
       }
-    }
-    // processing (for sources)
-    if (filters.processing && result.type === 'source') {
-      if (!filters.processing.includes(result.source?.processing || '')) return false;
-    }
-    // framed (for sources)
-    if (typeof filters.framed === 'boolean' && result.type === 'source' && allRecords) {
+      return false;
+    });
+    stats.afterPerspectives = filtered.length;
+  }
+  
+  // processing (for sources)
+  if (filters.processing && filters.processing.length > 0) {
+    filtered = filtered.filter(result => {
+      if (result.type !== 'source') return false;
+      return filters.processing!.includes(result.source?.processing || '');
+    });
+    stats.afterProcessing = filtered.length;
+  }
+  
+  // framed (for sources)
+  if (typeof filters.framed === 'boolean') {
+    filtered = filtered.filter(result => {
+      if (result.type !== 'source' || !allRecords) return false;
       // More robust check for framed sources
       const isFramed = allRecords.some(r => {
         if (r.type !== 'moment') return false;
@@ -259,10 +336,14 @@ export function advancedFilters(results: SearchResult[], filters?: FilterOptions
         if (!Array.isArray(moment.sources)) return false;
         return moment.sources.some(s => s.sourceId === result.id);
       });
-      if (filters.framed !== isFramed) return false;
-    }
-    // qualities (for moments only)
-    if (filters.qualities && filters.qualities.length > 0) {
+      return filters.framed === isFramed;
+    });
+    stats.afterFramed = filtered.length;
+  }
+  
+  // qualities (for moments only)
+  if (filters.qualities && filters.qualities.length > 0) {
+    filtered = filtered.filter(result => {
       // Only consider moments
       if (result.type !== 'moment') return false;
       const momentQualities: string[] = result.moment?.qualities?.map(q => q.type) || [];
@@ -270,27 +351,40 @@ export function advancedFilters(results: SearchResult[], filters?: FilterOptions
       
       if (mode === 'all') {
         // AND logic: all qualities must be present
-        if (!filters.qualities.every(q => momentQualities.includes(q))) return false;
+        return filters.qualities!.every(q => momentQualities.includes(q));
       } else if (mode === 'any') {
         // OR logic: any quality must be present
-        if (!filters.qualities.some(q => momentQualities.includes(q))) return false;
+        return filters.qualities!.some(q => momentQualities.includes(q));
       }
-    }
-    // experiencer (legacy single - convert to array format for consistency)
-    if (filters.experiencer && !filters.experiencers) {
-      const experiencerValue = filters.experiencer;
-      if (result.type === 'source' && result.source?.experiencer !== experiencerValue) return false;
+      return false;
+    });
+    stats.afterQualities = filtered.length;
+  }
+  
+  // experiencer (legacy single - convert to array format for consistency)
+  if (filters.experiencer && !filters.experiencers) {
+    const experiencerValue = filters.experiencer;
+    filtered = filtered.filter(result => {
+      if (result.type === 'source') {
+        return result.source?.experiencer === experiencerValue;
+      }
       if (result.type === 'moment' && result.moment?.sources && allRecords) {
         const sourceExperiencers = result.moment.sources.map(src => {
           const srcRec = allRecords.find(r => r.id === src.sourceId && r.type === 'source') as SourceRecord | undefined;
           return srcRec?.experiencer;
         }).filter(Boolean);
-        if (!sourceExperiencers.includes(experiencerValue)) return false;
+        return sourceExperiencers.includes(experiencerValue);
       }
-      if (result.type === 'scene' && result.scene?.experiencers && !result.scene.experiencers.includes(experiencerValue)) return false;
-    }
-    return true;
-  });
+      if (result.type === 'scene' && result.scene?.experiencers) {
+        return result.scene.experiencers.includes(experiencerValue);
+      }
+      return false;
+    });
+    stats.afterExperiencer = filtered.length;
+  }
+  
+  stats.final = filtered.length;
+  return { filtered, stats };
 }
 
 // Helper to get experiencer for grouping
@@ -445,7 +539,7 @@ function buildHierarchyTree(results: SearchResult[]): Array<{ label: string; cou
 }
 
 // 3. Main entry point
-export async function search(options: SearchOptions): Promise<SearchResult[] | GroupedResults> {
+export async function search(options: SearchOptions): Promise<{ results: SearchResult[] | GroupedResults, stats?: FilterStats }> {
   // Dynamic imports to fix module load order
   const { getAllRecords, getSearchableText } = await import('./storage.js');
   
@@ -574,7 +668,7 @@ export async function search(options: SearchOptions): Promise<SearchResult[] | G
       searchRecords = records.filter(r => filters.every(f => f(r)));
     } else if (query !== '') {
       // If no filters were generated and the query is not empty, return empty result set
-      return [];
+      return { results: [], stats: { initial: 0, final: 0 } };
     }
   } else if (options.mode === 'relationship' && options.query) {
     // Use the query as an ID to find reflects_on records
@@ -638,9 +732,10 @@ export async function search(options: SearchOptions): Promise<SearchResult[] | G
   }
 
   // --- Apply advanced filters ---
-  results = advancedFilters(results, options.filters, records);
+  const { filtered, stats } = advancedFilters(results, options.filters, records);
+
   // Enforce limit after filtering (in case filters reduce the set)
-  results = results.slice(0, effectiveLimit);
+  results = filtered.slice(0, effectiveLimit);
 
   // After filtering, implement sort options
   if (options.sort === 'created') {
@@ -654,9 +749,10 @@ export async function search(options: SearchOptions): Promise<SearchResult[] | G
 
   // --- Group if requested ---
   if (options.groupBy && options.groupBy !== 'none') {
-    return groupResults(results, options.groupBy as GroupOption);
+    const groupedResults = groupResults(results, options.groupBy as GroupOption);
+    return { results: groupedResults, stats };
   }
-  return results;
+  return { results, stats };
 }
 
 // --- Temporal search helpers ---
