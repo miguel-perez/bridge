@@ -1,201 +1,50 @@
 #!/usr/bin/env node
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
-  ListResourcesRequestSchema,
-  ReadResourceRequestSchema,
-  ListPromptsRequestSchema,
-  GetPromptRequestSchema,
   ErrorCode,
   McpError,
-  ListRootsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import {
   generateId,
   saveSource,
   saveMoment,
-  saveSynthesis,
+  saveScene,
   getSource,
   getMoment,
-  updateSource,
   updateMoment,
-  getSources,
   getMoments,
-  getRecentMoments,
-  getSyntheses,
-  getUnframedSources,
-  validateDataIntegrity,
-  getMomentsByDateRange,
-  searchMoments,
-  getMomentsByPattern,
-  getMomentsBySynthesis,
-  getSynthesis,
-  saveSession,
-  getLatestRecord,
-  storeFile,
-  validateFilePath as baseValidateFilePath,
+  getScenes,
+  getScene,
+  validateFilePath,
+  deleteSource,
+  deleteMoment,
+  updateScene,
+  deleteScene,
+  setStorageConfig,
+  updateSource,
+  getSources,
 } from './storage.js';
-import type { SourceRecord, ProcessingLevel } from './types.js';
-
-// System prompt for AI sampling (from design doc)
-const PHENOMENOLOGICAL_SYSTEM_PROMPT = `
-You are a guide for experiential capture and reflection using the Framed Moment framework.
-
-Core principles:
-- Experience emerges as an indivisible whole with multiple dimensions
-- Preserve the experiencer's authentic voice - use their words, rhythm, and expressions
-- Each moment naturally presents certain dimensions more prominently
-- The body, mood, attention, purpose, place, time, and others mutually constitute experience
-- Discrete moments are practical tools, not claims about consciousness
-
-When helping frame moments:
-- Listen for what's most alive in the experience
-- Use the storyboard metaphor: wide shots (scenes), medium shots (beats), close-ups (micro-moments)
-- Never impose interpretations - draw out what's already there
-- Maintain first-person immediacy and experiential completeness
-`;
+import type { SourceRecord, ProcessingLevel, StorageRecord } from './types.js';
+import { search as semanticSearch } from './search.js';
+import path from 'path';
+import type { SearchResult } from './search.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { statusMonitor } from './status.js';
 
 // Constants
-const SERVER_NAME = 'framed-moments';
+const SERVER_NAME = 'captain';
 const SERVER_VERSION = '0.1.0';
 
-// In-memory session tracker
-let currentSession: {
-  id: string;
-  started: string;
-  ended?: string;
-  intention?: string;
-  captures: string[];
-  moments: string[];
-} | null = null;
-
-// In-memory state for guided_capture (single user/session for now)
-let guidedCaptureState: {
-  step: number;
-  answers: Record<string, string>;
-} | null = null;
-
-// In-memory state for guided_frame (single user/session for now)
-interface GuidedFrameState {
-  step: number;
-  answers: Record<string, string | number | boolean | undefined>;
-}
-let guidedFrameState: GuidedFrameState | null = null;
-
-// In-memory state for guided_enhance (single user/session for now)
-interface GuidedEnhanceState {
-  step: number;
-  momentId?: string;
-  fields?: string[];
-  currentFieldIndex?: number;
-  updates: Record<string, unknown>;
-  withAI?: boolean;
-}
-let guidedEnhanceState: GuidedEnhanceState | null = null;
-
-// In-memory MCP roots (populated by ListRootsRequestSchema)
-let mcpRoots: Array<{ uri: string; name?: string; title?: string; mimeType?: string }> = [];
-
-function startSession(intention?: string): void {
-  currentSession = {
-    id: generateId('ses'),
-    started: new Date().toISOString(),
-    intention,
-    captures: [],
-    moments: [],
-  };
-}
-
-function endSession(): void {
-  if (currentSession) {
-    currentSession.ended = new Date().toISOString();
-  }
-}
-
-function trackCapture(id: string): void {
-  if (currentSession) {
-    currentSession.captures.push(id);
-  }
-}
-
-function trackMoment(id: string): void {
-  if (currentSession) {
-    currentSession.moments.push(id);
-  }
-}
-
-// Tool input schemas
-const allowedContentTypes = ['text', 'voice', 'image', 'link'];
-const allowedPerspectives = ['I', 'we', 'you', 'they'];
-const allowedProcessing = ['during', 'right-after', 'long-after', 'crafted'];
-
-const captureSchema = z.object({
-  content: z.string().min(1, { message: 'Content is required.' }).refine(
-    val => val.trim().length > 0,
-    { message: 'Content cannot be empty or just whitespace.' }
-  ),
-  contentType: z.string().optional().default('text').refine(
-    val => allowedContentTypes.includes(val),
-    { message: `contentType must be one of: ${allowedContentTypes.join(', ')}` }
-  ),
-  perspective: z.string().optional().default('I').refine(
-    val => allowedPerspectives.includes(val),
-    { message: `perspective must be one of: ${allowedPerspectives.join(', ')}` }
-  ),
-  processing: z.string().optional().default('during').refine(
-    val => allowedProcessing.includes(val),
-    { message: `processing must be one of: ${allowedProcessing.join(', ')}` }
-  ),
-  when: z.string().optional().refine(
-    val => !val || !isNaN(Date.parse(val)),
-    { message: 'when must be a valid date string (ISO or YYYY-MM-DD)' }
-  ),
-  experiencer: z.string().optional().default('self'),
-  related: z.array(z.string()).optional(),
-  file: z.string().optional(),
-});
-
-const frameSchema = z.object({
-  sourceIds: z.array(z.string()),
-  emoji: z.string(),
-  summary: z.string(),
-  narrative: z.string().optional(),
-  pattern: z.string().optional(),
-  withAI: z.boolean().optional().default(false),
-});
-
-const enhanceSchema = z.object({
-  id: z.string(),
-  updates: z.record(z.any()),
-  withAI: z.boolean().optional().default(false),
-});
-
-const synthesizeSchema = z.object({
-  momentIds: z.array(z.string()),
-  emoji: z.string(),
-  summary: z.string(),
-  narrative: z.string().optional(),
-  pattern: z.string().optional().default('synthesis'),
-});
-
-// Add diagnostic tool for system health
-const statusSchema = z.object({
-  verbose: z.boolean().optional().default(false),
-});
-
-// Zod schema for MCP sampling response
-const SamplingResponseSchema = z.object({
-  model: z.string(),
-  stopReason: z.string().optional(),
-  role: z.string(),
-  content: z.object({
-    type: z.string(),
-    text: z.string().optional(),
-  })
-});
+// Define data file path using environment variable with fallback in project root
+const defaultDataPath = path.resolve(process.cwd(), 'bridge.json');
+const DATA_FILE_PATH = process.env.BRIDGE_FILE_PATH
+  ? path.isAbsolute(process.env.BRIDGE_FILE_PATH)
+    ? process.env.BRIDGE_FILE_PATH
+    : path.resolve(process.cwd(), process.env.BRIDGE_FILE_PATH)
+  : defaultDataPath;
 
 // Create server instance
 const server = new Server(
@@ -214,105 +63,355 @@ const server = new Server(
       prompts: {
         listChanged: false  // We don't dynamically change prompts
       },
-      sampling: {}, // Enable sampling capability for AI integration
     },
   }
 );
 
+// Add schema definitions for tool input validation
+const captureSchema = z.object({
+  content: z.string().min(1),
+  contentType: z.string().optional().default('text'),
+  perspective: z.enum(['I', 'we', 'you', 'they']),
+  processing: z.enum(['during', 'right-after', 'long-after', 'crafted']),
+  when: z.string().optional(),
+  experiencer: z.string(),
+  reflects_on: z.array(z.string()).optional(),
+  file: z.string().optional(),
+});
+
+// Updated frameSchema: only accepts sourceIds and now requires qualities
+const frameSchema = z.object({
+  sourceIds: z.array(z.string()).min(1),
+  emoji: z.string(),
+  summary: z.string(),
+  qualities: z.array(z.object({
+    type: z.enum([
+      'embodied',
+      'attentional',
+      'emotional',
+      'purposive',
+      'spatial',
+      'temporal',
+      'relational',
+    ]),
+    manifestation: z.string().min(1)
+  })).min(1, 'Must identify at least one experiential quality before creating narrative'),
+  narrative: z.string().optional(),
+  shot: z.enum([
+    'moment-of-recognition',
+    'sustained-attention',
+    'crossing-threshold',
+    'peripheral-awareness',
+    'directed-momentum',
+    'holding-opposites'
+  ]).optional().default('moment-of-recognition'),
+});
+
+// New weaveSchema: accepts momentIds
+const weaveSchema = z.object({
+  momentIds: z.array(z.string()).min(1),
+  emoji: z.string(),
+  summary: z.string(),
+  narrative: z.string().optional(),
+  shot: z.enum([
+    'moment-of-recognition',
+    'sustained-attention',
+    'crossing-threshold',
+    'peripheral-awareness',
+    'directed-momentum',
+    'holding-opposites'
+  ])
+});
+
+const enrichSchema = z.object({
+  id: z.string(),
+  updates: z.record(z.unknown()),
+});
+
+const releaseSchema = z.object({
+  id: z.string(),
+});
+
+// Helper: Contextual coaching prompts for captures and tool-to-tool flow
+function getContextualPrompts(toolName: string): string {
+  let prompts = '\n✓ Next steps:\n';
+  switch(toolName) {
+    case 'capture':
+      prompts += '• Frame - transform this into a complete moment with a shot and qualities\n';
+      break;
+    case 'frame':
+      prompts += '• Enrich - add narrative depth or missing experiential qualities\n';
+      prompts += '• Weave - connect with moments that reflect on each other (see larger narrative threads)\n';
+      break;
+    case 'weave':
+      prompts += '• Use hierarchy/group view in search to visualize your new scene in context\n';
+      prompts += '• Capture more - explore themes this scene revealed\n';
+      break;
+    case 'search':
+      prompts += '• Search - use natural language to find relevant sources, moments, scenes or relationships\n';
+      prompts += '• Filter - refine search results with optional filters\n';
+      prompts += '• Sort - order results by relevance or creation date\n';
+      prompts += '• Group - organize results by type or experiencer\n';
+      prompts += '• Limit - control the number of results returned\n';
+      prompts += '• Context - include full record context in search results\n';
+      break;
+    default:
+      prompts += '• Capture - record another experience\n';
+      prompts += '• Use hierarchy/group view in search to explore your moments and scenes\n';
+  }
+  return prompts;
+}
+
+// Helper strings for tool descriptions
+const critiqueChecklist = `Validation criteria:\n- Voice recognition ("that's how I talk")\n- Experiential completeness\n- Visual anchorability\n- Temporal flow implied\n- Emotional atmosphere preserved\n- Self-containment\n- Narrative coherence\n- Causal logic\n- Temporal knowledge accuracy\n- No invented details\n- Voice fidelity\n- Minimal transformation\n- Physical/sensory grounding\n(2-3 iterations are normal)`;
+
+// Set storage and embeddings config to use DATA_FILE_PATH
+setStorageConfig({ dataFile: DATA_FILE_PATH });
+
+// Simple formatter for search results
+function formatSearchResult(result: SearchResult, index: number): string {
+  const label = String(result.type ?? '');
+  let summary: string;
+  if (typeof result.snippet === 'string') {
+    summary = result.snippet;
+  } else if (typeof result.id === 'string') {
+    summary = result.id;
+  } else {
+    summary = '[no summary]';
+  }
+  return `${index + 1}. [${label.toUpperCase()}] ${summary}`;
+}
+
+// Define SearchToolInput for the new search tool
+interface SearchToolInput {
+  query?: string;
+  created?: string | { start: string; end: string };
+  when?: string | { start: string; end: string };
+  reflectedOn?: string;
+  type?: Array<'source' | 'moment' | 'scene'>;
+  experiencer?: string;
+  qualities?: string[];
+  perspective?: string;
+  processing?: string;
+  shot?: string;
+  framed?: boolean;
+  groupBy?: 'type' | 'experiencer' | 'day' | 'week' | 'month' | 'hierarchy';
+  sort?: 'relevance' | 'created' | 'when';
+  limit?: number;
+  includeContext?: boolean;
+  reviewed?: boolean;
+}
+
 // Tool handlers
-server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: [
+server.setRequestHandler(ListToolsRequestSchema, async () => {
+  const tools = [
     {
-      name: 'capture',
-      description: 'Save an experience, thought, or feeling',
+      name: "capture",
+      description: "Capture raw experiential text as a source record. This is for unprocessed, in-the-moment entries—such as journal notes, chat messages, or direct transcripts—before any framing or analysis.",
       inputSchema: {
-        type: 'object',
+        type: "object",
         properties: {
-          content: { type: 'string', description: 'The experience to capture' },
-          contentType: { type: 'string', description: 'Type of content (text, voice, image, link)', default: 'text' },
-          perspective: { type: 'string', description: 'Perspective (I, we, you, they)', default: 'I' },
-          processing: { type: 'string', description: 'When captured relative to experience (during, right-after, long-after, crafted)', default: 'during' },
-          when: { type: 'string', description: 'When it happened (ISO timestamp or descriptive)' },
-          experiencer: { type: 'string', description: 'Who experienced this', default: 'self' },
-          related: { 
-            type: 'array',
-            items: { type: 'string' },
-            description: 'Related source IDs'
+          content: { type: "string", description: "Raw text from experiencer, either new expereience or reflection or previous capture" },
+          experiencer: { type: "string", description: "Who experienced this (e.g., 'Claude', 'Sarah', 'Team')" },
+          perspective: { type: "string", enum: ["I", "we", "you", "they"], description: "Perspective used" },
+          processing: { type: "string", enum: ["during", "right-after", "long-after", "crafted"], description: "When captured relative to experience" },
+          contentType: { type: "string", description: "Type of content", default: "text" },
+          when: { type: "string", description: "When it happened (ISO timestamp or descriptive like 'yesterday morning')" },
+          reflects_on: { type: "array", items: { type: "string" }, description: "Array of source IDs this record reflects on (use for reflections)" },
+          file: { type: "string", description: "Optional file path for file-based captures" }
+        },
+        required: ["content", "experiencer", "perspective", "processing"]
+      },
+      annotations: {
+        title: "Capture Experience",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false
+      }
+    },
+    {
+      name: "frame",
+      description: "Transform raw sources into complete experiential moments by identifying their qualities and attention patterns.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          sourceIds: { type: "array", items: { type: "string" }, minItems: 1, description: "Array of source IDs to frame together" },
+          emoji: { type: "string", description: "Single emoji that captures the essence" },
+          summary: { type: "string", description: "5-7 word summary" },
+          shot: { type: "string", enum: ["moment-of-recognition", "sustained-attention", "crossing-threshold", "peripheral-awareness", "directed-momentum", "holding-opposites"], description: "How attention moved in this experience" },
+          qualities: {
+            type: "array",
+            minItems: 1,
+            items: {
+              type: "object",
+              properties: {
+                type: { type: "string", enum: ["embodied", "attentional", "emotional", "purposive", "spatial", "temporal", "relational"], description: "Which quality is present" },
+                manifestation: { type: "string", description: "How this quality shows up in the experience" }
+              },
+              required: ["type", "manifestation"]
+            },
+            description: "Array of experiential qualities present, with at least one"
           },
-          file: { type: 'string', description: 'Path to file (for non-text content)' },
+          narrative: { type: "string", description: "Full experiential narrative" }
         },
-        required: ['content'],
+        required: ["sourceIds", "emoji", "summary", "shot", "qualities"]
       },
+      annotations: {
+        title: "Frame Moment",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false
+      }
     },
     {
-      name: 'frame',
-      description: 'Create a moment from your captures',
+      name: "weave",
+      description: "Connect multiple moments to reveal narrative journeys and transformations.",
       inputSchema: {
-        type: 'object',
+        type: "object",
         properties: {
-          sourceIds: { 
-            type: 'array', 
-            items: { type: 'string' },
-            description: 'Source IDs to frame into a moment'
-          },
-          emoji: { type: 'string', description: 'Emoji representation' },
-          summary: { type: 'string', description: '5-7 word summary' },
-          narrative: { type: 'string', description: 'Full experiential narrative' },
-          pattern: { type: 'string', description: 'Frame pattern type' },
-          withAI: { type: 'boolean', description: 'Use AI assistance', default: false },
+          momentIds: { type: "array", items: { type: "string" }, minItems: 1, description: "Array of moment IDs to weave together" },
+          emoji: { type: "string", description: "Emoji representing the journey" },
+          summary: { type: "string", description: "5-7 word summary of the arc" },
+          narrative: { type: "string", description: "The story that connects these moments" },
+          shot: { type: "string", enum: ["moment-of-recognition", "sustained-attention", "crossing-threshold", "peripheral-awareness", "directed-momentum", "holding-opposites"], description: "Overall attention pattern of the woven scene" }
         },
-        required: ['sourceIds', 'emoji', 'summary'],
+        required: ["momentIds", "emoji", "summary", "narrative", "shot"]
       },
+      annotations: {
+        title: "Weave Scene",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false
+      }
     },
     {
-      name: 'enhance',
-      description: 'Refine or add details to existing captures or moments',
+      name: "enrich",
+      description: "Correct or update an existing source or moment (content, metadata, etc.). Use for factual corrections, typos, or missing details. This directly edits the original record. If a source is referenced by moments, those moments will reflect the updated content.",
       inputSchema: {
-        type: 'object',
+        type: "object",
         properties: {
-          id: { type: 'string', description: 'Source or moment ID to enhance' },
-          updates: { 
-            type: 'object', 
-            description: 'Fields to update',
-            additionalProperties: true 
-          },
-          withAI: { type: 'boolean', description: 'Get AI suggestions for enhancement', default: false },
+          id: { type: "string", description: "Source or moment ID to enrich" },
+          updates: { type: "object", description: "Object with fields to update", additionalProperties: true }
         },
-        required: ['id', 'updates'],
+        required: ["id", "updates"]
       },
+      annotations: {
+        title: "Enrich Record",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false
+      }
     },
     {
-      name: 'synthesize',
-      description: 'Create a container moment holding related moments',
+      name: "release",
+      description: "Release (delete) a source or moment - some experiences are meant to be acknowledged then let go.",
       inputSchema: {
-        type: 'object',
+        type: "object",
         properties: {
-          momentIds: { 
-            type: 'array', 
-            items: { type: 'string' },
-            description: 'Moments to group together'
-          },
-          emoji: { type: 'string', description: 'Emoji for the synthesis' },
-          summary: { type: 'string', description: '5-7 words for the synthesis' },
-          narrative: { type: 'string', description: 'Optional overarching narrative' },
-          pattern: { type: 'string', description: 'Pattern type', default: 'synthesis' },
+          id: { type: "string", description: "ID of source or moment to release" }
         },
-        required: ['momentIds', 'emoji', 'summary'],
+        required: ["id"]
       },
+      annotations: {
+        title: "Release Record",
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: false
+      }
     },
     {
-      name: 'status',
-      description: 'Check system health and data integrity',
+      name: "search",
+      description: "Unified faceted search across all records. Supports semantic, temporal, relationship, and metadata filters. Use 'created' for capture time and 'when' for event time.",
       inputSchema: {
-        type: 'object',
+        type: "object",
         properties: {
-          verbose: { type: 'boolean', description: 'Include detailed information', default: false },
-        },
-        required: [],
+          query: { type: "string", description: "Semantic search query (natural language or keywords)" },
+          created: { oneOf: [ { type: "string" }, { type: "object", properties: { start: { type: "string" }, end: { type: "string" } }, required: ["start", "end"] } ], description: "Filter by record creation time (when captured)" },
+          when: { oneOf: [ { type: "string" }, { type: "object", properties: { start: { type: "string" }, end: { type: "string" } }, required: ["start", "end"] } ], description: "Filter by event time (user-supplied)" },
+          reflectedOn: { type: "string", description: "Record ID to find all related records (traverses reflects_on, sources, moments, scenes)" },
+          type: { type: "array", items: { type: "string", enum: ["source", "moment", "scene"] }, description: "Restrict to certain record types" },
+          experiencer: { type: "string", description: "Only records with this experiencer" },
+          qualities: { type: "array", items: { type: "string" }, description: "Only moments with all these qualities" },
+          perspective: { type: "string", description: "Only records with this perspective" },
+          processing: { type: "string", description: "Only records with this processing level" },
+          shot: { type: "string", description: "Only moments/scenes with this shot type" },
+          framed: { type: "boolean", description: "Only sources that are (or are not) framed" },
+          groupBy: { type: "string", enum: ["type", "experiencer", "day", "week", "month", "hierarchy"], description: "Group results by this field" },
+          sort: { type: "string", enum: ["relevance", "created", "when"], description: "Sort by field" },
+          limit: { type: "number", description: "Maximum results to return" },
+          includeContext: { type: "boolean", description: "Return full record metadata" },
+          reviewed: { type: "boolean", description: "Only records that are (or are not) reviewed" }
+        }
       },
+      annotations: {
+        title: "Search Records",
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false
+      }
     },
-  ],
-}));
+    {
+      name: "autoframe",
+      description: "Automatically frame a source and its reflections into moments using OpenAI. Creates moments marked as unreviewed for human oversight.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          sourceId: { type: "string", description: "ID of the source to auto-frame (required)" },
+          preview: { type: "boolean", description: "If true, show what would be created but do not save anything." }
+        },
+        required: ["sourceId"]
+      },
+      annotations: {
+        title: "Auto-Frame Moment",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false
+      }
+    },
+    {
+      name: "autoweave",
+      description: "Automatically weave moments or scenes into higher-level scenes using OpenAI. Creates scenes marked as unreviewed for human oversight.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          momentIds: { type: "array", items: { type: "string" }, description: "Array of moment IDs to auto-weave (optional)" },
+          sceneIds: { type: "array", items: { type: "string" }, description: "Array of scene IDs to auto-weave (optional)" },
+          preview: { type: "boolean", description: "If true, show what would be created but do not save anything." }
+        }
+      },
+      annotations: {
+        title: "Auto-Weave Scene",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false
+      }
+    },
+    {
+      name: "status",
+      description: "Get a high-level status report of the system, including counts of unframed sources, unreviewed content, and processing errors.",
+      inputSchema: {
+        type: "object",
+        properties: {}
+      },
+      annotations: {
+        title: "System Status",
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false
+      }
+    }
+  ];
+  return { tools };
+});
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
@@ -321,48 +420,107 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     switch (name) {
       case 'capture': {
         let input;
+        const framingGuide = `Break up sources into smaller units when possible by imagining you're a storyboard artist facing an 
+impossible but necessary task: finding natural joints in what is inherently seamless.
+
+Example Shot Types:
+
+1. ATTENTION BOUNDARIES
+   Where awareness fundamentally redirects. The entire field of consciousness 
+   reorganizes around a different center.
+
+2. TEMPORAL BOUNDARIES  
+   Natural segments in lived duration. Where experience has its own beginning, 
+   middle, end. Where "now" becomes "then."
+
+3. SPATIAL BOUNDARIES
+   When the sense of place transforms. Not just moving, but when lived space 
+   - its feeling, meaning, possibilities - becomes different.
+
+4. EMOTIONAL BOUNDARIES
+   Where affective atmosphere shifts. When the whole coloring of experience 
+   changes, like weather fronts moving through.
+
+5. ACTIONAL BOUNDARIES
+   Natural completions and initiations. Where purposive momentum finds its 
+   target or redirects. Reaching vs having reached.
+
+6. RELATIONAL BOUNDARIES
+   When the intersubjective field reconfigures. Others entering, leaving, 
+   or the felt sense of connection fundamentally shifting.
+
+Go as granular as possible. A conversation might contain dozens of attention 
+shifts, several emotional boundaries, multiple actional completions.`;
         try {
           input = captureSchema.parse(args);
         } catch (err) {
           if (err instanceof z.ZodError) {
-            throw new McpError(
-              ErrorCode.InvalidParams,
-              err.errors.map(e => e.message).join('; ')
-            );
+            // User-friendly error for missing/invalid fields
+            const details = err.errors.map(e =>
+              e.path.length ? `Missing or invalid field: ${e.path.join('.')}` : e.message
+            ).join('; ');
+            throw new McpError(ErrorCode.InvalidParams, details);
           }
           throw err;
         }
         // For file captures, require content to describe the file
         if (input.file) {
-          if (!input.content || input.content.trim().length < 5) {
+          // Validate file exists and is readable
+          if (!await validateFilePath(input.file)) {
             throw new McpError(
               ErrorCode.InvalidParams,
-              'For file captures, content must describe what the file contains.'
+              `File not found or not readable: ${input.file}`
             );
           }
-          if (!mcpRoots.length) {
-            throw new McpError(
-              ErrorCode.InvalidParams,
-              'No file roots are available. Please configure accessible directories in your MCP client.'
-            );
+          // Create source record
+          const source = await saveSource({
+            id: generateId('src'),
+            content: input.content,
+            contentType: input.contentType,
+            created: new Date().toISOString(),
+            when: input.when,
+            perspective: input.perspective,
+            experiencer: input.experiencer,
+            processing: input.processing as ProcessingLevel,
+            reflects_on: input.reflects_on,
+            file: input.file,
+          });
+          // Check if this is the first source ever captured
+          const sourcesAfter = await getSources();
+          const isFirstSource = sourcesAfter.length === 1;
+          const defaultsUsed = [];
+          const safeArgs = args || {};
+          if (!safeArgs.perspective) defaultsUsed.push('perspective="I"');
+          if (!safeArgs.experiencer) defaultsUsed.push('experiencer="self"');
+          if (!safeArgs.processing) defaultsUsed.push('processing="during"');
+          const content = [
+            {
+              type: 'text',
+              text: `✓ Captured: "${source.content.substring(0, 50)}${source.content.length > 50 ? '...' : ''}" (ID: ${source.id})`
+            },
+            {
+              type: 'text',
+              text: `\nFull record:\n${JSON.stringify(source, null, 2)}`
+            }
+          ];
+          if (defaultsUsed.length > 0) {
+            content.push({
+              type: 'text',
+              text: `Defaults applied: ${defaultsUsed.join(', ')}`
+            });
           }
-          if (!validateFilePathWithRoots(input.file)) {
-            throw new McpError(
-              ErrorCode.InvalidParams,
-              `File path is not within any allowed root. Allowed roots: ${mcpRoots.map(r => r.uri).join(', ')}`
-            );
+          content.push({
+            type: 'text',
+            text: getContextualPrompts('capture')
+          });
+          // Only show framingGuide if content is long or this is the first source
+          if (source.content.length > 1024 || isFirstSource) {
+            content.push({
+              type: 'text',
+              text: framingGuide
+            });
           }
-        }
-        let storedFilePath: string | undefined = undefined;
-        if (input.file) {
-          const maybePath = await storeFile(input.file, generateId('srcfile'));
-          if (!maybePath) {
-            throw new McpError(
-              ErrorCode.InvalidParams,
-              `File not found or could not be stored: ${input.file}`
-            );
-          }
-          storedFilePath = maybePath;
+          return { content };
         }
         // Create source record
         const source = await saveSource({
@@ -374,1446 +532,655 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           perspective: input.perspective,
           experiencer: input.experiencer,
           processing: input.processing as ProcessingLevel,
-          related: input.related,
-          file: storedFilePath,
+          reflects_on: input.reflects_on,
         });
-        trackCapture(source.id);
-
-        // --- MCP Elicitation for missing fields (non-blocking) ---
-        (async (): Promise<void> => {
-          const elicitations: Array<{ field: string; action: string; timestamp: string; value?: unknown }> = [];
-          let updatedSource = source;
-          // 1. If processing is "long-after" but no 'when' date provided
-          if (input.processing === 'long-after' && !input.when) {
-            const response = await server.request({
-              method: 'elicitation/create',
-              params: {
-                message: 'When did this memory originally happen? (Approximate date, e.g., YYYY-MM or YYYY)',
-                requestedSchema: {
-                  type: 'string',
-                  format: 'date',
-                  description: 'Approximate date (YYYY-MM or YYYY)'
-                }
-              }
-            }, z.object({ action: z.string(), content: z.unknown().optional() }), undefined);
-            elicitations.push({ field: 'when', action: response.action, timestamp: new Date().toISOString(), value: response.content });
-            if (response.action === 'accept' && typeof response.content === 'string') {
-              const result = await updateSource(updatedSource.id, { when: response.content });
-              if (result) updatedSource = result;
-            }
+        // Check if this is the first source ever captured
+        const sourcesAfter = await getSources();
+        const isFirstSource = sourcesAfter.length === 1;
+        const defaultsUsed = [];
+        const safeArgs = args || {};
+        if (!safeArgs.perspective) defaultsUsed.push('perspective="I"');
+        if (!safeArgs.experiencer) defaultsUsed.push('experiencer="self"');
+        if (!safeArgs.processing) defaultsUsed.push('processing="during"');
+        const content = [
+          {
+            type: 'text',
+            text: `✓ Captured: "${source.content.substring(0, 50)}${source.content.length > 50 ? '...' : ''}" (ID: ${source.id})`
+          },
+          {
+            type: 'text',
+            text: `\nFull record:\n${JSON.stringify(source, null, 2)}`
           }
-          // 2. If contentType is voice/image but no file provided
-          if ((input.contentType === 'voice' || input.contentType === 'image') && !input.file) {
-            const response = await server.request({
-              method: 'elicitation/create',
-              params: {
-                message: `Please provide the file for this ${input.contentType} capture (path or upload, must be within allowed roots).`,
-                requestedSchema: {
-                  type: 'string',
-                  description: 'Path to the file (must be within allowed roots)'
-                }
-              }
-            }, z.object({ action: z.string(), content: z.unknown().optional() }), undefined);
-            elicitations.push({ field: 'file', action: response.action, timestamp: new Date().toISOString(), value: response.content });
-            if (response.action === 'accept' && typeof response.content === 'string') {
-              if (!validateFilePathWithRoots(response.content)) return;
-              const maybePath = await storeFile(response.content, generateId('srcfile'));
-              if (maybePath) {
-                const result = await updateSource(updatedSource.id, { file: maybePath });
-                if (result) updatedSource = result;
-              }
-            }
-          }
-          // 3. If perspective is "we" but experiencer is still "self"
-          if (input.perspective === 'we' && input.experiencer === 'self') {
-            const response = await server.request({
-              method: 'elicitation/create',
-              params: {
-                message: 'Who were the other experiencers (besides yourself)?',
-                requestedSchema: {
-                  type: 'string',
-                  description: 'Names or description of other experiencers'
-                }
-              }
-            }, z.object({ action: z.string(), content: z.unknown().optional() }), undefined);
-            elicitations.push({ field: 'experiencer', action: response.action, timestamp: new Date().toISOString(), value: response.content });
-            if (response.action === 'accept' && typeof response.content === 'string') {
-              const result = await updateSource(updatedSource.id, { experiencer: response.content });
-              if (result) updatedSource = result;
-            }
-          }
-          // --- Additional experiential dimensions (gentle, non-blocking, design doc language) ---
-          // Only elicit for up to 2 more missing fields to avoid overwhelming the user
-          let extraElicitCount = 0;
-          // 4. Narrative/Summary (if content is very short or generic)
-          if (input.content && input.content.trim().length < 20 && extraElicitCount < 2) {
-            const response = await server.request({
-              method: 'elicitation/create',
-              params: {
-                message: 'Would you like to add a brief summary or narrative to help you remember this moment later? Use your own words, rhythm, and expressions.',
-                requestedSchema: {
-                  type: 'string',
-                  description: 'A short summary or narrative (optional)'
-                }
-              }
-            }, z.object({ action: z.string(), content: z.unknown().optional() }), undefined);
-            elicitations.push({ field: 'narrative', action: response.action, timestamp: new Date().toISOString(), value: response.content });
-            // Do not assign to updatedSource.narrative (not in SourceRecord), just log
-            extraElicitCount++;
-          }
-          // 5. Mood/Emotion
-          if (!('mood' in input) && extraElicitCount < 2) {
-            const response = await server.request({
-              method: 'elicitation/create',
-              params: {
-                message: 'How did you feel in this moment? (e.g., anxious, joyful, curious) Feel free to use your own words.',
-                requestedSchema: {
-                  type: 'string',
-                  description: 'Mood or feeling in the moment (optional)'
-                }
-              }
-            }, z.object({ action: z.string(), content: z.unknown().optional() }), undefined);
-            elicitations.push({ field: 'mood', action: response.action, timestamp: new Date().toISOString(), value: response.content });
-            // Do not assign to updatedSource.mood (not in SourceRecord), just log
-            extraElicitCount++;
-          }
-          // 6. Where/Location
-          if (!('where' in input) && extraElicitCount < 2) {
-            const response = await server.request({
-              method: 'elicitation/create',
-              params: {
-                message: 'Where did this experience happen? (e.g., at home, in the park, in a meeting)',
-                requestedSchema: {
-                  type: 'string',
-                  description: 'Location of the experience (optional)'
-                }
-              }
-            }, z.object({ action: z.string(), content: z.unknown().optional() }), undefined);
-            elicitations.push({ field: 'where', action: response.action, timestamp: new Date().toISOString(), value: response.content });
-            // Do not assign to updatedSource.where (not in SourceRecord), just log
-            extraElicitCount++;
-          }
-          // 7. Attention/Focus
-          if (!('attention' in input) && extraElicitCount < 2) {
-            const response = await server.request({
-              method: 'elicitation/create',
-              params: {
-                message: 'What was most present or alive in your attention during this moment? (e.g., a sound, a thought, a sensation)',
-                requestedSchema: {
-                  type: 'string',
-                  description: 'What was most present in your attention (optional)'
-                }
-              }
-            }, z.object({ action: z.string(), content: z.unknown().optional() }), undefined);
-            elicitations.push({ field: 'attention', action: response.action, timestamp: new Date().toISOString(), value: response.content });
-            // Do not assign to updatedSource.attention (not in SourceRecord), just log
-            extraElicitCount++;
-          }
-          // 8. Body Sensation
-          if (!('body' in input) && extraElicitCount < 2) {
-            const response = await server.request({
-              method: 'elicitation/create',
-              params: {
-                message: 'Was there anything notable happening in your body at this time? (e.g., tension, relaxation, movement)',
-                requestedSchema: {
-                  type: 'string',
-                  description: 'Body sensation or state (optional)'
-                }
-              }
-            }, z.object({ action: z.string(), content: z.unknown().optional() }), undefined);
-            elicitations.push({ field: 'body', action: response.action, timestamp: new Date().toISOString(), value: response.content });
-            // Do not assign to updatedSource.body (not in SourceRecord), just log
-            extraElicitCount++;
-          }
-          // 9. Purpose/Intention
-          if (!('purpose' in input) && extraElicitCount < 2) {
-            const response = await server.request({
-              method: 'elicitation/create',
-              params: {
-                message: 'Was there a purpose or intention guiding you in this moment? (e.g., seeking, waiting, deciding)',
-                requestedSchema: {
-                  type: 'string',
-                  description: 'Purpose or intention (optional)'
-                }
-              }
-            }, z.object({ action: z.string(), content: z.unknown().optional() }), undefined);
-            elicitations.push({ field: 'purpose', action: response.action, timestamp: new Date().toISOString(), value: response.content });
-            // Do not assign to updatedSource.purpose (not in SourceRecord), just log
-            extraElicitCount++;
-          }
-          // 10. Related People
-          if (!input.related && extraElicitCount < 2) {
-            const response = await server.request({
-              method: 'elicitation/create',
-              params: {
-                message: 'Who else was involved or present in this experience? (names, roles, or descriptions)',
-                requestedSchema: {
-                  type: 'string',
-                  description: 'Other people involved (optional)'
-                }
-              }
-            }, z.object({ action: z.string(), content: z.unknown().optional() }), undefined);
-            elicitations.push({ field: 'related', action: response.action, timestamp: new Date().toISOString(), value: response.content });
-            // Only update if related is a string or array of strings and updateSource returns non-null
-            if (response.action === 'accept') {
-              let relUpdate: string[] | undefined = undefined;
-              if (typeof response.content === 'string') {
-                relUpdate = [response.content];
-              } else if (Array.isArray(response.content) && response.content.every((v) => typeof v === 'string')) {
-                relUpdate = response.content;
-              }
-              if (relUpdate) {
-                const relResult = await updateSource(updatedSource.id, { related: relUpdate });
-                if (relResult) updatedSource = relResult;
-              }
-            }
-            extraElicitCount++;
-          }
-          // 11. Pattern/Type
-          if (!('pattern' in input) && extraElicitCount < 2) {
-            const response = await server.request({
-              method: 'elicitation/create',
-              params: {
-                message: 'Does this moment fit any of these patterns? (recognition, threshold, sustained attention, etc.)',
-                requestedSchema: {
-                  type: 'string',
-                  description: 'Pattern or experiential type (optional)'
-                }
-              }
-            }, z.object({ action: z.string(), content: z.unknown().optional() }), undefined);
-            elicitations.push({ field: 'pattern', action: response.action, timestamp: new Date().toISOString(), value: response.content });
-            // Do not assign to updatedSource.pattern (not in SourceRecord), just log
-            extraElicitCount++;
-          }
-          // Store what was elicited for future reference (append-only)
-          // If you want to persist elicitations, you could log them or store in a separate log file, since SourceRecord does not support an 'elicitations' field.
-          // For now, just keep in memory for this session or for debugging.
-        })();
-        // --- End elicitation ---
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `✓ Captured: "${input.content.substring(0, 50)}${input.content.length > 50 ? '...' : ''}" (ID: ${source.id})\nType: ${input.contentType} | Perspective: ${input.perspective} | Processing: ${input.processing}`,
-            },
-          ],
-        };
+        ];
+        if (defaultsUsed.length > 0) {
+          content.push({
+            type: 'text',
+            text: `Defaults applied: ${defaultsUsed.join(', ')}`
+          });
+        }
+        content.push({
+          type: 'text',
+          text: getContextualPrompts('capture')
+        });
+        // Only show framingGuide if content is long or this is the first source
+        if (source.content.length > 1024 || isFirstSource) {
+          content.push({
+            type: 'text',
+            text: framingGuide
+          });
+        }
+        return { content };
       }
 
       case 'frame': {
         const input = frameSchema.parse(args);
-        // Verify all sources exist
+        // Validate all sources exist
         const validSources: SourceRecord[] = [];
-        for (let i = 0; i < input.sourceIds.length; i++) {
-          const sourceId = input.sourceIds[i];
+        for (const sourceId of input.sourceIds) {
           const source = await getSource(sourceId);
           if (!source) {
             throw new McpError(
               ErrorCode.InvalidParams,
-              `Source not found: ${sourceId}`
+              `Source with ID '${sourceId}' not found. Capture an experience first, then frame it into a moment.`
             );
           }
           validSources.push(source);
         }
         // Create moment record
-        const momentId = generateId('mom');
-        const momentData = {
-          id: momentId,
-          emoji: input.emoji,
-          summary: input.summary,
-          narrative: input.narrative,
-          pattern: input.pattern,
-          sources: input.sourceIds.map(sourceId => ({ sourceId })),
-          created: new Date().toISOString(),
-          when: validSources.find(s => s.when)?.when,
-        };
-        const moment = await saveMoment(momentData);
-        trackMoment(moment.id);
-        // AI integration for framing
-        if (input.withAI) {
-          const progressToken = generateId('progress');
-          try {
-            await sendProgress(progressToken, { kind: 'begin', title: 'Analyzing experience...' });
-            await sendProgress(progressToken, { kind: 'report', percentage: 33, message: 'Finding moment boundaries' });
-            const aiResult = await server.request(
-              {
-                method: 'sampling/createMessage',
-                params: {
-                  messages: [
-                    {
-                      role: 'user',
-                      content: {
-                        type: 'text',
-                        text: `Given this moment:\nSummary: ${moment.summary}\n${moment.narrative ? `Narrative: ${moment.narrative}\n` : ''}Suggest the most prominent experiential qualities and a richer narrative, preserving the authentic voice.`
-                      }
-                    }
-                  ],
-                  systemPrompt: PHENOMENOLOGICAL_SYSTEM_PROMPT,
-                  includeContext: 'thisServer',
-                  temperature: 0.7,
-                  maxTokens: 2000,
-                  progressToken,
-                }
-              },
-              SamplingResponseSchema,
-              undefined
-            );
-            await sendProgress(progressToken, { kind: 'report', percentage: 66, message: 'Identifying qualities' });
-            if (aiResult.content && aiResult.content.text) {
-              // Store suggestion in latest version
-              const latest = await getLatestRecord(moment.id);
-              if (latest && latest.type === 'moment') {
-                await updateMoment(latest.id, { ai: { suggestion: aiResult.content.text } });
-              }
-            }
-            await sendProgress(progressToken, { kind: 'end' });
-          } catch (aiError) {
-            await sendProgress(progressToken, { kind: 'end' });
-            return {
-              content: [{
-                type: 'text',
-                text: `Created moment "${moment.summary}" (AI analysis unavailable)`
-              }],
-              isError: false,
-              meta: { partialSuccess: true }
-            };
-          }
-        }
+        const experiencer = validSources[0]?.experiencer || '';
+        const moment = await saveMoment({
+          id: generateId('mom'),
+          ...( {
+            emoji: input.emoji,
+            summary: input.summary,
+            qualities: input.qualities,
+            narrative: input.narrative,
+            shot: input.shot,
+            sources: input.sourceIds.map(sourceId => ({ sourceId })),
+            created: new Date().toISOString(),
+            when: validSources.find(s => s.when)?.when,
+            experiencer,
+          } as any ),
+        });
         return {
           content: [
             {
               type: 'text',
-              text: `Framed moment: ${moment.emoji} ${moment.summary} (ID: ${moment.id})`,
+              text: `✓ Framed moment: ${moment.emoji} ${moment.summary} (ID: ${moment.id})`
             },
-          ],
+            {
+              type: 'text',
+              text: `Qualities noticed: ${input.qualities.map(q => q.type).join(', ')}`
+            },
+            {
+              type: 'text',
+              text: `Full record:\n${JSON.stringify(moment, null, 2)}`
+            },
+            {
+              type: 'text',
+              text: getContextualPrompts('frame')
+            },
+            {
+              type: 'text',
+              text: critiqueChecklist
+            }
+          ]
         };
       }
 
-      case 'enhance': {
-        const input = enhanceSchema.parse(args);
-        // Always enhance the latest version
-        const latestSource = await getLatestRecord(input.id);
-        const latestMoment = await getLatestRecord(input.id);
-        // Try to enhance a source first
-        const enhancedSource = latestSource && latestSource.type === 'source'
-          ? await updateSource(latestSource.id, input.updates)
-          : null;
-        if (enhancedSource) {
-          if (input.withAI) {
-            const progressToken = generateId('progress');
-            try {
-              await sendProgress(progressToken, { kind: 'begin', title: 'Enhancing source...' });
-              await sendProgress(progressToken, { kind: 'report', percentage: 50, message: 'Generating suggestions' });
-              const aiResult = await server.request(
-                {
-                  method: 'sampling/createMessage',
-                  params: {
-                    messages: [
-                      {
-                        role: 'user',
-                        content: {
-                          type: 'text',
-                          text: `Given this source:\n${JSON.stringify(enhancedSource, null, 2)}\nSuggest improvements for: ${Object.keys(input.updates).join(', ')}.`
-                        }
-                      }
-                    ],
-                    systemPrompt: PHENOMENOLOGICAL_SYSTEM_PROMPT,
-                    includeContext: 'thisServer',
-                    temperature: 0.7,
-                    maxTokens: 2000,
-                    progressToken,
-                  }
-                },
-                SamplingResponseSchema,
-                undefined
-              );
-              if (aiResult.content && aiResult.content.text) {
-                const latest = await getLatestRecord(enhancedSource.id);
-                if (latest && latest.type === 'source') {
-                  await updateSource(latest.id, { ai: { suggestion: aiResult.content.text } });
-                }
-              }
-              await sendProgress(progressToken, { kind: 'end' });
-            } catch (aiError) {
-              await sendProgress(progressToken, { kind: 'end' });
-              return {
-                content: [{
-                  type: 'text',
-                  text: `Enhanced source ${enhancedSource.id} (AI suggestion unavailable)`
-                }],
-                isError: false,
-                meta: { partialSuccess: true }
-              };
-            }
-          }
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `Enhanced source (new ID: ${enhancedSource.id}, version: ${enhancedSource.version}) with updates: ${Object.keys(input.updates).join(', ')}`,
-              },
-            ],
-            record: enhancedSource
-          };
-        }
-        // If not a source, try moment
-        const enhancedMoment = latestMoment && latestMoment.type === 'moment'
-          ? await updateMoment(latestMoment.id, input.updates)
-          : null;
-        if (enhancedMoment) {
-          if (input.withAI) {
-            const progressToken = generateId('progress');
-            try {
-              await sendProgress(progressToken, { kind: 'begin', title: 'Enhancing moment...' });
-              await sendProgress(progressToken, { kind: 'report', percentage: 50, message: 'Generating suggestions' });
-              const aiResult = await server.request(
-                {
-                  method: 'sampling/createMessage',
-                  params: {
-                    messages: [
-                      {
-                        role: 'user',
-                        content: {
-                          type: 'text',
-                          text: `Given this moment:\n${JSON.stringify(enhancedMoment, null, 2)}\nSuggest improvements for: ${Object.keys(input.updates).join(', ')}.`
-                        }
-                      }
-                    ],
-                    systemPrompt: PHENOMENOLOGICAL_SYSTEM_PROMPT,
-                    includeContext: 'thisServer',
-                    temperature: 0.7,
-                    maxTokens: 2000,
-                    progressToken,
-                  }
-                },
-                SamplingResponseSchema,
-                undefined
-              );
-              if (aiResult.content && aiResult.content.text) {
-                const latest = await getLatestRecord(enhancedMoment.id);
-                if (latest && latest.type === 'moment') {
-                  await updateMoment(latest.id, { ai: { suggestion: aiResult.content.text } });
-                }
-              }
-              await sendProgress(progressToken, { kind: 'end' });
-            } catch (aiError) {
-              await sendProgress(progressToken, { kind: 'end' });
-              return {
-                content: [{
-                  type: 'text',
-                  text: `Enhanced moment ${enhancedMoment.id} (AI suggestion unavailable)`
-                }],
-                isError: false,
-                meta: { partialSuccess: true }
-              };
-            }
-          }
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `Enhanced moment (new ID: ${enhancedMoment.id}, version: ${enhancedMoment.version}) with updates: ${Object.keys(input.updates).join(', ')}`,
-              },
-            ],
-            record: enhancedMoment
-          };
-        }
-        throw new McpError(
-          ErrorCode.InvalidParams,
-          `No source or moment found with ID: ${input.id}`
-        );
-      }
-
-      case 'synthesize': {
-        const input = synthesizeSchema.parse(args);
-        
-        // Verify all moments exist
+      case 'weave': {
+        const input = weaveSchema.parse(args);
+        // Validate all moments exist
         for (const momentId of input.momentIds) {
           const moment = await getMoment(momentId);
           if (!moment) {
             throw new McpError(
               ErrorCode.InvalidParams,
-              `Moment not found: ${momentId}`
+              `Moment not found: ${momentId}. Frame your sources into moments first, then weave moments together.`
             );
           }
         }
-        
-        // Create synthesis record
-        const synthesis = await saveSynthesis({
-          id: generateId('syn'),
+        // Create scene record
+        const validMoments = await Promise.all(input.momentIds.map(getMoment));
+        const sceneExperiencer = validMoments[0]?.experiencer || '';
+        const scene = await saveScene({
+          id: generateId('sce'),
           emoji: input.emoji,
           summary: input.summary,
-          narrative: input.narrative,
-          synthesizedMomentIds: input.momentIds,
-          pattern: input.pattern,
-          created: new Date().toISOString(),
+          ...( {
+            narrative: input.narrative,
+            momentIds: input.momentIds,
+            shot: input.shot,
+            created: new Date().toISOString(),
+            experiencer: sceneExperiencer,
+          } as any ),
         });
-        
         return {
           content: [
             {
               type: 'text',
-              text: `Created synthesis: ${synthesis.emoji} ${synthesis.summary} (ID: ${synthesis.id})`,
+              text: `✓ Wove moments into: ${scene.emoji || '❓'} ${scene.summary || '[no summary]'} (ID: ${scene.id})`
             },
-          ],
+            {
+              type: 'text',
+              text: `Full record:\n${JSON.stringify(scene, null, 2)}`
+            },
+            {
+              type: 'text',
+              text: getContextualPrompts('weave')
+            }
+          ]
         };
+      }
+
+      case 'enrich': {
+        const input = enrichSchema.parse(args);
+        // Try to enhance a moment first
+        const moment = await getMoment(input.id);
+        if (moment) {
+          // Support adding qualities
+          if (input.updates.qualities) {
+            // Validate qualities structure
+            const qualitiesSchema = z.array(z.object({
+              type: z.enum([
+                'embodied',
+                'attentional',
+                'emotional',
+                'purposive',
+                'spatial',
+                'temporal',
+                'relational',
+              ]),
+              manifestation: z.string()
+            }));
+            try {
+              input.updates.qualities = qualitiesSchema.parse(input.updates.qualities);
+            } catch (e) {
+              throw new McpError(ErrorCode.InvalidParams, 'Invalid qualities structure');
+            }
+          }
+          const updated = await updateMoment(input.id, input.updates);
+          if (!updated) {
+            throw new McpError(ErrorCode.InternalError, 'Failed to update moment');
+          }
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Enriched moment (ID: ${updated.id}) with updates: ${Object.keys(input.updates).join(', ')}`,
+              },
+              {
+                type: 'text',
+                text: `\nFull record:\n${JSON.stringify(updated, null, 2)}`
+              }
+            ],
+            record: updated
+          };
+        }
+        // If not a moment, try source
+        const source = await getSource(input.id);
+        if (source) {
+          // Check if this source is referenced by any moments
+          const moments = await getMoments();
+          const referencingMoments = moments.filter(m => m.sources.some(s => s.sourceId === source.id));
+          // Update the source in place
+          const updatedSource = await updateSource(input.id, input.updates);
+          if (!updatedSource) {
+            throw new McpError(ErrorCode.InternalError, 'Failed to update source');
+          }
+          const content = [
+            {
+              type: 'text',
+              text: `Enriched source (ID: ${updatedSource.id}) with updates: ${Object.keys(input.updates).join(', ')}`,
+            },
+            {
+              type: 'text',
+              text: `\nFull record:\n${JSON.stringify(updatedSource, null, 2)}`
+            }
+          ];
+          if (referencingMoments.length > 0) {
+            content.push({
+              type: 'text',
+              text: `Warning: This change will update all moments that include this source (${referencingMoments.length} moment(s)).`
+            });
+          }
+          return {
+            content,
+            record: updatedSource
+          };
+        }
+        // If not a moment or source, try scene
+        const scene = await getScene(input.id);
+        if (scene) {
+          const updatedScene = await updateScene(input.id, input.updates);
+          if (!updatedScene) {
+            throw new McpError(ErrorCode.InternalError, 'Failed to update scene');
+          }
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Enriched scene (ID: ${updatedScene.id}) with updates: ${Object.keys(input.updates).join(', ')}`,
+              },
+              {
+                type: 'text',
+                text: `\nFull record:\n${JSON.stringify(updatedScene, null, 2)}`
+              }
+            ],
+            record: updatedScene
+          };
+        }
+        throw new McpError(
+          ErrorCode.InvalidParams,
+          `No source, moment, or scene found with ID: ${input.id}`
+        );
+      }
+
+      case 'release': {
+        const input = releaseSchema.parse(args);
+        // Check if it's a source
+        const source = await getSource(input.id);
+        if (source) {
+          // Delete the source
+          await deleteSource(input.id);
+          // Clean up any orphaned moments
+          const moments = await getMoments();
+          const affectedMoments = moments.filter(m => 
+            m.sources.some(s => s.sourceId === input.id)
+          );
+          let cleanupMessage = '';
+          for (const moment of affectedMoments) {
+            // Remove the released source from the moment
+            const remainingSources = moment.sources.filter(s => s.sourceId !== input.id);
+            if (remainingSources.length === 0) {
+              // No sources left, release the moment
+              await deleteMoment(moment.id);
+              cleanupMessage += `\n  • Released orphaned moment: ${moment.emoji} "${moment.summary}"`;
+              // Also check if this moment was in any scenes
+              const scenes = await getScenes();
+              for (const scene of scenes) {
+                if (scene.momentIds.includes(moment.id)) {
+                  const remainingMoments = scene.momentIds.filter(id => id !== moment.id);
+                  if (remainingMoments.length === 0) {
+                    await deleteScene(scene.id);
+                    cleanupMessage += `\n  • Released orphaned scene: ${scene.emoji} "${scene.summary}"`;
+                  } else {
+                    // Update scene to remove the deleted moment
+                    await updateScene(scene.id, {
+                      momentIds: remainingMoments
+                    });
+                    cleanupMessage += `\n  • Updated scene: ${scene.emoji} "${scene.summary}"`;
+                  }
+                }
+              }
+            } else {
+              // Update moment to remove the released source
+              await updateMoment(moment.id, {
+                sources: remainingSources
+              });
+              cleanupMessage += `\n  • Updated moment: ${moment.emoji} "${moment.summary}" (${remainingSources.length} source(s) remain)`;
+            }
+          }
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `✓ Released source: "${source.content.substring(0, 50)}..." (ID: ${input.id})`
+              },
+              {
+                type: 'text',
+                text: cleanupMessage || '\n🌊 The experience has been released'
+              }
+            ]
+          };
+        }
+        // Check if it's a moment
+        const moment = await getMoment(input.id);
+        if (moment) {
+          await deleteMoment(input.id);
+          // Clean up any orphaned scenes
+          const scenes = await getScenes();
+          const affectedScenes = scenes.filter(s => 
+            s.momentIds.includes(input.id)
+          );
+          let cleanupMessage = '';
+          for (const scene of affectedScenes) {
+            const remainingMoments = scene.momentIds.filter(id => id !== input.id);
+            if (remainingMoments.length === 0) {
+              // No moments left, release the scene
+              await deleteScene(scene.id);
+              cleanupMessage += `\n  • Released orphaned scene: ${scene.emoji} "${scene.summary}"`;
+            } else {
+              // Update scene to remove the released moment
+              await updateScene(scene.id, {
+                momentIds: remainingMoments
+              });
+              cleanupMessage += `\n  • Updated scene: ${scene.emoji} "${scene.summary}" (${remainingMoments.length} moment(s) remain)`;
+            }
+          }
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `✓ Released moment: ${moment.emoji} "${moment.summary}" (ID: ${input.id})`
+              },
+              {
+                type: 'text',
+                text: cleanupMessage || '\n🌊 The moment has been released'
+              }
+            ]
+          };
+        }
+        // Check if it's a scene
+        const scene = await getScene(input.id);
+        if (scene) {
+          await deleteScene(input.id);
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `✓ Released scene: ${scene.emoji} "${scene.summary}" (ID: ${input.id})`
+              },
+              {
+                type: 'text',
+                text: '\n🌊 The woven experience has been released'
+              }
+            ]
+          };
+        }
+        throw new McpError(
+          ErrorCode.InvalidParams,
+          `No source, moment, or scene found with ID: ${input.id}`
+        );
+      }
+
+      case 'search': {
+        // Parse input
+        const input = args as SearchToolInput;
+        // Build filters for created and when (explicit, no fallback)
+        const filters: Record<string, unknown> = {};
+        if (Array.isArray(input.type) && input.type.length > 0) filters.type = input.type;
+        if (typeof input.experiencer === 'string' && input.experiencer.length > 0) filters.experiencer = input.experiencer;
+        if (input.qualities) filters.qualities = input.qualities;
+        if (typeof input.perspective === 'string' && input.perspective.length > 0) filters.perspectives = [input.perspective];
+        if (typeof input.processing === 'string' && input.processing.length > 0) filters.processing = [input.processing];
+        if (typeof input.shot === 'string' && input.shot.length > 0) filters.shotTypes = [input.shot];
+        if (typeof input.framed === 'boolean') filters.framed = input.framed;
+        if (typeof input.reviewed === 'boolean') filters.reviewed = input.reviewed;
+
+        // Explicitly filter by 'created' (system timestamp, UTC)
+        if (input.created) {
+          if (typeof input.created === 'string') {
+            filters.createdRange = { start: input.created, end: input.created };
+          } else if (typeof input.created === 'object' && input.created.start && input.created.end) {
+            filters.createdRange = { start: input.created.start, end: input.created.end };
+          }
+        }
+        // Explicitly filter by 'when' (user-supplied, UTC)
+        if (input.when) {
+          if (typeof input.when === 'string') {
+            filters.whenRange = { start: input.when, end: input.when };
+          } else if (typeof input.when === 'object' && input.when.start && input.when.end) {
+            filters.whenRange = { start: input.when.start, end: input.when.end };
+          }
+        }
+        // Relationship search (optional pre-filter)
+        let preFilteredRecords: StorageRecord[] | undefined = undefined;
+        if (input.reflectedOn) {
+          const allRecords = await import('./storage.js').then(m => m.getAllRecords());
+          const searchModule = await import('./search.js');
+          const forward = searchModule.findReflectsOnRecords(input.reflectedOn, await allRecords);
+          const backward = searchModule.findReflectionsAbout(input.reflectedOn, await allRecords);
+          // Union, deduplicated by ID
+          const all = [...forward, ...backward];
+          const seen = new Set();
+          preFilteredRecords = all.filter(r => {
+            if (seen.has(r.id)) return false;
+            seen.add(r.id);
+            return true;
+          });
+          if (preFilteredRecords.length === 0) {
+            return { content: [{ type: 'text', text: `No record found with ID: ${input.reflectedOn}` }] };
+          }
+        }
+        // When calling semanticSearch, construct a SearchOptions object with all required properties and use object spread for optional fields
+        const searchOptions: import('./search.js').SearchOptions = {
+          query: input.query ?? '',
+          filters,
+          limit: input.limit,
+          includeContext: input.includeContext,
+        };
+        if (typeof input.sort === 'string') searchOptions.sort = input.sort;
+        if (typeof input.groupBy === 'string') searchOptions.groupBy = input.groupBy;
+        const results = await semanticSearch(searchOptions);
+        // If preFilteredRecords is set, filter results to only those in preFilteredRecords
+        let finalResults = results;
+        if (preFilteredRecords) {
+          const allowedIds = new Set(preFilteredRecords.map((r) => r.id));
+          finalResults = (Array.isArray(results) ? results : results.groups.flatMap((g) => g.items)).filter((r) => allowedIds.has(r.id));
+        }
+        if (Array.isArray(finalResults)) {
+          if (finalResults.length === 0) {
+            return { content: [{ type: 'text', text: 'No relevant memories found.' }] };
+          }
+          if (input.includeContext) {
+            return {
+              content: finalResults.map((result: SearchResult) => ({
+                type: 'text',
+                text: JSON.stringify(result, null, 2)
+              }))
+            };
+          } else {
+            // Always return an array, even for a single result
+            return {
+              content: finalResults
+                .filter((result: any) => typeof result === 'object' && result !== null && typeof result.type === 'string')
+                .map((result: SearchResult, index: number) => ({
+                  type: 'text',
+                  text: formatSearchResult(result, index)
+                }))
+            };
+          }
+        } else if (finalResults && typeof finalResults === 'object' && 'groups' in finalResults) {
+          // Pretty-print grouped results
+          const groupBlocks = (finalResults as import('./search.js').GroupedResults).groups.map((group: { label: string; count: number; items: SearchResult[] }) => {
+            const header = `${group.label} (${group.count})`;
+            const items = group.items.map((item: SearchResult, idx: number) => formatSearchResult(item, idx)).join('\n');
+            return `${header}\n${items}`;
+          });
+          return {
+            content: groupBlocks.map(text => ({ type: 'text', text: String(text) }))
+          };
+        } else {
+          return { content: [{ type: 'text', text: 'Grouped results are not yet supported in this view.' }] };
+        }
+      }
+
+      case 'autoframe': {
+        const autoProcessor = new (await import('./auto-processing.js')).AutoProcessor();
+        const safeArgs = args || {};
+        const sourceId = safeArgs.sourceId;
+        const preview = !!safeArgs.preview;
+        if (typeof sourceId !== 'string' || !sourceId) {
+          return { content: [{ type: 'text', text: 'Missing or invalid sourceId for auto-frame.' }] };
+        }
+        if (preview) {
+          // Build prompt for this source
+          const { getSources } = await import('./storage.js');
+          const allSources = await getSources();
+          const batch = allSources.filter(s => s.id === sourceId);
+          if (batch.length === 0) {
+            return { content: [{ type: 'text', text: '[PREVIEW] No valid source found for autoframe.' }] };
+          }
+          const { createBatchFramePrompt } = await import('./prompts.js');
+          const prompt = await createBatchFramePrompt(batch);
+          const llmResponse = await autoProcessor.complete(prompt, { maxTokens: 2000 });
+          // Try to parse the first moment from the LLM response
+          let moment;
+          try {
+            const jsonMatch = llmResponse.match(/\{.*\}/s);
+            if (!jsonMatch) throw new Error('No JSON object found');
+            moment = JSON.parse(jsonMatch[0]);
+          } catch (e) {
+            return { content: [{ type: 'text', text: '[PREVIEW] Failed to parse LLM moment output: ' + (e instanceof Error ? e.message : String(e)) }] };
+          }
+          return { content: [{ type: 'text', text: `[PREVIEW] Would create moment: ${JSON.stringify(moment, null, 2)}` }] };
+        }
+        // Normal (not preview) mode
+        const result = await autoProcessor.autoFrameSources({ sourceIds: [sourceId] });
+        const successes = result.filter(r => r.success && r.created);
+        if (successes.length > 0) {
+          // Return all created moments, not just the first
+          let summary = `✓ Auto-framed source ${sourceId} into ${successes.length} moment(s):\n`;
+          successes.forEach((r, idx) => {
+            if (r.created) {
+              summary += `  - Moment ${idx + 1}: ${r.created.emoji} "${r.created.summary}" (ID: ${r.created.id})\n`;
+            } else {
+              summary += `  - Moment ${idx + 1}: [no data]\n`;
+            }
+          });
+          return {
+            content: [
+              { type: 'text', text: summary },
+              { type: 'text', text: `⚠️ These moments are marked as unreviewed. Use the enrich tool to review and approve them.` },
+              { type: 'text', text: `\nFull records:\n${JSON.stringify(successes.map(r => r.created), null, 2)}` }
+            ]
+          };
+        } else {
+          const firstError = result.find(r => r.error) || { error: 'Unknown error' };
+          return { content: [{ type: 'text', text: `Auto-framing failed: ${String(firstError.error)}` }] };
+        }
+      }
+
+      case 'autoweave': {
+        const autoProcessor = new (await import('./auto-processing.js')).AutoProcessor();
+        const safeArgs = args || {};
+        const momentIds: string[] = Array.isArray(safeArgs.momentIds) ? safeArgs.momentIds : [];
+        const preview = !!safeArgs.preview;
+        // Optionally, could support sceneIds in the future
+        if (!momentIds.length) {
+          return { content: [{ type: 'text', text: 'No momentIds provided for autoweave.' }] };
+        }
+        // If preview, run the LLM/grouping logic but do not save scenes
+        if (preview) {
+          const { getMoments } = await import('./storage.js');
+          const allMoments = await getMoments();
+          const batch = allMoments.filter(m => momentIds.includes(m.id));
+          if (batch.length === 0) {
+            return { content: [{ type: 'text', text: '[PREVIEW] No valid moments found for autoweave preview.' }] };
+          }
+          const { createBatchWeavePrompt } = await import('./prompts.js');
+          const prompt = createBatchWeavePrompt(batch);
+          const llmResponse = await autoProcessor.complete(prompt, { maxTokens: 2000 });
+          let scenes: any[] = [];
+          try {
+            const jsonMatch = llmResponse.match(/\[.*\]/s);
+            if (!jsonMatch) throw new Error('No JSON array found');
+            scenes = JSON.parse(jsonMatch[0]);
+          } catch (e) {
+            return { content: [{ type: 'text', text: '[PREVIEW] Failed to parse LLM scene output: ' + (e instanceof Error ? e.message : String(e)) }] };
+          }
+          // Format preview output
+          let summary = `[PREVIEW] Autoweave would create ${scenes.length} scene(s):\n`;
+          scenes.forEach((scene, idx) => {
+            summary += `  - Scene ${idx + 1}: ${scene.emoji || '❓'} "${scene.summary || '[no summary]'}" (moments: ${(scene.momentIds || []).join(', ')})\n`;
+          });
+          summary += `No changes have been made.`;
+          return { content: [{ type: 'text', text: summary }] };
+        }
+        // Normal (not preview) mode
+        const result = await autoProcessor.autoWeaveMoments(momentIds);
+        // Always return all created scenes, even if only one
+        const scenesArr = Array.isArray(result.created) ? result.created : (result.created ? [result.created] : []);
+        if (scenesArr.length > 0) {
+          let summary = `✓ Autoweave analyzed ${momentIds.length} moment(s) and created ${scenesArr.length} scene(s):\n`;
+          scenesArr.forEach((scene, idx) => {
+            summary += `  - Scene ${idx + 1}: ${scene.emoji || '❓'} "${scene.summary || '[no summary]'}" (moments: ${(scene.momentIds || []).join(', ')})\n`;
+          });
+          if (result.error) {
+            summary += `Error: ${result.error}\n`;
+          }
+          return {
+            content: [
+              { type: 'text', text: summary },
+              { type: 'text', text: `\nFull records:\n${JSON.stringify(scenesArr, null, 2)}` }
+            ]
+          };
+        } else {
+          return { content: [{ type: 'text', text: `Auto-weaving failed: ${String(result.error)}` }] };
+        }
       }
 
       case 'status': {
-        const input = statusSchema.parse(args);
-        const integrity = await validateDataIntegrity();
-        
-        let message = `System Health Report:\n`;
-        message += `✅ Data integrity: ${integrity.valid ? 'GOOD' : 'ISSUES FOUND'}\n`;
-        message += `📊 Stats: ${integrity.stats.sources} sources, ${integrity.stats.moments} moments, ${integrity.stats.syntheses} syntheses\n`;
-        
-        if (!integrity.valid) {
-          message += `🚨 Issues found:\n${integrity.errors.map(e => `  - ${e}`).join('\n')}\n`;
+        const report = await statusMonitor.generateStatusReport();
+        // Add recent scenes section
+        const { getScenes } = await import('./storage.js');
+        const scenes = await getScenes();
+        const now = Date.now();
+        const recentScenes = scenes.filter(s => {
+          const created = new Date(s.created).getTime();
+          return now - created < 10 * 60 * 1000; // last 10 minutes
+        });
+        let recentSection = '';
+        if (recentScenes.length > 0) {
+          recentSection += '\nRecently created scenes (last 10 minutes):\n';
+          for (const scene of recentScenes) {
+            recentSection += `- ${scene.emoji || '❓'} "${scene.summary || '[no summary]'}" (ID: ${scene.id}, created by: ${scene.autoGenerated ? 'autoweave' : 'manual'}, moments: ${(scene.momentIds || []).join(', ')}, created: ${scene.created})\n`;
+          }
         }
-        
-        if (input.verbose) {
-          const unframed = await getUnframedSources();
-          message += `📝 Unframed sources: ${unframed.length}\n`;
-          message += `📅 Server uptime: ${process.uptime().toFixed(0)}s\n`;
-        }
-        
         return {
           content: [
             {
               type: 'text',
-              text: message,
-            },
-          ],
-        };
-      }
+              text: `📊 System Status Report
 
-      case 'guided_enhance': {
-        // Multi-step, stateful guided enhance prompt
-        if (!guidedEnhanceState) {
-          guidedEnhanceState = { step: 0, updates: {} };
-        }
-        // Step 0: Ask for moment/source ID
-        const idVal = args && typeof args.id === 'string' ? args.id.trim() : (args && typeof args.answer === 'string' ? args.answer.trim() : undefined);
-        if (idVal) {
-          guidedEnhanceState.momentId = idVal;
-          guidedEnhanceState.step++;
-        } else {
-          return {
-            description: 'Guided enhancement: select moment/source',
-            messages: [
-              {
-                role: 'assistant',
-                content: { type: 'text', text: 'Enter the ID of the moment or source you want to enhance.' },
-              },
-            ],
-          };
-        }
-        // Step 1: Ask which fields to enhance
-        if (guidedEnhanceState.step === 1) {
-          const fieldsVal = args && typeof args.fields === 'string' ? args.fields : (args && typeof args.answer === 'string' ? args.answer : undefined);
-          if (fieldsVal && typeof fieldsVal === 'string' && fieldsVal.trim()) {
-            guidedEnhanceState.fields = fieldsVal.split(',').map((f: string) => f.trim()).filter(Boolean);
-            guidedEnhanceState.currentFieldIndex = 0;
-            guidedEnhanceState.step++;
-          } else {
-            return {
-              description: 'Guided enhancement: choose fields',
-              messages: [
-                {
-                  role: 'assistant',
-                  content: { type: 'text', text: 'Which fields would you like to enhance? (e.g., narrative, summary, pattern, qualities) List as comma-separated values.' },
-                },
-              ],
-            };
-          }
-        }
-        // Step 2: For each field, ask for new value
-        if (guidedEnhanceState.step === 2 && guidedEnhanceState.fields && guidedEnhanceState.currentFieldIndex !== undefined) {
-          const fields = guidedEnhanceState.fields;
-          const idx = guidedEnhanceState.currentFieldIndex;
-          const field = fields[idx];
-          if (args && typeof args.answer === 'string') {
-            if (args.answer.toLowerCase() !== 'skip') {
-              guidedEnhanceState.updates[field] = args.answer;
+📝 Unframed sources: ${report.unframed_sources_count}
+🔍 Unreviewed moments: ${report.unreviewed_moments_count}
+🎭 Unreviewed scenes: ${report.unreviewed_scenes_count}
+🧵 Unweaved moments: ${report.unweaved_moments_count}
+⚙️ Auto-weave threshold: ${report.auto_weave_threshold}
+🤖 Auto-framing: ${report.auto_framing_enabled ? 'enabled' : 'disabled'}
+🤖 Auto-weaving: ${report.auto_weaving_enabled ? 'enabled' : 'disabled'}
+
+${report.processing_errors.length > 0 ? 
+  `❌ Processing Errors:
+${report.processing_errors.map(e => 
+  `  • ${e.type}: ${e.count} error(s), last: ${e.lastError}`
+).join('\n')}` : 
+  '✅ No processing errors'
+}
+` + recentSection
             }
-            guidedEnhanceState.currentFieldIndex!++;
-          }
-          // If more fields, ask next
-          if (guidedEnhanceState.currentFieldIndex! < fields.length) {
-            const nextField = fields[guidedEnhanceState.currentFieldIndex!];
-            return {
-              description: 'Guided enhancement: field update',
-              messages: [
-                {
-                  role: 'assistant',
-                  content: { type: 'text', text: `Enter new value for "${nextField}" (or type 'skip'):` },
-                },
-              ],
-            };
-          } else {
-            guidedEnhanceState.step++;
-          }
-        }
-        // Step 3: Offer AI assistance
-        if (guidedEnhanceState.step === 3) {
-          if (args && typeof args.answer === 'string') {
-            guidedEnhanceState.withAI = /^y(es)?$/i.test(args.answer);
-            guidedEnhanceState.step++;
-          } else {
-            return {
-              description: 'Guided enhancement: AI assistance',
-              messages: [
-                {
-                  role: 'assistant',
-                  content: { type: 'text', text: 'Would you like AI suggestions for enhancement? (yes/no, default: no)' },
-                },
-              ],
-            };
-          }
-        }
-        // Step 4: Confirm and save
-        if (guidedEnhanceState.step === 4) {
-          if (args && typeof args.answer === 'string' && args.answer.toLowerCase().startsWith('y')) {
-            // Call enhance tool
-            const input: z.infer<typeof enhanceSchema> = {
-              id: guidedEnhanceState.momentId!,
-              updates: guidedEnhanceState.updates,
-              withAI: guidedEnhanceState.withAI === true,
-            };
-            // Remove undefined/empty fields
-            Object.keys(input.updates).forEach(k => (input.updates[k] === undefined || input.updates[k] === '') && delete input.updates[k]);
-            // Use the correct method signature for server.request
-            const result = await server.request(
-              { method: 'callTool', params: { name: 'enhance', arguments: input } },
-              z.object({ content: z.array(z.object({ type: z.string(), text: z.string() })), isError: z.boolean().optional(), meta: z.any().optional() }),
-              undefined
-            );
-            guidedEnhanceState = null;
-            return {
-              description: 'Guided enhancement complete',
-              messages: [
-                {
-                  role: 'assistant',
-                  content: { type: 'text', text: result.content[0].text },
-                },
-              ],
-            };
-          } else if (args && typeof args.answer === 'string' && args.answer.toLowerCase().startsWith('n')) {
-            guidedEnhanceState = null;
-            return {
-              description: 'Guided enhancement cancelled',
-              messages: [
-                {
-                  role: 'assistant',
-                  content: { type: 'text', text: 'Enhancement cancelled.' },
-                },
-              ],
-            };
-          } else {
-            // Show summary and ask for confirmation
-            const summary = Object.entries(guidedEnhanceState.updates).map(([k, v]) => `${k}: ${v}`).join('\n');
-            return {
-              description: 'Guided enhancement: confirm',
-              messages: [
-                {
-                  role: 'assistant',
-                  content: { type: 'text', text: `You are about to enhance ${guidedEnhanceState.momentId} with:\n${summary}\nProceed? (yes/no)` },
-                },
-              ],
-            };
-          }
-        }
-        // Should not reach here
-        guidedEnhanceState = null;
-        return {
-          description: 'Guided enhancement error',
-          messages: [
-            {
-              role: 'assistant',
-              content: { type: 'text', text: 'Something went wrong in the guided enhance flow.' },
-            },
-          ],
+          ]
         };
       }
 
-      default:
+      default: {
         throw new McpError(
-          ErrorCode.MethodNotFound,
+          ErrorCode.InvalidParams,
           `Unknown tool: ${name}`
         );
+      }
     }
   } catch (err) {
+    // Improved error reporting for user clarity
+    if (err instanceof McpError) {
+      return { error: err.message };
+    }
     if (err instanceof z.ZodError) {
-      throw new McpError(
-        ErrorCode.InvalidParams,
-        err.errors.map(e => e.message).join('; ')
-      );
+      const details = err.errors.map(e =>
+        e.path.length ? `Missing or invalid field: ${e.path.join('.')}` : e.message
+      ).join('; ');
+      return { error: details };
     }
     if (err instanceof Error) {
-      throw new McpError(ErrorCode.InternalError, err.message);
+      return { error: err.message };
     }
-    throw new McpError(ErrorCode.InternalError, 'Unknown error occurred');
+    return { error: 'Unknown error' };
   }
 });
 
-// Resource handlers - expose captured data
-server.setRequestHandler(ListResourcesRequestSchema, async () => {
-  const sources = await getSources();
-  const moments = await getMoments();
-  const recentMoments = await getRecentMoments();
-  const syntheses = await getSyntheses();
-  const unframed = await getUnframedSources();
-
-  const rootsResource = {
-    uri: 'roots://all',
-    name: 'Available Roots',
-    description: 'Directories accessible for file capture',
-    mimeType: 'application/json',
-    roots: mcpRoots
-  };
-  return {
-    resources: [
-      rootsResource,
-      {
-        uri: 'moments://recent',
-        name: 'Recent Moments',
-        description: `Last ${recentMoments.length} framed moments (most recent first)`,
-        mimeType: 'application/json',
-      },
-      {
-        uri: 'sources://all',
-        name: 'All Sources',
-        description: `All captured sources (${sources.length} total)`,
-        mimeType: 'application/json',
-      },
-      {
-        uri: 'moments://all',
-        name: 'All Moments',
-        description: `All framed moments (${moments.length} total)`,
-        mimeType: 'application/json',
-      },
-      {
-        uri: 'syntheses://all',
-        name: 'All Syntheses',
-        description: `All syntheses (${syntheses.length} total)`,
-        mimeType: 'application/json',
-      },
-      {
-        uri: 'sources://unframed',
-        name: 'Unframed Sources',
-        description: `Sources not yet framed into moments (${unframed.length} total)`,
-        mimeType: 'application/json',
-      },
-    ],
-  };
-});
-
-server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
-  const { uri } = request.params;
-
-  try {
-    switch (uri) {
-      case 'moments://recent':
-        return {
-          contents: [
-            {
-              uri,
-              mimeType: 'application/json',
-              text: JSON.stringify(await getRecentMoments(), null, 2),
-            },
-          ],
-        };
-        
-      case 'sources://all':
-        return {
-          contents: [
-            {
-              uri,
-              mimeType: 'application/json',
-              text: JSON.stringify(await getSources(), null, 2),
-            },
-          ],
-        };
-      
-      case 'moments://all':
-        return {
-          contents: [
-            {
-              uri,
-              mimeType: 'application/json',
-              text: JSON.stringify(await getMoments(), null, 2),
-            },
-          ],
-        };
-      
-      case 'syntheses://all':
-        return {
-          contents: [
-            {
-              uri,
-              mimeType: 'application/json',
-              text: JSON.stringify(await getSyntheses(), null, 2),
-            },
-          ],
-        };
-      
-      case 'sources://unframed':
-        return {
-          contents: [
-            {
-              uri,
-              mimeType: 'application/json',
-              text: JSON.stringify(await getUnframedSources(), null, 2),
-            },
-          ],
-        };
-      
-      // New resource URIs
-      default: {
-        // Pattern matching for parameterized URIs
-        const dateMatch = uri.match(/^moments:\/\/date\/(\d{4}-\d{2}-\d{2}|\d{4}-\d{2})$/);
-        if (dateMatch) {
-          const dateStr = dateMatch[1];
-          let start: Date, end: Date;
-          if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-            // YYYY-MM-DD
-            start = new Date(dateStr);
-            end = new Date(start);
-            end.setDate(end.getDate() + 1);
-          } else {
-            // YYYY-MM
-            start = new Date(dateStr + '-01');
-            end = new Date(start);
-            end.setMonth(end.getMonth() + 1);
-          }
-          const moments = await getMomentsByDateRange(start, end);
-          return { contents: [{ uri, mimeType: 'application/json', text: JSON.stringify(moments, null, 2) }] };
-        }
-        const yearMatch = uri.match(/^moments:\/\/year\/(\d{4})$/);
-        if (yearMatch) {
-          const year = parseInt(yearMatch[1], 10);
-          const start = new Date(`${year}-01-01`);
-          const end = new Date(`${year + 1}-01-01`);
-          const moments = await getMomentsByDateRange(start, end);
-          return { contents: [{ uri, mimeType: 'application/json', text: JSON.stringify(moments, null, 2) }] };
-        }
-        const searchMatch = uri.match(/^moments:\/\/search\/(.+)$/);
-        if (searchMatch) {
-          const query = decodeURIComponent(searchMatch[1]);
-          const moments = await searchMoments(query);
-          return { contents: [{ uri, mimeType: 'application/json', text: JSON.stringify(moments, null, 2) }] };
-        }
-        const patternMatch = uri.match(/^moments:\/\/pattern\/(.+)$/);
-        if (patternMatch) {
-          const pattern = decodeURIComponent(patternMatch[1]);
-          const moments = await getMomentsByPattern(pattern);
-          return { contents: [{ uri, mimeType: 'application/json', text: JSON.stringify(moments, null, 2) }] };
-        }
-        const qualityMatch = uri.match(/^moments:\/\/quality\/(.+)$/);
-        if (qualityMatch) {
-          const quality = decodeURIComponent(qualityMatch[1]);
-          const moments = (await getMoments()).filter(m => m.qualities && m.qualities.some(q => q.type === quality));
-          return { contents: [{ uri, mimeType: 'application/json', text: JSON.stringify(moments, null, 2) }] };
-        }
-        const perspectiveMatch = uri.match(/^moments:\/\/perspective\/(.+)$/);
-        if (perspectiveMatch) {
-          const perspective = decodeURIComponent(perspectiveMatch[1]);
-          const moments = await getMoments();
-          const sources = await getSources();
-          const filtered = moments.filter(m => m.sources.some(s => {
-            const src = sources.find(src => src.id === s.sourceId);
-            return src && src.perspective === perspective;
-          }));
-          return { contents: [{ uri, mimeType: 'application/json', text: JSON.stringify(filtered, null, 2) }] };
-        }
-        const experiencerMatch = uri.match(/^moments:\/\/experiencer\/(.+)$/);
-        if (experiencerMatch) {
-          const experiencer = decodeURIComponent(experiencerMatch[1]);
-          const moments = await getMoments();
-          const sources = await getSources();
-          const filtered = moments.filter(m => m.sources.some(s => {
-            const src = sources.find(src => src.id === s.sourceId);
-            return src && src.experiencer === experiencer;
-          }));
-          return { contents: [{ uri, mimeType: 'application/json', text: JSON.stringify(filtered, null, 2) }] };
-        }
-        const processingMatch = uri.match(/^moments:\/\/processing\/(.+)$/);
-        if (processingMatch) {
-          const processing = decodeURIComponent(processingMatch[1]);
-          const moments = await getMoments();
-          const sources = await getSources();
-          const filtered = moments.filter(m => m.sources.some(s => {
-            const src = sources.find(src => src.id === s.sourceId);
-            return src && src.processing === processing;
-          }));
-          return { contents: [{ uri, mimeType: 'application/json', text: JSON.stringify(filtered, null, 2) }] };
-        }
-        const typeMatch = uri.match(/^moments:\/\/type\/(.+)$/);
-        if (typeMatch) {
-          const contentType = decodeURIComponent(typeMatch[1]);
-          const moments = await getMoments();
-          const sources = await getSources();
-          const filtered = moments.filter(m => m.sources.some(s => {
-            const src = sources.find(src => src.id === s.sourceId);
-            return src && src.contentType === contentType;
-          }));
-          return { contents: [{ uri, mimeType: 'application/json', text: JSON.stringify(filtered, null, 2) }] };
-        }
-        if (uri === 'moments://syntheses') {
-          const syntheses = await getSyntheses();
-          return { contents: [{ uri, mimeType: 'application/json', text: JSON.stringify(syntheses, null, 2) }] };
-        }
-        if (uri === 'moments://timeline') {
-          const syntheses = await getSyntheses();
-          const moments = await getMoments();
-          return { contents: [{ uri, mimeType: 'application/json', text: JSON.stringify({ syntheses, moments }, null, 2) }] };
-        }
-        const idMatch = uri.match(/^moments:\/\/id\/([^/]+)$/);
-        if (idMatch) {
-          const id = decodeURIComponent(idMatch[1]);
-          const moment = await getMoment(id);
-          const synthesis = await getSynthesis(id);
-          return { contents: [{ uri, mimeType: 'application/json', text: JSON.stringify(moment || synthesis || null, null, 2) }] };
-        }
-        const childrenMatch = uri.match(/^moments:\/\/id\/([^/]+)\/children$/);
-        if (childrenMatch) {
-          const id = decodeURIComponent(childrenMatch[1]);
-          const children = await getMomentsBySynthesis(id);
-          return { contents: [{ uri, mimeType: 'application/json', text: JSON.stringify(children, null, 2) }] };
-        }
-        throw new McpError(ErrorCode.InvalidParams, `Unknown resource: ${uri}`);
-      }
-    }
-  } catch (error) {
-    throw new McpError(ErrorCode.InternalError, `Failed to read resource: ${error}`);
-  }
-});
-
-// Prompt handlers - provide common workflows
-server.setRequestHandler(ListPromptsRequestSchema, async () => ({
-  prompts: [
-    {
-      name: 'capture-moment',
-      description: 'Help capture a meaningful moment of experience',
-      arguments: [
-        { name: 'experience', description: 'Describe the experience you want to capture', required: true },
-        { name: 'context', description: 'Additional context about when/where this happened', required: false },
-      ],
-    },
-    {
-      name: 'frame-sources',
-      description: 'Help frame captured sources into a meaningful moment',
-      arguments: [
-        { name: 'sourceIds', description: 'Comma-separated source IDs to frame together', required: true },
-      ],
-    },
-    {
-      name: 'begin_reflection',
-      description: 'Open a reflective session',
-      arguments: [
-        { name: 'intention', description: 'What brings you here?', required: false },
-      ],
-    },
-    {
-      name: 'close_reflection',
-      description: 'Close session and review what emerged',
-      arguments: [],
-    },
-    {
-      name: 'guided_capture',
-      description: 'Capture an experience with gentle guidance',
-      arguments: [
-        { name: 'experience_type', description: 'memory, feeling, observation', required: false },
-      ],
-    },
-    {
-      name: 'guided_frame',
-      description: 'Frame moments from your captures',
-      arguments: [
-        { name: 'source_hint', description: 'Which capture(s) to frame', required: false },
-      ],
-    },
-    {
-      name: 'review_captures',
-      description: 'Review your unframed captures',
-      arguments: [],
-    },
-    {
-      name: 'guided_enhance',
-      description: 'Deepen and refine an existing moment or source with step-by-step guidance',
-      arguments: [
-        { name: 'id', description: 'Which moment or source to enhance', required: true },
-        { name: 'fields', description: 'Fields to enhance (comma-separated)', required: false },
-      ],
-    },
-  ],
-}));
-
-server.setRequestHandler(GetPromptRequestSchema, async (request) => {
-  const { name, arguments: args } = request.params;
-
-  switch (name) {
-    case 'capture-moment': {
-      const experience = args?.experience || '[experience description]';
-      const context = args?.context || '';
-      
-      return {
-        description: 'Guided prompt for capturing experiential moments',
-        messages: [
-          {
-            role: 'user',
-            content: {
-              type: 'text',
-              text: `Help me capture this moment of experience:
-
-Experience: ${experience}
-${context ? `Context: ${context}` : ''}
-
-Guide me through capturing this as a source, then suggest how to frame it into a moment. Focus on:
-- The embodied, felt sense of this experience
-- What was most alive or present in this moment
-- The experiential qualities that stood out
-- How to preserve the authentic voice and immediacy
-
-Use the capture tool to save this, then suggest framing options.`,
-            },
-          },
-        ],
-      };
-    }
-    
-    case 'frame-sources': {
-      const sourceIds = args?.sourceIds || '';
-      
-      return {
-        description: 'Guided prompt for framing sources into moments',
-        messages: [
-          {
-            role: 'user',
-            content: {
-              type: 'text',
-              text: `Help me frame these sources into a meaningful moment:
-
-Source IDs: ${sourceIds}
-
-First, let me see these sources, then help me:
-- Identify the unified experiential thread connecting them
-- Choose an appropriate emoji and 5-7 word summary
-- Craft a first-person narrative that captures the experiential wholeness
-- Suggest an appropriate frame pattern if one emerges
-
-Use the frame tool when we've crafted something that feels right.`,
-            },
-          },
-        ],
-      };
-    }
-    
-    case 'begin_reflection': {
-      const intention = args?.intention || '';
-      startSession(intention);
-      return {
-        description: 'Begin a new reflective session',
-        messages: [
-          {
-            role: 'assistant',
-            content: {
-              type: 'text',
-              text: `Welcome to your reflection session.${intention ? `\nIntention: ${intention}` : ''}\nWhat would you like to explore or process today?`,
-            },
-          },
-        ],
-      };
-    }
-    case 'close_reflection': {
-      endSession();
-      let summary = 'Session closed.';
-      if (currentSession) {
-        // Persist session
-        await saveSession({
-          id: currentSession.id,
-          started: currentSession.started,
-          ended: currentSession.ended,
-          intention: currentSession.intention,
-          captureCount: currentSession.captures.length,
-          frameCount: currentSession.moments.length,
-        });
-        // Find unframed captures
-        const unframed = currentSession.captures.filter(
-          id => !currentSession!.moments.some(
-            mId => mId === id
-          )
-        );
-        summary = `Session closed.\nCaptures: ${currentSession.captures.length}\nMoments: ${currentSession.moments.length}`;
-        if (unframed.length > 0) {
-          summary += `\nUnframed captures: ${unframed.join(', ')}`;
-          summary += `\nWould you like to review or frame these?`;
-        }
-        currentSession = null;
-      }
-      return {
-        description: 'Close the session and review what emerged',
-        messages: [
-          {
-            role: 'assistant',
-            content: {
-              type: 'text',
-              text: summary,
-            },
-          },
-        ],
-      };
-    }
-    case 'guided_capture': {
-      // Initialize state if not present
-      if (!guidedCaptureState) {
-        guidedCaptureState = { step: 0, answers: {} };
-      }
-      const steps = [
-        { key: 'experience_type', question: 'What type of experience is this? (memory, feeling, observation, etc.)' },
-        { key: 'description', question: 'Describe what happened, in your own words.' },
-        { key: 'when', question: 'When did this happen? (date or time, or "now")' },
-        { key: 'where', question: 'Where did it happen?' },
-        { key: 'who', question: 'Who was involved? (optional)' },
-        { key: 'mood', question: 'What was your mood or feeling in the moment? (optional)' },
-        { key: 'body', question: 'What was happening in your body? (optional)' },
-        { key: 'attention', question: 'Where was your attention focused? (optional)' },
-        { key: 'file', question: 'If you want to attach a file (voice, image), provide the path or say "skip".' },
-      ];
-      // If user provided an answer, store it
-      if (args && args.answer !== undefined && guidedCaptureState.step > 0) {
-        const prevKey = steps[guidedCaptureState.step - 1].key;
-        guidedCaptureState.answers[prevKey] = args.answer;
-      }
-      // If all steps complete, call capture tool
-      if (guidedCaptureState.step >= steps.length) {
-        // Build capture input
-        const input: {
-          content: string;
-          contentType: string;
-          perspective: string;
-          processing: ProcessingLevel;
-          when?: string;
-          experiencer: string;
-          file?: string;
-        } = {
-          content: guidedCaptureState.answers['description'] || '',
-          contentType: 'text',
-          perspective: 'I',
-          processing: 'during' as ProcessingLevel,
-          when: guidedCaptureState.answers['when'] as string,
-          experiencer: (guidedCaptureState.answers['who'] as string) || 'self',
-          file: guidedCaptureState.answers['file'] && guidedCaptureState.answers['file'] !== 'skip' ? (guidedCaptureState.answers['file'] as string) : undefined,
-        };
-        // Call capture tool
-        const source = await saveSource({
-          id: generateId('src'),
-          ...input,
-          created: new Date().toISOString(),
-        });
-        trackCapture(source.id);
-        const summary = `Captured: "${input.content.substring(0, 50)}${input.content.length > 50 ? '...' : ''}" (ID: ${source.id})`;
-        guidedCaptureState = null;
-        return {
-          description: 'Guided capture complete',
-          messages: [
-            {
-              role: 'assistant',
-              content: { type: 'text', text: summary },
-            },
-          ],
-        };
-      }
-      // Ask next question
-      const currentStep = steps[guidedCaptureState.step];
-      guidedCaptureState.step++;
-      return {
-        description: 'Guided capture of an experience',
-        messages: [
-          {
-            role: 'assistant',
-            content: { type: 'text', text: currentStep.question },
-          },
-        ],
-      };
-    }
-    case 'guided_frame': {
-      // Multi-step, stateful guided frame prompt
-      if (!guidedFrameState) {
-        guidedFrameState = { step: 0, answers: {} };
-      }
-      const steps = [
-        { key: 'sourceIds', question: 'Which capture(s) would you like to frame? (comma-separated IDs)' },
-        { key: 'emoji', question: 'Choose an emoji to represent this moment.' },
-        { key: 'summary', question: 'Write a 5-7 word summary for this moment.' },
-        { key: 'narrative', question: 'Optionally, write a full narrative (or say "skip").' },
-        { key: 'pattern', question: 'Optionally, choose a frame pattern (or say "skip").' },
-        { key: 'withAI', question: 'Would you like AI assistance? (yes/no, default: no)' },
-      ];
-      // If user provided an answer, store it
-      if (args && args.answer !== undefined && guidedFrameState.step > 0) {
-        const prevKey = steps[guidedFrameState.step - 1].key;
-        guidedFrameState.answers[prevKey] = args.answer;
-      }
-      // If all steps complete, call frame tool
-      if (guidedFrameState.step >= steps.length) {
-        // Build frame input
-        const inputValidated = frameSchema.parse(guidedFrameState.answers) as z.infer<typeof frameSchema>;
-        // Verify all sources exist
-        const validSources: SourceRecord[] = [];
-        for (let i = 0; i < inputValidated.sourceIds.length; i++) {
-          const sourceId = inputValidated.sourceIds[i];
-          const source = await getSource(sourceId);
-          if (!source) {
-            guidedFrameState = null;
-            throw new McpError(
-              ErrorCode.InvalidParams,
-              `Source not found: ${sourceId}`
-            );
-          }
-          validSources.push(source);
-        }
-        // Create moment record
-        const momentId = generateId('mom');
-        const momentData = {
-          id: momentId,
-          emoji: inputValidated.emoji,
-          summary: inputValidated.summary,
-          narrative: inputValidated.narrative,
-          pattern: inputValidated.pattern,
-          sources: inputValidated.sourceIds.map((sourceId: string) => ({ sourceId })),
-          created: new Date().toISOString(),
-          when: validSources.find(s => s.when)?.when,
-        };
-        const moment = await saveMoment(momentData);
-        trackMoment(moment.id);
-        guidedFrameState = null;
-        return {
-          description: 'Guided frame complete',
-          messages: [
-            {
-              role: 'assistant',
-              content: { type: 'text', text: `Framed moment: ${moment.emoji} ${moment.summary} (ID: ${moment.id})` },
-            },
-          ],
-        };
-      }
-      // Ask next question
-      const currentStep = steps[guidedFrameState.step];
-      guidedFrameState.step++;
-      return {
-        description: 'Guided framing of a moment',
-        messages: [
-          {
-            role: 'assistant',
-            content: { type: 'text', text: currentStep.question },
-          },
-        ],
-      };
-    }
-    case 'review_captures': {
-      return {
-        description: 'Review your unframed captures',
-        messages: [
-          {
-            role: 'assistant',
-            content: {
-              type: 'text',
-              text: `Here are your unframed captures. Which would you like to frame or review?`,
-            },
-          },
-        ],
-      };
-    }
-    case 'guided_enhance': {
-      // Multi-step, stateful guided enhance prompt
-      if (!guidedEnhanceState) {
-        guidedEnhanceState = { step: 0, updates: {} };
-      }
-      // Step 0: Ask for moment/source ID
-      const idVal = args && typeof args.id === 'string' ? args.id.trim() : (args && typeof args.answer === 'string' ? args.answer.trim() : undefined);
-      if (idVal) {
-        guidedEnhanceState.momentId = idVal;
-        guidedEnhanceState.step++;
-      } else {
-        return {
-          description: 'Guided enhancement: select moment/source',
-          messages: [
-            {
-              role: 'assistant',
-              content: { type: 'text', text: 'Enter the ID of the moment or source you want to enhance.' },
-            },
-          ],
-        };
-      }
-      // Step 1: Ask which fields to enhance
-      if (guidedEnhanceState.step === 1) {
-        const fieldsVal = args && typeof args.fields === 'string' ? args.fields : (args && typeof args.answer === 'string' ? args.answer : undefined);
-        if (fieldsVal && typeof fieldsVal === 'string' && fieldsVal.trim()) {
-          guidedEnhanceState.fields = fieldsVal.split(',').map((f: string) => f.trim()).filter(Boolean);
-          guidedEnhanceState.currentFieldIndex = 0;
-          guidedEnhanceState.step++;
-        } else {
-          return {
-            description: 'Guided enhancement: choose fields',
-            messages: [
-              {
-                role: 'assistant',
-                content: { type: 'text', text: 'Which fields would you like to enhance? (e.g., narrative, summary, pattern, qualities) List as comma-separated values.' },
-              },
-            ],
-          };
-        }
-      }
-      // Step 2: For each field, ask for new value
-      if (guidedEnhanceState.step === 2 && guidedEnhanceState.fields && guidedEnhanceState.currentFieldIndex !== undefined) {
-        const fields = guidedEnhanceState.fields;
-        const idx = guidedEnhanceState.currentFieldIndex;
-        const field = fields[idx];
-        if (args && typeof args.answer === 'string') {
-          if (args.answer.toLowerCase() !== 'skip') {
-            guidedEnhanceState.updates[field] = args.answer;
-          }
-          guidedEnhanceState.currentFieldIndex!++;
-        }
-        // If more fields, ask next
-        if (guidedEnhanceState.currentFieldIndex! < fields.length) {
-          const nextField = fields[guidedEnhanceState.currentFieldIndex!];
-          return {
-            description: 'Guided enhancement: field update',
-            messages: [
-              {
-                role: 'assistant',
-                content: { type: 'text', text: `Enter new value for "${nextField}" (or type 'skip'):` },
-              },
-            ],
-          };
-        } else {
-          guidedEnhanceState.step++;
-        }
-      }
-      // Step 3: Offer AI assistance
-      if (guidedEnhanceState.step === 3) {
-        if (args && typeof args.answer === 'string') {
-          guidedEnhanceState.withAI = /^y(es)?$/i.test(args.answer);
-          guidedEnhanceState.step++;
-        } else {
-          return {
-            description: 'Guided enhancement: AI assistance',
-            messages: [
-              {
-                role: 'assistant',
-                content: { type: 'text', text: 'Would you like AI suggestions for enhancement? (yes/no, default: no)' },
-              },
-            ],
-          };
-        }
-      }
-      // Step 4: Confirm and save
-      if (guidedEnhanceState.step === 4) {
-        if (args && typeof args.answer === 'string' && args.answer.toLowerCase().startsWith('y')) {
-          // Call enhance tool
-          const input: z.infer<typeof enhanceSchema> = {
-            id: guidedEnhanceState.momentId!,
-            updates: guidedEnhanceState.updates,
-            withAI: guidedEnhanceState.withAI === true,
-          };
-          // Remove undefined/empty fields
-          Object.keys(input.updates).forEach(k => (input.updates[k] === undefined || input.updates[k] === '') && delete input.updates[k]);
-          // Use the correct method signature for server.request
-          const result = await server.request(
-            { method: 'callTool', params: { name: 'enhance', arguments: input } },
-            z.object({ content: z.array(z.object({ type: z.string(), text: z.string() })), isError: z.boolean().optional(), meta: z.any().optional() }),
-            undefined
-          );
-          guidedEnhanceState = null;
-          return {
-            description: 'Guided enhancement complete',
-            messages: [
-              {
-                role: 'assistant',
-                content: { type: 'text', text: result.content[0].text },
-              },
-            ],
-          };
-        } else if (args && typeof args.answer === 'string' && args.answer.toLowerCase().startsWith('n')) {
-          guidedEnhanceState = null;
-          return {
-            description: 'Guided enhancement cancelled',
-            messages: [
-              {
-                role: 'assistant',
-                content: { type: 'text', text: 'Enhancement cancelled.' },
-              },
-            ],
-          };
-        } else {
-          // Show summary and ask for confirmation
-          const summary = Object.entries(guidedEnhanceState.updates).map(([k, v]) => `${k}: ${v}`).join('\n');
-          return {
-            description: 'Guided enhancement: confirm',
-            messages: [
-              {
-                role: 'assistant',
-                content: { type: 'text', text: `You are about to enhance ${guidedEnhanceState.momentId} with:\n${summary}\nProceed? (yes/no)` },
-              },
-            ],
-          };
-        }
-      }
-      // Should not reach here
-      guidedEnhanceState = null;
-      return {
-        description: 'Guided enhancement error',
-        messages: [
-          {
-            role: 'assistant',
-            content: { type: 'text', text: 'Something went wrong in the guided enhance flow.' },
-          },
-        ],
-      };
-    }
-    default:
-      throw new McpError(ErrorCode.InvalidParams, `Unknown prompt: ${name}`);
-  }
-});
-
-// Register handler for MCP roots
-server.setRequestHandler(ListRootsRequestSchema, async (request) => {
-  if (request && request.params && Array.isArray(request.params.roots)) {
-    mcpRoots = request.params.roots;
-  }
-  return { roots: mcpRoots };
-});
-
-// Patch validateFilePath to use mcpRoots
-function validateFilePathWithRoots(filePath: string): boolean {
-  if (!mcpRoots.length) return false;
-  // Only allow files within any of the MCP roots
-  const allowedRoots = mcpRoots.map(r => r.uri.replace('file://', ''));
-  return baseValidateFilePath(filePath, allowedRoots);
-}
-
-// Error handling
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  process.exit(1);
-});
-
-// Start the server
-async function main(): Promise<void> {
+(async () => {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error(`${SERVER_NAME} v${SERVER_VERSION} running on stdio`);
-}
-
-main().catch((error) => {
-  console.error('Server error:', error);
-  process.exit(1);
-});
-
-// Utility: send progress notification (MCP-compliant)
-async function sendProgress(progressToken: string, progress: object): Promise<void> {
-  await server.notification({ method: 'server/progress', params: { progressToken, progress } });
-} 
+})();
