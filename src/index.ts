@@ -74,18 +74,24 @@ const captureSchema = z.object({
   contentType: z.string().optional().default('text'),
   perspective: z.enum(['I', 'we', 'you', 'they']),
   processing: z.enum(['during', 'right-after', 'long-after', 'crafted']),
-  when: z.string().optional().refine((val) => {
-    if (!val) return true; // Optional field
-    const date = new Date(val);
-    return !isNaN(date.getTime());
-  }, {
-    message: "Invalid date format. Use ISO 8601 format (e.g., '2024-01-15T10:30:00Z') or a valid date string."
-  }),
+  when: z.string().optional(),
   experiencer: z.string(),
   reflects_on: z.array(z.string()).optional(),
   file: z.string().optional(),
   autoframe: z.boolean().optional().default(true),
 });
+
+// Helper function for flexible date validation using chrono-node
+async function validateFlexibleDate(dateString: string | undefined): Promise<boolean> {
+  if (!dateString) return true; // Optional field
+  try {
+    const chrono = await import('chrono-node');
+    const results = chrono.parse(dateString);
+    return results.length > 0;
+  } catch (error) {
+    return false;
+  }
+}
 
 // Smart frameSchema: accepts sourceIds for AI generation OR full parameters for manual control
 const frameSchema = z.object({
@@ -115,13 +121,7 @@ const frameSchema = z.object({
     'directed-momentum',
     'holding-opposites'
   ]).optional(),
-  when: z.string().optional().refine((val) => {
-    if (!val) return true; // Optional field
-    const date = new Date(val);
-    return !isNaN(date.getTime());
-  }, {
-    message: "Invalid date format. Use ISO 8601 format (e.g., '2024-01-15T10:30:00Z') or a valid date string."
-  }),
+  when: z.string().optional(),
 });
 
 // Smart weaveSchema: accepts momentIds for AI generation OR full parameters for manual control
@@ -140,13 +140,7 @@ const weaveSchema = z.object({
     'directed-momentum',
     'holding-opposites'
   ]).optional(),
-  when: z.string().optional().refine((val) => {
-    if (!val) return true; // Optional field
-    const date = new Date(val);
-    return !isNaN(date.getTime());
-  }, {
-    message: "Invalid date format. Use ISO 8601 format (e.g., '2024-01-15T10:30:00Z') or a valid date string."
-  }),
+  when: z.string().optional(),
 });
 
 const enrichSchema = z.object({
@@ -457,6 +451,13 @@ Go as granular as possible. A conversation might contain dozens of attention
 shifts, several emotional boundaries, multiple actional completions.`;
         try {
           input = captureSchema.parse(args);
+          // Validate when field with flexible date parsing
+          if (input.when && !(await validateFlexibleDate(input.when))) {
+            throw new McpError(
+              ErrorCode.InvalidParams,
+              `Invalid date format for 'when': ${input.when}. Use natural language like 'yesterday', 'last week', '2024-01-15', or ISO 8601 format.`
+            );
+          }
         } catch (err) {
           if (err instanceof z.ZodError) {
             // User-friendly error for missing/invalid fields
@@ -652,6 +653,13 @@ shifts, several emotional boundaries, multiple actional completions.`;
 
       case 'frame': {
         const input = frameSchema.parse(args);
+        // Validate when field with flexible date parsing
+        if (input.when && !(await validateFlexibleDate(input.when))) {
+          throw new McpError(
+            ErrorCode.InvalidParams,
+            `Invalid date format for 'when': ${input.when}. Use natural language like 'yesterday', 'last week', '2024-01-15', or ISO 8601 format.`
+          );
+        }
         
         // Determine mode based on provided parameters
         const isSmartDefault = !input.emoji && !input.summary && !input.qualities && !input.narrative && !input.shot && !input.when;
@@ -761,6 +769,13 @@ shifts, several emotional boundaries, multiple actional completions.`;
 
       case 'weave': {
         const input = weaveSchema.parse(args);
+        // Validate when field with flexible date parsing
+        if (input.when && !(await validateFlexibleDate(input.when))) {
+          throw new McpError(
+            ErrorCode.InvalidParams,
+            `Invalid date format for 'when': ${input.when}. Use natural language like 'yesterday', 'last week', '2024-01-15', or ISO 8601 format.`
+          );
+        }
         
         // Determine mode based on provided parameters
         const isSmartDefault = !input.emoji && !input.summary && !input.narrative && !input.shot && !input.when;
@@ -1184,66 +1199,81 @@ shifts, several emotional boundaries, multiple actional completions.`;
         if (typeof input.framed === 'boolean') filters.framed = input.framed;
         if (typeof input.reviewed === 'boolean') filters.reviewed = input.reviewed;
 
+        // Helper function to validate and parse date with chrono-node
+        const validateAndParseDate = async (dateInput: string | { start: string; end: string }): Promise<{ start: string; end: string }> => {
+          if (typeof dateInput === 'string') {
+            // Validate with chrono-node
+            if (!(await validateFlexibleDate(dateInput))) {
+              throw new McpError(
+                ErrorCode.InvalidParams,
+                `Invalid date format: ${dateInput}. Use natural language like 'yesterday', 'last week', '2024-01-15', or ISO 8601 format.`
+              );
+            }
+            // Parse with chrono-node to get actual date
+            const chrono = await import('chrono-node');
+            const results = chrono.parse(dateInput);
+            if (results.length === 0) {
+              throw new McpError(
+                ErrorCode.InvalidParams,
+                `Could not parse date: ${dateInput}`
+              );
+            }
+            const parsedDate = results[0].start.date().toISOString();
+            return { start: parsedDate, end: parsedDate };
+          } else {
+            // Validate both start and end dates
+            if (!(await validateFlexibleDate(dateInput.start))) {
+              throw new McpError(
+                ErrorCode.InvalidParams,
+                `Invalid start date format: ${dateInput.start}. Use natural language like 'yesterday', 'last week', '2024-01-15', or ISO 8601 format.`
+              );
+            }
+            if (!(await validateFlexibleDate(dateInput.end))) {
+              throw new McpError(
+                ErrorCode.InvalidParams,
+                `Invalid end date format: ${dateInput.end}. Use natural language like 'yesterday', 'last week', '2024-01-15', or ISO 8601 format.`
+              );
+            }
+            // Parse both dates
+            const chrono = await import('chrono-node');
+            const startResults = chrono.parse(dateInput.start);
+            const endResults = chrono.parse(dateInput.end);
+            if (startResults.length === 0 || endResults.length === 0) {
+              throw new McpError(
+                ErrorCode.InvalidParams,
+                `Could not parse date range: ${dateInput.start} to ${dateInput.end}`
+              );
+            }
+            const startDate = startResults[0].start.date().toISOString();
+            const endDate = endResults[0].start.date().toISOString();
+            return { start: startDate, end: endDate };
+          }
+        };
+
         // Explicitly filter by 'created' (system timestamp, UTC)
         if (input.created) {
-          if (typeof input.created === 'string') {
-            // Validate date string
-            const date = new Date(input.created);
-            if (isNaN(date.getTime())) {
-              throw new McpError(
-                ErrorCode.InvalidParams,
-                `Invalid created date format: ${input.created}. Use ISO 8601 format (e.g., '2024-01-15T10:30:00Z') or a valid date string.`
-              );
-            }
-            filters.createdRange = { start: input.created, end: input.created };
-          } else if (typeof input.created === 'object' && input.created.start && input.created.end) {
-            // Validate both start and end dates
-            const startDate = new Date(input.created.start);
-            const endDate = new Date(input.created.end);
-            if (isNaN(startDate.getTime())) {
-              throw new McpError(
-                ErrorCode.InvalidParams,
-                `Invalid created start date format: ${input.created.start}. Use ISO 8601 format (e.g., '2024-01-15T10:30:00Z') or a valid date string.`
-              );
-            }
-            if (isNaN(endDate.getTime())) {
-              throw new McpError(
-                ErrorCode.InvalidParams,
-                `Invalid created end date format: ${input.created.end}. Use ISO 8601 format (e.g., '2024-01-15T10:30:00Z') or a valid date string.`
-              );
-            }
-            filters.createdRange = { start: input.created.start, end: input.created.end };
+          try {
+            const parsedRange = await validateAndParseDate(input.created);
+            filters.createdRange = parsedRange;
+          } catch (error) {
+            if (error instanceof McpError) throw error;
+            throw new McpError(
+              ErrorCode.InvalidParams,
+              `Error processing created date: ${error instanceof Error ? error.message : String(error)}`
+            );
           }
         }
         // Explicitly filter by 'when' (user-supplied, UTC)
         if (input.when) {
-          if (typeof input.when === 'string') {
-            // Validate date string
-            const date = new Date(input.when);
-            if (isNaN(date.getTime())) {
-              throw new McpError(
-                ErrorCode.InvalidParams,
-                `Invalid when date format: ${input.when}. Use ISO 8601 format (e.g., '2024-01-15T10:30:00Z') or a valid date string.`
-              );
-            }
-            filters.whenRange = { start: input.when, end: input.when };
-          } else if (typeof input.when === 'object' && input.when.start && input.when.end) {
-            // Validate both start and end dates
-            const startDate = new Date(input.when.start);
-            const endDate = new Date(input.when.end);
-            if (isNaN(startDate.getTime())) {
-              throw new McpError(
-                ErrorCode.InvalidParams,
-                `Invalid when start date format: ${input.when.start}. Use ISO 8601 format (e.g., '2024-01-15T10:30:00Z') or a valid date string.`
-              );
-            }
-            if (isNaN(endDate.getTime())) {
-              throw new McpError(
-                ErrorCode.InvalidParams,
-                `Invalid when end date format: ${input.when.end}. Use ISO 8601 format (e.g., '2024-01-15T10:30:00Z') or a valid date string.`
-              );
-            }
-            filters.whenRange = { start: input.when.start, end: input.when.end };
+          try {
+            const parsedRange = await validateAndParseDate(input.when);
+            filters.whenRange = parsedRange;
+          } catch (error) {
+            if (error instanceof McpError) throw error;
+            throw new McpError(
+              ErrorCode.InvalidParams,
+              `Error processing when date: ${error instanceof Error ? error.message : String(error)}`
+            );
           }
         }
         // Relationship search (optional pre-filter)
