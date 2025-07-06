@@ -476,7 +476,7 @@ shifts, several emotional boundaries, multiple actional completions.`;
             },
             {
               type: 'text',
-              text: `⏳ Running autoframe on this capture...`
+              text: `⏳ Running AI framing on this capture...`
             }
           ];
           if (defaultsUsed.length > 0) {
@@ -496,13 +496,13 @@ shifts, several emotional boundaries, multiple actional completions.`;
               text: framingGuide
             });
           }
-          // Run autoframe after capture
+          // Run AI framing after capture
           try {
             const autoProcessor = new AutoProcessor();
             const autoframeResult = await autoProcessor.autoFrameSources({ sourceIds: [source.id] });
             const successes = autoframeResult.filter(r => r.success && r.created);
             if (successes.length > 0) {
-              let summary = `✅ Autoframe complete: created ${successes.length} moment(s) from this capture.\n`;
+              let summary = `✅ AI framing complete: created ${successes.length} moment(s) from this capture.\n`;
               successes.forEach((r, idx) => {
                 if (r.created) {
                   summary += `  - Moment ${idx + 1}: ${r.created.emoji} "${r.created.summary}" (ID: ${r.created.id})\n`;
@@ -513,12 +513,12 @@ shifts, several emotional boundaries, multiple actional completions.`;
               content.push({ type: 'text', text: summary });
               content.push({ type: 'text', text: `\nFull records:\n${JSON.stringify(successes.map(r => r.created), null, 2)}` });
             } else if (autoframeResult.length > 0 && autoframeResult[0].error) {
-              content.push({ type: 'text', text: `⚠️ Autoframe failed: ${String(autoframeResult[0].error)}` });
+              content.push({ type: 'text', text: `⚠️ AI framing failed: ${String(autoframeResult[0].error)}` });
             } else {
-              content.push({ type: 'text', text: `⚠️ Autoframe did not create any moments.` });
+              content.push({ type: 'text', text: `⚠️ AI framing did not create any moments.` });
             }
           } catch (err) {
-            content.push({ type: 'text', text: `⚠️ Autoframe error: ${err instanceof Error ? err.message : String(err)}` });
+            content.push({ type: 'text', text: `⚠️ AI framing error: ${err instanceof Error ? err.message : String(err)}` });
           }
           return { content };
         }
@@ -551,10 +551,10 @@ shifts, several emotional boundaries, multiple actional completions.`;
             type: 'text',
             text: `\nFull record:\n${JSON.stringify(source, null, 2)}`
           },
-          {
-            type: 'text',
-            text: `⏳ Running autoframe on this capture...`
-          }
+                      {
+              type: 'text',
+              text: `⏳ Running AI framing on this capture...`
+            }
         ];
         if (defaultsUsed.length > 0) {
           content.push({
