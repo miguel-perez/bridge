@@ -1807,6 +1807,47 @@ Optional: add 'when' to override temporal inheritance from moments.`
             };
           }
         }
+        
+        // Handle grouped results or return final results
+        if (Array.isArray(finalResults)) {
+          if (input.includeContext) {
+            return {
+              content: finalResults.map((result: SearchResult) => ({
+                type: 'text',
+                text: JSON.stringify(formatStructuredSearchResult(result), null, 2)
+              }))
+            };
+          } else {
+            return {
+              content: finalResults.map((result: SearchResult, index: number) => ({
+                type: 'text',
+                text: formatDetailedSearchResult(result, index)
+              }))
+            };
+          }
+        } else {
+          // Handle GroupedResults
+          const groupedResults = finalResults as import('./search.js').GroupedResults;
+          if (input.includeContext) {
+            return {
+              content: groupedResults.groups.flatMap(group => 
+                group.items.map((result: SearchResult) => ({
+                  type: 'text',
+                  text: JSON.stringify(formatStructuredSearchResult(result), null, 2)
+                }))
+              )
+            };
+          } else {
+            return {
+              content: groupedResults.groups.flatMap((group, groupIndex) => 
+                group.items.map((result: SearchResult, itemIndex: number) => ({
+                  type: 'text',
+                  text: formatDetailedSearchResult(result, groupIndex * 1000 + itemIndex)
+                }))
+              )
+            };
+          }
+        }
       }
 
       case 'status': {
@@ -1826,6 +1867,13 @@ Optional: add 'when' to override temporal inheritance from moments.`
             recentSection += `- ${scene.emoji || '❓'} "${scene.summary || '[no summary]'}" (ID: ${scene.id}, moments: ${(scene.momentIds || []).join(', ')}, created: ${scene.created})\n`;
           }
         }
+        
+        // Add reframed records visibility note
+        const reframedNote = report.reframed_moments_count > 0 || report.reframed_scenes_count > 0
+          ? `\n📌 Note: Reframed records (${report.reframed_moments_count} moments, ${report.reframed_scenes_count} scenes) are hidden in search by default.
+  To include them, use: search({ includeContext: true }) or search({ filters: { includeReframed: true } })`
+          : '';
+        
         return {
           content: [
             {
@@ -1852,7 +1900,7 @@ ${report.processing_errors.map(e =>
                         `  • ${e.type}: ${e.count} error(s), last: ${e.lastError}`
                       ).join('\n')}` : 
                       '✅ No processing errors'
-}
+}${reframedNote}
 ` + recentSection
             }
           ]

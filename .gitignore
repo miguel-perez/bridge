@@ -27,4 +27,27 @@ coverage/
 
 # Project specific
 data/
-*.jsonl 
+*.jsonl
+
+# Personal data and logs
+memory.json
+test-openai-integration.log
+test_experience.txt
+*.log
+
+# IDE configs with personal paths
+.cursor/
+.idea/
+
+# Backup files
+*.backup
+*.bak
+backup.*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp 
