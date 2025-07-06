@@ -33,9 +33,7 @@ import { setEmbeddingsConfig } from './embeddings.js';
 import path from 'path';
 import type { SearchResult } from './search.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { AutoProcessor } from './auto-processing.js';
 import { statusMonitor } from './status.js';
-import { getConfig } from './config.js';
 
 // Constants
 const SERVER_NAME = 'captain';
@@ -174,9 +172,16 @@ setEmbeddingsConfig({ dataFile: DATA_FILE_PATH });
 
 // Simple formatter for search results
 function formatSearchResult(result: SearchResult, index: number): string {
-  const label = result.type.toUpperCase();
-  const summary = result.snippet || result.id;
-  return `${index + 1}. [${label}] ${summary}`;
+  const label = String(result.type ?? '');
+  let summary: string;
+  if (typeof result.snippet === 'string') {
+    summary = result.snippet;
+  } else if (typeof result.id === 'string') {
+    summary = result.id;
+  } else {
+    summary = '[no summary]';
+  }
+  return `${index + 1}. [${label.toUpperCase()}] ${summary}`;
 }
 
 // Define SearchToolInput for the new search tool
@@ -196,6 +201,7 @@ interface SearchToolInput {
   sort?: 'relevance' | 'created' | 'when';
   limit?: number;
   includeContext?: boolean;
+  reviewed?: boolean;
 }
 
 // Tool handlers
@@ -316,29 +322,30 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           groupBy: { type: "string", enum: ["type", "experiencer", "day", "week", "month", "hierarchy"], description: "Group results by this field" },
           sort: { type: "string", enum: ["relevance", "created", "when"], description: "Sort by field" },
           limit: { type: "number", description: "Maximum results to return" },
-          includeContext: { type: "boolean", description: "Return full record metadata" }
+          includeContext: { type: "boolean", description: "Return full record metadata" },
+          reviewed: { type: "boolean", description: "Only records that are (or are not) reviewed" }
         }
       }
     },
     {
       name: "auto-frame",
-      description: "Automatically frame unframed sources into moments using OpenAI. Creates moments marked as unreviewed for human oversight.",
+      description: "Automatically frame a source and its reflections into moments using OpenAI. Creates moments marked as unreviewed for human oversight.",
       inputSchema: {
         type: "object",
         properties: {
-          sourceIds: { type: "array", items: { type: "string" }, description: "Array of source IDs to auto-frame (optional - if not provided, will use unframed sources)" },
-          batchSize: { type: "number", description: "Number of sources to process in this batch (optional)" }
-        }
+          sourceId: { type: "string", description: "ID of the source to auto-frame (required)" }
+        },
+        required: ["sourceId"]
       }
     },
     {
       name: "auto-weave",
-      description: "Automatically weave unweaved moments into scenes using OpenAI. Creates scenes marked as unreviewed for human oversight.",
+      description: "Automatically weave moments or scenes into higher-level scenes using OpenAI. Creates scenes marked as unreviewed for human oversight.",
       inputSchema: {
         type: "object",
         properties: {
-          momentIds: { type: "array", items: { type: "string" }, description: "Array of moment IDs to auto-weave (optional - if not provided, will use unweaved moments)" },
-          batchSize: { type: "number", description: "Number of moments to process in this batch (optional)" }
+          momentIds: { type: "array", items: { type: "string" }, description: "Array of moment IDs to auto-weave (optional)" },
+          sceneIds: { type: "array", items: { type: "string" }, description: "Array of scene IDs to auto-weave (optional)" }
         }
       }
     },
@@ -531,15 +538,17 @@ shifts, several emotional boundaries, multiple actional completions.`;
         const experiencer = validSources[0]?.experiencer || '';
         const moment = await saveMoment({
           id: generateId('mom'),
-          emoji: input.emoji,
-          summary: input.summary,
-          qualities: input.qualities,
-          narrative: input.narrative,
-          shot: input.shot,
-          sources: input.sourceIds.map(sourceId => ({ sourceId })),
-          created: new Date().toISOString(),
-          when: validSources.find(s => s.when)?.when,
-          experiencer,
+          ...( {
+            emoji: input.emoji,
+            summary: input.summary,
+            qualities: input.qualities,
+            narrative: input.narrative,
+            shot: input.shot,
+            sources: input.sourceIds.map(sourceId => ({ sourceId })),
+            created: new Date().toISOString(),
+            when: validSources.find(s => s.when)?.when,
+            experiencer,
+          } as any ),
         });
         return {
           content: [
@@ -586,17 +595,19 @@ shifts, several emotional boundaries, multiple actional completions.`;
           id: generateId('sce'),
           emoji: input.emoji,
           summary: input.summary,
-          narrative: input.narrative,
-          momentIds: input.momentIds,
-          shot: input.shot,
-          created: new Date().toISOString(),
-          experiencer: sceneExperiencer,
+          ...( {
+            narrative: input.narrative,
+            momentIds: input.momentIds,
+            shot: input.shot,
+            created: new Date().toISOString(),
+            experiencer: sceneExperiencer,
+          } as any ),
         });
         return {
           content: [
             {
               type: 'text',
-              text: `✓ Wove moments into: ${scene.emoji} ${scene.summary} (ID: ${scene.id})`
+              text: `✓ Wove moments into: ${scene.emoji || '❓'} ${scene.summary || '[no summary]'} (ID: ${scene.id})`
             },
             {
               type: 'text',
@@ -686,9 +697,30 @@ shifts, several emotional boundaries, multiple actional completions.`;
             record: updatedSource
           };
         }
+        // If not a moment or source, try scene
+        const scene = await getScene(input.id);
+        if (scene) {
+          const updatedScene = await updateScene(input.id, input.updates);
+          if (!updatedScene) {
+            throw new McpError(ErrorCode.InternalError, 'Failed to update scene');
+          }
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Enriched scene (ID: ${updatedScene.id}) with updates: ${Object.keys(input.updates).join(', ')}`,
+              },
+              {
+                type: 'text',
+                text: `\nFull record:\n${JSON.stringify(updatedScene, null, 2)}`
+              }
+            ],
+            record: updatedScene
+          };
+        }
         throw new McpError(
           ErrorCode.InvalidParams,
-          `No source or moment found with ID: ${input.id}`
+          `No source, moment, or scene found with ID: ${input.id}`
         );
       }
 
@@ -822,6 +854,7 @@ shifts, several emotional boundaries, multiple actional completions.`;
         if (typeof input.processing === 'string' && input.processing.length > 0) filters.processing = [input.processing];
         if (typeof input.shot === 'string' && input.shot.length > 0) filters.shotTypes = [input.shot];
         if (typeof input.framed === 'boolean') filters.framed = input.framed;
+        if (typeof input.reviewed === 'boolean') filters.reviewed = input.reviewed;
 
         // Explicitly filter by 'created' (system timestamp, UTC)
         if (input.created) {
@@ -888,10 +921,12 @@ shifts, several emotional boundaries, multiple actional completions.`;
           } else {
             // Always return an array, even for a single result
             return {
-              content: finalResults.map((result: SearchResult, index: number) => ({
-                type: 'text',
-                text: formatSearchResult(result, index)
-              }))
+              content: finalResults
+                .filter((result: any) => typeof result === 'object' && result !== null && typeof result.type === 'string')
+                .map((result: SearchResult, index: number) => ({
+                  type: 'text',
+                  text: formatSearchResult(result, index)
+                }))
             };
           }
         } else if (finalResults && typeof finalResults === 'object' && 'groups' in finalResults) {
@@ -902,7 +937,7 @@ shifts, several emotional boundaries, multiple actional completions.`;
             return `${header}\n${items}`;
           });
           return {
-            content: groupBlocks.map(text => ({ type: 'text', text }))
+            content: groupBlocks.map(text => ({ type: 'text', text: String(text) }))
           };
         } else {
           return { content: [{ type: 'text', text: 'Grouped results are not yet supported in this view.' }] };
@@ -910,45 +945,22 @@ shifts, several emotional boundaries, multiple actional completions.`;
       }
 
       case 'auto-frame': {
-        const autoProcessor = new AutoProcessor();
-        const config = getConfig();
+        const autoProcessor = new (await import('./auto-processing.js')).AutoProcessor();
         const safeArgs = args || {};
-        
-        // Get unframed sources if no specific sourceIds provided
-        let sourceIds = (safeArgs.sourceIds as string[]) || [];
-        if (sourceIds.length === 0) {
-          const sources = await getSources();
-          const moments = await getMoments();
-          
-          // Find sources not referenced by any moment
-          const framedSourceIds = new Set<string>();
-          moments.forEach(moment => {
-            moment.sources.forEach(source => {
-              framedSourceIds.add(source.sourceId);
-            });
-          });
-          
-          sourceIds = sources
-            .filter(source => !framedSourceIds.has(source.id))
-            .slice(0, (safeArgs.batchSize as number) || config.openai.autoFrame.batchSize)
-            .map(source => source.id);
+        const sourceId = safeArgs.sourceId;
+        if (typeof sourceId !== 'string' || !sourceId) {
+          return { content: [{ type: 'text', text: 'Missing or invalid sourceId for auto-frame.' }] };
         }
-
-        if (sourceIds.length === 0) {
-          return { content: [{ type: 'text', text: 'No unframed sources found to process.' }] };
-        }
-
-        const results = await autoProcessor.autoFrameSources({ sourceIds });
+        // Use current batching rules: single source + bidirectional reflections
+        const results = await autoProcessor.autoFrameSources({ sourceIds: [sourceId] });
         const successes = results.filter(r => r.success && r.created);
         if (successes.length > 0) {
-          // Only show the first successful result for now
           const result = successes[0];
-          // TODO: For future safety, consider runtime check or error if created is undefined
           return {
             content: [
               {
                 type: 'text',
-                text: `✓ Auto-framed ${sourceIds.length} source(s) into moment: ${result.created!.emoji} "${result.created!.summary}" (ID: ${result.created!.id})`
+                text: `✓ Auto-framed source ${sourceId} into moment: ${result.created!.emoji} "${result.created!.summary}" (ID: ${result.created!.id})`
               },
               {
                 type: 'text',
@@ -962,41 +974,19 @@ shifts, several emotional boundaries, multiple actional completions.`;
           };
         } else {
           const firstError = results.find(r => r.error) || { error: 'Unknown error' };
-          statusMonitor.recordError('framing', firstError.error || 'Unknown error');
-          return { error: `Auto-framing failed: ${firstError.error}` };
+          return { content: [{ type: 'text', text: `Auto-framing failed: ${String(firstError.error)}` }] };
         }
       }
 
       case 'auto-weave': {
-        const autoProcessor = new AutoProcessor();
+        const autoProcessor = new (await import('./auto-processing.js')).AutoProcessor();
         const safeArgs = args || {};
-        
-        // Get unweaved moments if no specific momentIds provided
-        let momentIds = (safeArgs.momentIds as string[]) || [];
-        if (momentIds.length === 0) {
-          const moments = await getMoments();
-          const scenes = await getScenes();
-          
-          // Find moments not part of any scene
-          const weavedMomentIds = new Set<string>();
-          scenes.forEach(scene => {
-            scene.momentIds.forEach(momentId => {
-              weavedMomentIds.add(momentId);
-            });
-          });
-          
-          momentIds = moments
-            .filter(moment => !weavedMomentIds.has(moment.id))
-            .slice(0, (safeArgs.batchSize as number) || 5) // Default batch size for auto-weaving
-            .map(moment => moment.id);
+        const momentIds: string[] = Array.isArray(safeArgs.momentIds) ? safeArgs.momentIds : [];
+        // Optionally, could support sceneIds in the future
+        if (!momentIds.length) {
+          return { content: [{ type: 'text', text: 'No momentIds provided for auto-weave.' }] };
         }
-
-        if (momentIds.length === 0) {
-          return { content: [{ type: 'text', text: 'No unweaved moments found to process.' }] };
-        }
-
         const result = await autoProcessor.autoWeaveMoments(momentIds);
-        
         if (result.success && result.created) {
           return {
             content: [
@@ -1015,8 +1005,7 @@ shifts, several emotional boundaries, multiple actional completions.`;
             ]
           };
         } else {
-          statusMonitor.recordError('weaving', result.error || 'Unknown error');
-          return { error: `Auto-weaving failed: ${result.error}` };
+          return { content: [{ type: 'text', text: `Auto-weaving failed: ${String(result.error)}` }] };
         }
       }
 
