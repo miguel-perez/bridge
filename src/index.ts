@@ -134,9 +134,16 @@ const enrichSchema = z.object({
   updates: z.record(z.unknown()),
 });
 
+// Custom Zod refinement for conditional default
 const releaseSchema = z.object({
-  id: z.string(),
-  cleanupReframed: z.boolean().optional().default(false),
+  id: z.string().optional(),
+  cleanupReframed: z.boolean().optional(),
+}).superRefine((val) => {
+  if (val.id === undefined && val.cleanupReframed === undefined) {
+    val.cleanupReframed = true;
+  } else if (val.id !== undefined && val.cleanupReframed === undefined) {
+    val.cleanupReframed = false;
+  }
 });
 
 // Helper: Contextual coaching prompts for captures and tool-to-tool flow
@@ -320,14 +327,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     },
     {
       name: "release",
-      description: "Release (delete) a source, moment, or scene. Optionally clean up reframed records that were superseded by this record.",
+      description: "Release (delete) a source, moment, or scene. If no id is provided, performs a bulk cleanup of all reframed (superseded) records. In bulk mode, cleanupReframed defaults to true.",
       inputSchema: {
         type: "object",
         properties: {
-          id: { type: "string", description: "ID of source, moment, or scene to release" },
-          cleanupReframed: { type: "boolean", description: "Also delete any reframed records that were superseded by this record (default: false)" }
-        },
-        required: ["id"]
+          id: { type: "string", description: "ID of source, moment, or scene to release (optional for bulk cleanup)" },
+          cleanupReframed: { type: "boolean", description: "If true, also delete any reframed records that were superseded by this record, or perform bulk cleanup if no ID provided. Defaults to true if no id is provided, otherwise false." }
+        }
       },
       annotations: {
         title: "Release Record",
@@ -922,14 +928,17 @@ shifts, several emotional boundaries, multiple actional completions.`;
         }
         throw new McpError(
           ErrorCode.InvalidParams,
-          `No source, moment, or scene found with ID: ${input.id}`
+          `No source, moment, or scene found with ID: ${input.id || 'undefined'}`
         );
       }
 
       case 'release': {
         const input = releaseSchema.parse(args);
+        // Runtime fallback for default
+        if (input.id === undefined && input.cleanupReframed === undefined) input.cleanupReframed = true;
+        if (input.id !== undefined && input.cleanupReframed === undefined) input.cleanupReframed = false;
         
-        // Helper function to clean up reframed records
+        // Helper function to clean up reframed records for a specific record
         const cleanupReframedRecords = async (recordId: string, recordType: 'moment' | 'scene') => {
           if (!input.cleanupReframed) return '';
           
@@ -959,125 +968,182 @@ shifts, several emotional boundaries, multiple actional completions.`;
           return cleanupMessage;
         };
         
-        // Check if it's a source
-        const source = await getSource(input.id);
-        if (source) {
-          // Delete the source
-          await deleteSource(input.id);
-          // Clean up any orphaned moments
-          const moments = await getMoments();
-          const affectedMoments = moments.filter(m => 
-            m.sources.some(s => s.sourceId === input.id)
-          );
+        // Helper function for bulk cleanup of all reframed records
+        const bulkCleanupReframedRecords = async () => {
+          if (!input.cleanupReframed) return '';
+          
           let cleanupMessage = '';
-          for (const moment of affectedMoments) {
-            // Remove the released source from the moment
-            const remainingSources = moment.sources.filter(s => s.sourceId !== input.id);
-            if (remainingSources.length === 0) {
-              // No sources left, release the moment
-              await deleteMoment(moment.id);
-              cleanupMessage += `\n  • Released orphaned moment: ${moment.emoji} "${moment.summary}"`;
-              // Also check if this moment was in any scenes
-              const scenes = await getScenes();
-              for (const scene of scenes) {
-                if (scene.momentIds.includes(moment.id)) {
-                  const remainingMoments = scene.momentIds.filter(id => id !== moment.id);
-                  if (remainingMoments.length === 0) {
-                    await deleteScene(scene.id);
-                    cleanupMessage += `\n  • Released orphaned scene: ${scene.emoji} "${scene.summary}"`;
-                  } else {
-                    // Update scene to remove the deleted moment
-                    await updateScene(scene.id, {
-                      momentIds: remainingMoments
-                    });
-                    cleanupMessage += `\n  • Updated scene: ${scene.emoji} "${scene.summary}"`;
+          const { deleteEmbedding } = await import('./embeddings.js');
+          
+          // Clean up all reframed moments
+          const allMoments = await getMoments();
+          const reframedMoments = allMoments.filter(m => m.reframedBy);
+          for (const reframed of reframedMoments) {
+            await deleteMoment(reframed.id);
+            await deleteEmbedding(reframed.id);
+            cleanupMessage += `\n  • Cleaned up reframed moment: ${reframed.emoji} "${reframed.summary}" (ID: ${reframed.id})`;
+          }
+          
+          // Clean up all reframed scenes
+          const allScenes = await getScenes();
+          const reframedScenes = allScenes.filter(s => s.reframedBy);
+          for (const reframed of reframedScenes) {
+            await deleteScene(reframed.id);
+            await deleteEmbedding(reframed.id);
+            cleanupMessage += `\n  • Cleaned up reframed scene: ${reframed.emoji} "${reframed.summary}" (ID: ${reframed.id})`;
+          }
+          
+          return cleanupMessage;
+        };
+        
+        // If no ID provided, perform bulk cleanup
+        if (!input.id) {
+          if (!input.cleanupReframed) {
+            throw new McpError(
+              ErrorCode.InvalidParams,
+              'Either provide an ID to release a specific record, or set cleanupReframed: true for bulk cleanup'
+            );
+          }
+          
+          const cleanupMessage = await bulkCleanupReframedRecords();
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `✓ Bulk cleanup of reframed records completed`
+              },
+              {
+                type: 'text',
+                text: cleanupMessage || '\n🌊 No reframed records found to clean up'
+              }
+            ]
+          };
+        }
+        
+        // Check if it's a source
+        if (input.id) {
+          const source = await getSource(input.id);
+          if (source) {
+            // Delete the source
+            await deleteSource(input.id);
+            // Clean up any orphaned moments
+            const moments = await getMoments();
+            const affectedMoments = moments.filter(m => 
+              m.sources.some(s => s.sourceId === input.id)
+            );
+            let cleanupMessage = '';
+            for (const moment of affectedMoments) {
+              // Remove the released source from the moment
+              const remainingSources = moment.sources.filter(s => s.sourceId !== input.id);
+              if (remainingSources.length === 0) {
+                // No sources left, release the moment
+                await deleteMoment(moment.id);
+                cleanupMessage += `\n  • Released orphaned moment: ${moment.emoji} "${moment.summary}"`;
+                // Also check if this moment was in any scenes
+                const scenes = await getScenes();
+                let affectedScenes: SceneRecord[] = [];
+                if (typeof input.id === 'string') {
+                  affectedScenes = scenes.filter(s => s.momentIds.includes(input.id!));
+                }
+                for (const scene of affectedScenes) {
+                  if (scene.momentIds.includes(moment.id)) {
+                    const remainingMoments = scene.momentIds.filter(id => id !== moment.id);
+                    if (remainingMoments.length === 0) {
+                      await deleteScene(scene.id);
+                      cleanupMessage += `\n  • Released orphaned scene: ${scene.emoji} "${scene.summary}"`;
+                    } else {
+                      // Update scene to remove the deleted moment
+                      await updateScene(scene.id, {
+                        momentIds: remainingMoments
+                      });
+                      cleanupMessage += `\n  • Updated scene: ${scene.emoji} "${scene.summary}"`;
+                    }
                   }
                 }
+              } else {
+                // Update moment to remove the released source
+                await updateMoment(moment.id, {
+                  sources: remainingSources
+                });
+                cleanupMessage += `\n  • Updated moment: ${moment.emoji} "${moment.summary}" (${remainingSources.length} source(s) remain)`;
               }
-            } else {
-              // Update moment to remove the released source
-              await updateMoment(moment.id, {
-                sources: remainingSources
-              });
-              cleanupMessage += `\n  • Updated moment: ${moment.emoji} "${moment.summary}" (${remainingSources.length} source(s) remain)`;
             }
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: `✓ Released source: "${source.content.substring(0, 50)}..." (ID: ${input.id})`
+                },
+                {
+                  type: 'text',
+                  text: cleanupMessage || '\n🌊 The experience has been released'
+                }
+              ]
+            };
           }
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `✓ Released source: "${source.content.substring(0, 50)}..." (ID: ${input.id})`
-              },
-              {
-                type: 'text',
-                text: cleanupMessage || '\n🌊 The experience has been released'
-              }
-            ]
-          };
-        }
-        // Check if it's a moment
-        const moment = await getMoment(input.id);
-        if (moment) {
-          // Clean up reframed records first
-          const reframedCleanup = await cleanupReframedRecords(input.id, 'moment');
-          
-          await deleteMoment(input.id);
-          // Clean up any orphaned scenes
-          const scenes = await getScenes();
-          const affectedScenes = scenes.filter(s => 
-            s.momentIds.includes(input.id)
-          );
-          let cleanupMessage = '';
-          for (const scene of affectedScenes) {
-            const remainingMoments = scene.momentIds.filter(id => id !== input.id);
-            if (remainingMoments.length === 0) {
-              // No moments left, release the scene
-              await deleteScene(scene.id);
-              cleanupMessage += `\n  • Released orphaned scene: ${scene.emoji} "${scene.summary}"`;
-            } else {
-              // Update scene to remove the released moment
-              await updateScene(scene.id, {
-                momentIds: remainingMoments
-              });
-              cleanupMessage += `\n  • Updated scene: ${scene.emoji} "${scene.summary}" (${remainingMoments.length} moment(s) remain)`;
+          // Check if it's a moment
+          const moment = await getMoment(input.id);
+          if (moment) {
+            // Clean up reframed records first
+            const reframedCleanup = await cleanupReframedRecords(input.id, 'moment');
+            await deleteMoment(input.id);
+            // Clean up any orphaned scenes
+            const scenes = await getScenes();
+            let affectedScenes: SceneRecord[] = [];
+            if (typeof input.id === 'string') {
+              affectedScenes = scenes.filter(s => s.momentIds.includes(input.id!));
             }
+            let cleanupMessage = '';
+            for (const scene of affectedScenes) {
+              const remainingMoments = scene.momentIds.filter(id => id !== input.id);
+              if (remainingMoments.length === 0) {
+                // No moments left, release the scene
+                await deleteScene(scene.id);
+                cleanupMessage += `\n  • Released orphaned scene: ${scene.emoji} "${scene.summary}"`;
+              } else {
+                // Update scene to remove the released moment
+                await updateScene(scene.id, {
+                  momentIds: remainingMoments
+                });
+                cleanupMessage += `\n  • Updated scene: ${scene.emoji} "${scene.summary}" (${remainingMoments.length} moment(s) remain)`;
+              }
+            }
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: `✓ Released moment: ${moment.emoji} "${moment.summary}" (ID: ${input.id})`
+                },
+                {
+                  type: 'text',
+                  text: reframedCleanup + cleanupMessage || '\n🌊 The moment has been released'
+                }
+              ]
+            };
           }
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `✓ Released moment: ${moment.emoji} "${moment.summary}" (ID: ${input.id})`
-              },
-              {
-                type: 'text',
-                text: reframedCleanup + cleanupMessage || '\n🌊 The moment has been released'
-              }
-            ]
-          };
-        }
-        // Check if it's a scene
-        const scene = await getScene(input.id);
-        if (scene) {
-          // Clean up reframed records first
-          const reframedCleanup = await cleanupReframedRecords(input.id, 'scene');
-          
-          await deleteScene(input.id);
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `✓ Released scene: ${scene.emoji} "${scene.summary}" (ID: ${input.id})`
-              },
-              {
-                type: 'text',
-                text: reframedCleanup || '\n🌊 The woven experience has been released'
-              }
-            ]
-          };
+          // Check if it's a scene
+          const scene = await getScene(input.id);
+          if (scene) {
+            // Clean up reframed records first
+            const reframedCleanup = await cleanupReframedRecords(input.id, 'scene');
+            await deleteScene(input.id);
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: `✓ Released scene: ${scene.emoji} "${scene.summary}" (ID: ${input.id})`
+                },
+                {
+                  type: 'text',
+                  text: reframedCleanup || '\n🌊 The woven experience has been released'
+                }
+              ]
+            };
+          }
         }
         throw new McpError(
           ErrorCode.InvalidParams,
-          `No source, moment, or scene found with ID: ${input.id}`
+          `No source, moment, or scene found with ID: ${input.id || 'undefined'}`
         );
       }
 
@@ -1214,8 +1280,6 @@ shifts, several emotional boundaries, multiple actional completions.`;
           return { content: [{ type: 'text', text: 'Grouped results are not yet supported in this view.' }] };
         }
       }
-
-
 
       case 'status': {
         const report = await statusMonitor.generateStatusReport();
