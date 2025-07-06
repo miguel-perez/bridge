@@ -201,7 +201,13 @@ export function advancedFilters(results: SearchResult[], filters?: FilterOptions
     }
     // framed (for sources)
     if (typeof filters.framed === 'boolean' && result.type === 'source' && allRecords) {
-      const isFramed = allRecords.some(r => r.type === 'moment' && Array.isArray((r as MomentRecord).sources) && (r as MomentRecord).sources.some(s => s.sourceId === result.id));
+      // More robust check for framed sources
+      const isFramed = allRecords.some(r => {
+        if (r.type !== 'moment') return false;
+        const moment = r as MomentRecord;
+        if (!Array.isArray(moment.sources)) return false;
+        return moment.sources.some(s => s.sourceId === result.id);
+      });
       if (filters.framed !== isFramed) return false;
     }
     // qualities (for sources and moments)
@@ -322,8 +328,23 @@ function buildHierarchyTree(results: SearchResult[]): Array<{ label: string; cou
     const rec = result.source || result.moment || result.scene;
     if (!rec) continue;
     
+    // Create meaningful labels instead of just IDs
+    let label = '';
+    if (result.type === 'source') {
+      const content = result.source?.content || '';
+      label = `📝 ${content.substring(0, 50)}${content.length > 50 ? '...' : ''}`;
+    } else if (result.type === 'moment') {
+      const emoji = result.moment?.emoji || '❓';
+      const summary = result.moment?.summary || '[no summary]';
+      label = `${emoji} ${summary}`;
+    } else if (result.type === 'scene') {
+      const emoji = result.scene?.emoji || '❓';
+      const summary = result.scene?.summary || '[no summary]';
+      label = `${emoji} ${summary}`;
+    }
+    
     const node = {
-      label: `${result.type}: ${result.id}`,
+      label,
       count: 1,
       items: [result],
       children: []
@@ -505,8 +526,10 @@ export async function search(options: SearchOptions): Promise<SearchResult[] | G
   if (!options.query || options.query.trim() === '' || options.mode === 'temporal') {
     // Apply type filter even with no query for consistency
     let filteredRecords = searchRecords;
-    if (options.filters?.types && options.filters.types.length > 0) {
-      filteredRecords = searchRecords.filter(record => options.filters!.types!.includes(record.type));
+    // Normalize type filter: handle both 'type' and 'types' parameters
+    const typeFilter = options.filters?.types || options.filters?.type;
+    if (typeFilter && typeFilter.length > 0) {
+      filteredRecords = searchRecords.filter(record => typeFilter.includes(record.type));
     }
     
     results = filteredRecords.map(record => {
