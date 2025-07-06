@@ -33,6 +33,7 @@ import path from 'path';
 import type { SearchResult } from './search.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { statusMonitor } from './status.js';
+import { AutoProcessor } from './auto-processing.js';
 
 // Constants
 const SERVER_NAME = 'captain';
@@ -363,7 +364,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         type: "object",
         properties: {
           sourceId: { type: "string", description: "ID of the source to auto-frame (required)" },
-          preview: { type: "boolean", description: "If true, show what would be created but do not save anything." }
         },
         required: ["sourceId"]
       },
@@ -383,7 +383,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         properties: {
           momentIds: { type: "array", items: { type: "string" }, description: "Array of moment IDs to auto-weave (optional)" },
           sceneIds: { type: "array", items: { type: "string" }, description: "Array of scene IDs to auto-weave (optional)" },
-          preview: { type: "boolean", description: "If true, show what would be created but do not save anything." }
         }
       },
       annotations: {
@@ -501,6 +500,10 @@ shifts, several emotional boundaries, multiple actional completions.`;
             {
               type: 'text',
               text: `\nFull record:\n${JSON.stringify(source, null, 2)}`
+            },
+            {
+              type: 'text',
+              text: `⏳ Running autoframe on this capture...`
             }
           ];
           if (defaultsUsed.length > 0) {
@@ -519,6 +522,30 @@ shifts, several emotional boundaries, multiple actional completions.`;
               type: 'text',
               text: framingGuide
             });
+          }
+          // Run autoframe after capture
+          try {
+            const autoProcessor = new AutoProcessor();
+            const autoframeResult = await autoProcessor.autoFrameSources({ sourceIds: [source.id] });
+            const successes = autoframeResult.filter(r => r.success && r.created);
+            if (successes.length > 0) {
+              let summary = `✅ Autoframe complete: created ${successes.length} moment(s) from this capture.\n`;
+              successes.forEach((r, idx) => {
+                if (r.created) {
+                  summary += `  - Moment ${idx + 1}: ${r.created.emoji} "${r.created.summary}" (ID: ${r.created.id})\n`;
+                } else {
+                  summary += `  - Moment ${idx + 1}: [no data]\n`;
+                }
+              });
+              content.push({ type: 'text', text: summary });
+              content.push({ type: 'text', text: `\nFull records:\n${JSON.stringify(successes.map(r => r.created), null, 2)}` });
+            } else if (autoframeResult.length > 0 && autoframeResult[0].error) {
+              content.push({ type: 'text', text: `⚠️ Autoframe failed: ${String(autoframeResult[0].error)}` });
+            } else {
+              content.push({ type: 'text', text: `⚠️ Autoframe did not create any moments.` });
+            }
+          } catch (err) {
+            content.push({ type: 'text', text: `⚠️ Autoframe error: ${err instanceof Error ? err.message : String(err)}` });
           }
           return { content };
         }
@@ -550,6 +577,10 @@ shifts, several emotional boundaries, multiple actional completions.`;
           {
             type: 'text',
             text: `\nFull record:\n${JSON.stringify(source, null, 2)}`
+          },
+          {
+            type: 'text',
+            text: `⏳ Running autoframe on this capture...`
           }
         ];
         if (defaultsUsed.length > 0) {
@@ -568,6 +599,30 @@ shifts, several emotional boundaries, multiple actional completions.`;
             type: 'text',
             text: framingGuide
           });
+        }
+        // Run autoframe after capture
+        try {
+          const autoProcessor = new AutoProcessor();
+          const autoframeResult = await autoProcessor.autoFrameSources({ sourceIds: [source.id] });
+          const successes = autoframeResult.filter(r => r.success && r.created);
+          if (successes.length > 0) {
+            let summary = `✅ Autoframe complete: created ${successes.length} moment(s) from this capture.\n`;
+            successes.forEach((r, idx) => {
+              if (r.created) {
+                summary += `  - Moment ${idx + 1}: ${r.created.emoji} "${r.created.summary}" (ID: ${r.created.id})\n`;
+              } else {
+                summary += `  - Moment ${idx + 1}: [no data]\n`;
+              }
+            });
+            content.push({ type: 'text', text: summary });
+            content.push({ type: 'text', text: `\nFull records:\n${JSON.stringify(successes.map(r => r.created), null, 2)}` });
+          } else if (autoframeResult.length > 0 && autoframeResult[0].error) {
+            content.push({ type: 'text', text: `⚠️ Autoframe failed: ${String(autoframeResult[0].error)}` });
+          } else {
+            content.push({ type: 'text', text: `⚠️ Autoframe did not create any moments.` });
+          }
+        } catch (err) {
+          content.push({ type: 'text', text: `⚠️ Autoframe error: ${err instanceof Error ? err.message : String(err)}` });
         }
         return { content };
       }
@@ -1000,43 +1055,23 @@ shifts, several emotional boundaries, multiple actional completions.`;
         const autoProcessor = new (await import('./auto-processing.js')).AutoProcessor();
         const safeArgs = args || {};
         const sourceId = safeArgs.sourceId;
-        const preview = !!safeArgs.preview;
         if (typeof sourceId !== 'string' || !sourceId) {
           return { content: [{ type: 'text', text: 'Missing or invalid sourceId for auto-frame.' }] };
         }
-        if (preview) {
-          // Build prompt for this source
-          const { getSources } = await import('./storage.js');
-          const allSources = await getSources();
-          const batch = allSources.filter(s => s.id === sourceId);
-          if (batch.length === 0) {
-            return { content: [{ type: 'text', text: '[PREVIEW] No valid source found for autoframe.' }] };
-          }
-          const { createBatchFramePrompt } = await import('./prompts.js');
-          const prompt = await createBatchFramePrompt(batch);
-          const llmResponse = await autoProcessor.complete(prompt, { maxTokens: 2000 });
-          // Try to parse the first moment from the LLM response
-          let moment;
-          try {
-            const jsonMatch = llmResponse.match(/\{.*\}/s);
-            if (!jsonMatch) throw new Error('No JSON object found');
-            moment = JSON.parse(jsonMatch[0]);
-          } catch (e) {
-            return { content: [{ type: 'text', text: '[PREVIEW] Failed to parse LLM moment output: ' + (e instanceof Error ? e.message : String(e)) }] };
-          }
-          return { content: [{ type: 'text', text: `[PREVIEW] Would create moment: ${JSON.stringify(moment, null, 2)}` }] };
-        }
-        // Normal (not preview) mode
+        // Only normal (non-preview) mode
         const result = await autoProcessor.autoFrameSources({ sourceIds: [sourceId] });
         const successes = result.filter(r => r.success && r.created);
         if (successes.length > 0) {
-          // Return all created moments, not just the first
-          let summary = `✓ Auto-framed source ${sourceId} into ${successes.length} moment(s):\n`;
+          // Always return all created moments, even if only one
+          let summary = `✓ Auto-framed source ${sourceId} into ${successes.length} moment(s):
+`;
           successes.forEach((r, idx) => {
             if (r.created) {
-              summary += `  - Moment ${idx + 1}: ${r.created.emoji} "${r.created.summary}" (ID: ${r.created.id})\n`;
+              summary += `  - Moment ${idx + 1}: ${r.created.emoji} "${r.created.summary}" (ID: ${r.created.id})
+`;
             } else {
-              summary += `  - Moment ${idx + 1}: [no data]\n`;
+              summary += `  - Moment ${idx + 1}: [no data]
+`;
             }
           });
           return {
@@ -1056,46 +1091,19 @@ shifts, several emotional boundaries, multiple actional completions.`;
         const autoProcessor = new (await import('./auto-processing.js')).AutoProcessor();
         const safeArgs = args || {};
         const momentIds: string[] = Array.isArray(safeArgs.momentIds) ? safeArgs.momentIds : [];
-        const preview = !!safeArgs.preview;
-        // Optionally, could support sceneIds in the future
+        // Only normal (non-preview) mode
         if (!momentIds.length) {
           return { content: [{ type: 'text', text: 'No momentIds provided for autoweave.' }] };
         }
-        // If preview, run the LLM/grouping logic but do not save scenes
-        if (preview) {
-          const { getMoments } = await import('./storage.js');
-          const allMoments = await getMoments();
-          const batch = allMoments.filter(m => momentIds.includes(m.id));
-          if (batch.length === 0) {
-            return { content: [{ type: 'text', text: '[PREVIEW] No valid moments found for autoweave preview.' }] };
-          }
-          const { createBatchWeavePrompt } = await import('./prompts.js');
-          const prompt = createBatchWeavePrompt(batch);
-          const llmResponse = await autoProcessor.complete(prompt, { maxTokens: 2000 });
-          let scenes: any[] = [];
-          try {
-            const jsonMatch = llmResponse.match(/\[.*\]/s);
-            if (!jsonMatch) throw new Error('No JSON array found');
-            scenes = JSON.parse(jsonMatch[0]);
-          } catch (e) {
-            return { content: [{ type: 'text', text: '[PREVIEW] Failed to parse LLM scene output: ' + (e instanceof Error ? e.message : String(e)) }] };
-          }
-          // Format preview output
-          let summary = `[PREVIEW] Autoweave would create ${scenes.length} scene(s):\n`;
-          scenes.forEach((scene, idx) => {
-            summary += `  - Scene ${idx + 1}: ${scene.emoji || '❓'} "${scene.summary || '[no summary]'}" (moments: ${(scene.momentIds || []).join(', ')})\n`;
-          });
-          summary += `No changes have been made.`;
-          return { content: [{ type: 'text', text: summary }] };
-        }
-        // Normal (not preview) mode
         const result = await autoProcessor.autoWeaveMoments(momentIds);
         // Always return all created scenes, even if only one
         const scenesArr = Array.isArray(result.created) ? result.created : (result.created ? [result.created] : []);
         if (scenesArr.length > 0) {
-          let summary = `✓ Autoweave analyzed ${momentIds.length} moment(s) and created ${scenesArr.length} scene(s):\n`;
+          let summary = `✓ Autoweave analyzed ${momentIds.length} moment(s) and created ${scenesArr.length} scene(s):
+`;
           scenesArr.forEach((scene, idx) => {
-            summary += `  - Scene ${idx + 1}: ${scene.emoji || '❓'} "${scene.summary || '[no summary]'}" (moments: ${(scene.momentIds || []).join(', ')})\n`;
+            summary += `  - Scene ${idx + 1}: ${scene.emoji || '❓'} "${scene.summary || '[no summary]'}" (moments: ${(scene.momentIds || []).join(', ')})
+`;
           });
           if (result.error) {
             summary += `Error: ${result.error}\n`;
