@@ -35,7 +35,7 @@ const defaultConfig: IntegrationConfig = {
     },
     autoWeave: {
       enabled: true,
-      threshold: 10,
+      threshold: 5,
     },
   },
   review: {
