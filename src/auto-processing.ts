@@ -122,6 +122,17 @@ export class AutoProcessor {
       // 4. Save moments
       const results: AutoProcessingResult[] = [];
       for (const frame of frames) {
+        // Collect reflection relationships from all sources in this frame
+        const reflectsOnSet = new Set<string>();
+        for (const frag of frame.sources) {
+          const src = batch.find(s => s.id === frag.sourceId);
+          if (src && src.reflects_on) {
+            for (const relId of src.reflects_on) {
+              reflectsOnSet.add(relId);
+            }
+          }
+        }
+        
         const moment = await saveMoment({
           id: `mom_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           emoji: frame.emoji,
@@ -137,6 +148,7 @@ export class AutoProcessor {
               text: frag.text || (src && typeof frag.start === 'number' && typeof frag.end === 'number' ? src.content.slice(frag.start, frag.end) : '')
             };
           }),
+          reflects_on: reflectsOnSet.size > 0 ? Array.from(reflectsOnSet) : undefined,
           created: new Date().toISOString(),
           experiencer: batch[0]?.experiencer || 'unknown',
           reviewed: false,

@@ -627,9 +627,19 @@ export function findReflectsOnRecords(recordId: string, allRecords: StorageRecor
         if (!visited.has(relId)) queue.push(relId);
       }
     }
-    if (rec.type === 'moment' && Array.isArray((rec as MomentRecord).sources)) {
-      for (const src of (rec as MomentRecord).sources) {
-        if (src.sourceId && !visited.has(src.sourceId)) queue.push(src.sourceId);
+    if (rec.type === 'moment') {
+      const moment = rec as MomentRecord;
+      // First, traverse through moment's reflects_on relationships
+      if (Array.isArray(moment.reflects_on)) {
+        for (const relId of moment.reflects_on) {
+          if (!visited.has(relId)) queue.push(relId);
+        }
+      }
+      // Then, traverse through moment's sources (for backward compatibility)
+      if (Array.isArray(moment.sources)) {
+        for (const src of moment.sources) {
+          if (src.sourceId && !visited.has(src.sourceId)) queue.push(src.sourceId);
+        }
       }
     }
     if (rec.type === 'scene' && Array.isArray((rec as SceneRecord).momentIds)) {
@@ -641,9 +651,17 @@ export function findReflectsOnRecords(recordId: string, allRecords: StorageRecor
   return reflectsOn;
 }
 
-// New: Find all sources that reflect on a given recordId
-export function findReflectionsAbout(recordId: string, allRecords: StorageRecord[]): SourceRecord[] {
-  return allRecords.filter(r => r.type === 'source' && Array.isArray((r as SourceRecord).reflects_on) && (r as SourceRecord).reflects_on!.includes(recordId)) as SourceRecord[];
+// New: Find all sources and moments that reflect on a given recordId
+export function findReflectionsAbout(recordId: string, allRecords: StorageRecord[]): (SourceRecord | MomentRecord)[] {
+  return allRecords.filter(r => {
+    if (r.type === 'source') {
+      return Array.isArray((r as SourceRecord).reflects_on) && (r as SourceRecord).reflects_on!.includes(recordId);
+    }
+    if (r.type === 'moment') {
+      return Array.isArray((r as MomentRecord).reflects_on) && (r as MomentRecord).reflects_on!.includes(recordId);
+    }
+    return false;
+  }) as (SourceRecord | MomentRecord)[];
 }
 
 // Helper to safely get created/when fields for sorting

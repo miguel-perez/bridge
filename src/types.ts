@@ -61,6 +61,9 @@ export interface Moment {
     end?: number;
   }>;
   
+  // Reflection relationships - inherited from sources
+  reflects_on?: string[]; // IDs of sources/moments this moment reflects on
+  
   // Timestamps  
   created: string; // When moment was framed
   when?: string; // When experience happened
