@@ -29,6 +29,9 @@ export interface FilterOptions {
   processing?: string[]; // ProcessingLevel[]
   shotTypes?: string[]; // ShotType[]
   framed?: boolean;
+  reviewed?: boolean;
+  createdRange?: { start: string; end: string };
+  whenRange?: { start: string; end: string };
 }
 
 export type SortOption = 'relevance' | 'created' | 'when';
@@ -103,6 +106,18 @@ function getRecordDate(record: StorageRecord): Date | null {
   return null;
 }
 
+// Helper: get created date specifically
+function getCreatedDate(record: StorageRecord): Date | null {
+  if ('created' in record && record.created) return new Date(record.created);
+  return null;
+}
+
+// Helper: get when date specifically
+function getWhenDate(record: StorageRecord): Date | null {
+  if ('when' in record && record.when) return new Date(record.when);
+  return null;
+}
+
 // Helper: get parent/child relationships for hierarchy grouping
 function getParentId(record: StorageRecord): string | null {
   if (record.type === 'moment' && Array.isArray(record.sources) && record.sources.length > 0) {
@@ -132,12 +147,33 @@ export function advancedFilters(results: SearchResult[], filters?: FilterOptions
       if (result.type === 'moment' && !filters.shotTypes.includes(result.moment?.shot || '')) return false;
       if (result.type === 'scene' && !filters.shotTypes.includes(result.scene?.shot || '')) return false;
     }
-    // Time range filter
+    // Time range filter (timeRange)
     if (filters.timeRange) {
       const recDate = getRecordDate(rec);
       const start = filters.timeRange.start ? new Date(filters.timeRange.start) : undefined;
       const end = filters.timeRange.end ? new Date(filters.timeRange.end) : undefined;
       if (!recDate || !isWithinRange(recDate, start, end)) return false;
+    }
+    // Created range filter (createdRange)
+    if (filters.createdRange) {
+      const recDate = getCreatedDate(rec);
+      const start = new Date(filters.createdRange.start);
+      const end = new Date(filters.createdRange.end);
+      if (!recDate || !isWithinRange(recDate, start, end)) return false;
+    }
+    // When range filter (whenRange)
+    if (filters.whenRange) {
+      const recDate = getWhenDate(rec);
+      const start = new Date(filters.whenRange.start);
+      const end = new Date(filters.whenRange.end);
+      if (!recDate || !isWithinRange(recDate, start, end)) return false;
+    }
+    // Reviewed filter (for moments and scenes)
+    if (typeof filters.reviewed === 'boolean') {
+      if (result.type === 'moment' && result.moment?.reviewed !== filters.reviewed) return false;
+      if (result.type === 'scene' && result.scene?.reviewed !== filters.reviewed) return false;
+      // Sources don't have reviewed field, so skip them
+      if (result.type === 'source') return false;
     }
     // hasQualities (for moments)
     if (filters.hasQualities && result.type === 'moment') {

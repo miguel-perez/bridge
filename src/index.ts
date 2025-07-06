@@ -998,7 +998,7 @@ shifts, several emotional boundaries, multiple actional completions.`;
             return { content: [{ type: 'text', text: `No record found with ID: ${input.reflectedOn}` }] };
           }
         }
-        // When calling semanticSearch, construct a SearchOptions object with all required properties and use object spread for optional fields
+        // When calling search, construct a SearchOptions object with all required properties and use object spread for optional fields
         const searchOptions: import('./search.js').SearchOptions = {
           query: input.query ?? '',
           filters,
