@@ -1481,6 +1481,7 @@ Optional: add 'when' to override temporal inheritance from moments.`
         if (Array.isArray(input.type) && input.type.length > 0) filters.type = input.type;
         if (typeof input.experiencer === 'string' && input.experiencer.length > 0) filters.experiencers = [input.experiencer];
         if (input.qualities) filters.qualities = input.qualities;
+        if (input.qualitiesMode) filters.qualitiesMode = input.qualitiesMode;
         if (typeof input.perspective === 'string' && input.perspective.length > 0) filters.perspectives = [input.perspective];
         if (typeof input.processing === 'string' && input.processing.length > 0) filters.processing = [input.processing];
         if (typeof input.shot === 'string' && input.shot.length > 0) filters.shotTypes = [input.shot];
@@ -1569,21 +1570,14 @@ Optional: add 'when' to override temporal inheritance from moments.`
         if (input.reflectedOn) {
           const allRecords = await import('./storage.js').then(m => m.getAllRecords());
           const searchModule = await import('./search.js');
-          const forward = searchModule.findReflectsOnRecords(input.reflectedOn, await allRecords);
-          const backward = searchModule.findReflectionsAbout(input.reflectedOn, await allRecords);
-          // Union, deduplicated by ID
-          const all = [...forward, ...backward];
-          const seen = new Set();
-          preFilteredRecords = all.filter(r => {
-            if (seen.has(r.id)) return false;
-            seen.add(r.id);
-            return true;
-          });
+          // Use the new comprehensive relationship search that finds all related records
+          preFilteredRecords = searchModule.findAllRelatedRecords(input.reflectedOn, await allRecords);
+          
           if (preFilteredRecords.length === 0) {
             return { content: [{ type: 'text', text: `No record found with ID: ${input.reflectedOn}` }] };
           }
           
-          // If there's no query, return the reflection network directly
+          // If there's no query, return the relationship network directly
           if (!input.query || input.query.trim() === '') {
             const { getSearchableText } = await import('./storage.js');
             const results = preFilteredRecords.map(record => {

@@ -578,7 +578,7 @@ export async function search(options: SearchOptions): Promise<SearchResult[] | G
     }
   } else if (options.mode === 'relationship' && options.query) {
     // Use the query as an ID to find reflects_on records
-    searchRecords = findReflectsOnRecords(options.query, records);
+    searchRecords = findAllRelatedRecords(options.query, records);
   }
   // For similarity or default, use all records
 
@@ -610,25 +610,31 @@ export async function search(options: SearchOptions): Promise<SearchResult[] | G
     const queryEmbeddingVec = await generateEmbedding(options.query);
     const pineconeResults = await queryEmbedding(queryEmbeddingVec, effectiveLimit);
     const idToRecord = new Map(records.map(r => [r.id, r]));
-    results = (pineconeResults.matches || []).map((match: any) => {
-      const rec = idToRecord.get(match.id);
-      if (!rec) return null;
-      let snippet = '';
-      if (rec.type === 'source' && rec.content) snippet = rec.content.slice(0, 80);
-      else if (rec.type === 'moment' && rec.summary) snippet = rec.summary.slice(0, 80);
-      else if (rec.type === 'scene' && rec.summary) snippet = rec.summary.slice(0, 80);
-      else if (rec.type === 'moment' && rec.narrative) snippet = rec.narrative.slice(0, 80);
-      else if (rec.type === 'scene' && rec.narrative) snippet = rec.narrative.slice(0, 80);
-      return {
-        type: rec.type,
-        id: rec.id,
-        relevance: match.score,
-        snippet,
-        source: rec.type === 'source' ? rec as SourceRecord : undefined,
-        moment: rec.type === 'moment' ? rec as MomentRecord : undefined,
-        scene: rec.type === 'scene' ? rec as SceneRecord : undefined,
-      };
-    }).filter(Boolean) as SearchResult[];
+    
+    // Filter results by relevance threshold to ensure only meaningful matches are returned
+    const RELEVANCE_THRESHOLD = 0.3; // Minimum similarity score (0-1 scale)
+    
+    results = (pineconeResults.matches || [])
+      .filter((match: any) => match.score >= RELEVANCE_THRESHOLD) // Only include relevant matches
+      .map((match: any) => {
+        const rec = idToRecord.get(match.id);
+        if (!rec) return null;
+        let snippet = '';
+        if (rec.type === 'source' && rec.content) snippet = rec.content.slice(0, 80);
+        else if (rec.type === 'moment' && rec.summary) snippet = rec.summary.slice(0, 80);
+        else if (rec.type === 'scene' && rec.summary) snippet = rec.summary.slice(0, 80);
+        else if (rec.type === 'moment' && rec.narrative) snippet = rec.narrative.slice(0, 80);
+        else if (rec.type === 'scene' && rec.narrative) snippet = rec.narrative.slice(0, 80);
+        return {
+          type: rec.type,
+          id: rec.id,
+          relevance: match.score,
+          snippet,
+          source: rec.type === 'source' ? rec as SourceRecord : undefined,
+          moment: rec.type === 'moment' ? rec as MomentRecord : undefined,
+          scene: rec.type === 'scene' ? rec as SceneRecord : undefined,
+        };
+      }).filter(Boolean) as SearchResult[];
   }
 
   // --- Apply advanced filters ---
@@ -672,17 +678,32 @@ export function parseTemporalQuery(query: string): { dateRange?: DateRange, clea
 }
 
 // --- Relationship search helpers ---
-export function findReflectsOnRecords(recordId: string, allRecords: StorageRecord[]): StorageRecord[] {
-  const reflectsOn: StorageRecord[] = [];
+export function findAllRelatedRecords(recordId: string, allRecords: StorageRecord[]): StorageRecord[] {
+  const relatedRecords: StorageRecord[] = [];
   const visited = new Set<string>();
   const queue: string[] = [recordId];
+  
+  // First, add the target record itself
+  const targetRecord = allRecords.find(r => r.id === recordId);
+  if (targetRecord) {
+    relatedRecords.push(targetRecord);
+    visited.add(recordId);
+  }
+  
   while (queue.length > 0) {
     const currentId = queue.shift()!;
     if (visited.has(currentId)) continue;
     visited.add(currentId);
+    
     const rec = allRecords.find(r => r.id === currentId);
     if (!rec) continue;
-    reflectsOn.push(rec);
+    
+    // Add the current record to results
+    if (!relatedRecords.find(r => r.id === currentId)) {
+      relatedRecords.push(rec);
+    }
+    
+    // 1. Forward relationships: what this record references
     if (rec.type === 'source' && Array.isArray((rec as SourceRecord).reflects_on)) {
       for (const relId of (rec as SourceRecord).reflects_on!) {
         if (!visited.has(relId)) queue.push(relId);
@@ -698,11 +719,46 @@ export function findReflectsOnRecords(recordId: string, allRecords: StorageRecor
         if (!visited.has(momId)) queue.push(momId);
       }
     }
+    
+    // 2. Backward relationships: what references this record
+    // Find sources that reflect on this record
+    for (const record of allRecords) {
+      if (record.type === 'source' && Array.isArray((record as SourceRecord).reflects_on)) {
+        if ((record as SourceRecord).reflects_on!.includes(currentId) && !visited.has(record.id)) {
+          queue.push(record.id);
+        }
+      }
+    }
+    
+    // Find moments that include this source
+    for (const record of allRecords) {
+      if (record.type === 'moment' && Array.isArray((record as MomentRecord).sources)) {
+        const hasSource = (record as MomentRecord).sources.some(s => s.sourceId === currentId);
+        if (hasSource && !visited.has(record.id)) {
+          queue.push(record.id);
+        }
+      }
+    }
+    
+    // Find scenes that include this moment
+    for (const record of allRecords) {
+      if (record.type === 'scene' && Array.isArray((record as SceneRecord).momentIds)) {
+        if ((record as SceneRecord).momentIds.includes(currentId) && !visited.has(record.id)) {
+          queue.push(record.id);
+        }
+      }
+    }
   }
-  return reflectsOn;
+  
+  return relatedRecords;
 }
 
-// New: Find all sources that reflect on a given recordId
+// Legacy function for backward compatibility
+export function findReflectsOnRecords(recordId: string, allRecords: StorageRecord[]): StorageRecord[] {
+  return findAllRelatedRecords(recordId, allRecords);
+}
+
+// Find all sources that reflect on a given recordId
 export function findReflectionsAbout(recordId: string, allRecords: StorageRecord[]): SourceRecord[] {
   return allRecords.filter(r => r.type === 'source' && Array.isArray((r as SourceRecord).reflects_on) && (r as SourceRecord).reflects_on!.includes(recordId)) as SourceRecord[];
 }

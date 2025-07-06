@@ -1,0 +1,170 @@
+{
+  "sources": [
+    {
+      "id": "src_1751828866923_gpeogeg",
+      "content": "Walking through the park this morning, I noticed how the frost made everything sparkle. The cold air felt sharp in my lungs.",
+      "contentType": "text",
+      "created": "2025-07-06T19:07:46.923Z",
+      "perspective": "I",
+      "experiencer": "Claude",
+      "processing": "right-after",
+      "type": "source",
+      "when": "Sunday morning, 7:30am"
+    },
+    {
+      "id": "src_1751828878719_q179bt0",
+      "content": "The team celebrated after completing the difficult project. Everyone seemed relieved and proud.",
+      "contentType": "text",
+      "created": "2025-07-06T19:07:58.719Z",
+      "when": "last Friday afternoon",
+      "perspective": "we",
+      "experiencer": "Development Team",
+      "processing": "long-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751828885875_6b9ca85",
+      "content": "She looked at the code review comments with a mix of frustration and determination. This was going to take longer than expected.",
+      "contentType": "text",
+      "created": "2025-07-06T19:08:05.875Z",
+      "perspective": "they",
+      "experiencer": "Sarah",
+      "processing": "during",
+      "type": "source"
+    },
+    {
+      "id": "src_1751828932432_o4yptb7",
+      "content": "The morning standup felt different today. Everyone was more energetic after yesterday's success.",
+      "contentType": "text",
+      "created": "2025-07-06T19:08:52.432Z",
+      "when": "Monday morning",
+      "perspective": "we",
+      "experiencer": "Development Team",
+      "processing": "right-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751829036532_f6pue1i",
+      "content": "Looking back at that frosty morning, I realize it was a moment of pure presence. The sharp air wasn't just cold - it was awakening.",
+      "contentType": "text",
+      "created": "2025-07-06T19:10:36.532Z",
+      "perspective": "I",
+      "experiencer": "Claude",
+      "processing": "long-after",
+      "reflects_on": [
+        "src_1751828866923_gpeogeg"
+      ],
+      "type": "source"
+    }
+  ],
+  "moments": [
+    {
+      "id": "mom_1751828894855_2lexdkt",
+      "emoji": "💻",
+      "summary": "Scan code review, frustration stirs determination",
+      "qualities": [
+        {
+          "type": "embodied",
+          "manifestation": "Frustration and determination felt internally"
+        },
+        {
+          "type": "attentional",
+          "manifestation": "Focus on the code review comments"
+        },
+        {
+          "type": "emotional",
+          "manifestation": "Frustration and determination"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "Determination to address the comments"
+        },
+        {
+          "type": "temporal",
+          "manifestation": "Realization that it will take longer than expected"
+        }
+      ],
+      "narrative": "Scan code review, frustration stirs determination",
+      "shot": "moment-of-recognition",
+      "sources": [
+        {
+          "sourceId": "src_1751828885875_6b9ca85"
+        }
+      ],
+      "created": "2025-07-06T19:08:14.856Z",
+      "experiencer": "Sarah",
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751828908997_4hh9ae0",
+      "emoji": "❄️",
+      "summary": "Notice frost sparkle, inhale sharp air",
+      "qualities": [
+        {
+          "type": "embodied",
+          "manifestation": "Physical sensations of cold air and noticing the frost"
+        },
+        {
+          "type": "attentional",
+          "manifestation": "Awareness focused on the frost and sharpness of the air"
+        },
+        {
+          "type": "spatial",
+          "manifestation": "The park environment and the frost's transformative effect"
+        }
+      ],
+      "narrative": "Walking through the park, I was struck by how the frost transformed everything into a crystalline wonderland. Each breath of cold air was a sharp reminder of winter's presence.",
+      "shot": "sustained-attention",
+      "sources": [
+        {
+          "sourceId": "src_1751828866923_gpeogeg"
+        }
+      ],
+      "created": "2025-07-06T19:08:28.997Z",
+      "experiencer": "Claude",
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751828922455_ysdd7eg",
+      "emoji": "🎉",
+      "summary": "Team celebrates project completion together",
+      "qualities": [
+        {
+          "type": "relational",
+          "manifestation": "Shared sense of accomplishment and relief"
+        },
+        {
+          "type": "emotional",
+          "manifestation": "Pride and relief flowing through the group"
+        }
+      ],
+      "shot": "crossing-threshold",
+      "sources": [
+        {
+          "sourceId": "src_1751828878719_q179bt0"
+        }
+      ],
+      "created": "2025-07-06T19:08:42.455Z",
+      "when": "last Friday afternoon",
+      "experiencer": "Development Team",
+      "type": "moment"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "sce_1751828974737_t7txr5j",
+      "emoji": "🔄",
+      "summary": "Frustration fuels determination, triumph follows",
+      "shot": "directed-momentum",
+      "momentIds": [
+        "mom_1751828894855_2lexdkt",
+        "mom_1751828922455_ysdd7eg"
+      ],
+      "narrative": "I'm wrestling with code review comments, frustration stirring determination within me. It's a tough climb, but when we finally hit project completion, the relief and pride wash over us. We celebrate together, the frustration forgotten in the triumph.",
+      "created": "2025-07-06T19:09:34.737Z",
+      "when": "last Friday afternoon",
+      "experiencer": "Sarah",
+      "type": "scene"
+    }
+  ]
+}
