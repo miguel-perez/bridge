@@ -776,6 +776,40 @@ bridge:frame {
             );
           }
           
+          // STRICT VALIDATION: Validate shot type
+          const validShotTypes = [
+            'moment-of-recognition',
+            'sustained-attention',
+            'crossing-threshold',
+            'peripheral-awareness',
+            'directed-momentum',
+            'holding-opposites'
+          ];
+          if (!validShotTypes.includes(input.shot)) {
+            throw new McpError(
+              ErrorCode.InvalidParams,
+              `Invalid shot type: "${input.shot}". Valid options are: ${validShotTypes.join(', ')}`
+            );
+          }
+          
+          // STRICT VALIDATION: Validate quality types
+          const validQualityTypes = [
+            'embodied',
+            'attentional',
+            'emotional',
+            'purposive',
+            'spatial',
+            'temporal',
+            'relational'
+          ];
+          const invalidQualities = input.qualities.filter(q => !validQualityTypes.includes(q.type));
+          if (invalidQualities.length > 0) {
+            throw new McpError(
+              ErrorCode.InvalidParams,
+              `Invalid quality types: ${invalidQualities.map(q => q.type).join(', ')}. Valid options are: ${validQualityTypes.join(', ')}`
+            );
+          }
+          
           // Create moment record
           const experiencer = validSources[0]?.experiencer || '';
           const moment = await saveMoment({
@@ -906,6 +940,22 @@ bridge:weave {
             );
           }
           
+          // STRICT VALIDATION: Validate shot type
+          const validShotTypes = [
+            'moment-of-recognition',
+            'sustained-attention',
+            'crossing-threshold',
+            'peripheral-awareness',
+            'directed-momentum',
+            'holding-opposites'
+          ];
+          if (!validShotTypes.includes(input.shot)) {
+            throw new McpError(
+              ErrorCode.InvalidParams,
+              `Invalid shot type: "${input.shot}". Valid options are: ${validShotTypes.join(', ')}`
+            );
+          }
+          
           // Create scene record
           const validMoments = await Promise.all(input.momentIds.map(getMoment));
           const sceneExperiencer = validMoments[0]?.experiencer || '';
@@ -968,6 +1018,25 @@ bridge:weave {
               throw new McpError(ErrorCode.InvalidParams, 'Invalid qualities structure');
             }
           }
+          
+          // Validate shot type if being updated
+          if (input.updates.shot) {
+            const validShotTypes = [
+              'moment-of-recognition',
+              'sustained-attention',
+              'crossing-threshold',
+              'peripheral-awareness',
+              'directed-momentum',
+              'holding-opposites'
+            ];
+            if (!validShotTypes.includes(input.updates.shot as string)) {
+              throw new McpError(
+                ErrorCode.InvalidParams,
+                `Invalid shot type: "${input.updates.shot}". Valid options are: ${validShotTypes.join(', ')}`
+              );
+            }
+          }
+          
           const updated = await updateMoment(input.id, input.updates);
           if (!updated) {
             throw new McpError(ErrorCode.InternalError, 'Failed to update moment');

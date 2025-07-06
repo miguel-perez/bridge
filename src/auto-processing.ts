@@ -519,6 +519,16 @@ export class AutoProcessor {
       'temporal',
       'relational'
     ];
+    
+    const ALLOWED_SHOT_TYPES = [
+      'moment-of-recognition',
+      'sustained-attention',
+      'crossing-threshold',
+      'peripheral-awareness',
+      'directed-momentum',
+      'holding-opposites'
+    ];
+    
     try {
       const jsonMatch = response.match(/\[.*\]/s);
       if (!jsonMatch) throw new Error('No JSON array found');
@@ -539,11 +549,20 @@ export class AutoProcessor {
           addDebugLog(`[parseBatchFrameResponse] Skipping invalid frame: missing required fields.`);
           continue;
         }
-        // Filter qualities to allowed types only
-        const filteredQualities = qualities.filter((q: any) => ALLOWED_QUALITY_TYPES.includes(q.type));
-        if (filteredQualities.length < qualities.length) {
-          addDebugLog(`[parseBatchFrameResponse] Dropped qualities with invalid types: ${JSON.stringify(qualities.filter((q: any) => !ALLOWED_QUALITY_TYPES.includes(q.type)))}`);
+        
+        // STRICT VALIDATION: Reject frames with invalid shot types
+        if (!ALLOWED_SHOT_TYPES.includes(shot)) {
+          addDebugLog(`[parseBatchFrameResponse] REJECTING frame with invalid shot type: "${shot}". Valid options: ${ALLOWED_SHOT_TYPES.join(', ')}`);
+          continue;
         }
+        
+        // STRICT VALIDATION: Reject frames with invalid quality types
+        const invalidQualities = qualities.filter((q: any) => !ALLOWED_QUALITY_TYPES.includes(q.type));
+        if (invalidQualities.length > 0) {
+          addDebugLog(`[parseBatchFrameResponse] REJECTING frame with invalid quality types: ${JSON.stringify(invalidQualities)}. Valid options: ${ALLOWED_QUALITY_TYPES.join(', ')}`);
+          continue;
+        }
+        
         // Validate fragments
         // Accept fragments with only sourceId and text (no start/end)
         const validSources: any[] = [];
@@ -560,7 +579,7 @@ export class AutoProcessor {
           emoji,
           summary,
           shot: shot as ShotType,
-          qualities: filteredQualities,
+          qualities: qualities,
           sources: validSources
         });
       }
