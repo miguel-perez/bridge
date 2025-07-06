@@ -180,7 +180,8 @@ function formatSearchResult(result: SearchResult, index: number): string {
   } else {
     summary = '[no summary]';
   }
-  return `${index + 1}. [${label.toUpperCase()}] ${summary}`;
+  // Always include the ID in the output
+  return `${index + 1}. [${label.toUpperCase()}] (ID: ${result.id}) ${summary}`;
 }
 
 // Define SearchToolInput for the new search tool
