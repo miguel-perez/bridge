@@ -67,7 +67,9 @@ export async function updateRecordEmbedding(record: StorageRecord): Promise<void
   const embedding = await generateEmbedding(text);
   // Only upsert to Pinecone
   const metadata: any = { type: record.type, created: (record as any).created };
-  if (record.type === 'source') metadata.summary = (record as any).content;
-  if (record.type === 'moment' || record.type === 'scene') metadata.summary = (record as any).summary;
+  if (record.type === 'moment' || record.type === 'scene') {
+    metadata.summary = (record as any).summary;
+  }
+  // Do NOT store full content for sources
   await upsertEmbedding(record.id, embedding, metadata);
 } 
