@@ -20,6 +20,7 @@ export interface FilterOptions {
   type?: Array<'source' | 'moment' | 'scene'>;
   experiencer?: string;
   qualities?: string[];
+  qualitiesMode?: 'all' | 'any'; // 'all' = AND logic, 'any' = OR logic
   // Advanced filters
   types?: Array<'source' | 'moment' | 'scene'>;
   timeRange?: { start?: string; end?: string };
@@ -45,6 +46,7 @@ export interface SearchOptions {
   groupBy?: GroupOption;
   limit?: number;
   includeContext?: boolean;
+  debug?: boolean; // Add debug information about filter results
 }
 
 export interface DateRange {
@@ -97,6 +99,16 @@ function isWithinRange(date: Date, start?: Date, end?: Date): boolean {
   if (start && date < start) return false;
   if (end && date > end) return false;
   return true;
+}
+
+// Helper: normalize date to start of day for consistent comparison
+function normalizeToStartOfDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+// Helper: normalize date to end of day for consistent comparison
+function normalizeToEndOfDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
 }
 
 // Helper: get date from record
@@ -157,16 +169,38 @@ export function advancedFilters(results: SearchResult[], filters?: FilterOptions
     // Created range filter (createdRange)
     if (filters.createdRange) {
       const recDate = getCreatedDate(rec);
+      if (!recDate) return false;
+      
       const start = new Date(filters.createdRange.start);
       const end = new Date(filters.createdRange.end);
-      if (!recDate || !isWithinRange(recDate, start, end)) return false;
+      
+      // If start and end are the same day, treat as full day range
+      if (start.toDateString() === end.toDateString()) {
+        const normalizedRecDate = normalizeToStartOfDay(recDate);
+        const normalizedStart = normalizeToStartOfDay(start);
+        const normalizedEnd = normalizeToEndOfDay(end);
+        if (!isWithinRange(normalizedRecDate, normalizedStart, normalizedEnd)) return false;
+      } else {
+        if (!isWithinRange(recDate, start, end)) return false;
+      }
     }
     // When range filter (whenRange)
     if (filters.whenRange) {
       const recDate = getWhenDate(rec);
+      if (!recDate) return false;
+      
       const start = new Date(filters.whenRange.start);
       const end = new Date(filters.whenRange.end);
-      if (!recDate || !isWithinRange(recDate, start, end)) return false;
+      
+      // If start and end are the same day, treat as full day range
+      if (start.toDateString() === end.toDateString()) {
+        const normalizedRecDate = normalizeToStartOfDay(recDate);
+        const normalizedStart = normalizeToStartOfDay(start);
+        const normalizedEnd = normalizeToEndOfDay(end);
+        if (!isWithinRange(normalizedRecDate, normalizedStart, normalizedEnd)) return false;
+      } else {
+        if (!isWithinRange(recDate, start, end)) return false;
+      }
     }
     // Reviewed filter (for moments and scenes)
     if (typeof filters.reviewed === 'boolean') {
@@ -192,9 +226,33 @@ export function advancedFilters(results: SearchResult[], filters?: FilterOptions
       }
       if (result.type === 'scene' && result.scene?.experiencer && !filters.experiencers.includes(result.scene.experiencer)) return false;
     }
-    // perspectives (for sources)
-    if (filters.perspectives && result.type === 'source') {
-      if (!filters.perspectives.includes(result.source?.perspective || '')) return false;
+    // perspectives (for sources, and moments/scenes inherit from their sources)
+    if (filters.perspectives) {
+      if (result.type === 'source') {
+        if (!filters.perspectives.includes(result.source?.perspective || '')) return false;
+      } else if (result.type === 'moment' && result.moment?.sources && allRecords) {
+        // Check if any related source has the perspective
+        const sourcePerspectives = result.moment.sources.map(src => {
+          const srcRec = allRecords.find(r => r.id === src.sourceId && r.type === 'source') as SourceRecord | undefined;
+          return srcRec?.perspective;
+        }).filter(Boolean);
+        if (!filters.perspectives.some(p => sourcePerspectives.includes(p))) return false;
+      } else if (result.type === 'scene' && result.scene?.momentIds && allRecords) {
+        // Check if any related moment's sources have the perspective
+        const scenePerspectives: string[] = [];
+        for (const momentId of result.scene.momentIds) {
+          const moment = allRecords.find(r => r.id === momentId && r.type === 'moment') as MomentRecord | undefined;
+          if (moment?.sources) {
+            for (const src of moment.sources) {
+              const srcRec = allRecords.find(r => r.id === src.sourceId && r.type === 'source') as SourceRecord | undefined;
+              if (srcRec?.perspective) {
+                scenePerspectives.push(srcRec.perspective);
+              }
+            }
+          }
+        }
+        if (!filters.perspectives.some(p => scenePerspectives.includes(p))) return false;
+      }
     }
     // processing (for sources)
     if (filters.processing && result.type === 'source') {
@@ -211,13 +269,20 @@ export function advancedFilters(results: SearchResult[], filters?: FilterOptions
       });
       if (filters.framed !== isFramed) return false;
     }
-    // qualities (for sources and moments)
+    // qualities (for moments only)
     if (filters.qualities && filters.qualities.length > 0) {
       // Only consider moments
       if (result.type !== 'moment') return false;
-      // AND logic: all qualities must be present
       const momentQualities: string[] = result.moment?.qualities?.map(q => q.type) || [];
-      if (!filters.qualities.every(q => momentQualities.includes(q))) return false;
+      const mode = filters.qualitiesMode || 'all'; // Default to AND logic for backward compatibility
+      
+      if (mode === 'all') {
+        // AND logic: all qualities must be present
+        if (!filters.qualities.every(q => momentQualities.includes(q))) return false;
+      } else if (mode === 'any') {
+        // OR logic: any quality must be present
+        if (!filters.qualities.some(q => momentQualities.includes(q))) return false;
+      }
     }
     // experiencer (legacy single - convert to array format for consistency)
     if (filters.experiencer && !filters.experiencers) {

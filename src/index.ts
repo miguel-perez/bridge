@@ -235,6 +235,7 @@ interface SearchToolInput {
   type?: Array<'source' | 'moment' | 'scene'>;
   experiencer?: string;
   qualities?: string[];
+  qualitiesMode?: 'all' | 'any';
   perspective?: string;
   processing?: string;
   shot?: string;
@@ -244,6 +245,7 @@ interface SearchToolInput {
   limit?: number;
   includeContext?: boolean;
   reviewed?: boolean;
+  debug?: boolean;
 }
 
 // Tool handlers
@@ -382,7 +384,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           reflectedOn: { type: "string", description: "Record ID to find all related records (traverses reflects_on, sources, moments, scenes)" },
           type: { type: "array", items: { type: "string", enum: ["source", "moment", "scene"] }, description: "Restrict to certain record types" },
           experiencer: { type: "string", description: "Only records with this experiencer" },
-          qualities: { type: "array", items: { type: "string" }, description: "Only moments with all these qualities" },
+          qualities: { type: "array", items: { type: "string" }, description: "Only moments with these qualities" },
+          qualitiesMode: { type: "string", enum: ["all", "any"], description: "For qualities filter: 'all' = AND logic (all qualities must be present), 'any' = OR logic (any quality must be present)", default: "all" },
           perspective: { type: "string", description: "Only records with this perspective" },
           processing: { type: "string", description: "Only records with this processing level" },
           shot: { type: "string", description: "Only moments/scenes with this shot type" },
@@ -391,7 +394,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           sort: { type: "string", enum: ["relevance", "created", "when"], description: "Sort by field" },
           limit: { type: "number", description: "Maximum results to return" },
           includeContext: { type: "boolean", description: "Return full record metadata" },
-          reviewed: { type: "boolean", description: "Only records that are (or are not) reviewed" }
+          reviewed: { type: "boolean", description: "Only records that are (or are not) reviewed" },
+          debug: { type: "boolean", description: "Include debug information about filter results" }
         }
       },
       annotations: {
@@ -692,11 +696,54 @@ bridge:capture {
           );
         }
         
+        // UPFRONT VALIDATION: Check that all source IDs exist before proceeding
+        const validSources: SourceRecord[] = [];
+        const missingSources: string[] = [];
+        const alreadyFramedSources: string[] = [];
+        
+        for (const sourceId of input.sourceIds) {
+          const source = await getSource(sourceId);
+          if (!source) {
+            missingSources.push(sourceId);
+          } else {
+            // Check if source is already framed by looking for moments that reference it
+            const moments = await getMoments();
+            const isFramed = moments.some(m => m.sources.some(s => s.sourceId === sourceId));
+            if (isFramed) {
+              alreadyFramedSources.push(sourceId);
+            } else {
+              validSources.push(source);
+            }
+          }
+        }
+        
+        // Report specific validation errors
+        if (missingSources.length > 0) {
+          throw new McpError(
+            ErrorCode.InvalidParams,
+            `Source ID(s) not found: ${missingSources.join(', ')}. Please check the IDs and try again.`
+          );
+        }
+        
+        if (alreadyFramedSources.length > 0) {
+          throw new McpError(
+            ErrorCode.InvalidParams,
+            `Source(s) already framed: ${alreadyFramedSources.join(', ')}. These sources have already been processed into moments.`
+          );
+        }
+        
+        if (validSources.length === 0) {
+          throw new McpError(
+            ErrorCode.InvalidParams,
+            'No valid unframed sources found. All provided sources have already been framed or do not exist.'
+          );
+        }
+        
         // Determine mode based on provided parameters
         const isSmartDefault = !input.emoji && !input.summary && !input.qualities && !input.narrative && !input.shot && !input.when;
         
         if (isSmartDefault) {
-          // Smart default: use AutoProcessor
+          // Smart default: use AutoProcessor (now we know all sources are valid and unframed)
           const autoProcessor = new AutoProcessor();
           const result = await autoProcessor.autoFrameSources({ sourceIds: input.sourceIds });
           const successes = result.filter(r => r.success && r.created);
@@ -733,18 +780,7 @@ bridge:capture {
             return { content: [{ type: 'text', text: `Smart-framing failed: ${String(firstError.error)}` }] };
           }
         } else {
-          // Manual override: validate all sources exist
-          const validSources: SourceRecord[] = [];
-          for (const sourceId of input.sourceIds) {
-            const source = await getSource(sourceId);
-            if (!source) {
-              throw new McpError(
-                ErrorCode.InvalidParams,
-                `Source with ID '${sourceId}' not found. Capture an experience first, then frame it into a moment.`
-              );
-            }
-            validSources.push(source);
-          }
+          // Manual override: sources are already validated above, use the validSources array
           
           // Validate that all required manual parameters are provided (when is optional)
           if (!input.emoji || !input.summary || !input.qualities || !input.shot) {
@@ -872,11 +908,54 @@ Optional: add 'when' to override temporal inheritance from sources.`
           );
         }
         
+        // UPFRONT VALIDATION: Check that all moment IDs exist before proceeding
+        const validMoments: MomentRecord[] = [];
+        const missingMoments: string[] = [];
+        const alreadyWovenMoments: string[] = [];
+        
+        for (const momentId of input.momentIds) {
+          const moment = await getMoment(momentId);
+          if (!moment) {
+            missingMoments.push(momentId);
+          } else {
+            // Check if moment is already woven by looking for scenes that reference it
+            const scenes = await getScenes();
+            const isWoven = scenes.some(s => s.momentIds.includes(momentId));
+            if (isWoven) {
+              alreadyWovenMoments.push(momentId);
+            } else {
+              validMoments.push(moment);
+            }
+          }
+        }
+        
+        // Report specific validation errors
+        if (missingMoments.length > 0) {
+          throw new McpError(
+            ErrorCode.InvalidParams,
+            `Moment ID(s) not found: ${missingMoments.join(', ')}. Please check the IDs and try again.`
+          );
+        }
+        
+        if (alreadyWovenMoments.length > 0) {
+          throw new McpError(
+            ErrorCode.InvalidParams,
+            `Moment(s) already woven: ${alreadyWovenMoments.join(', ')}. These moments have already been processed into scenes.`
+          );
+        }
+        
+        if (validMoments.length === 0) {
+          throw new McpError(
+            ErrorCode.InvalidParams,
+            'No valid unwoven moments found. All provided moments have already been woven or do not exist.'
+          );
+        }
+        
         // Determine mode based on provided parameters
         const isSmartDefault = !input.emoji && !input.summary && !input.narrative && !input.shot && !input.when;
         
         if (isSmartDefault) {
-          // Smart default: use AutoProcessor
+          // Smart default: use AutoProcessor (now we know all moments are valid and unwoven)
           const autoProcessor = new AutoProcessor();
           const result = await autoProcessor.autoWeaveMoments(input.momentIds);
           const scenesArr = Array.isArray(result.created) ? result.created : (result.created ? [result.created] : []);
@@ -907,16 +986,7 @@ Optional: add 'when' to override temporal inheritance from sources.`
             return { content: [{ type: 'text', text: `Smart-weaving failed: ${String(result.error)}` }] };
           }
         } else {
-          // Manual override: validate all moments exist
-          for (const momentId of input.momentIds) {
-            const moment = await getMoment(momentId);
-            if (!moment) {
-              throw new McpError(
-                ErrorCode.InvalidParams,
-                `Moment not found: ${momentId}. Frame your sources into moments first, then weave moments together.`
-              );
-            }
-          }
+          // Manual override: moments are already validated above, use the validMoments array
           
           // Validate that all required manual parameters are provided (when is optional)
           if (!input.emoji || !input.summary || !input.narrative || !input.shot) {
@@ -1493,6 +1563,7 @@ Optional: add 'when' to override temporal inheritance from moments.`
           filters,
           limit: input.limit,
           includeContext: input.includeContext,
+          debug: input.debug,
         };
         if (typeof input.sort === 'string') searchOptions.sort = input.sort;
         if (typeof input.groupBy === 'string') searchOptions.groupBy = input.groupBy;
@@ -1505,7 +1576,25 @@ Optional: add 'when' to override temporal inheritance from moments.`
         }
         if (Array.isArray(finalResults)) {
           if (finalResults.length === 0) {
-            return { content: [{ type: 'text', text: 'No relevant memories found.' }] };
+            // Provide more helpful error message when no results found
+            let errorMessage = 'No relevant memories found.';
+            if (input.debug) {
+              const activeFilters = [];
+              if (input.type && input.type.length > 0) activeFilters.push(`type: ${input.type.join(', ')}`);
+              if (input.experiencer) activeFilters.push(`experiencer: ${input.experiencer}`);
+              if (input.perspective) activeFilters.push(`perspective: ${input.perspective}`);
+              if (input.qualities && input.qualities.length > 0) activeFilters.push(`qualities: ${input.qualities.join(', ')} (mode: ${input.qualitiesMode || 'all'})`);
+              if (input.shot) activeFilters.push(`shot: ${input.shot}`);
+              if (input.created) activeFilters.push(`created: ${typeof input.created === 'string' ? input.created : `${input.created.start} to ${input.created.end}`}`);
+              if (input.when) activeFilters.push(`when: ${typeof input.when === 'string' ? input.when : `${input.when.start} to ${input.when.end}`}`);
+              if (input.framed !== undefined) activeFilters.push(`framed: ${input.framed}`);
+              if (input.reviewed !== undefined) activeFilters.push(`reviewed: ${input.reviewed}`);
+              
+              if (activeFilters.length > 0) {
+                errorMessage += `\n\nActive filters that may be too restrictive:\n${activeFilters.map(f => `  • ${f}`).join('\n')}`;
+              }
+            }
+            return { content: [{ type: 'text', text: errorMessage }] };
           }
           if (input.includeContext) {
             return {
