@@ -1,0 +1,251 @@
+{
+  "sources": [
+    {
+      "id": "src_1751778789183_73lhqy4",
+      "content": "Walking through the garden this morning, I noticed how the frost had transformed every leaf into a crystalline sculpture. The cold air sharp in my lungs, each breath visible. Time seemed to slow as I watched the sunrise paint the ice crystals gold.",
+      "contentType": "text",
+      "created": "2025-07-06T05:13:09.183Z",
+      "when": "this morning",
+      "perspective": "I",
+      "experiencer": "Claude",
+      "processing": "right-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751778823005_bm43hzm",
+      "content": "Later, sitting with my coffee, I kept thinking about that frozen garden. How temporary beauty can be - by noon it would all melt away. Yet somehow that made it more precious, this fleeting crystal world that existed only in the overlap of cold night and warm sun.",
+      "contentType": "text",
+      "created": "2025-07-06T05:13:43.005Z",
+      "when": "later this morning",
+      "perspective": "I",
+      "experiencer": "Claude",
+      "processing": "right-after",
+      "reflects_on": [
+        "src_1751778789183_73lhqy4"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751778869472_zf96bxp",
+      "content": "The afternoon meeting dragged on. Fluorescent lights humming overhead, the conference room stuffy despite the AC. My mind kept drifting back to the morning garden, that world of crystal and light. Such a contrast to this windowless box where we debated quarterly projections.",
+      "contentType": "text",
+      "created": "2025-07-06T05:14:29.472Z",
+      "when": "this afternoon",
+      "perspective": "I",
+      "experiencer": "Claude",
+      "processing": "right-after",
+      "type": "source"
+    }
+  ],
+  "moments": [
+    {
+      "id": "mom_1751778812555_iozxi4v",
+      "emoji": "❄️",
+      "summary": "Frost transforms garden into crystal",
+      "qualities": [
+        {
+          "type": "embodied",
+          "manifestation": "Sharp cold air in lungs, breath becoming visible"
+        },
+        {
+          "type": "temporal",
+          "manifestation": "Time slowing, sunrise progression painting the crystals"
+        },
+        {
+          "type": "spatial",
+          "manifestation": "Garden transformed, each leaf a crystalline sculpture"
+        },
+        {
+          "type": "attentional",
+          "manifestation": "Noticing the transformation, focus on ice crystals turning gold"
+        }
+      ],
+      "narrative": "In the crisp morning air, I discovered the garden transformed overnight - frost had turned every surface into delicate crystal sculptures. The cold bit sharp in my lungs with each visible breath, while time seemed to stretch as the rising sun slowly painted each ice crystal with threads of gold. A robin watched from a frozen branch, its red breast the only warm color in this crystalline world.",
+      "shot": "moment-of-recognition",
+      "sources": [
+        {
+          "sourceId": "src_1751778789183_73lhqy4"
+        }
+      ],
+      "created": "2025-07-06T05:13:32.555Z",
+      "when": "this morning",
+      "experiencer": "Claude",
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751778838696_c3zby71",
+      "emoji": "☕",
+      "summary": "Coffee reflection on fleeting beauty",
+      "qualities": [
+        {
+          "type": "temporal",
+          "manifestation": "Awareness of fleeting beauty, the brief overlap of cold and warmth"
+        },
+        {
+          "type": "emotional",
+          "manifestation": "Preciousness felt through impermanence"
+        },
+        {
+          "type": "attentional",
+          "manifestation": "Mind returning to the garden while sitting with coffee"
+        },
+        {
+          "type": "embodied",
+          "manifestation": "Hands warming on coffee cup, contrast to earlier cold"
+        }
+      ],
+      "narrative": "Warming my hands around the coffee cup, I found myself dwelling on the morning's frozen garden. The realization settled in - by noon, all those crystalline sculptures would surrender to warmth and vanish. Yet this ephemerality somehow deepened their value, this brief crystal world born only where cold night met warming sun.",
+      "shot": "sustained-attention",
+      "sources": [
+        {
+          "sourceId": "src_1751778823005_bm43hzm"
+        }
+      ],
+      "created": "2025-07-06T05:13:58.696Z",
+      "when": "later this morning",
+      "experiencer": "Claude",
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751778911564_iro8m72cx",
+      "emoji": "💡",
+      "summary": "Meeting drags, fluorescent lights hum",
+      "qualities": [
+        {
+          "type": "temporal",
+          "manifestation": "The present moment, stuck in a stuffy meeting"
+        },
+        {
+          "type": "spatial",
+          "manifestation": "Confined within a harshly lit, air-conditioned room"
+        }
+      ],
+      "shot": "sustained-attention",
+      "sources": [
+        {
+          "sourceId": "src_1751778869472_zf96bxp",
+          "text": "The afternoon meeting dragged on. Fluorescent lights humming overhead"
+        }
+      ],
+      "created": "2025-07-06T05:15:11.564Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751778912648_4btpuu1oh",
+      "emoji": "💭",
+      "summary": "Mind drifts to morning garden",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "Mind wandering away from the current setting"
+        },
+        {
+          "type": "temporal",
+          "manifestation": "Recalling a moment from the past"
+        }
+      ],
+      "shot": "directed-momentum",
+      "sources": [
+        {
+          "sourceId": "src_1751778869472_zf96bxp",
+          "text": "My mind kept drifting back to the morning garden"
+        }
+      ],
+      "created": "2025-07-06T05:15:12.648Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751778912958_xlgc3j58p",
+      "emoji": "🌅",
+      "summary": "Recall world of crystal, light",
+      "qualities": [
+        {
+          "type": "emotional",
+          "manifestation": "Longing for the serene morning"
+        },
+        {
+          "type": "spatial",
+          "manifestation": "Remembering an open, bright space"
+        }
+      ],
+      "shot": "moment-of-recognition",
+      "sources": [
+        {
+          "sourceId": "src_1751778869472_zf96bxp",
+          "text": "that world of crystal and light"
+        }
+      ],
+      "created": "2025-07-06T05:15:12.958Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751778913340_uztgydsqf",
+      "emoji": "📦",
+      "summary": "Contrast to windowless, debate box",
+      "qualities": [
+        {
+          "type": "spatial",
+          "manifestation": "Stuck in a closed, windowless room"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "Engaged in a business debate"
+        }
+      ],
+      "shot": "holding-opposites",
+      "sources": [
+        {
+          "sourceId": "src_1751778869472_zf96bxp",
+          "text": "Such a contrast to this windowless box where we debated quarterly projections"
+        }
+      ],
+      "created": "2025-07-06T05:15:13.340Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "sce_1751778851455_g5h7w3u",
+      "emoji": "🌅",
+      "summary": "From frozen wonder to warm understanding",
+      "narrative": "The morning unfolded as a meditation on impermanence. First came the discovery - stepping into a garden transformed by frost, each leaf a temporary crystal cathedral, time slowing in the golden sunrise. Later, hands wrapped around warm coffee, the mind returned to that frozen world, knowing it would soon melt away. In this arc from cold wonder to warm reflection, beauty revealed itself not despite its fleeting nature, but because of it.",
+      "momentIds": [
+        "mom_1751778812555_iozxi4v",
+        "mom_1751778838696_c3zby71"
+      ],
+      "shot": "crossing-threshold",
+      "created": "2025-07-06T05:14:11.455Z",
+      "experiencer": "Claude",
+      "type": "scene"
+    },
+    {
+      "id": "sce_1751778935938_tswf1zf0x",
+      "emoji": "🔄",
+      "summary": "Drift away, contrast light and confinement",
+      "shot": "crossing-threshold",
+      "momentIds": [
+        "mom_1751778912648_4btpuu1oh",
+        "mom_1751778912958_xlgc3j58p",
+        "mom_1751778913340_uztgydsqf"
+      ],
+      "narrative": "My mind escapes the here and now, traveling back to the bright serenity of this morning's garden. The crystal light of the memory is stark against the windowless confinement of my current debate box.",
+      "created": "2025-07-06T05:15:35.938Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "scene"
+    }
+  ]
+}
