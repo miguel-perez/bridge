@@ -134,6 +134,7 @@ const frameSchema = z.object({
 // Smart weaveSchema: accepts momentIds for AI generation OR full parameters for manual control
 const weaveSchema = z.object({
   momentIds: z.array(z.string()).min(1),
+  reframeExisting: z.boolean().optional().default(false),
   // Smart default mode: only momentIds provided
   // Manual override mode: provide additional parameters
   emoji: z.string().optional(),
@@ -997,6 +998,9 @@ Optional: add 'when' to override temporal inheritance from sources.`
 
       case 'weave': {
         const input = weaveSchema.parse(args);
+        // Fetch all moments at the top for reframing logic
+        const allMoments = await getMoments();
+        let newSceneId: string | undefined = undefined;
         // Validate when field with flexible date parsing
         if (input.when && !(await validateFlexibleDate(input.when))) {
           throw new McpError(
@@ -1034,12 +1038,36 @@ Optional: add 'when' to override temporal inheritance from sources.`
           );
         }
         
+        // --- Reframing logic ---
         if (alreadyWovenMoments.length > 0) {
-          throw new McpError(
-            ErrorCode.InvalidParams,
-            `Moment(s) already woven: ${alreadyWovenMoments.join(', ')}. These moments have already been processed into scenes.`
-          );
+          if (input.reframeExisting === true) {
+            // Find scenes containing these moments
+            const scenesToReframe = await getScenes();
+            const affectedScenes = scenesToReframe.filter(s => 
+              alreadyWovenMoments.some(momentId => s.momentIds.includes(momentId))
+            );
+            // Generate new scene ID now
+            newSceneId = generateId('sce');
+            // Mark old scenes as reframed
+            for (const scene of affectedScenes) {
+              await updateScene(scene.id, {
+                reframedBy: newSceneId
+              });
+            }
+            // validMoments should include all moments now
+            validMoments.push(...alreadyWovenMoments.map(id => 
+              allMoments.find((m: any) => m.id === id)!
+            ));
+            // We'll use newSceneId when saving the new scene below
+            // (pass as id: newSceneId)
+          } else {
+            throw new McpError(
+              ErrorCode.InvalidParams,
+              `Moment(s) already woven: ${alreadyWovenMoments.join(', ')}.\n\nTo create a new scene with these moments, use:\nbridge:weave { momentIds: [...], reframeExisting: true }\n\nThis will mark the old scene(s) as reframed and create a new scene.`
+            );
+          }
         }
+        // (The rest of the handler continues as before, but if reframing, use newSceneId for the new scene's id)
         
         if (validMoments.length === 0) {
           throw new McpError(
@@ -1166,20 +1194,23 @@ Optional: add 'when' to override temporal inheritance from moments.`
             whenValue = validMoments[0].when || validMoments[0].created;
           }
           
-        const scene = await saveScene({
-          id: generateId('sce'),
-          emoji: input.emoji,
-          summary: input.summary,
-          ...( {
+          // Use newSceneId if reframing, otherwise generate a new one
+          const sceneId = (typeof newSceneId !== 'undefined') ? newSceneId : generateId('sce');
+          
+          const scene = await saveScene({
+            id: sceneId,
+            emoji: input.emoji,
+            summary: input.summary,
+            ...( {
               narrative: narrative,
-            momentIds: input.momentIds,
-            shot: input.shot,
+              momentIds: input.momentIds,
+              shot: input.shot,
               when: whenValue,
-            created: new Date().toISOString(),
+              created: new Date().toISOString(),
               experiencers: uniqueExperiencers,
               primaryExperiencer: uniqueExperiencers[0] || 'unknown',
-          } as any ),
-        });
+            } as any ),
+          });
           
           const content = [
             {
