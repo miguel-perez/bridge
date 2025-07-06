@@ -18,7 +18,6 @@ import {
   getMoments,
   getScenes,
   getScene,
-  validateFilePath,
   deleteSource,
   deleteMoment,
   updateScene,
@@ -466,17 +465,25 @@ shifts, several emotional boundaries, multiple actional completions.`;
             ).join('; ');
             throw new McpError(ErrorCode.InvalidParams, details);
           }
-          throw err;
+          if (err instanceof Error) {
+            throw err;
+          }
+          throw new Error(String(err));
         }
         // For file captures, require content to describe the file
         if (input.file) {
-          // Validate file exists and is readable
-          if (!await validateFilePath(input.file)) {
-            throw new McpError(
-              ErrorCode.InvalidParams,
-              `File not found or not readable: ${input.file}`
-            );
-          }
+          // File parameter is not yet implemented - provide clear error message
+          throw new McpError(
+            ErrorCode.InvalidParams,
+            `The 'file' parameter is not yet implemented. Your content was captured without the file reference.
+
+To link files, mention the path in your content text instead:
+bridge:capture {
+  content: "Reading through Bridge's documentation at C:\\Users\\Miguel\\Git\\bridge\\README.md...",
+  experiencer: "Claude",
+  perspective: "I"
+}`
+          );
           // Create source record
           const source = await saveSource({
             id: generateId('src'),
@@ -555,8 +562,14 @@ shifts, several emotional boundaries, multiple actional completions.`;
               } else {
                 content.push({ type: 'text', text: `⚠️ AI framing did not create any moments.` });
               }
-            } catch (err) {
-              content.push({ type: 'text', text: `⚠️ AI framing error: ${err instanceof Error ? err.message : String(err)}` });
+            } catch (err: unknown) {
+              let errorMessage: string;
+              if (err instanceof Error) {
+                errorMessage = (err as Error).message;
+              } else {
+                errorMessage = String(err);
+              }
+              content.push({ type: 'text', text: `⚠️ AI framing error: ${errorMessage}` });
             }
           } else {
             content.push({
@@ -639,8 +652,14 @@ shifts, several emotional boundaries, multiple actional completions.`;
             } else {
               content.push({ type: 'text', text: `⚠️ AI framing did not create any moments.` });
             }
-          } catch (err) {
-            content.push({ type: 'text', text: `⚠️ AI framing error: ${err instanceof Error ? err.message : String(err)}` });
+          } catch (err: unknown) {
+            let errorMessage: string;
+            if (err instanceof Error) {
+              errorMessage = (err as Error).message;
+            } else {
+              errorMessage = String(err);
+            }
+            content.push({ type: 'text', text: `⚠️ AI framing error: ${errorMessage}` });
           }
         } else {
           content.push({
@@ -717,9 +736,31 @@ shifts, several emotional boundaries, multiple actional completions.`;
           
           // Validate that all required manual parameters are provided
           if (!input.emoji || !input.summary || !input.qualities || !input.shot || !input.when) {
+            const missingFields = [];
+            if (!input.emoji) missingFields.push('emoji');
+            if (!input.summary) missingFields.push('summary');
+            if (!input.qualities) missingFields.push('qualities');
+            if (!input.shot) missingFields.push('shot');
+            if (!input.when) missingFields.push('when');
+            
             throw new McpError(
               ErrorCode.InvalidParams,
-              `Manual framing requires emoji, summary, qualities, shot, and when. For AI-generated framing, provide only sourceIds.`
+              `Manual framing requires all parameters: emoji, summary, qualities, shot, and when.
+
+Missing fields: ${missingFields.join(', ')}
+
+For AI-generated framing, provide only sourceIds:
+bridge:frame { sourceIds: ["src_xxx"] }
+
+For manual control, provide all required fields:
+bridge:frame {
+  sourceIds: ["src_xxx"],
+  emoji: "🤔",
+  summary: "Auto-framing reveals interpretive depth",
+  qualities: [{type: "attentional", manifestation: "Noticing..."}],
+  shot: "moment-of-recognition",
+  when: "yesterday morning"
+}`
             );
           }
           
@@ -825,9 +866,31 @@ shifts, several emotional boundaries, multiple actional completions.`;
           
           // Validate that all required manual parameters are provided
           if (!input.emoji || !input.summary || !input.narrative || !input.shot || !input.when) {
+            const missingFields = [];
+            if (!input.emoji) missingFields.push('emoji');
+            if (!input.summary) missingFields.push('summary');
+            if (!input.narrative) missingFields.push('narrative');
+            if (!input.shot) missingFields.push('shot');
+            if (!input.when) missingFields.push('when');
+            
             throw new McpError(
               ErrorCode.InvalidParams,
-              `Manual weaving requires emoji, summary, narrative, shot, and when. For AI-generated weaving, provide only momentIds.`
+              `Manual weaving requires all parameters: emoji, summary, narrative, shot, and when.
+
+Missing fields: ${missingFields.join(', ')}
+
+For AI-generated weaving, provide only momentIds:
+bridge:weave { momentIds: ["mom_xxx"] }
+
+For manual control, provide all required fields:
+bridge:weave {
+  momentIds: ["mom_xxx"],
+  emoji: "🎭",
+  summary: "The journey of discovery",
+  narrative: "A story that connects these moments...",
+  shot: "crossing-threshold",
+  when: "last week"
+}`
             );
           }
           
@@ -1434,20 +1497,53 @@ ${report.processing_errors.map(e =>
       }
     }
   } catch (err) {
-    // Improved error reporting for user clarity
+    // Improved error reporting for user clarity - return proper MCP tool result format
+    let errorMessage = 'An unexpected error occurred';
+    
     if (err instanceof McpError) {
-      return { error: err.message };
+      errorMessage = err.message;
+    } else if (err instanceof z.ZodError) {
+      // Convert Zod validation errors to user-friendly messages
+      const details = err.errors.map(e => {
+        const field = e.path.join('.');
+        const message = e.message;
+        
+        // Provide specific guidance for common validation errors
+        if (field === 'shot') {
+          return `Invalid shot type. Valid options are: moment-of-recognition, sustained-attention, crossing-threshold, peripheral-awareness, directed-momentum, holding-opposites`;
+        }
+        if (field === 'perspective') {
+          return `Invalid perspective. Must be one of: I, we, you, they`;
+        }
+        if (field === 'processing') {
+          return `Invalid processing level. Must be one of: during, right-after, long-after, crafted`;
+        }
+        if (field === 'sourceIds' || field === 'momentIds') {
+          return `Missing required field: ${field}. Provide an array of IDs.`;
+        }
+        if (field === 'content') {
+          return `Content is required and cannot be empty.`;
+        }
+        if (field === 'experiencer') {
+          return `Experiencer is required. Specify who experienced this.`;
+        }
+        
+        return `Invalid ${field}: ${message}`;
+      }).join('; ');
+      errorMessage = details;
+    } else if (err instanceof Error) {
+      errorMessage = err.message;
     }
-    if (err instanceof z.ZodError) {
-      const details = err.errors.map(e =>
-        e.path.length ? `Missing or invalid field: ${e.path.join('.')}` : e.message
-      ).join('; ');
-      return { error: details };
-    }
-    if (err instanceof Error) {
-      return { error: err.message };
-    }
-    return { error: 'Unknown error' };
+    
+    return {
+      isError: true,
+      content: [
+        {
+          type: 'text',
+          text: errorMessage
+        }
+      ]
+    };
   }
 });
 
