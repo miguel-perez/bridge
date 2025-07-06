@@ -27,7 +27,7 @@ import {
   updateSource,
   getSources,
 } from './storage.js';
-import type { SourceRecord, ProcessingLevel, StorageRecord } from './types.js';
+import type { SourceRecord, ProcessingLevel, StorageRecord, MomentRecord, SceneRecord } from './types.js';
 import { search as semanticSearch } from './search.js';
 import path from 'path';
 import type { SearchResult } from './search.js';
@@ -996,6 +996,38 @@ shifts, several emotional boundaries, multiple actional completions.`;
           });
           if (preFilteredRecords.length === 0) {
             return { content: [{ type: 'text', text: `No record found with ID: ${input.reflectedOn}` }] };
+          }
+          
+          // If there's no query, return the reflection network directly
+          if (!input.query || input.query.trim() === '') {
+            const { getSearchableText } = await import('./storage.js');
+            const results = preFilteredRecords.map(record => {
+              const snippet = getSearchableText(record);
+              return {
+                type: record.type,
+                id: record.id,
+                snippet,
+                source: record.type === 'source' ? record as SourceRecord : undefined,
+                moment: record.type === 'moment' ? record as MomentRecord : undefined,
+                scene: record.type === 'scene' ? record as SceneRecord : undefined,
+              };
+            });
+            
+            if (input.includeContext) {
+              return {
+                content: results.map((result: SearchResult) => ({
+                  type: 'text',
+                  text: JSON.stringify(result, null, 2)
+                }))
+              };
+            } else {
+              return {
+                content: results.map((result: SearchResult, index: number) => ({
+                  type: 'text',
+                  text: formatSearchResult(result, index)
+                }))
+              };
+            }
           }
         }
         // When calling search, construct a SearchOptions object with all required properties and use object spread for optional fields

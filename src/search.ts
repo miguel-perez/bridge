@@ -170,10 +170,9 @@ export function advancedFilters(results: SearchResult[], filters?: FilterOptions
     }
     // Reviewed filter (for moments and scenes)
     if (typeof filters.reviewed === 'boolean') {
+      if (result.type === 'source') return true; // Sources pass through (they don't have reviewed field)
       if (result.type === 'moment' && result.moment?.reviewed !== filters.reviewed) return false;
       if (result.type === 'scene' && result.scene?.reviewed !== filters.reviewed) return false;
-      // Sources don't have reviewed field, so skip them
-      if (result.type === 'source') return false;
     }
     // hasQualities (for moments)
     if (filters.hasQualities && result.type === 'moment') {
@@ -285,21 +284,82 @@ export function groupResults(results: SearchResult[], groupBy: GroupOption = 'no
       groups.push({ label, count: byTime[label].length, items: byTime[label] });
     }
   } else if (groupBy === 'hierarchy') {
-    // Group by parent-child relationships
-    const byParent: Record<string, SearchResult[]> = {};
-    for (const r of results) {
-      const rec = r.source || r.moment || r.scene;
-      if (!rec) continue;
-      const parentId = getParentId(rec);
-      const label = parentId || 'root';
-      if (!byParent[label]) byParent[label] = [];
-      byParent[label].push(r);
-    }
-    for (const label in byParent) {
-      groups.push({ label, count: byParent[label].length, items: byParent[label] });
-    }
+    // Build actual hierarchical tree structure
+    const tree = buildHierarchyTree(results);
+    // Convert tree to flat groups for compatibility with GroupedResults interface
+    const flatGroups: Array<{ label: string; count: number; items: SearchResult[] }> = [];
+    
+    const flattenTree = (nodes: Array<{ label: string; count: number; items: SearchResult[]; children?: Array<{ label: string; count: number; items: SearchResult[] }> }>, level: number = 0) => {
+      for (const node of nodes) {
+        const indent = '  '.repeat(level);
+        flatGroups.push({
+          label: `${indent}${node.label}`,
+          count: node.count,
+          items: node.items
+        });
+        if (node.children && node.children.length > 0) {
+          flattenTree(node.children, level + 1);
+        }
+      }
+    };
+    
+    flattenTree(tree);
+    return {
+      groups: flatGroups,
+      totalResults: results.length
+    };
   }
   return { groups, totalResults: results.length };
+}
+
+// Helper: build hierarchical tree structure
+function buildHierarchyTree(results: SearchResult[]): Array<{ label: string; count: number; items: SearchResult[]; children?: Array<{ label: string; count: number; items: SearchResult[] }> }> {
+  const tree: Array<{ label: string; count: number; items: SearchResult[]; children?: Array<{ label: string; count: number; items: SearchResult[] }> }> = [];
+  const idToNode = new Map<string, { label: string; count: number; items: SearchResult[]; children?: Array<{ label: string; count: number; items: SearchResult[] }> }>();
+  
+  // First pass: create nodes for all results
+  for (const result of results) {
+    const rec = result.source || result.moment || result.scene;
+    if (!rec) continue;
+    
+    const node = {
+      label: `${result.type}: ${result.id}`,
+      count: 1,
+      items: [result],
+      children: []
+    };
+    
+    idToNode.set(result.id, node);
+  }
+  
+  // Second pass: build parent-child relationships
+  for (const result of results) {
+    const rec = result.source || result.moment || result.scene;
+    if (!rec) continue;
+    
+    const parentId = getParentId(rec);
+    if (parentId && idToNode.has(parentId)) {
+      const parent = idToNode.get(parentId)!;
+      const child = idToNode.get(result.id)!;
+      
+      if (!parent.children) parent.children = [];
+      parent.children.push(child);
+      
+      // Remove child from root level
+      const rootIndex = tree.findIndex(n => n.label === child.label);
+      if (rootIndex !== -1) {
+        tree.splice(rootIndex, 1);
+      }
+    } else {
+      // This is a root node
+      const node = idToNode.get(result.id)!;
+      if (!tree.find(n => n.label === node.label)) {
+        tree.push(node);
+      }
+    }
+  }
+  
+  return tree;
 }
 
 // 3. Main entry point
@@ -443,7 +503,13 @@ export async function search(options: SearchOptions): Promise<SearchResult[] | G
   // --- Main search logic ---
   const effectiveLimit = options.limit !== undefined ? options.limit : 20;
   if (!options.query || options.query.trim() === '' || options.mode === 'temporal') {
-    results = searchRecords.map(record => {
+    // Apply type filter even with no query for consistency
+    let filteredRecords = searchRecords;
+    if (options.filters?.types && options.filters.types.length > 0) {
+      filteredRecords = searchRecords.filter(record => options.filters!.types!.includes(record.type));
+    }
+    
+    results = filteredRecords.map(record => {
       const snippet = getSearchableText(record);
       return {
         type: record.type,
