@@ -312,21 +312,21 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   const tools = [
     {
       name: "capture",
-      description: "Capture raw experiential text as a source record. This is for unprocessed, in-the-moment entries—such as journal notes, chat messages, or direct transcripts—before any framing or analysis. Auto-framing is disabled by default to preserve user control.",
+      description: "Capture raw experiential text as a source record. This is for unprocessed, in-the-moment entries—such as journal notes, chat messages, or direct transcripts—before any framing or analysis. Auto-framing is disabled by default to preserve user control. When a file path is provided, the system will automatically read the file contents if no content is specified.",
       inputSchema: {
         type: "object",
         properties: {
-          content: { type: "string", description: "Raw text from experiencer, either new expereience or reflection or previous capture" },
+          content: { type: "string", description: "Raw text from experiencer, either new expereience or reflection or previous capture. If file is provided without content, file contents will be read automatically." },
           experiencer: { type: "string", description: "Who experienced this (e.g., 'Claude', 'Sarah', 'Team')" },
           perspective: { type: "string", enum: ["I", "we", "you", "they"], description: "Perspective used" },
           processing: { type: "string", enum: ["during", "right-after", "long-after", "crafted"], description: "When captured relative to experience" },
           contentType: { type: "string", description: "Type of content", default: "text" },
           when: { type: "string", description: "When it happened (ISO timestamp or descriptive like 'yesterday morning')" },
           reflects_on: { type: "array", items: { type: "string" }, description: "Array of source IDs this record reflects on (use for reflections)" },
-          file: { type: "string", description: "Optional file path for file-based captures" },
+          file: { type: "string", description: "File path to read contents from. If provided without content, file contents will be automatically read and used as content. Supports text files (txt, md, json, etc.)." },
           autoframe: { type: "boolean", description: "Whether to automatically frame this capture into moments (default: false - set to true to enable AI framing)" }
         },
-        required: ["content", "experiencer", "perspective", "processing"]
+        required: ["experiencer", "perspective", "processing"]
       },
       annotations: {
         title: "Capture Experience",
@@ -543,24 +543,49 @@ shifts, several emotional boundaries, multiple actional completions.`;
           }
           throw new Error(String(err));
         }
-        // For file captures, require content to describe the file
+        // For file captures, read file contents if no content provided
         if (input.file) {
-          // File parameter is not yet implemented - provide clear error message
-          throw new McpError(
-            ErrorCode.InvalidParams,
-            `The 'file' parameter is not yet implemented. Your content was captured without the file reference.
-
-To link files, mention the path in your content text instead:
-bridge:capture {
-  content: "Reading through Bridge's documentation at C:\\Users\\Miguel\\Git\\bridge\\README.md...",
-  experiencer: "Claude",
-  perspective: "I"
-}`
-          );
-          // Create source record
+          let fileContent = input.content;
+          
+          // If no content provided, read from file
+          if (!fileContent || fileContent.trim() === '') {
+            try {
+              const fs = await import('fs/promises');
+              
+              // Validate file exists and is readable
+              try {
+                await fs.access(input.file);
+              } catch (error) {
+                throw new McpError(
+                  ErrorCode.InvalidParams,
+                  `File not found or not accessible: ${input.file}`
+                );
+              }
+              
+              // Read file contents
+              fileContent = await fs.readFile(input.file, 'utf8');
+              
+              if (!fileContent || fileContent.trim() === '') {
+                throw new McpError(
+                  ErrorCode.InvalidParams,
+                  `File is empty: ${input.file}`
+                );
+              }
+            } catch (error) {
+              if (error instanceof McpError) {
+                throw error;
+              }
+              throw new McpError(
+                ErrorCode.InvalidParams,
+                `Failed to read file ${input.file}: ${error instanceof Error ? error.message : String(error)}`
+              );
+            }
+          }
+          
+          // Create source record with file metadata
           const source = await saveSource({
             id: generateId('src'),
-            content: input.content,
+            content: fileContent,
             contentType: input.contentType,
             created: new Date().toISOString(),
             when: input.when,
@@ -1625,7 +1650,6 @@ Optional: add 'when' to override temporal inheritance from moments.`
         if (Array.isArray(finalResults)) {
           if (finalResults.length === 0) {
             // Provide more helpful error message when no results found
-            let errorMessage = 'No relevant memories found.';
             if (input.includeContext) {
               return {
                 content: finalResults.map((result: SearchResult) => ({
