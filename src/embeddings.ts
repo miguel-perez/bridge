@@ -37,6 +37,12 @@ export async function upsertEmbedding(id: string, embedding: number[], metadata:
   ]);
 }
 
+// Delete embedding from Pinecone by record ID
+export async function deleteEmbedding(id: string) {
+  const pineconeIndex = await getPineconeIndex();
+  await pineconeIndex.deleteOne(id);
+}
+
 // Query Pinecone for similar embeddings
 export async function queryEmbedding(embedding: number[], topK = 10) {
   const pineconeIndex = await getPineconeIndex();

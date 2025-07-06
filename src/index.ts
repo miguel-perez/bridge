@@ -1063,17 +1063,22 @@ shifts, several emotional boundaries, multiple actional completions.`;
         const successes = result.filter(r => r.success && r.created);
         if (successes.length > 0) {
           // Always return all created moments, even if only one
-          let summary = `✓ Auto-framed source ${sourceId} into ${successes.length} moment(s):
-`;
+          let summary = `✓ Auto-framed source ${sourceId} into ${successes.length} moment(s):\n`;
           successes.forEach((r, idx) => {
             if (r.created) {
-              summary += `  - Moment ${idx + 1}: ${r.created.emoji} "${r.created.summary}" (ID: ${r.created.id})
-`;
+              summary += `  - Moment ${idx + 1}: ${r.created.emoji} "${r.created.summary}" (ID: ${r.created.id})\n`;
             } else {
-              summary += `  - Moment ${idx + 1}: [no data]
-`;
+              summary += `  - Moment ${idx + 1}: [no data]\n`;
             }
           });
+          // Add reframed moments info if any
+          const reframedArr = successes.flatMap(r => (r.created && Array.isArray((r.created as any)["_reframed"])) ? (r.created as any)["_reframed"] : []);
+          if (reframedArr.length > 0) {
+            summary += `\n🌀 Reframed (superseded) earlier moments:\n`;
+            reframedArr.forEach((m) => {
+              summary += `  - ${m.summary} (ID: ${m.id})\n`;
+            });
+          }
           return {
             content: [
               { type: 'text', text: summary },
@@ -1099,12 +1104,18 @@ shifts, several emotional boundaries, multiple actional completions.`;
         // Always return all created scenes, even if only one
         const scenesArr = Array.isArray(result.created) ? result.created : (result.created ? [result.created] : []);
         if (scenesArr.length > 0) {
-          let summary = `✓ Autoweave analyzed ${momentIds.length} moment(s) and created ${scenesArr.length} scene(s):
-`;
+          let summary = `✓ Autoweave analyzed ${momentIds.length} moment(s) and created ${scenesArr.length} scene(s):\n`;
           scenesArr.forEach((scene, idx) => {
-            summary += `  - Scene ${idx + 1}: ${scene.emoji || '❓'} "${scene.summary || '[no summary]'}" (moments: ${(scene.momentIds || []).join(', ')})
-`;
+            summary += `  - Scene ${idx + 1}: ${scene.emoji || '❓'} "${scene.summary || '[no summary]'}" (moments: ${(scene.momentIds || []).join(', ')})\n`;
           });
+          // Add reframed scenes info if any
+          const reframedArr = scenesArr.flatMap(s => (s && Array.isArray((s as any)["_reframed"])) ? (s as any)["_reframed"] : []);
+          if (reframedArr.length > 0) {
+            summary += `\n🌀 Reframed (superseded) earlier scenes:\n`;
+            reframedArr.forEach((sc) => {
+              summary += `  - ${sc.summary} (ID: ${sc.id})\n`;
+            });
+          }
           if (result.error) {
             summary += `Error: ${result.error}\n`;
           }

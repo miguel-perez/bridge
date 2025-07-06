@@ -273,6 +273,15 @@ export async function search(options: SearchOptions): Promise<SearchResult[] | G
   let results: SearchResult[] = [];
   let searchRecords = records;
 
+  // Filter out reframed moments/scenes unless includeContext is true or a special filter is set
+  if (!options.includeContext && (!options.filters || !(options.filters as any).includeReframed)) {
+    searchRecords = searchRecords.filter(r => {
+      if (r.type === 'moment' && (r as any).reframedBy) return false;
+      if (r.type === 'scene' && (r as any).reframedBy) return false;
+      return true;
+    });
+  }
+
   // --- Mode handling ---
   if (options.mode === 'temporal' && options.query) {
     const query = options.query.trim();
