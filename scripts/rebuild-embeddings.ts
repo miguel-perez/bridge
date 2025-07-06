@@ -1,7 +1,6 @@
 #!/usr/bin/env tsx
 import path from 'path';
 import { getAllRecords, setStorageConfig } from '../src/storage.js';
-import { generateEmbedding, saveEmbeddings, setEmbeddingsConfig } from '../src/embeddings.js';
 
 const defaultDataPath = path.resolve(process.cwd(), 'bridge.json');
 const DATA_FILE_PATH = process.env.BRIDGE_FILE_PATH
@@ -11,7 +10,6 @@ const DATA_FILE_PATH = process.env.BRIDGE_FILE_PATH
   : defaultDataPath;
 
 setStorageConfig({ dataFile: DATA_FILE_PATH });
-setEmbeddingsConfig({ dataFile: DATA_FILE_PATH });
 
 // Try to import getDataFile for debug output
 let dataFilePath: string | undefined = undefined;
@@ -33,17 +31,14 @@ async function main() {
   console.log('If this is not correct, set BRIDGE_FILE_PATH to your desired bridge.json path before running this script.');
 
   const records = await getAllRecords();
-  const embeddings: Record<string, number[]> = {};
+  const { updateRecordEmbedding } = await import('../src/embeddings.js');
   let count = 0;
   for (const record of records) {
-    const { getSearchableText } = await import('../src/storage.js');
-    const text = getSearchableText(record);
-    embeddings[record.id] = await generateEmbedding(text);
+    await updateRecordEmbedding(record);
     count++;
-    if (count % 10 === 0) console.log(`  Embedded ${count} records...`);
+    if (count % 10 === 0) console.log(`  Upserted ${count} embeddings to Pinecone...`);
   }
-  await saveEmbeddings(embeddings);
-  console.log(`Done. Rebuilt embeddings for ${count} records.`);
+  console.log(`Done. Upserted ${count} embeddings to Pinecone.`);
 }
 
 main().catch((err) => {

@@ -81,14 +81,12 @@ Quality manifestations - how dimensions texture the moment:
 
 import type { SourceRecord } from './types.js';
 import type { DraftFrame, AssignFrame, CritiqueResult } from './auto-processing.js';
-import { semanticSearch as rawSemanticSearch } from './search.js';
+import { generateEmbedding, queryEmbedding } from './embeddings.js';
 
 // --- Prompt construction for auto-framing and assignment ---
 
 export function createSplitPrompt(batch: SourceRecord[]): string {
-  // Debug log: show variables used
-  console.error('[prompts] createSplitPrompt called with batch:', batch.map(s => ({ id: s.id, content: s.content.slice(0, 80) })));
-  const sourceTexts = batch.map(s => `Source ${s.id}: ${s.content}`).join('\n\n');
+  const sourceTexts = batch.map(s => `Source ${s.id}: ${s.content.slice(0, 80)}`).join('\n\n');
   const promptText = `${FRAMEWORK_CONTEXT}
 
 Your task: Process these sources into frames. Every source must find its frame home.
@@ -116,11 +114,7 @@ function normalizeQualities(val: any): Array<{type: string, manifestation: strin
 }
 
 export function createAssignPrompt(draft: DraftFrame, context: string, batch: SourceRecord[]): string {
-  // Debug log: show variables used
-  console.error('[prompts] createAssignPrompt called with draft:', draft, 'context:', context.slice(0, 80), 'batch:', batch.map(s => ({ id: s.id })));
-  // Robust normalization for qualities
   const qualitiesArr = normalizeQualities(draft.qualities);
-  // Build fragment details with actual text
   const fragDetails = draft.sources.map(f => {
     const src = batch.find(s => s.id === f.sourceId);
     let fragText = '';
@@ -136,7 +130,6 @@ export function createAssignPrompt(draft: DraftFrame, context: string, batch: So
 
   const safeContext = context?.trim() || '[Use only the fragment text to create the frame]';
 
-  // Gather full source text for all involved sources
   const fullSourceText = draft.sources.map(f => {
     const src = batch.find(s => s.id === f.sourceId);
     return src ? `Source ${f.sourceId}: ${src.content}` : '';
@@ -191,11 +184,7 @@ Return only this JSON structure:
 }
 
 export function createCritiquePrompt(frame: AssignFrame, context: string, batch: SourceRecord[]): string {
-  // Debug log: show variables used
-  console.error('[prompts] createCritiquePrompt called with frame:', frame, 'context:', context.slice(0, 80), 'batch:', batch.map(s => ({ id: s.id })));
-  // Robust normalization for qualities
   const qualitiesArr = normalizeQualities(frame.qualities);
-  // Enhanced criteria based on learnings from examples
   const criteriaExplanations = [
     'Six-word story power: Does the emoji + summary contain the entire moment?',
     'Voice recognition: Would the experiencer say "that\'s my brain right there"?',
@@ -212,7 +201,6 @@ export function createCritiquePrompt(frame: AssignFrame, context: string, batch:
     'Recognition trigger: Would this 5-7 word story make someone relive the moment?'
   ];
 
-  // Get fragment texts
   const fragDetails = frame.sources.map(f => {
     const src = batch.find(s => s.id === f.sourceId);
     let fragText = '';
@@ -224,7 +212,6 @@ export function createCritiquePrompt(frame: AssignFrame, context: string, batch:
 
   const safeContext = context?.trim() || '[Judge based on fragment text alone]';
 
-  // Gather full source text for all involved sources
   const fullSourceText = frame.sources.map(f => {
     const src = batch.find(s => s.id === f.sourceId);
     return src ? `Source ${f.sourceId}: ${src.content}` : '';
@@ -266,9 +253,6 @@ Return JSON: {
 }
 
 export function createRevisionPrompt(frame: AssignFrame, critique: CritiqueResult, context: string, batch: SourceRecord[], fullSourceText?: string): string {
-  // Debug log: show variables used
-  console.error('[prompts] createRevisionPrompt called with frame:', frame, 'critique:', critique, 'context:', context.slice(0, 80), 'batch:', batch.map(s => ({ id: s.id })), 'fullSourceText:', fullSourceText ? fullSourceText.slice(0, 80) : undefined);
-  // Use frame.sources for legacy compatibility if frame.fragments is undefined
   const sourceSpans: { sourceId: string; start: number; end: number }[] = (Array.isArray((frame as any).fragments) ? (frame as any).fragments : (frame as any).sources) || [];
   const sourcesDetails = sourceSpans.map((f: { sourceId: string; start: number; end: number }) => {
     const src = batch.find(s => s.id === f.sourceId);
@@ -338,24 +322,11 @@ INSTRUCTIONS:
 
 // Batch framing prompt for the new pipeline
 export async function createBatchFramePrompt(batch: import('./types.js').SourceRecord[], allSources?: any[]): Promise<string> {
-  // Helper for semantic context
   function hasContent(obj: unknown): obj is { content: string, id: string } {
     return typeof obj === 'object' && obj !== null && 'content' in obj && typeof (obj as any).content === 'string';
   }
-  // Load embeddings once for all semantic searches
-  let embeddings: Record<string, number[]> = {};
-  if (Array.isArray(allSources) && allSources.length > 1) {
-    const { loadEmbeddings } = await import('./embeddings.js');
-    embeddings = await loadEmbeddings();
-    console.log(`[semantic context] Embeddings loaded: ${Object.keys(embeddings).length} keys`);
-    if (Object.keys(embeddings).length === 0) {
-      console.warn('[semantic context] WARNING: No embeddings found. Semantic search will not return results.');
-    }
-  }
-  // For each source, gather context (reflects_on + semantic search)
   const contextBlocks = await Promise.all(batch.map(async src => {
     let contextBlock = '';
-    // Reflects_on (forward)
     const reflectsOnIds: string[] = Array.isArray(src.reflects_on) ? src.reflects_on : [];
     let reflectsOnTexts: string[] = [];
     if (reflectsOnIds.length > 0 && Array.isArray(allSources) && allSources.length > 0) {
@@ -367,7 +338,6 @@ export async function createBatchFramePrompt(batch: import('./types.js').SourceR
         contextBlock += 'REFLECTED SOURCES (referenced by this source):\n' + reflectsOnTexts.join('\n---\n') + '\n';
       }
     }
-    // Reflections about this source (reverse)
     let reflectionsAboutTexts: string[] = [];
     if (Array.isArray(allSources) && allSources.length > 0) {
       const reflectionsAbout = allSources.filter((r: any) => Array.isArray(r.reflects_on) && r.reflects_on.includes(src.id));
@@ -376,22 +346,18 @@ export async function createBatchFramePrompt(batch: import('./types.js').SourceR
         contextBlock += 'REFLECTIONS ABOUT THIS SOURCE (referenced by others):\n' + reflectionsAboutTexts.join('\n---\n') + '\n';
       }
     }
-    // Semantic context
     let semanticContextStrings: string[] = [];
-    if (Array.isArray(allSources) && allSources.length > 1 && Object.keys(embeddings).length > 0) {
-      // Exclude self and reflects_on
+    if (Array.isArray(allSources) && allSources.length > 1) {
       const candidates = allSources.filter(s => s.id !== src.id && !reflectsOnIds.includes(s.id));
-      console.log(`[semantic context] Candidates for source ${src.id}: ${candidates.map(s => s.id).join(', ')}`);
-      const results = await rawSemanticSearch(src.content, candidates, embeddings, 3, 'source');
-      if (Array.isArray(results)) {
-        semanticContextStrings = (results as unknown[]).filter(hasContent).map(r => `[semantic: ${r.id}] ${r.content}`);
-        // Log returned IDs and relevance if available
-        console.log(`[semantic context] Results for source ${src.id}: ${results.map((r: any) => `${r.id}${r.relevance !== undefined ? ` (score: ${r.relevance.toFixed(3)})` : ''}`).join(', ')}`);
-      } else if (results && 'groups' in results) {
-        const flatResults = (results as { groups: { items: unknown[] }[] }).groups.flatMap(g => g.items.filter(hasContent));
-        semanticContextStrings = flatResults.map(r => `[semantic: ${(r as any).id}] ${(r as any).content}`);
-        console.log(`[semantic context] Grouped results for source ${src.id}: ${flatResults.map((r: any) => `${r.id}${r.relevance !== undefined ? ` (score: ${r.relevance.toFixed(3)})` : ''}`).join(', ')}`);
-      }
+      const queryEmbeddingVec = await generateEmbedding(src.content);
+      const pineconeResults = await queryEmbedding(queryEmbeddingVec, 3);
+      const idToRecord = new Map(candidates.map(r => [r.id, r]));
+      const results = (pineconeResults.matches || []).map((match: any) => {
+        const rec = idToRecord.get(match.id);
+        if (!rec) return null;
+        return { id: rec.id, content: (rec as any).content || (rec as any).summary || '' };
+      }).filter(Boolean);
+      semanticContextStrings = (results as unknown[]).filter(hasContent).map(r => `[semantic: ${r.id}] ${r.content}`);
       if (semanticContextStrings.length > 0) {
         contextBlock += 'SEMANTIC CONTEXT (similar sources):\n' + semanticContextStrings.join('\n---\n') + '\n';
       }
@@ -424,12 +390,10 @@ ${sourceTexts}
 }
 
 export function createBatchRevisionPrompt(frames: any[], critique: string[], batch: any[], fullSourceText: string): string {
-  // Map sourceId to perspective/experiencer for quick lookup
   const sourceMeta: Record<string, { perspective?: string; experiencer?: string }> = {};
   for (const src of batch) {
     sourceMeta[src.id] = { perspective: src.perspective || 'I', experiencer: src.experiencer || 'self' };
   }
-  // For each frame, show the perspective/experiencer of the first source
   const framesWithPerspective = frames.map((frame: any) => {
     const firstSourceId = frame.sources && frame.sources[0] && frame.sources[0].sourceId;
     const meta = firstSourceId ? sourceMeta[firstSourceId] : { perspective: 'I', experiencer: 'self' };
@@ -479,7 +443,6 @@ INSTRUCTIONS:
 
 // Batch weaving prompt for auto-weaving scenes from moments
 export function createBatchWeavePrompt(batch: any[]): string {
-  // Compose moment summaries for the prompt
   const momentList = batch.map(m => {
     return `ID: ${m.id}\nEmoji: ${m.emoji}\nSummary: ${m.summary}\nQualities: ${m.qualities && m.qualities.length ? m.qualities.map((q: any) => `${q.type}: ${q.manifestation}`).join('; ') : ''}`;
   }).join('\n\n');

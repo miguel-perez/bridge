@@ -6,7 +6,6 @@ import type {
   MomentRecord, 
   SceneRecord 
 } from './types.js';
-import { updateRecordEmbedding, removeEmbedding } from './embeddings.js';
 import path from 'path';
 
 // New StorageData interface
@@ -43,12 +42,7 @@ function getDataFile(): string {
 
 // Ensure storage directory exists
 async function ensureStorageDir(): Promise<void> {
-  try {
-    await fs.mkdir(getStorageDir(), { recursive: true });
-  } catch (error) {
-    console.error('Failed to create storage directory:', error);
-    throw error;
-  }
+  await fs.mkdir(getStorageDir(), { recursive: true });
 }
 
 // Helper to sanitize filenames (remove dangerous characters)
@@ -131,8 +125,14 @@ export async function saveSource(source: Omit<SourceRecord, 'type'>): Promise<So
   const data = await readData();
   data.sources.push(record);
   await writeData(data);
-  // NOTE: Embedding update is async and not awaited to avoid slowing down main operations
-  updateRecordEmbedding(record);
+  // Add embedding after save
+  try {
+    const { updateRecordEmbedding } = await import('./embeddings.js');
+    await updateRecordEmbedding(record);
+  } catch (err) {
+    // MCP best practice: do not use console.log, but you may want to log to a file or error handler
+    // For now, fail silently
+  }
   return record;
 }
 
@@ -152,8 +152,13 @@ export async function saveMoment(moment: Omit<MomentRecord, 'type'>): Promise<Mo
   const data = await readData();
   data.moments.push(record);
   await writeData(data);
-  // NOTE: Embedding update is async and not awaited to avoid slowing down main operations
-  updateRecordEmbedding(record);
+  // Add embedding after save
+  try {
+    const { updateRecordEmbedding } = await import('./embeddings.js');
+    await updateRecordEmbedding(record);
+  } catch (err) {
+    // Fail silently
+  }
   return record;
 }
 
@@ -183,8 +188,13 @@ export async function saveScene(scene: Omit<SceneRecord, 'type'>): Promise<Scene
   const data = await readData();
   data.scenes.push(record);
   await writeData(data);
-  // NOTE: Embedding update is async and not awaited to avoid slowing down main operations
-  updateRecordEmbedding(record);
+  // Add embedding after save
+  try {
+    const { updateRecordEmbedding } = await import('./embeddings.js');
+    await updateRecordEmbedding(record);
+  } catch (err) {
+    // Fail silently
+  }
   return record;
 }
 
@@ -226,8 +236,6 @@ export async function updateSource(id: string, updates: Partial<SourceRecord>): 
     ...updates
   };
   await writeData(data);
-  // NOTE: Embedding update is async and not awaited to avoid slowing down main operations
-  updateRecordEmbedding(data.sources[index]);
   return data.sources[index];
 }
 
@@ -241,8 +249,6 @@ export async function updateMoment(id: string, updates: Partial<MomentRecord>): 
   };
   await writeData(data);
   const updatedRecord = data.moments[index];
-  // NOTE: Embedding update is async and not awaited to avoid slowing down main operations
-  updateRecordEmbedding(updatedRecord);
   return updatedRecord;
 }
 
@@ -298,24 +304,18 @@ export async function deleteSource(id: string): Promise<void> {
   const data = await readData();
   data.sources = data.sources.filter(s => s.id !== id);
   await writeData(data);
-  // NOTE: Embedding removal is async and not awaited to avoid slowing down main operations
-  removeEmbedding(id);
 }
 
 export async function deleteMoment(id: string): Promise<void> {
   const data = await readData();
   data.moments = data.moments.filter(m => m.id !== id);
   await writeData(data);
-  // NOTE: Embedding removal is async and not awaited to avoid slowing down main operations
-  removeEmbedding(id);
 }
 
 export async function deleteScene(id: string): Promise<void> {
   const data = await readData();
   data.scenes = data.scenes.filter(s => s.id !== id);
   await writeData(data);
-  // NOTE: Embedding removal is async and not awaited to avoid slowing down main operations
-  removeEmbedding(id);
 }
 
 export async function updateScene(id: string, updates: Partial<SceneRecord>): Promise<SceneRecord | null> {

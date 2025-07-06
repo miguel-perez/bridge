@@ -29,7 +29,6 @@ import {
 } from './storage.js';
 import type { SourceRecord, ProcessingLevel, StorageRecord } from './types.js';
 import { search as semanticSearch } from './search.js';
-import { setEmbeddingsConfig } from './embeddings.js';
 import path from 'path';
 import type { SearchResult } from './search.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -168,7 +167,6 @@ const critiqueChecklist = `Validation criteria:\n- Voice recognition ("that's ho
 
 // Set storage and embeddings config to use DATA_FILE_PATH
 setStorageConfig({ dataFile: DATA_FILE_PATH });
-setEmbeddingsConfig({ dataFile: DATA_FILE_PATH });
 
 // Simple formatter for search results
 function formatSearchResult(result: SearchResult, index: number): string {
@@ -209,19 +207,27 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   const tools = [
     {
       name: "capture",
-      description: "Capture a lived experience as a source - the raw material of memory.",
+      description: "Capture raw experiential text as a source record. This is for unprocessed, in-the-moment entries—such as journal notes, chat messages, or direct transcripts—before any framing or analysis.",
       inputSchema: {
         type: "object",
         properties: {
-          content: { type: "string", description: "The lived moment—try present tense, include what you are sensing, feeling, noticing." },
+          content: { type: "string", description: "Raw text from experiencer, either new expereience or reflection or previous capture" },
           experiencer: { type: "string", description: "Who experienced this (e.g., 'Claude', 'Sarah', 'Team')" },
           perspective: { type: "string", enum: ["I", "we", "you", "they"], description: "Perspective used" },
           processing: { type: "string", enum: ["during", "right-after", "long-after", "crafted"], description: "When captured relative to experience" },
           contentType: { type: "string", description: "Type of content", default: "text" },
           when: { type: "string", description: "When it happened (ISO timestamp or descriptive like 'yesterday morning')" },
-          reflects_on: { type: "array", items: { type: "string" }, description: "Array of source IDs this record reflects on (use for reflections)" }
+          reflects_on: { type: "array", items: { type: "string" }, description: "Array of source IDs this record reflects on (use for reflections)" },
+          file: { type: "string", description: "Optional file path for file-based captures" }
         },
         required: ["content", "experiencer", "perspective", "processing"]
+      },
+      annotations: {
+        title: "Capture Experience",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false
       }
     },
     {
@@ -230,7 +236,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       inputSchema: {
         type: "object",
         properties: {
-          sourceIds: { type: "array", items: { type: "string" }, description: "Array of source IDs to frame together", minItems: 1 },
+          sourceIds: { type: "array", items: { type: "string" }, minItems: 1, description: "Array of source IDs to frame together" },
           emoji: { type: "string", description: "Single emoji that captures the essence" },
           summary: { type: "string", description: "5-7 word summary" },
           shot: { type: "string", enum: ["moment-of-recognition", "sustained-attention", "crossing-threshold", "peripheral-awareness", "directed-momentum", "holding-opposites"], description: "How attention moved in this experience" },
@@ -250,6 +256,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           narrative: { type: "string", description: "Full experiential narrative" }
         },
         required: ["sourceIds", "emoji", "summary", "shot", "qualities"]
+      },
+      annotations: {
+        title: "Frame Moment",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false
       }
     },
     {
@@ -258,13 +271,20 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       inputSchema: {
         type: "object",
         properties: {
-          momentIds: { type: "array", items: { type: "string" }, description: "Array of moment IDs to weave together", minItems: 1 },
+          momentIds: { type: "array", items: { type: "string" }, minItems: 1, description: "Array of moment IDs to weave together" },
           emoji: { type: "string", description: "Emoji representing the journey" },
           summary: { type: "string", description: "5-7 word summary of the arc" },
           narrative: { type: "string", description: "The story that connects these moments" },
           shot: { type: "string", enum: ["moment-of-recognition", "sustained-attention", "crossing-threshold", "peripheral-awareness", "directed-momentum", "holding-opposites"], description: "Overall attention pattern of the woven scene" }
         },
         required: ["momentIds", "emoji", "summary", "narrative", "shot"]
+      },
+      annotations: {
+        title: "Weave Scene",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false
       }
     },
     {
@@ -277,6 +297,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           updates: { type: "object", description: "Object with fields to update", additionalProperties: true }
         },
         required: ["id", "updates"]
+      },
+      annotations: {
+        title: "Enrich Record",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false
       }
     },
     {
@@ -288,6 +315,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           id: { type: "string", description: "ID of source or moment to release" }
         },
         required: ["id"]
+      },
+      annotations: {
+        title: "Release Record",
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: false
       }
     },
     {
@@ -297,20 +331,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         type: "object",
         properties: {
           query: { type: "string", description: "Semantic search query (natural language or keywords)" },
-          created: {
-            oneOf: [
-              { type: "string", description: "ISO date, date string, or natural language (e.g., '2023-03-15', 'last week')" },
-              { type: "object", properties: { start: { type: "string" }, end: { type: "string" } }, required: ["start", "end"] }
-            ],
-            description: "Filter by record creation time (when captured)"
-          },
-          when: {
-            oneOf: [
-              { type: "string", description: "ISO date, date string, or natural language (e.g., '2023-03-15', 'last week')" },
-              { type: "object", properties: { start: { type: "string" }, end: { type: "string" } }, required: ["start", "end"] }
-            ],
-            description: "Filter by event time (user-supplied 'when')"
-          },
+          created: { oneOf: [ { type: "string" }, { type: "object", properties: { start: { type: "string" }, end: { type: "string" } }, required: ["start", "end"] } ], description: "Filter by record creation time (when captured)" },
+          when: { oneOf: [ { type: "string" }, { type: "object", properties: { start: { type: "string" }, end: { type: "string" } }, required: ["start", "end"] } ], description: "Filter by event time (user-supplied)" },
           reflectedOn: { type: "string", description: "Record ID to find all related records (traverses reflects_on, sources, moments, scenes)" },
           type: { type: "array", items: { type: "string", enum: ["source", "moment", "scene"] }, description: "Restrict to certain record types" },
           experiencer: { type: "string", description: "Only records with this experiencer" },
@@ -325,28 +347,51 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           includeContext: { type: "boolean", description: "Return full record metadata" },
           reviewed: { type: "boolean", description: "Only records that are (or are not) reviewed" }
         }
+      },
+      annotations: {
+        title: "Search Records",
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false
       }
     },
     {
-      name: "auto-frame",
+      name: "autoframe",
       description: "Automatically frame a source and its reflections into moments using OpenAI. Creates moments marked as unreviewed for human oversight.",
       inputSchema: {
         type: "object",
         properties: {
-          sourceId: { type: "string", description: "ID of the source to auto-frame (required)" }
+          sourceId: { type: "string", description: "ID of the source to auto-frame (required)" },
+          preview: { type: "boolean", description: "If true, show what would be created but do not save anything." }
         },
         required: ["sourceId"]
+      },
+      annotations: {
+        title: "Auto-Frame Moment",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false
       }
     },
     {
-      name: "auto-weave",
+      name: "autoweave",
       description: "Automatically weave moments or scenes into higher-level scenes using OpenAI. Creates scenes marked as unreviewed for human oversight.",
       inputSchema: {
         type: "object",
         properties: {
           momentIds: { type: "array", items: { type: "string" }, description: "Array of moment IDs to auto-weave (optional)" },
-          sceneIds: { type: "array", items: { type: "string" }, description: "Array of scene IDs to auto-weave (optional)" }
+          sceneIds: { type: "array", items: { type: "string" }, description: "Array of scene IDs to auto-weave (optional)" },
+          preview: { type: "boolean", description: "If true, show what would be created but do not save anything." }
         }
+      },
+      annotations: {
+        title: "Auto-Weave Scene",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false
       }
     },
     {
@@ -355,6 +400,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       inputSchema: {
         type: "object",
         properties: {}
+      },
+      annotations: {
+        title: "System Status",
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false
       }
     }
   ];
@@ -944,64 +996,114 @@ shifts, several emotional boundaries, multiple actional completions.`;
         }
       }
 
-      case 'auto-frame': {
+      case 'autoframe': {
         const autoProcessor = new (await import('./auto-processing.js')).AutoProcessor();
         const safeArgs = args || {};
         const sourceId = safeArgs.sourceId;
+        const preview = !!safeArgs.preview;
         if (typeof sourceId !== 'string' || !sourceId) {
           return { content: [{ type: 'text', text: 'Missing or invalid sourceId for auto-frame.' }] };
         }
-        // Use current batching rules: single source + bidirectional reflections
-        const results = await autoProcessor.autoFrameSources({ sourceIds: [sourceId] });
-        const successes = results.filter(r => r.success && r.created);
+        if (preview) {
+          // Build prompt for this source
+          const { getSources } = await import('./storage.js');
+          const allSources = await getSources();
+          const batch = allSources.filter(s => s.id === sourceId);
+          if (batch.length === 0) {
+            return { content: [{ type: 'text', text: '[PREVIEW] No valid source found for autoframe.' }] };
+          }
+          const { createBatchFramePrompt } = await import('./prompts.js');
+          const prompt = await createBatchFramePrompt(batch);
+          const llmResponse = await autoProcessor.complete(prompt, { maxTokens: 2000 });
+          // Try to parse the first moment from the LLM response
+          let moment;
+          try {
+            const jsonMatch = llmResponse.match(/\{.*\}/s);
+            if (!jsonMatch) throw new Error('No JSON object found');
+            moment = JSON.parse(jsonMatch[0]);
+          } catch (e) {
+            return { content: [{ type: 'text', text: '[PREVIEW] Failed to parse LLM moment output: ' + (e instanceof Error ? e.message : String(e)) }] };
+          }
+          return { content: [{ type: 'text', text: `[PREVIEW] Would create moment: ${JSON.stringify(moment, null, 2)}` }] };
+        }
+        // Normal (not preview) mode
+        const result = await autoProcessor.autoFrameSources({ sourceIds: [sourceId] });
+        const successes = result.filter(r => r.success && r.created);
         if (successes.length > 0) {
-          const result = successes[0];
+          // Return all created moments, not just the first
+          let summary = `✓ Auto-framed source ${sourceId} into ${successes.length} moment(s):\n`;
+          successes.forEach((r, idx) => {
+            if (r.created) {
+              summary += `  - Moment ${idx + 1}: ${r.created.emoji} "${r.created.summary}" (ID: ${r.created.id})\n`;
+            } else {
+              summary += `  - Moment ${idx + 1}: [no data]\n`;
+            }
+          });
           return {
             content: [
-              {
-                type: 'text',
-                text: `✓ Auto-framed source ${sourceId} into moment: ${result.created!.emoji} "${result.created!.summary}" (ID: ${result.created!.id})`
-              },
-              {
-                type: 'text',
-                text: `⚠️ This moment is marked as unreviewed. Use the enrich tool to review and approve it.`
-              },
-              {
-                type: 'text',
-                text: `\nFull record:\n${JSON.stringify(result.created!, null, 2)}`
-              }
+              { type: 'text', text: summary },
+              { type: 'text', text: `⚠️ These moments are marked as unreviewed. Use the enrich tool to review and approve them.` },
+              { type: 'text', text: `\nFull records:\n${JSON.stringify(successes.map(r => r.created), null, 2)}` }
             ]
           };
         } else {
-          const firstError = results.find(r => r.error) || { error: 'Unknown error' };
+          const firstError = result.find(r => r.error) || { error: 'Unknown error' };
           return { content: [{ type: 'text', text: `Auto-framing failed: ${String(firstError.error)}` }] };
         }
       }
 
-      case 'auto-weave': {
+      case 'autoweave': {
         const autoProcessor = new (await import('./auto-processing.js')).AutoProcessor();
         const safeArgs = args || {};
         const momentIds: string[] = Array.isArray(safeArgs.momentIds) ? safeArgs.momentIds : [];
+        const preview = !!safeArgs.preview;
         // Optionally, could support sceneIds in the future
         if (!momentIds.length) {
-          return { content: [{ type: 'text', text: 'No momentIds provided for auto-weave.' }] };
+          return { content: [{ type: 'text', text: 'No momentIds provided for autoweave.' }] };
         }
+        // If preview, run the LLM/grouping logic but do not save scenes
+        if (preview) {
+          const { getMoments } = await import('./storage.js');
+          const allMoments = await getMoments();
+          const batch = allMoments.filter(m => momentIds.includes(m.id));
+          if (batch.length === 0) {
+            return { content: [{ type: 'text', text: '[PREVIEW] No valid moments found for autoweave preview.' }] };
+          }
+          const { createBatchWeavePrompt } = await import('./prompts.js');
+          const prompt = createBatchWeavePrompt(batch);
+          const llmResponse = await autoProcessor.complete(prompt, { maxTokens: 2000 });
+          let scenes: any[] = [];
+          try {
+            const jsonMatch = llmResponse.match(/\[.*\]/s);
+            if (!jsonMatch) throw new Error('No JSON array found');
+            scenes = JSON.parse(jsonMatch[0]);
+          } catch (e) {
+            return { content: [{ type: 'text', text: '[PREVIEW] Failed to parse LLM scene output: ' + (e instanceof Error ? e.message : String(e)) }] };
+          }
+          // Format preview output
+          let summary = `[PREVIEW] Autoweave would create ${scenes.length} scene(s):\n`;
+          scenes.forEach((scene, idx) => {
+            summary += `  - Scene ${idx + 1}: ${scene.emoji || '❓'} "${scene.summary || '[no summary]'}" (moments: ${(scene.momentIds || []).join(', ')})\n`;
+          });
+          summary += `No changes have been made.`;
+          return { content: [{ type: 'text', text: summary }] };
+        }
+        // Normal (not preview) mode
         const result = await autoProcessor.autoWeaveMoments(momentIds);
-        if (result.success && result.created) {
+        // Always return all created scenes, even if only one
+        const scenesArr = Array.isArray(result.created) ? result.created : (result.created ? [result.created] : []);
+        if (scenesArr.length > 0) {
+          let summary = `✓ Autoweave analyzed ${momentIds.length} moment(s) and created ${scenesArr.length} scene(s):\n`;
+          scenesArr.forEach((scene, idx) => {
+            summary += `  - Scene ${idx + 1}: ${scene.emoji || '❓'} "${scene.summary || '[no summary]'}" (moments: ${(scene.momentIds || []).join(', ')})\n`;
+          });
+          if (result.error) {
+            summary += `Error: ${result.error}\n`;
+          }
           return {
             content: [
-              {
-                type: 'text',
-                text: `✓ Auto-wove ${momentIds.length} moment(s) into scene: ${result.created.emoji} "${result.created.summary}" (ID: ${result.created.id})`
-              },
-              {
-                type: 'text',
-                text: `⚠️ This scene is marked as unreviewed. Use the enrich tool to review and approve it.`
-              },
-              {
-                type: 'text',
-                text: `\nFull record:\n${JSON.stringify(result.created, null, 2)}`
-              }
+              { type: 'text', text: summary },
+              { type: 'text', text: `\nFull records:\n${JSON.stringify(scenesArr, null, 2)}` }
             ]
           };
         } else {
@@ -1011,24 +1113,43 @@ shifts, several emotional boundaries, multiple actional completions.`;
 
       case 'status': {
         const report = await statusMonitor.generateStatusReport();
+        // Add recent scenes section
+        const { getScenes } = await import('./storage.js');
+        const scenes = await getScenes();
+        const now = Date.now();
+        const recentScenes = scenes.filter(s => {
+          const created = new Date(s.created).getTime();
+          return now - created < 10 * 60 * 1000; // last 10 minutes
+        });
+        let recentSection = '';
+        if (recentScenes.length > 0) {
+          recentSection += '\nRecently created scenes (last 10 minutes):\n';
+          for (const scene of recentScenes) {
+            recentSection += `- ${scene.emoji || '❓'} "${scene.summary || '[no summary]'}" (ID: ${scene.id}, created by: ${scene.autoGenerated ? 'autoweave' : 'manual'}, moments: ${(scene.momentIds || []).join(', ')}, created: ${scene.created})\n`;
+          }
+        }
         return {
           content: [
             {
               type: 'text',
-              text: `📊 System Status Report\n\n` +
-                    `📝 Unframed sources: ${report.unframed_sources_count}\n` +
-                    `🔍 Unreviewed moments: ${report.unreviewed_moments_count}\n` +
-                    `🎭 Unreviewed scenes: ${report.unreviewed_scenes_count}\n` +
-                    `🧵 Unweaved moments: ${report.unweaved_moments_count}\n` +
-                    `⚙️ Auto-weave threshold: ${report.auto_weave_threshold}\n` +
-                    `🤖 Auto-framing: ${report.auto_framing_enabled ? 'enabled' : 'disabled'}\n` +
-                    `🤖 Auto-weaving: ${report.auto_weaving_enabled ? 'enabled' : 'disabled'}\n\n` +
-                    `${report.processing_errors.length > 0 ? 
-                      `❌ Processing Errors:\n${report.processing_errors.map(e => 
-                        `  • ${e.type}: ${e.count} error(s), last: ${e.lastError}`
-                      ).join('\n')}` : 
-                      '✅ No processing errors'
-                    }`
+              text: `📊 System Status Report
+
+📝 Unframed sources: ${report.unframed_sources_count}
+🔍 Unreviewed moments: ${report.unreviewed_moments_count}
+🎭 Unreviewed scenes: ${report.unreviewed_scenes_count}
+🧵 Unweaved moments: ${report.unweaved_moments_count}
+⚙️ Auto-weave threshold: ${report.auto_weave_threshold}
+🤖 Auto-framing: ${report.auto_framing_enabled ? 'enabled' : 'disabled'}
+🤖 Auto-weaving: ${report.auto_weaving_enabled ? 'enabled' : 'disabled'}
+
+${report.processing_errors.length > 0 ? 
+  `❌ Processing Errors:
+${report.processing_errors.map(e => 
+  `  • ${e.type}: ${e.count} error(s), last: ${e.lastError}`
+).join('\n')}` : 
+  '✅ No processing errors'
+}
+` + recentSection
             }
           ]
         };

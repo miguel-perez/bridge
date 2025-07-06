@@ -1,6 +1,6 @@
 import { createLLMProvider } from './llm-provider.js';
 import { getSources, saveMoment } from './storage.js';
-import { semanticSearch as rawSemanticSearch } from './search.js';
+import { generateEmbedding, queryEmbedding } from './embeddings.js';
 import type { SourceRecord, MomentRecord, QualityType, ShotType } from './types.js';
 import { createBatchFramePrompt, createBatchRevisionPrompt } from './prompts.js';
 
@@ -215,9 +215,15 @@ export class AutoProcessor {
     const { getSources } = await import('./storage.js');
     const allRecords = await getSources();
     addDebugLog(`[semantic search] Using all sources (${allRecords.length}) for context search.`);
-    const { loadEmbeddings } = await import('./embeddings.js');
-    const embeddings = await loadEmbeddings();
-    const results = await rawSemanticSearch(queryText, allRecords, embeddings, 3, queryType);
+    // Pinecone-based semantic search
+    const queryEmbeddingVec = await generateEmbedding(queryText);
+    const pineconeResults = await queryEmbedding(queryEmbeddingVec, 3);
+    const idToRecord = new Map(allRecords.map(r => [r.id, r]));
+    const results = (pineconeResults.matches || []).map((match: any) => {
+      const rec = idToRecord.get(match.id);
+      if (!rec) return null;
+      return { id: rec.id, content: (rec as any).content || (rec as any).summary || '' };
+    }).filter(Boolean);
     function hasContent(obj: unknown): obj is { content: string } {
       return typeof obj === 'object' && obj !== null && 'content' in obj && typeof (obj as any).content === 'string';
     }
@@ -607,4 +613,8 @@ export class AutoProcessor {
   }
 
   // TODO: Implement createBatchFramePrompt in prompts.js if not yet present
+
+  public async complete(prompt: string, opts: { maxTokens: number }) {
+    return this.llmProvider.complete(prompt, opts);
+  }
 } 

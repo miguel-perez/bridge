@@ -52,7 +52,6 @@ export class DirectOpenAIProvider implements LLMProvider {
 
       return completion.choices[0]?.message?.content || '';
     } catch (error) {
-      console.error('OpenAI API error:', error);
       throw new Error(`OpenAI API error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
