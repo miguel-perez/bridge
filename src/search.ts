@@ -45,7 +45,6 @@ export interface SearchOptions {
   groupBy?: GroupOption;
   limit?: number;
   includeContext?: boolean;
-  debug?: boolean; // Add debug information about filter results
 }
 
 export interface DateRange {

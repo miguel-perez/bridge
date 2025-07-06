@@ -305,7 +305,6 @@ interface SearchToolInput {
   sort?: 'relevance' | 'created' | 'when';
   limit?: number;
   includeContext?: boolean;
-  debug?: boolean;
 }
 
 // Tool handlers
@@ -453,8 +452,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           groupBy: { type: "string", enum: ["type", "experiencer", "day", "week", "month", "hierarchy"], description: "Group results by this field" },
           sort: { type: "string", enum: ["relevance", "created", "when"], description: "Sort by field" },
           limit: { type: "number", description: "Maximum results to return" },
-          includeContext: { type: "boolean", description: "Return full record metadata as structured JSON" },
-          debug: { type: "boolean", description: "Include debug information about filter results" }
+          includeContext: { type: "boolean", description: "Return full record metadata as structured JSON" }
         }
       },
       annotations: {
@@ -1486,7 +1484,6 @@ Optional: add 'when' to override temporal inheritance from moments.`
         if (typeof input.processing === 'string' && input.processing.length > 0) filters.processing = [input.processing];
         if (typeof input.shot === 'string' && input.shot.length > 0) filters.shotTypes = [input.shot];
         if (typeof input.framed === 'boolean') filters.framed = input.framed;
-        if (typeof input.debug === 'boolean') filters.debug = input.debug;
 
         // Helper function to validate and parse date with chrono-node
         const validateAndParseDate = async (dateInput: string | { start: string; end: string }): Promise<{ start: string; end: string }> => {
@@ -1615,7 +1612,6 @@ Optional: add 'when' to override temporal inheritance from moments.`
           filters,
           limit: input.limit,
           includeContext: input.includeContext,
-          debug: input.debug,
         };
         if (typeof input.sort === 'string') searchOptions.sort = input.sort;
         if (typeof input.groupBy === 'string') searchOptions.groupBy = input.groupBy;
@@ -1630,23 +1626,24 @@ Optional: add 'when' to override temporal inheritance from moments.`
           if (finalResults.length === 0) {
             // Provide more helpful error message when no results found
             let errorMessage = 'No relevant memories found.';
-            if (input.debug) {
-              const activeFilters = [];
-              if (input.type && input.type.length > 0) activeFilters.push(`type: ${input.type.join(', ')}`);
-              if (input.experiencer) activeFilters.push(`experiencer: ${input.experiencer}`);
-              if (input.perspective) activeFilters.push(`perspective: ${input.perspective}`);
-              if (input.qualities && input.qualities.length > 0) activeFilters.push(`qualities: ${input.qualities.join(', ')} (mode: ${input.qualitiesMode || 'all'})`);
-              if (input.shot) activeFilters.push(`shot: ${input.shot}`);
-              if (input.created) activeFilters.push(`created: ${typeof input.created === 'string' ? input.created : `${input.created.start} to ${input.created.end}`}`);
-              if (input.when) activeFilters.push(`when: ${typeof input.when === 'string' ? input.when : `${input.when.start} to ${input.when.end}`}`);
-              if (input.framed !== undefined) activeFilters.push(`framed: ${input.framed}`);
-              if (input.debug !== undefined) activeFilters.push(`debug: ${input.debug}`);
-              
-              if (activeFilters.length > 0) {
-                errorMessage += `\n\nActive filters that may be too restrictive:\n${activeFilters.map(f => `  • ${f}`).join('\n')}`;
-              }
+            if (input.includeContext) {
+              return {
+                content: finalResults.map((result: SearchResult) => ({
+                  type: 'text',
+                  text: JSON.stringify(formatStructuredSearchResult(result), null, 2)
+                }))
+              };
+            } else {
+              // Always return an array, even for a single result
+              return {
+                content: finalResults
+                  .filter((result: any) => typeof result === 'object' && result !== null && typeof result.type === 'string')
+                  .map((result: SearchResult, index: number) => ({
+                    type: 'text',
+                    text: formatDetailedSearchResult(result, index)
+                  }))
+              };
             }
-            return { content: [{ type: 'text', text: errorMessage }] };
           }
           if (input.includeContext) {
             return {
