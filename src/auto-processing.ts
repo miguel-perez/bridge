@@ -41,6 +41,26 @@ const debugLogs: string[] = [];
 function addDebugLog(msg: string) { debugLogs.push(msg); }
 export function getAutoProcessingDebugLogs() { return debugLogs; }
 
+// Helper: recursively, bidirectionally collect all related sources via reflects_on
+function getAllRelatedSources(
+  sourceId: string,
+  allSources: SourceRecord[],
+  visited = new Set<string>()
+): SourceRecord[] {
+  if (visited.has(sourceId)) return [];
+  visited.add(sourceId);
+  const source = allSources.find(s => s.id === sourceId);
+  if (!source) return [];
+  // Forward: sources this source reflects on
+  const forward = (source.reflects_on || [])
+    .flatMap(refId => getAllRelatedSources(refId, allSources, visited));
+  // Backward: sources that reflect on this source
+  const backward = allSources
+    .filter(s => (s.reflects_on || []).includes(sourceId))
+    .flatMap(s => getAllRelatedSources(s.id, allSources, visited));
+  return [source, ...forward, ...backward];
+}
+
 export class AutoProcessor {
   private lastBatch: SourceRecord[] = [];
   protected llmProvider = createLLMProvider();
@@ -233,15 +253,17 @@ export class AutoProcessor {
     } else if (results && 'groups' in results) {
       contextStrings = (results as { groups: { items: unknown[] }[] }).groups.flatMap(g => g.items.filter(hasContent).map(r => r.content));
     }
-    // Add reflects_on sources if present
+    // Add reflects_on sources if present (recursive, bidirectional)
     const reflectsOnTexts: string[] = [];
+    const seen = new Set<string>();
     for (const frag of fragments) {
       const src = batch.find(s => s.id === frag.sourceId);
-      if (src && Array.isArray(src.reflects_on) && src.reflects_on.length > 0) {
-        for (const refId of src.reflects_on) {
-          const ref = allRecords.find(r => r.id === refId);
-          if (ref && ref.content) {
-            reflectsOnTexts.push(`[reflects_on: ${ref.id}] ${ref.content}`);
+      if (src) {
+        const related = getAllRelatedSources(src.id, allRecords);
+        for (const rel of related) {
+          if (rel.id !== src.id && rel.content && !seen.has(rel.id)) {
+            reflectsOnTexts.push(`[reflects_on: ${rel.id}] ${rel.content}`);
+            seen.add(rel.id);
           }
         }
       }
