@@ -109,6 +109,7 @@ const frameSchema = z.object({
     'directed-momentum',
     'holding-opposites'
   ]).optional(),
+  when: z.string().optional(),
 });
 
 // Smart weaveSchema: accepts momentIds for AI generation OR full parameters for manual control
@@ -127,6 +128,7 @@ const weaveSchema = z.object({
     'directed-momentum',
     'holding-opposites'
   ]).optional(),
+  when: z.string().optional(),
 });
 
 const enrichSchema = z.object({
@@ -272,7 +274,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
             description: "Array of experiential qualities present (optional - AI generates if not provided)"
           },
-          narrative: { type: "string", description: "Full experiential narrative (optional - AI generates if not provided)" }
+          narrative: { type: "string", description: "Full experiential narrative (optional - AI generates if not provided)" },
+          when: { type: "string", description: "When the frame was created (optional - AI generates if not provided)" }
         },
         required: ["sourceIds"]
       },
@@ -294,7 +297,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           emoji: { type: "string", description: "Emoji representing the journey (optional - AI generates if not provided)" },
           summary: { type: "string", description: "5-7 word summary of the arc (optional - AI generates if not provided)" },
           narrative: { type: "string", description: "The story that connects these moments (optional - AI generates if not provided)" },
-          shot: { type: "string", enum: ["moment-of-recognition", "sustained-attention", "crossing-threshold", "peripheral-awareness", "directed-momentum", "holding-opposites"], description: "Overall attention pattern of the woven scene (optional - AI generates if not provided)" }
+          shot: { type: "string", enum: ["moment-of-recognition", "sustained-attention", "crossing-threshold", "peripheral-awareness", "directed-momentum", "holding-opposites"], description: "Overall attention pattern of the woven scene (optional - AI generates if not provided)" },
+          when: { type: "string", description: "When the scene happened (optional - AI generates if not provided)" }
         },
         required: ["momentIds"]
       },
@@ -632,7 +636,7 @@ shifts, several emotional boundaries, multiple actional completions.`;
         const input = frameSchema.parse(args);
         
         // Determine mode based on provided parameters
-        const isSmartDefault = !input.emoji && !input.summary && !input.qualities && !input.narrative && !input.shot;
+        const isSmartDefault = !input.emoji && !input.summary && !input.qualities && !input.narrative && !input.shot && !input.when;
         
         if (isSmartDefault) {
           // Smart default: use AutoProcessor
@@ -686,10 +690,10 @@ shifts, several emotional boundaries, multiple actional completions.`;
           }
           
           // Validate that all required manual parameters are provided
-          if (!input.emoji || !input.summary || !input.qualities || !input.shot) {
+          if (!input.emoji || !input.summary || !input.qualities || !input.shot || !input.when) {
             throw new McpError(
               ErrorCode.InvalidParams,
-              `Manual framing requires emoji, summary, qualities, and shot. For AI-generated framing, provide only sourceIds.`
+              `Manual framing requires emoji, summary, qualities, shot, and when. For AI-generated framing, provide only sourceIds.`
             );
           }
           
@@ -705,7 +709,7 @@ shifts, several emotional boundaries, multiple actional completions.`;
               shot: input.shot,
               sources: input.sourceIds.map(sourceId => ({ sourceId })),
               created: new Date().toISOString(),
-              when: validSources.find(s => s.when)?.when,
+              when: input.when,
               experiencer,
             } as any ),
           });
@@ -741,7 +745,7 @@ shifts, several emotional boundaries, multiple actional completions.`;
         const input = weaveSchema.parse(args);
         
         // Determine mode based on provided parameters
-        const isSmartDefault = !input.emoji && !input.summary && !input.narrative && !input.shot;
+        const isSmartDefault = !input.emoji && !input.summary && !input.narrative && !input.shot && !input.when;
         
         if (isSmartDefault) {
           // Smart default: use AutoProcessor
@@ -787,10 +791,10 @@ shifts, several emotional boundaries, multiple actional completions.`;
           }
           
           // Validate that all required manual parameters are provided
-          if (!input.emoji || !input.summary || !input.narrative || !input.shot) {
+          if (!input.emoji || !input.summary || !input.narrative || !input.shot || !input.when) {
             throw new McpError(
               ErrorCode.InvalidParams,
-              `Manual weaving requires emoji, summary, narrative, and shot. For AI-generated weaving, provide only momentIds.`
+              `Manual weaving requires emoji, summary, narrative, shot, and when. For AI-generated weaving, provide only momentIds.`
             );
           }
           
@@ -805,6 +809,7 @@ shifts, several emotional boundaries, multiple actional completions.`;
               narrative: input.narrative,
               momentIds: input.momentIds,
               shot: input.shot,
+              when: input.when,
               created: new Date().toISOString(),
               experiencer: sceneExperiencer,
             } as any ),

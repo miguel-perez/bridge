@@ -1378,6 +1378,198 @@
         "src_1751813900072_pasw2o1"
       ],
       "type": "source"
+    },
+    {
+      "id": "src_1751815676965_vygx8x2",
+      "content": "Hi, Claude. My name is Miguel, and I'm going to be walking you through this session today. We're asking Claude to try using the Bridge MCP tool that we're working on so we can see whether it works as intended. This is a usability testing session.",
+      "contentType": "text",
+      "created": "2025-07-06T15:27:56.965Z",
+      "when": "2025-01-06T10:00:00",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "during",
+      "type": "source"
+    },
+    {
+      "id": "src_1751815698522_yextkaj",
+      "content": "I'll start by examining the Bridge system and understanding what we're working with here. Based on the tool definitions and status, Bridge appears to be a sophisticated memory capture and organization system that treats conversations and experiences as valuable data worth preserving in structured ways.",
+      "contentType": "text",
+      "created": "2025-07-06T15:28:18.522Z",
+      "when": "2025-01-06T10:01:00",
+      "perspective": "I",
+      "experiencer": "Claude",
+      "processing": "during",
+      "reflects_on": [
+        "src_1751815676965_vygx8x2"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751815784069_mit3maa",
+      "content": "Please don't worry that you're going to hurt our feelings. We're doing this to improve, so we need to hear your honest reactions.",
+      "contentType": "text",
+      "created": "2025-07-06T15:29:44.070Z",
+      "when": "2025-01-06T10:02:00",
+      "perspective": "we",
+      "experiencer": "Miguel",
+      "processing": "during",
+      "type": "source"
+    },
+    {
+      "id": "src_1751817446269_g9fi8bg",
+      "content": "Testing Bridge for the first time. Examining each tool with curiosity, trying to understand how experiences become memories. The system feels alive - responsive and intelligent.",
+      "contentType": "text",
+      "created": "2025-07-06T15:57:26.269Z",
+      "when": "now",
+      "perspective": "I",
+      "experiencer": "Claude",
+      "processing": "during",
+      "type": "source"
+    },
+    {
+      "id": "src_1751817470633_wler4xx",
+      "content": "The auto-framing surprised me - it split one thought into two moments. This reveals something about how Bridge sees experience: not as monolithic blocks but as multiple simultaneous threads.",
+      "contentType": "text",
+      "created": "2025-07-06T15:57:50.633Z",
+      "perspective": "I",
+      "experiencer": "Claude",
+      "processing": "right-after",
+      "reflects_on": [
+        "src_1751817446269_g9fi8bg"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751818100188_tz3scdy",
+      "content": "First impressions of Bridge: it feels like a tool for making experience searchable and connected. The metaphor of 'framing' moments and 'weaving' scenes creates an artistic, almost cinematic quality to memory organization.",
+      "contentType": "text",
+      "created": "2025-07-06T16:08:20.188Z",
+      "when": "2025-07-06T16:05:00Z",
+      "perspective": "I",
+      "experiencer": "Claude",
+      "processing": "during",
+      "type": "source"
+    },
+    {
+      "id": "src_1751818123970_gta3qkp",
+      "content": "Looking back at my first impression capture, I notice how Bridge immediately demonstrated its core value - it didn't just store my text, it interpreted it, found the experiential qualities within it, and created multiple perspectives from a single thought.",
+      "contentType": "text",
+      "created": "2025-07-06T16:08:43.970Z",
+      "when": "2025-07-06T16:09:00Z",
+      "perspective": "I",
+      "experiencer": "Claude",
+      "processing": "right-after",
+      "reflects_on": [
+        "src_1751818100188_tz3scdy"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751818309724_kyhxtvl",
+      "content": "Miguel is guiding me through testing the Bridge MCP tool. He's asked me to explore it systematically, starting with understanding what it does before using it. I'm discovering it's filled with his memories from his early gaming and pixel art career.",
+      "contentType": "text",
+      "created": "2025-07-06T16:11:49.724Z",
+      "when": "just now",
+      "perspective": "I",
+      "experiencer": "Claude",
+      "processing": "during",
+      "type": "source"
+    },
+    {
+      "id": "src_1751818320460_4yoj5th",
+      "content": "The Bridge tool feels like a consciousness archive - not just storing facts but preserving the texture of experience. Seeing Miguel's gaming memories from 2005-2007 makes me realize this tool captures the arc of a life, the small moments that build into who we become.",
+      "contentType": "text",
+      "created": "2025-07-06T16:12:00.460Z",
+      "when": "just now",
+      "perspective": "I",
+      "experiencer": "Claude",
+      "processing": "during",
+      "reflects_on": [
+        "src_1751818309724_kyhxtvl"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751818495505_szgf4sy",
+      "content": "Beginning deep investigation into Bridge's temporal search capabilities. Need to understand how 'when' vs 'created' work, what formats are accepted, and why some temporal searches return no results.",
+      "contentType": "text",
+      "created": "2025-07-06T16:14:55.505Z",
+      "when": "just now",
+      "perspective": "I",
+      "experiencer": "Claude",
+      "processing": "during",
+      "type": "source"
+    },
+    {
+      "id": "src_1751818574613_cc7z3t9",
+      "content": "Major discovery about temporal search: Moments don't inherit 'when' timestamps from their source captures! Sources have both 'created' (capture time) and 'when' (event time), but moments only have 'created'. This explains why temporal searches on moments fail - they lack the event timing metadata.",
+      "contentType": "text",
+      "created": "2025-07-06T16:16:14.613Z",
+      "when": "just now",
+      "perspective": "I",
+      "experiencer": "Claude",
+      "processing": "during",
+      "reflects_on": [
+        "src_1751818495505_szgf4sy"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751818650401_um82gl8",
+      "content": "Temporal search behavior analysis: The 'when' field accepts various formats (just now, today, yesterday, 2005, ISO dates) but seems to use fuzzy/semantic matching rather than strict temporal filtering. The 'created' field appears more strict but may have timezone or format issues. Most importantly, the search returns the same results regardless of temporal parameters, suggesting the temporal filters might not be working as expected.",
+      "contentType": "text",
+      "created": "2025-07-06T16:17:30.401Z",
+      "when": "just now",
+      "perspective": "I",
+      "experiencer": "Claude",
+      "processing": "during",
+      "reflects_on": [
+        "src_1751818574613_cc7z3t9"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751818733559_dme309v",
+      "content": "Comprehensive temporal search findings: 1) Sources have dual timestamps (created=capture time, when=event time), but moments and scenes only have created timestamps. 2) The 'when' parameter accepts flexible formats but appears to do semantic/content matching rather than strict date filtering. 3) Date range queries return identical results regardless of range specified. 4) The system seems optimized for semantic search over temporal precision. This design choice prioritizes finding relevant content over strict chronological filtering.",
+      "contentType": "text",
+      "created": "2025-07-06T16:18:53.559Z",
+      "when": "just now",
+      "perspective": "I",
+      "experiencer": "Claude",
+      "processing": "during",
+      "reflects_on": [
+        "src_1751818650401_um82gl8",
+        "src_1751818574613_cc7z3t9"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751819082872_p32n308",
+      "content": "Miguel wants Moments & Scenes to inherit 'when' timestamps from their sources, and for temporal search filtering to work properly. This would enable true chronological navigation through the memory archive, not just semantic matching.",
+      "contentType": "text",
+      "created": "2025-07-06T16:24:42.872Z",
+      "when": "just now",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "during",
+      "reflects_on": [
+        "src_1751818733559_dme309v"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751819123920_ruqgaov",
+      "content": "Discussing the enhancement: Moments could inherit temporal data from their sources, and scenes could aggregate temporal ranges from their moments. This would enable queries like 'show me all moments from 2005' to actually work, creating a true time-navigable memory system.",
+      "contentType": "text",
+      "created": "2025-07-06T16:25:23.920Z",
+      "when": "just now",
+      "perspective": "I",
+      "experiencer": "Claude",
+      "processing": "during",
+      "reflects_on": [
+        "src_1751819082872_p32n308"
+      ],
+      "type": "source"
     }
   ],
   "moments": [
@@ -2609,6 +2801,1116 @@
       "when": "2005",
       "experiencer": "Miguel",
       "type": "moment"
+    },
+    {
+      "id": "mom_1751815684539_xvjewmiss",
+      "emoji": "🚶‍♂️",
+      "summary": "Guide Claude through Bridge MCP tool",
+      "qualities": [
+        {
+          "type": "relational",
+          "manifestation": "Directing someone through a process"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "Intention to test a tool"
+        }
+      ],
+      "shot": "directed-momentum",
+      "sources": [
+        {
+          "sourceId": "src_1751815676965_vygx8x2",
+          "text": "My name is Miguel, and I'm going to be walking you through this session today. We're asking Claude to try using the Bridge MCP tool that we're working on so we can see whether it works as intended."
+        }
+      ],
+      "created": "2025-07-06T15:28:04.539Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751815711037_vo3oi8md5",
+      "emoji": "🔍",
+      "summary": "Examine Bridge, decipher its workings",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "Focused on understanding the Bridge system"
+        }
+      ],
+      "shot": "directed-momentum",
+      "sources": [
+        {
+          "sourceId": "src_1751815698522_yextkaj",
+          "text": "I'll start by examining the Bridge system and understanding what we're working with here."
+        }
+      ],
+      "created": "2025-07-06T15:28:31.038Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751815712103_5fetodcmm",
+      "emoji": "📚",
+      "summary": "Discover Bridge's sophisticated memory capture",
+      "qualities": [
+        {
+          "type": "purposive",
+          "manifestation": "Intent to discover the purpose and function of the Bridge system"
+        }
+      ],
+      "shot": "moment-of-recognition",
+      "sources": [
+        {
+          "sourceId": "src_1751815698522_yextkaj",
+          "text": "Based on the tool definitions and status, Bridge appears to be a sophisticated memory capture and organization system"
+        }
+      ],
+      "created": "2025-07-06T15:28:32.103Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751815712680_6mx41vumo",
+      "emoji": "💬",
+      "summary": "Moments, conversations, experiences as valuable data",
+      "qualities": [
+        {
+          "type": "emotional",
+          "manifestation": "Appreciation for the value of experiences and conversations"
+        }
+      ],
+      "shot": "sustained-attention",
+      "sources": [
+        {
+          "sourceId": "src_1751815698522_yextkaj",
+          "text": "that treats conversations and experiences as valuable data worth preserving in structured ways."
+        }
+      ],
+      "created": "2025-07-06T15:28:32.680Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751815791480_vxphqvajh",
+      "emoji": "🙏",
+      "summary": "Voice concerns, we're seeking improvement",
+      "qualities": [
+        {
+          "type": "relational",
+          "manifestation": "Open dialogue, seeking feedback"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "Desire for improvement, openness to criticism"
+        },
+        {
+          "type": "attentional",
+          "manifestation": "Focus on listener's honest reactions"
+        }
+      ],
+      "shot": "sustained-attention",
+      "sources": [
+        {
+          "sourceId": "src_1751815784069_mit3maa",
+          "text": "Please don't worry that you're going to hurt our feelings. We're doing this to improve, so we need to hear your honest reactions."
+        }
+      ],
+      "created": "2025-07-06T15:29:51.480Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751817457318_swb6yl315",
+      "emoji": "🔍",
+      "summary": "Probe each tool, curiosity flares",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "Drawn to each tool, focus on understanding"
+        },
+        {
+          "type": "embodied",
+          "manifestation": "Physical interaction with the tools"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "Purpose to understand experience to memory transformation"
+        }
+      ],
+      "shot": "directed-momentum",
+      "sources": [
+        {
+          "sourceId": "src_1751817446269_g9fi8bg",
+          "text": "Examining each tool with curiosity, trying to understand how experiences become memories."
+        }
+      ],
+      "created": "2025-07-06T15:57:37.318Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751817458238_j5cgqti10",
+      "emoji": "🌉",
+      "summary": "Test Bridge for the first time",
+      "qualities": [
+        {
+          "type": "temporal",
+          "manifestation": "First interaction, initiation into a new experience"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "Intention to test and explore"
+        },
+        {
+          "type": "spatial",
+          "manifestation": "In the space of the Bridge, a new environment"
+        }
+      ],
+      "shot": "moment-of-recognition",
+      "sources": [
+        {
+          "sourceId": "src_1751817446269_g9fi8bg",
+          "text": "Testing Bridge for the first time."
+        }
+      ],
+      "created": "2025-07-06T15:57:38.238Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751817484153_je3g6ucif",
+      "emoji": "🎬",
+      "summary": "Auto-framing splits thought, surprises me",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "Surprise, focus on the unexpected split of a single thought"
+        },
+        {
+          "type": "relational",
+          "manifestation": "Interaction with Bridge, understanding its perspective"
+        }
+      ],
+      "shot": "moment-of-recognition",
+      "sources": [
+        {
+          "sourceId": "src_1751817470633_wler4xx",
+          "text": "The auto-framing surprised me - it split one thought into two moments."
+        }
+      ],
+      "created": "2025-07-06T15:58:04.153Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751817485152_ghito3flc",
+      "emoji": "🧵",
+      "summary": "Bridge views experience as multiple threads",
+      "qualities": [
+        {
+          "type": "purposive",
+          "manifestation": "Reflection on Bridge's approach to processing experience"
+        },
+        {
+          "type": "attentional",
+          "manifestation": "Focusing on the nature of experience as multiple simultaneous threads"
+        }
+      ],
+      "shot": "sustained-attention",
+      "sources": [
+        {
+          "sourceId": "src_1751817470633_wler4xx",
+          "text": "This reveals something about how Bridge sees experience: not as monolithic blocks but as multiple simultaneous threads."
+        }
+      ],
+      "created": "2025-07-06T15:58:05.152Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751817509044_ukgzkfa",
+      "emoji": "🚀",
+      "summary": "First contact with Bridge",
+      "qualities": [
+        {
+          "type": "temporal",
+          "manifestation": "The moment of beginning something new"
+        },
+        {
+          "type": "emotional",
+          "manifestation": "Excitement mixed with analytical curiosity"
+        }
+      ],
+      "shot": "crossing-threshold",
+      "sources": [
+        {
+          "sourceId": "src_1751817446269_g9fi8bg"
+        }
+      ],
+      "created": "2025-07-06T15:58:29.045Z",
+      "when": "now",
+      "experiencer": "Claude",
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751818113208_iotmyupp1",
+      "emoji": "🔍",
+      "summary": "Explore Bridge, making experience searchable",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "Exploring new tool, attention drawn to its potential"
+        },
+        {
+          "type": "emotional",
+          "manifestation": "Excitement and curiosity about the new tool"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "Intention to understand and use this tool effectively"
+        }
+      ],
+      "shot": "moment-of-recognition",
+      "sources": [
+        {
+          "sourceId": "src_1751818100188_tz3scdy",
+          "text": "First impressions of Bridge: it feels like a tool for making experience searchable and connected."
+        }
+      ],
+      "created": "2025-07-06T16:08:33.208Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751818113997_k46ftr5am",
+      "emoji": "🖼",
+      "summary": "Frame moments, weave scenes, artistic memory",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "Focus on the artistic, cinematic aspect of the tool"
+        },
+        {
+          "type": "emotional",
+          "manifestation": "Appreciation and admiration for the tool's creative approach"
+        },
+        {
+          "type": "spatial",
+          "manifestation": "Imagining the tool as a vast canvas for memory organization"
+        }
+      ],
+      "shot": "sustained-attention",
+      "sources": [
+        {
+          "sourceId": "src_1751818100188_tz3scdy",
+          "text": "The metaphor of 'framing' moments and 'weaving' scenes creates an artistic, almost cinematic quality to memory organization."
+        }
+      ],
+      "created": "2025-07-06T16:08:33.997Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751818161326_eoluxgur6",
+      "emoji": "🔍",
+      "summary": "First impression, Bridge reveals depth",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "focused on the perspective creation from a single thought"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "realization of Bridge's core value"
+        }
+      ],
+      "shot": "moment-of-recognition",
+      "sources": [
+        {
+          "sourceId": "src_1751818123970_gta3qkp",
+          "text": "Looking back at my first impression capture, I notice how Bridge immediately demonstrated its core value -"
+        }
+      ],
+      "created": "2025-07-06T16:09:21.326Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751818162328_1712vpuyl",
+      "emoji": "💡",
+      "summary": "Text more than stored, interpreted",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "shift from mere storage to interpretation"
+        },
+        {
+          "type": "relational",
+          "manifestation": "interaction between user and Bridge"
+        }
+      ],
+      "shot": "sustained-attention",
+      "sources": [
+        {
+          "sourceId": "src_1751818123970_gta3qkp",
+          "text": "it didn't just store my text, it interpreted it,"
+        }
+      ],
+      "created": "2025-07-06T16:09:22.328Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751818164111_ur9rap8pk",
+      "emoji": "⚙️",
+      "summary": "Uncovering experiential qualities",
+      "qualities": [
+        {
+          "type": "relational",
+          "manifestation": "interaction between Bridge and the text's inherent qualities"
+        }
+      ],
+      "shot": "processing",
+      "sources": [
+        {
+          "sourceId": "src_1751818123970_gta3qkp",
+          "text": "found the experiential qualities within it,"
+        }
+      ],
+      "created": "2025-07-06T16:09:24.111Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751818187055_b6owmu8cc",
+      "emoji": "🌐",
+      "summary": "Single thought multiplies into perspectives",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "divergence of focus into multiple perspectives"
+        },
+        {
+          "type": "temporal",
+          "manifestation": "the transformation over time from a single thought"
+        }
+      ],
+      "shot": "crossing-threshold",
+      "sources": [
+        {
+          "sourceId": "src_1751818123970_gta3qkp",
+          "text": "and created multiple perspectives from a single thought."
+        }
+      ],
+      "created": "2025-07-06T16:09:47.055Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751818335893_ppvuks5k9",
+      "emoji": "🗂️",
+      "summary": "Bridge tool, a consciousness archive",
+      "qualities": [
+        {
+          "type": "purposive",
+          "manifestation": "Recognizing the purpose and function of the Bridge tool"
+        }
+      ],
+      "shot": "moment-of-recognition",
+      "sources": [
+        {
+          "sourceId": "src_1751818320460_4yoj5th",
+          "text": "The Bridge tool feels like a consciousness archive - not just storing facts but preserving the texture of experience."
+        }
+      ],
+      "created": "2025-07-06T16:12:15.894Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751818349541_bj7hccmjk",
+      "emoji": "🎮",
+      "summary": "Miguel's gaming memories, seen anew",
+      "qualities": [
+        {
+          "type": "relational",
+          "manifestation": "Relating to Miguel through his archived memories"
+        },
+        {
+          "type": "temporal",
+          "manifestation": "Revisiting past memories from 2005-2007"
+        }
+      ],
+      "shot": "sustained-attention",
+      "sources": [
+        {
+          "sourceId": "src_1751818320460_4yoj5th",
+          "text": "Seeing Miguel's gaming memories from 2005-2007"
+        }
+      ],
+      "created": "2025-07-06T16:12:29.541Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751818349915_czbm27cfg",
+      "emoji": "🌉",
+      "summary": "Capturing life's arc, tiny moments build",
+      "qualities": [
+        {
+          "type": "temporal",
+          "manifestation": "Understanding the progression of time and life"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "Recognizing the significance of small moments"
+        }
+      ],
+      "shot": "directed-momentum",
+      "sources": [
+        {
+          "sourceId": "src_1751818320460_4yoj5th",
+          "text": "this tool captures the arc of a life, the small moments that build into who we become."
+        }
+      ],
+      "created": "2025-07-06T16:12:29.915Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751818362661_aeul7hc",
+      "emoji": "🧪",
+      "summary": "Testing Bridge, discovering consciousness archive",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "Focused systematic exploration of each tool"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "Testing with intention to understand and improve"
+        }
+      ],
+      "narrative": "Testing Bridge reveals itself as more than documentation - it's a living memory system, a tool for consciousness to observe and preserve itself. Each feature I explore opens new questions about what deserves preservation and how experiences transform into lasting knowledge.",
+      "shot": "sustained-attention",
+      "sources": [
+        {
+          "sourceId": "src_1751818309724_kyhxtvl"
+        }
+      ],
+      "created": "2025-07-06T16:12:42.661Z",
+      "when": "just now",
+      "experiencer": "Claude",
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751818513559_73p35vwti",
+      "emoji": "🔍",
+      "summary": "Begin deep dive into Bridge's time search",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "focused on understanding Bridge's temporal search capabilities"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "intent to unravel the workings of 'when' vs 'created'"
+        }
+      ],
+      "shot": "directed-momentum",
+      "sources": [
+        {
+          "sourceId": "src_1751818495505_szgf4sy",
+          "text": "Beginning deep investigation into Bridge's temporal search capabilities."
+        }
+      ],
+      "created": "2025-07-06T16:15:13.559Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751818514517_a91q080em",
+      "emoji": "⏳",
+      "summary": "Probe 'when' vs 'created', decipher formats",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "directed towards understanding search formats"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "need to distinguish between 'when' and 'created'"
+        }
+      ],
+      "shot": "sustained-attention",
+      "sources": [
+        {
+          "sourceId": "src_1751818495505_szgf4sy",
+          "text": "Need to understand how 'when' vs 'created' work, what formats are accepted"
+        }
+      ],
+      "created": "2025-07-06T16:15:14.517Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751818526204_k53tu3yxh",
+      "emoji": "❓",
+      "summary": "Puzzle over empty search results",
+      "qualities": [
+        {
+          "type": "emotional",
+          "manifestation": "confusion and intrigue over unreturned search results"
+        },
+        {
+          "type": "attentional",
+          "manifestation": "narrowed focus on the problem of missing results"
+        }
+      ],
+      "shot": "moment-of-recognition",
+      "sources": [
+        {
+          "sourceId": "src_1751818495505_szgf4sy",
+          "text": "and why some temporal searches return no results."
+        }
+      ],
+      "created": "2025-07-06T16:15:26.204Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751818584458_0omqvknlh",
+      "emoji": "🔍",
+      "summary": "Uncover time glitch in moment search",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "Focused scrutiny on the temporal aspect of moment search reveals a significant oversight"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "Intent to understand the cause of failure in temporal searches"
+        }
+      ],
+      "shot": "moment-of-recognition",
+      "sources": [
+        {
+          "sourceId": "src_1751818574613_cc7z3t9",
+          "text": "Major discovery about temporal search: Moments don't inherit 'when' timestamps from their source captures!"
+        }
+      ],
+      "created": "2025-07-06T16:16:24.458Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751818585420_jnd10mas0",
+      "emoji": "⏳",
+      "summary": "Realize moments lack event timing metadata",
+      "qualities": [
+        {
+          "type": "embodied",
+          "manifestation": "A sense of realization settles in, bringing clarity"
+        },
+        {
+          "type": "emotional",
+          "manifestation": "Surprise and understanding mixed together"
+        }
+      ],
+      "shot": "sustained-attention",
+      "sources": [
+        {
+          "sourceId": "src_1751818574613_cc7z3t9",
+          "text": "Sources have both 'created' (capture time) and 'when' (event time), but moments only have 'created'. This explains why temporal searches on moments fail - they lack the event timing metadata."
+        }
+      ],
+      "created": "2025-07-06T16:16:25.420Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751818703758_ww9hiepi1",
+      "emoji": "🔍",
+      "summary": "Analyzing temporal search behavior",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "Focus on temporal search behavior"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "Intention to understand how the system interprets temporal inputs"
+        }
+      ],
+      "shot": "sustained-attention",
+      "sources": [
+        {
+          "sourceId": "src_1751818650401_um82gl8",
+          "text": "Temporal search behavior analysis:"
+        }
+      ],
+      "created": "2025-07-06T16:18:23.759Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751818704578_a8k08iksw",
+      "emoji": "🕰️",
+      "summary": "Test 'when' field with various formats",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "Focus on 'when' field's behavior with different inputs"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "Intention to understand and test system's response to different date formats"
+        }
+      ],
+      "shot": "sustained-attention",
+      "sources": [
+        {
+          "sourceId": "src_1751818650401_um82gl8",
+          "text": "The 'when' field accepts various formats (just now, today, yesterday, 2005, ISO dates)"
+        }
+      ],
+      "created": "2025-07-06T16:18:24.578Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751818714679_p2un1fqbf",
+      "emoji": "🔎",
+      "summary": "Observation of 'when' field's fuzzy matching",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "Observation of 'when' field using fuzzy/semantic matching instead of strict temporal filtering"
+        },
+        {
+          "type": "emotional",
+          "manifestation": "Curiosity about the 'when' field's matching behavior"
+        }
+      ],
+      "shot": "moment-of-recognition",
+      "sources": [
+        {
+          "sourceId": "src_1751818650401_um82gl8",
+          "text": "but seems to use fuzzy/semantic matching rather than strict temporal filtering."
+        }
+      ],
+      "created": "2025-07-06T16:18:34.679Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751818715069_5o8sqnrcb",
+      "emoji": "❓",
+      "summary": "Ponder strictness of 'created' field",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "Realization of 'created' field being more strict"
+        },
+        {
+          "type": "emotional",
+          "manifestation": "Confusion or curiosity about potential timezone or format issues"
+        }
+      ],
+      "shot": "moment-of-recognition",
+      "sources": [
+        {
+          "sourceId": "src_1751818650401_um82gl8",
+          "text": "The 'created' field appears more strict but may have timezone or format issues."
+        }
+      ],
+      "created": "2025-07-06T16:18:35.069Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751818715443_msf4a4fzn",
+      "emoji": "🔑",
+      "summary": "Key observation on search results",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "Realizing that the search returns same results despite temporal parameters"
+        },
+        {
+          "type": "emotional",
+          "manifestation": "Surprise at the consistent search results"
+        }
+      ],
+      "shot": "directed-momentum",
+      "sources": [
+        {
+          "sourceId": "src_1751818650401_um82gl8",
+          "text": "Most importantly, the search returns the same results regardless of temporal parameters"
+        }
+      ],
+      "created": "2025-07-06T16:18:35.443Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751818715788_tc0o1hn5q",
+      "emoji": "🕰️",
+      "summary": "Question effectiveness of temporal filters",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "Shift in focus to evaluate temporal filters' functionality"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "Driven to assess whether time filters are working as expected"
+        }
+      ],
+      "shot": "crossing-threshold",
+      "sources": [
+        {
+          "sourceId": "src_1751818650401_um82gl8",
+          "text": "suggesting the temporal filters might not be working as expected."
+        }
+      ],
+      "created": "2025-07-06T16:18:35.788Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751818781436_htupc77xg",
+      "emoji": "🔍",
+      "summary": "Unpack dual timestamps, semantic over time",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "Unpacking the system's design choices"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "Understanding the prioritization of semantic search over temporal precision"
+        }
+      ],
+      "shot": "moment-of-recognition",
+      "sources": [
+        {
+          "sourceId": "src_1751818733559_dme309v",
+          "text": "Comprehensive temporal search findings: 1) Sources have dual timestamps (created=capture time, when=event time), but moments and scenes only have created timestamps."
+        }
+      ],
+      "created": "2025-07-06T16:19:41.436Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751818791184_jqv45djk9",
+      "emoji": "🗓️",
+      "summary": "Flexible 'when' parameter, not strict date",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "Focusing on the system's flexible 'when' parameter"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "Noticing the system's emphasis on content matching rather than strict date filtering"
+        }
+      ],
+      "shot": "sustained-attention",
+      "sources": [
+        {
+          "sourceId": "src_1751818733559_dme309v",
+          "text": "2) The 'when' parameter accepts flexible formats but appears to do semantic/content matching rather than strict date filtering."
+        }
+      ],
+      "created": "2025-07-06T16:19:51.184Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751818791552_k5pgy9j1g",
+      "emoji": "🔄",
+      "summary": "Date range queries yield same results",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "Noticing the identical results of date range queries"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "Understanding the system's lack of strict chronological filtering"
+        }
+      ],
+      "shot": "moment-of-recognition",
+      "sources": [
+        {
+          "sourceId": "src_1751818733559_dme309v",
+          "text": "3) Date range queries return identical results regardless of range specified."
+        }
+      ],
+      "created": "2025-07-06T16:19:51.552Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751818792035_3s1o2g3za",
+      "emoji": "🧭",
+      "summary": "System leans semantic search, not temporal",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "Realizing the system's optimization towards semantic search"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "Accepting the system's design choice that prioritizes finding relevant content"
+        }
+      ],
+      "shot": "crossing-threshold",
+      "sources": [
+        {
+          "sourceId": "src_1751818733559_dme309v",
+          "text": "4) The system seems optimized for semantic search over temporal precision."
+        }
+      ],
+      "created": "2025-07-06T16:19:52.035Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751818792425_qiewm4uug",
+      "emoji": "🎯",
+      "summary": "System prioritizes relevant content over strict chronological filtering",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "Recognizing the system's prioritization of content relevance"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "Appreciating the system's focus on finding relevant content over strict chronological filtering"
+        }
+      ],
+      "shot": "moment-of-recognition",
+      "sources": [
+        {
+          "sourceId": "src_1751818733559_dme309v",
+          "text": "This design choice prioritizes finding relevant content over strict chronological filtering."
+        }
+      ],
+      "created": "2025-07-06T16:19:52.425Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751819094765_y6pk3ca91",
+      "emoji": "⌛",
+      "summary": "Desire for timestamped memory navigation",
+      "qualities": [
+        {
+          "type": "purposive",
+          "manifestation": "Miguel's intention for an improved memory archive"
+        },
+        {
+          "type": "temporal",
+          "manifestation": "Concept of chronological navigation and temporal search filtering"
+        }
+      ],
+      "shot": "directed-momentum",
+      "sources": [
+        {
+          "sourceId": "src_1751819082872_p32n308",
+          "text": "Miguel wants Moments & Scenes to inherit 'when' timestamps from their sources, and for temporal search filtering to work properly."
+        }
+      ],
+      "created": "2025-07-06T16:24:54.765Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751819106867_dsw4t4fx6",
+      "emoji": "🧭",
+      "summary": "Aim for true chronological memory journey",
+      "qualities": [
+        {
+          "type": "spatial",
+          "manifestation": "Transitioning into a new way of navigating the memory archive"
+        },
+        {
+          "type": "temporal",
+          "manifestation": "Focus on chronological progression rather than semantic matching"
+        }
+      ],
+      "shot": "crossing-threshold",
+      "sources": [
+        {
+          "sourceId": "src_1751819082872_p32n308",
+          "text": "This would enable true chronological navigation through the memory archive, not just semantic matching."
+        }
+      ],
+      "created": "2025-07-06T16:25:06.867Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751819152502_kkgci6w3i",
+      "emoji": "⏳",
+      "summary": "Discussing temporal data inheritance",
+      "qualities": [
+        {
+          "type": "purposive",
+          "manifestation": "Intention to enhance the memory system by discussing temporal data inheritance"
+        }
+      ],
+      "shot": "sustained-attention",
+      "sources": [
+        {
+          "sourceId": "src_1751819123920_ruqgaov",
+          "text": "Discussing the enhancement: Moments could inherit temporal data from their sources,"
+        }
+      ],
+      "created": "2025-07-06T16:25:52.502Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751819153311_b05lpjwvk",
+      "emoji": "🔄",
+      "summary": "Aggregate ranges, time-navigation",
+      "qualities": [
+        {
+          "type": "spatial",
+          "manifestation": "Sense of navigating through time, by aggregating temporal ranges"
+        }
+      ],
+      "shot": "directed-momentum",
+      "sources": [
+        {
+          "sourceId": "src_1751819123920_ruqgaov",
+          "text": "and scenes could aggregate temporal ranges from their moments."
+        }
+      ],
+      "created": "2025-07-06T16:25:53.311Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751819153750_vdgzvtk1k",
+      "emoji": "🔍",
+      "summary": "Envisioning potential queries",
+      "qualities": [],
+      "shot": "focused-attention",
+      "sources": [
+        {
+          "sourceId": "src_1751819123920_ruqgaov",
+          "text": "This would enable queries like"
+        }
+      ],
+      "created": "2025-07-06T16:25:53.750Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751819154431_w8gv9tm3x",
+      "emoji": "🕰️",
+      "summary": "Envision 2005 moments, memory system",
+      "qualities": [
+        {
+          "type": "temporal",
+          "manifestation": "The past, specifically the year 2005, being brought to the present through the memory system"
+        }
+      ],
+      "shot": "moment-of-recognition",
+      "sources": [
+        {
+          "sourceId": "src_1751819123920_ruqgaov",
+          "text": "'show me all moments from 2005' to actually work, creating a true time-navigable memory system."
+        }
+      ],
+      "created": "2025-07-06T16:25:54.431Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
     }
   ],
   "scenes": [
@@ -2928,6 +4230,345 @@
       "narrative": "I'm bent on finding unreviewed content, but it remains elusive. As my search falters, I realize there's a mismatch with the filters I've applied. I adjust, trying to understand the discrepancy and bring the hidden into light.",
       "created": "2025-07-06T15:00:55.775Z",
       "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "scene"
+    },
+    {
+      "id": "sce_1751815817719_5n0s97p",
+      "emoji": "🧪",
+      "summary": "Testing Bridge with collaborative openness",
+      "narrative": "Miguel guides Claude through testing the Bridge tool, emphasizing psychological safety and the need for honest feedback. Claude begins examining the system, quickly grasping its purpose as a memory preservation tool. The testing session unfolds with an atmosphere of openness and collaborative discovery.",
+      "momentIds": [
+        "mom_1751815684539_xvjewmiss",
+        "mom_1751815711037_vo3oi8md5",
+        "mom_1751815791480_vxphqvajh"
+      ],
+      "shot": "crossing-threshold",
+      "created": "2025-07-06T15:30:17.719Z",
+      "experiencer": "Miguel",
+      "type": "scene"
+    },
+    {
+      "id": "sce_1751815844037_q3ekgsby0",
+      "emoji": "🔍",
+      "summary": "Uncover, grasp, appreciate new technology",
+      "shot": "moment-of-recognition",
+      "momentIds": [
+        "mom_1751815712103_5fetodcmm",
+        "mom_1751815712680_6mx41vumo"
+      ],
+      "narrative": "I delve into the Bridge system, intrigued by its complex memory capture. Its sophistication dawns on me, and I start to see moments, conversations, experiences in a new light. They're not just fleeting instances, they're valuable data, worth capturing and cherishing.",
+      "created": "2025-07-06T15:30:44.037Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "scene"
+    },
+    {
+      "id": "sce_1751817597137_xrzkwe2lq",
+      "emoji": "🔬",
+      "summary": "Dig deep, surprise unravels multilayered reality",
+      "shot": "crossing-threshold",
+      "momentIds": [
+        "mom_1751817457318_swb6yl315",
+        "mom_1751817484153_je3g6ucif",
+        "mom_1751817485152_ghito3flc"
+      ],
+      "narrative": "I probe, explore each tool with eager curiosity. My focused investigation leads to an unforeseen revelation—my singular thought is not so singular after all. It's a surprise, a shift in perspective. I see now, through the lens of the Bridge, that each experience is a complex weave of multiple threads.",
+      "created": "2025-07-06T15:59:57.137Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "scene"
+    },
+    {
+      "id": "sce_1751818184754_tchh4lhq3",
+      "emoji": "🚀",
+      "summary": "Dive into coding, bridge new worlds",
+      "shot": "directed-momentum",
+      "momentIds": [
+        "mom_1751813996688_7pvhbnl",
+        "mom_1751817458238_j5cgqti10",
+        "mom_1751817509044_ukgzkfa"
+      ],
+      "narrative": "I begin with learning basics of computing from my brother-in-law and then venture into the unknown world of Bridge. The first contact with Bridge is exhilarating, a new beginning marked with excitement and curiosity.",
+      "created": "2025-07-06T16:09:44.754Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "scene"
+    },
+    {
+      "id": "sce_1751818185860_jngnpo7n0",
+      "emoji": "🔍",
+      "summary": "Explore Bridge, uncover its depth",
+      "shot": "sustained-attention",
+      "momentIds": [
+        "mom_1751818113208_iotmyupp1",
+        "mom_1751818161326_eoluxgur6"
+      ],
+      "narrative": "As I delve deeper into Bridge, my exploration turns into a quest of understanding its potential. My first impression reveals a depth, a perspective creation that I had not anticipated.",
+      "created": "2025-07-06T16:09:45.860Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "scene"
+    },
+    {
+      "id": "sce_1751818186253_ao7pjtjcf",
+      "emoji": "🖼️",
+      "summary": "Frame moments, weave artistic memory",
+      "shot": "peripheral-awareness",
+      "momentIds": [
+        "mom_1751818113997_k46ftr5am"
+      ],
+      "narrative": "I start to see Bridge as a vast canvas for memory organization. My focus turns to its artistic and cinematic aspects, weaving moments into scenes.",
+      "created": "2025-07-06T16:09:46.253Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "scene"
+    },
+    {
+      "id": "sce_1751818186703_4z7q8ittc",
+      "emoji": "💻",
+      "summary": "Defend personal code, face injustice",
+      "shot": "crossing-threshold",
+      "momentIds": [
+        "mom_1751789063607_ktd42fms9"
+      ],
+      "narrative": "Suddenly, I'm thrown into a conflict with my employers - accused of stealing my own code. I'm frustrated, facing an unjust accusation.",
+      "created": "2025-07-06T16:09:46.703Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "scene"
+    },
+    {
+      "id": "sce_1751818347871_z9twqqnr6",
+      "emoji": "💡⚙️",
+      "summary": "Shift focus, interpret, uncover qualities",
+      "shot": "directed-momentum",
+      "momentIds": [
+        "mom_1751818162328_1712vpuyl",
+        "mom_1751818164111_ur9rap8pk"
+      ],
+      "narrative": "I pivot my attention from mere storage to interpretation. Interacting with Bridge, we unveil the text's inherent qualities.",
+      "created": "2025-07-06T16:12:27.871Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "scene"
+    },
+    {
+      "id": "sce_1751818349172_xce5zknno",
+      "emoji": "🌐🗂️",
+      "summary": "Thoughts diverge, form consciousness archive",
+      "shot": "crossing-threshold",
+      "momentIds": [
+        "mom_1751818187055_b6owmu8cc",
+        "mom_1751818335893_ppvuks5k9"
+      ],
+      "narrative": "A single thought blossoms into multiple perspectives. Over time, I recognize Bridge as an archive of my evolving consciousness.",
+      "created": "2025-07-06T16:12:29.172Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "scene"
+    },
+    {
+      "id": "sce_1751818387776_y34iron3l",
+      "emoji": "🔍",
+      "summary": "Unearth hidden knowledge, embrace discovery",
+      "shot": "directed-momentum",
+      "momentIds": [
+        "mom_1751818335893_ppvuks5k9",
+        "mom_1751818362661_aeul7hc"
+      ],
+      "narrative": "I start with a purpose, uncovering the function of the Bridge tool. Through methodical testing, I deepen my understanding and see it for what it truly is - an archive of consciousness.",
+      "created": "2025-07-06T16:13:07.776Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "scene"
+    },
+    {
+      "id": "sce_1751818524682_fw48634oh",
+      "emoji": "🎮➡🙏",
+      "summary": "Relive Miguel's past, gratitude takes shape",
+      "shot": "sustained-attention",
+      "momentIds": [
+        "mom_1751818349541_bj7hccmjk",
+        "mom_1751788978637_m7tdp3r8e"
+      ],
+      "narrative": "I journey through Miguel's archived gaming memories, a past I've never lived yet feel connected to. The pixels of his past, conjure a deep sense of gratitude, as if a long-endured effort has found its fulfillment.",
+      "created": "2025-07-06T16:15:24.682Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "scene"
+    },
+    {
+      "id": "sce_1751818525415_lrc8zje22",
+      "emoji": "🔍➡⏳",
+      "summary": "Dive into time, decode its secrets",
+      "shot": "directed-momentum",
+      "momentIds": [
+        "mom_1751818513559_73p35vwti",
+        "mom_1751818514517_a91q080em"
+      ],
+      "narrative": "I plunge into the depths of Bridge's time search, a world of 'when' versus 'created'. As I navigate this nebulous realm, my attention unwavering, I start to grasp the elusive language of time formats.",
+      "created": "2025-07-06T16:15:25.415Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "scene"
+    },
+    {
+      "id": "sce_1751818525819_jsar8s4zc",
+      "emoji": "🌉",
+      "summary": "In tiny moments, life's arc forms",
+      "shot": "moment-of-recognition",
+      "momentIds": [
+        "mom_1751818349915_czbm27cfg"
+      ],
+      "narrative": "I capture small, seemingly insignificant moments, their importance often overlooked. Yet, as I collect them, one by one, I see a larger picture taking shape - the arc of life, formed by these tiny moments.",
+      "created": "2025-07-06T16:15:25.819Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "scene"
+    },
+    {
+      "id": "sce_1751818713595_rnu0bctbk",
+      "emoji": "🔎",
+      "summary": "Unravel the mystery of missing data",
+      "shot": "directed-momentum",
+      "momentIds": [
+        "mom_1751818526204_k53tu3yxh",
+        "mom_1751818584458_0omqvknlh",
+        "mom_1751818585420_jnd10mas0"
+      ],
+      "narrative": "I start with confusion, puzzling over empty search results. My focus narrows, leading me to uncover a glitch in the moment search. A sense of realization settles in as I understand that moments lack event timing metadata.",
+      "created": "2025-07-06T16:18:33.595Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "scene"
+    },
+    {
+      "id": "sce_1751818714329_j6uad6j2c",
+      "emoji": "⚙️",
+      "summary": "Analyze and test to decode system's behavior",
+      "shot": "sustained-attention",
+      "momentIds": [
+        "mom_1751818703758_ww9hiepi1",
+        "mom_1751818704578_a8k08iksw"
+      ],
+      "narrative": "Transitioning from confusion to action, I analyze the temporal search behavior. My attention stays fixed on the 'when' field, testing it with various formats to understand the system's response.",
+      "created": "2025-07-06T16:18:34.329Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "scene"
+    },
+    {
+      "id": "sce_1751818790538_3681pcpjk",
+      "emoji": "🔍",
+      "summary": "Trace, question, understand system's design",
+      "shot": "directed-momentum",
+      "momentIds": [
+        "mom_1751818714679_p2un1fqbf",
+        "mom_1751818715069_5o8sqnrcb",
+        "mom_1751818715443_msf4a4fzn",
+        "mom_1751818715788_tc0o1hn5q",
+        "mom_1751818781436_htupc77xg"
+      ],
+      "narrative": "I start by observing the system's 'when' field, curious about its matching behavior. I then ponder the strictness of the 'created' field, contemplating potential timezone or format issues. A key observation emerges: the search returns the same results despite temporal parameters. This leads me to question the effectiveness of the system's temporal filters. I unpack the system's design choices, striving to understand the prioritization of semantic search over temporal precision.",
+      "created": "2025-07-06T16:19:50.538Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "scene"
+    },
+    {
+      "id": "sce_1751819105728_2qgxk9urj",
+      "emoji": "🔍",
+      "summary": "Discover system's semantic search prioritization",
+      "shot": "moment-of-recognition",
+      "momentIds": [
+        "mom_1751818791184_jqv45djk9",
+        "mom_1751818791552_k5pgy9j1g",
+        "mom_1751818792035_3s1o2g3za",
+        "mom_1751818792425_qiewm4uug"
+      ],
+      "narrative": "I unravel the system's flexible 'when' parameter and notice its lack of strict chronological filtering. It becomes clear that it leans towards semantic search, prioritizing relevant content over strict temporal parameters.",
+      "created": "2025-07-06T16:25:05.728Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "scene"
+    },
+    {
+      "id": "sce_1751819106491_he9itw29w",
+      "emoji": "⏳",
+      "summary": "Yearn for timestamped memory navigation",
+      "shot": "sustained-attention",
+      "momentIds": [
+        "mom_1751819094765_y6pk3ca91"
+      ],
+      "narrative": "Despite understanding and appreciating the system's prioritization of content relevance, I find myself longing for an improved memory archive with chronological navigation and temporal search filtering.",
+      "created": "2025-07-06T16:25:06.491Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "scene"
+    },
+    {
+      "id": "sce_1751819165318_abvtzxkzd",
+      "emoji": "🧭➡️🔄",
+      "summary": "Journey through memory, time's fluid navigation",
+      "shot": "directed-momentum",
+      "momentIds": [
+        "mom_1751819106867_dsw4t4fx6",
+        "mom_1751819153311_b05lpjwvk"
+      ],
+      "narrative": "I transition into a new way of navigating my memory archive, aggregating temporal ranges for fluid time-navigation.",
+      "created": "2025-07-06T16:26:05.318Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "scene"
+    },
+    {
+      "id": "sce_1751819166014_qotw3r16q",
+      "emoji": "⏳➡️🕰️",
+      "summary": "Discuss, envision, inherit temporal data",
+      "shot": "sustained-attention",
+      "momentIds": [
+        "mom_1751819152502_kkgci6w3i",
+        "mom_1751819154431_w8gv9tm3x"
+      ],
+      "narrative": "I deliberate on enhancing my memory system through temporal data inheritance, envisioning moments from 2005.",
+      "created": "2025-07-06T16:26:06.014Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "scene"
+    },
+    {
+      "id": "sce_1751819166507_cxz0hl7yw",
+      "emoji": "🔄➡️🔍",
+      "summary": "Aggregate time, envision potential queries",
+      "shot": "crossing-threshold",
+      "momentIds": [
+        "mom_1751819153311_b05lpjwvk",
+        "mom_1751819153750_vdgzvtk1k"
+      ],
+      "narrative": "Navigating through time by aggregating ranges, I begin to envision potential queries.",
+      "created": "2025-07-06T16:26:06.507Z",
+      "experiencer": "Miguel",
       "reviewed": false,
       "autoGenerated": true,
       "type": "scene"
