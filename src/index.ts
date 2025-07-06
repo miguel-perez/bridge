@@ -213,7 +213,7 @@ function smartTruncate(text: string, maxLength: number = 120): string {
   return truncated + '...';
 }
 
-// Simple formatter for search results
+// Simple formatter for search results - consistent base format
 function formatSearchResult(result: SearchResult, index: number): string {
   const label = String(result.type ?? '');
   let summary: string;
@@ -226,6 +226,65 @@ function formatSearchResult(result: SearchResult, index: number): string {
   }
   // Always include the ID in the output
   return `${index + 1}. [${label.toUpperCase()}] (ID: ${result.id}) ${summary}`;
+}
+
+// Enhanced formatter for detailed results
+function formatDetailedSearchResult(result: SearchResult, index: number): string {
+  const baseFormat = formatSearchResult(result, index);
+  
+  // Add additional context based on record type
+  let details = '';
+  
+  if (result.type === 'moment' && result.moment) {
+    const moment = result.moment;
+    if (moment.emoji && moment.summary) {
+      details += `\n   ${moment.emoji} ${moment.summary}`;
+    }
+    if (moment.qualities && moment.qualities.length > 0) {
+      details += `\n   Qualities: ${moment.qualities.map(q => q.type).join(', ')}`;
+    }
+    if (moment.shot) {
+      details += `\n   Shot: ${moment.shot}`;
+    }
+  } else if (result.type === 'scene' && result.scene) {
+    const scene = result.scene;
+    if (scene.emoji && scene.summary) {
+      details += `\n   ${scene.emoji} ${scene.summary}`;
+    }
+    if (scene.shot) {
+      details += `\n   Shot: ${scene.shot}`;
+    }
+    if (scene.momentIds && scene.momentIds.length > 0) {
+      details += `\n   Moments: ${scene.momentIds.length}`;
+    }
+  } else if (result.type === 'source' && result.source) {
+    const source = result.source;
+    if (source.perspective) {
+      details += `\n   Perspective: ${source.perspective}`;
+    }
+    if (source.processing) {
+      details += `\n   Processing: ${source.processing}`;
+    }
+  }
+  
+  return baseFormat + details;
+}
+
+// Structured formatter for JSON output
+function formatStructuredSearchResult(result: SearchResult): any {
+  const base: any = {
+    type: result.type,
+    id: result.id,
+    snippet: result.snippet,
+    relevance: result.relevance
+  };
+  
+  // Add full record data when available
+  if (result.source) base.source = result.source;
+  if (result.moment) base.moment = result.moment;
+  if (result.scene) base.scene = result.scene;
+  
+  return base;
 }
 
 // Define SearchToolInput for the new search tool
@@ -375,7 +434,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     },
     {
       name: "search",
-      description: "Unified faceted search across all records. Supports semantic, temporal, relationship, and metadata filters. Use 'created' for capture time and 'when' for event time.",
+      description: "Unified faceted search across all records. Supports semantic, temporal, relationship, and metadata filters. Use 'created' for capture time and 'when' for event time. Results use consistent format: base format shows type, ID, and snippet; includeContext adds full record data as JSON; groupBy organizes results by category.",
       inputSchema: {
         type: "object",
         properties: {
@@ -394,7 +453,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           groupBy: { type: "string", enum: ["type", "experiencer", "day", "week", "month", "hierarchy"], description: "Group results by this field" },
           sort: { type: "string", enum: ["relevance", "created", "when"], description: "Sort by field" },
           limit: { type: "number", description: "Maximum results to return" },
-          includeContext: { type: "boolean", description: "Return full record metadata" },
+          includeContext: { type: "boolean", description: "Return full record metadata as structured JSON" },
           debug: { type: "boolean", description: "Include debug information about filter results" }
         }
       },
@@ -1543,14 +1602,14 @@ Optional: add 'when' to override temporal inheritance from moments.`
               return {
                 content: results.map((result: SearchResult) => ({
                   type: 'text',
-                  text: JSON.stringify(result, null, 2)
+                  text: JSON.stringify(formatStructuredSearchResult(result), null, 2)
                 }))
               };
             } else {
               return {
                 content: results.map((result: SearchResult, index: number) => ({
                   type: 'text',
-                  text: formatSearchResult(result, index)
+                  text: formatDetailedSearchResult(result, index)
                 }))
               };
             }
@@ -1599,7 +1658,7 @@ Optional: add 'when' to override temporal inheritance from moments.`
             return {
               content: finalResults.map((result: SearchResult) => ({
                 type: 'text',
-                text: JSON.stringify(result, null, 2)
+                text: JSON.stringify(formatStructuredSearchResult(result), null, 2)
               }))
             };
           } else {
@@ -1609,7 +1668,7 @@ Optional: add 'when' to override temporal inheritance from moments.`
                 .filter((result: any) => typeof result === 'object' && result !== null && typeof result.type === 'string')
                 .map((result: SearchResult, index: number) => ({
                   type: 'text',
-                  text: formatSearchResult(result, index)
+                  text: formatDetailedSearchResult(result, index)
                 }))
             };
           }

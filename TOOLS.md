@@ -267,4 +267,66 @@ This document defines the MCP tools exposed by the Bridge server, following best
     "openWorldHint": false
   }
 }
-``` 
+```
+
+## Search Tool
+
+**Purpose**: Unified faceted search across all records with consistent result formatting.
+
+**Result Format**: Progressive enhancement approach for predictable output:
+
+### Base Format (Default)
+```
+1. [MOMENT] (ID: mom_123) 🤔 Auto-framing reveals interpretive depth
+   🤔 Auto-framing reveals interpretive depth
+   Qualities: attentional, emotional
+   Shot: moment-of-recognition
+
+2. [SOURCE] (ID: src_456) Reading through Bridge's documentation...
+   Perspective: I
+   Processing: during
+```
+
+### Enhanced Format (with includeContext: true)
+```json
+{
+  "type": "moment",
+  "id": "mom_123",
+  "snippet": "🤔 Auto-framing reveals interpretive depth",
+  "relevance": 0.95,
+  "moment": {
+    "id": "mom_123",
+    "type": "moment",
+    "emoji": "🤔",
+    "summary": "Auto-framing reveals interpretive depth",
+    "qualities": [
+      {"type": "attentional", "manifestation": "Noticing..."},
+      {"type": "emotional", "manifestation": "Feeling..."}
+    ],
+    "shot": "moment-of-recognition",
+    "sources": [{"sourceId": "src_456"}],
+    "created": "2024-01-15T10:30:00Z",
+    "experiencer": "Claude"
+  }
+}
+```
+
+### Grouped Format (with groupBy)
+```
+source (4)
+1. [SOURCE] (ID: src_123) Reading through Bridge's documentation...
+   Perspective: I
+   Processing: during
+
+moment (9)
+1. [MOMENT] (ID: mom_123) 🤔 Auto-framing reveals interpretive depth
+   🤔 Auto-framing reveals interpretive depth
+   Qualities: attentional, emotional
+   Shot: moment-of-recognition
+```
+
+**Key Benefits**:
+- **Consistent Structure**: All results follow the same base format
+- **Progressive Enhancement**: Add detail with includeContext or groupBy
+- **Predictable Output**: Same format regardless of search parameters
+- **Automation Friendly**: Structured data available when needed 
