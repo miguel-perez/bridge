@@ -1157,6 +1157,8 @@ shifts, several emotional boundaries, multiple actional completions.`;
 🔍 Unreviewed moments: ${report.unreviewed_moments_count}
 🎭 Unreviewed scenes: ${report.unreviewed_scenes_count}
 🧵 Unweaved moments: ${report.unweaved_moments_count}
+🌀 Reframed moments: ${report.reframed_moments_count}
+🌀 Reframed scenes: ${report.reframed_scenes_count}
 ⚙️ Auto-weave threshold: ${report.auto_weave_threshold}
 🤖 Auto-framing: ${report.auto_framing_enabled ? 'enabled' : 'disabled'}
 🤖 Auto-weaving: ${report.auto_weaving_enabled ? 'enabled' : 'disabled'}
