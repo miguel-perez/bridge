@@ -442,7 +442,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     },
     {
       name: "search",
-      description: "Unified faceted search across all records. Supports semantic, temporal, relationship, and metadata filters. Use 'created' for capture time and 'when' for event time. Results use consistent format: base format shows type, ID, and snippet; includeContext adds full record data as JSON; groupBy organizes results by category.",
+      description: `Unified faceted search across all records. \n\nTEMPORAL FILTERING:\n- 'created': Filter by when record was captured (system time)\n  Example: created: { start: "2025-01-01", end: "2025-01-31" }\n- 'when': Filter by when event happened (user-provided time)\n  Example: when: "yesterday" or when: { start: "last week", end: "today" }\n\nBoth support:\n- Natural language: "yesterday", "last week", "January 2025"\n- ISO dates: "2025-01-15T10:00:00Z"\n- Date ranges: { start: "date", end: "date" }\n\nThe system uses chrono-node for flexible date parsing.\n\nResults use consistent format: base format shows type, ID, and snippet; includeContext adds full record data as JSON; groupBy organizes results by category.`,
       inputSchema: {
         type: "object",
         properties: {
@@ -1727,6 +1727,14 @@ Optional: add 'when' to override temporal inheritance from moments.`
         if (Array.isArray(finalResults)) {
           if (finalResults.length === 0) {
             // Provide more helpful error message when no results found
+            if (input.when) {
+              return {
+                content: [{
+                  type: 'text',
+                  text: `No records found for when: "${typeof input.when === 'string' ? input.when : JSON.stringify(input.when)}". Try different formats like "yesterday", "2025-01-15", or { start: "date", end: "date" }`
+                }]
+              };
+            }
             if (input.includeContext) {
               return {
                 content: finalResults.map((result: SearchResult) => ({
