@@ -199,12 +199,24 @@ const critiqueChecklist = `Validation criteria:\n- Voice recognition ("that's ho
 // Set storage and embeddings config to use DATA_FILE_PATH
 setStorageConfig({ dataFile: DATA_FILE_PATH });
 
+// Utility: smart word-boundary truncation with ellipsis
+function smartTruncate(text: string, maxLength: number = 120): string {
+  if (text.length <= maxLength) return text;
+  // Find last space before maxLength
+  const truncated = text.slice(0, maxLength);
+  const lastSpace = truncated.lastIndexOf(' ');
+  if (lastSpace > 0) {
+    return truncated.slice(0, lastSpace) + '...';
+  }
+  return truncated + '...';
+}
+
 // Simple formatter for search results
 function formatSearchResult(result: SearchResult, index: number): string {
   const label = String(result.type ?? '');
   let summary: string;
   if (typeof result.snippet === 'string') {
-    summary = result.snippet;
+    summary = smartTruncate(result.snippet);
   } else if (typeof result.id === 'string') {
     summary = result.id;
   } else {
