@@ -30,7 +30,6 @@ export interface FilterOptions {
   processing?: string[]; // ProcessingLevel[]
   shotTypes?: string[]; // ShotType[]
   framed?: boolean;
-  reviewed?: boolean;
   createdRange?: { start: string; end: string };
   whenRange?: { start: string; end: string };
 }
@@ -201,12 +200,6 @@ export function advancedFilters(results: SearchResult[], filters?: FilterOptions
       } else {
         if (!isWithinRange(recDate, start, end)) return false;
       }
-    }
-    // Reviewed filter (for moments and scenes)
-    if (typeof filters.reviewed === 'boolean') {
-      if (result.type === 'source') return true; // Sources pass through (they don't have reviewed field)
-      if (result.type === 'moment' && result.moment?.reviewed !== filters.reviewed) return false;
-      if (result.type === 'scene' && result.scene?.reviewed !== filters.reviewed) return false;
     }
     // hasQualities (for moments)
     if (filters.hasQualities && result.type === 'moment') {
