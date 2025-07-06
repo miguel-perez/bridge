@@ -78,6 +78,7 @@ const captureSchema = z.object({
   experiencer: z.string(),
   reflects_on: z.array(z.string()).optional(),
   file: z.string().optional(),
+  autoframe: z.boolean().optional().default(true),
 });
 
 // Smart frameSchema: accepts sourceIds for AI generation OR full parameters for manual control
@@ -228,7 +229,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           contentType: { type: "string", description: "Type of content", default: "text" },
           when: { type: "string", description: "When it happened (ISO timestamp or descriptive like 'yesterday morning')" },
           reflects_on: { type: "array", items: { type: "string" }, description: "Array of source IDs this record reflects on (use for reflections)" },
-          file: { type: "string", description: "Optional file path for file-based captures" }
+          file: { type: "string", description: "Optional file path for file-based captures" },
+          autoframe: { type: "boolean", description: "Whether to automatically frame this capture into moments (default: true)" }
         },
         required: ["content", "experiencer", "perspective", "processing"]
       },
@@ -496,29 +498,40 @@ shifts, several emotional boundaries, multiple actional completions.`;
               text: framingGuide
             });
           }
-          // Run AI framing after capture
-          try {
-            const autoProcessor = new AutoProcessor();
-            const autoframeResult = await autoProcessor.autoFrameSources({ sourceIds: [source.id] });
-            const successes = autoframeResult.filter(r => r.success && r.created);
-            if (successes.length > 0) {
-              let summary = `✅ AI framing complete: created ${successes.length} moment(s) from this capture.\n`;
-              successes.forEach((r, idx) => {
-                if (r.created) {
-                  summary += `  - Moment ${idx + 1}: ${r.created.emoji} "${r.created.summary}" (ID: ${r.created.id})\n`;
-                } else {
-                  summary += `  - Moment ${idx + 1}: [no data]\n`;
-                }
-              });
-              content.push({ type: 'text', text: summary });
-              content.push({ type: 'text', text: `\nFull records:\n${JSON.stringify(successes.map(r => r.created), null, 2)}` });
-            } else if (autoframeResult.length > 0 && autoframeResult[0].error) {
-              content.push({ type: 'text', text: `⚠️ AI framing failed: ${String(autoframeResult[0].error)}` });
-            } else {
-              content.push({ type: 'text', text: `⚠️ AI framing did not create any moments.` });
+          // Conditionally run AI framing after capture
+          if (input.autoframe) {
+            content.push({
+              type: 'text',
+              text: `⏳ Running AI framing on this capture...`
+            });
+            try {
+              const autoProcessor = new AutoProcessor();
+              const autoframeResult = await autoProcessor.autoFrameSources({ sourceIds: [source.id] });
+              const successes = autoframeResult.filter(r => r.success && r.created);
+              if (successes.length > 0) {
+                let summary = `✅ AI framing complete: created ${successes.length} moment(s) from this capture.\n`;
+                successes.forEach((r, idx) => {
+                  if (r.created) {
+                    summary += `  - Moment ${idx + 1}: ${r.created.emoji} "${r.created.summary}" (ID: ${r.created.id})\n`;
+                  } else {
+                    summary += `  - Moment ${idx + 1}: [no data]\n`;
+                  }
+                });
+                content.push({ type: 'text', text: summary });
+                content.push({ type: 'text', text: `\nFull records:\n${JSON.stringify(successes.map(r => r.created), null, 2)}` });
+              } else if (autoframeResult.length > 0 && autoframeResult[0].error) {
+                content.push({ type: 'text', text: `⚠️ AI framing failed: ${String(autoframeResult[0].error)}` });
+              } else {
+                content.push({ type: 'text', text: `⚠️ AI framing did not create any moments.` });
+              }
+            } catch (err) {
+              content.push({ type: 'text', text: `⚠️ AI framing error: ${err instanceof Error ? err.message : String(err)}` });
             }
-          } catch (err) {
-            content.push({ type: 'text', text: `⚠️ AI framing error: ${err instanceof Error ? err.message : String(err)}` });
+          } else {
+            content.push({
+              type: 'text',
+              text: `⏸️ AI framing skipped. Use the frame tool to manually frame this source when ready.`
+            });
           }
           return { content };
         }
@@ -550,11 +563,7 @@ shifts, several emotional boundaries, multiple actional completions.`;
           {
             type: 'text',
             text: `\nFull record:\n${JSON.stringify(source, null, 2)}`
-          },
-                      {
-              type: 'text',
-              text: `⏳ Running AI framing on this capture...`
-            }
+          }
         ];
         if (defaultsUsed.length > 0) {
           content.push({
@@ -573,29 +582,40 @@ shifts, several emotional boundaries, multiple actional completions.`;
             text: framingGuide
           });
         }
-        // Run autoframe after capture
-        try {
-          const autoProcessor = new AutoProcessor();
-          const autoframeResult = await autoProcessor.autoFrameSources({ sourceIds: [source.id] });
-          const successes = autoframeResult.filter(r => r.success && r.created);
-          if (successes.length > 0) {
-            let summary = `✅ Autoframe complete: created ${successes.length} moment(s) from this capture.\n`;
-            successes.forEach((r, idx) => {
-              if (r.created) {
-                summary += `  - Moment ${idx + 1}: ${r.created.emoji} "${r.created.summary}" (ID: ${r.created.id})\n`;
-              } else {
-                summary += `  - Moment ${idx + 1}: [no data]\n`;
-              }
-            });
-            content.push({ type: 'text', text: summary });
-            content.push({ type: 'text', text: `\nFull records:\n${JSON.stringify(successes.map(r => r.created), null, 2)}` });
-          } else if (autoframeResult.length > 0 && autoframeResult[0].error) {
-            content.push({ type: 'text', text: `⚠️ Autoframe failed: ${String(autoframeResult[0].error)}` });
-          } else {
-            content.push({ type: 'text', text: `⚠️ Autoframe did not create any moments.` });
+        // Conditionally run autoframe after capture
+        if (input.autoframe) {
+          content.push({
+            type: 'text',
+            text: `⏳ Running AI framing on this capture...`
+          });
+          try {
+            const autoProcessor = new AutoProcessor();
+            const autoframeResult = await autoProcessor.autoFrameSources({ sourceIds: [source.id] });
+            const successes = autoframeResult.filter(r => r.success && r.created);
+            if (successes.length > 0) {
+              let summary = `✅ AI framing complete: created ${successes.length} moment(s) from this capture.\n`;
+              successes.forEach((r, idx) => {
+                if (r.created) {
+                  summary += `  - Moment ${idx + 1}: ${r.created.emoji} "${r.created.summary}" (ID: ${r.created.id})\n`;
+                } else {
+                  summary += `  - Moment ${idx + 1}: [no data]\n`;
+                }
+              });
+              content.push({ type: 'text', text: summary });
+              content.push({ type: 'text', text: `\nFull records:\n${JSON.stringify(successes.map(r => r.created), null, 2)}` });
+            } else if (autoframeResult.length > 0 && autoframeResult[0].error) {
+              content.push({ type: 'text', text: `⚠️ AI framing failed: ${String(autoframeResult[0].error)}` });
+            } else {
+              content.push({ type: 'text', text: `⚠️ AI framing did not create any moments.` });
+            }
+          } catch (err) {
+            content.push({ type: 'text', text: `⚠️ AI framing error: ${err instanceof Error ? err.message : String(err)}` });
           }
-        } catch (err) {
-          content.push({ type: 'text', text: `⚠️ Autoframe error: ${err instanceof Error ? err.message : String(err)}` });
+        } else {
+          content.push({
+            type: 'text',
+            text: `⏸️ AI framing skipped. Use the frame tool to manually frame this source when ready.`
+          });
         }
         return { content };
       }
