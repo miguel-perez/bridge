@@ -746,33 +746,33 @@ bridge:capture {
             validSources.push(source);
           }
           
-          // Validate that all required manual parameters are provided
-          if (!input.emoji || !input.summary || !input.qualities || !input.shot || !input.when) {
+          // Validate that all required manual parameters are provided (when is optional)
+          if (!input.emoji || !input.summary || !input.qualities || !input.shot) {
             const missingFields = [];
             if (!input.emoji) missingFields.push('emoji');
             if (!input.summary) missingFields.push('summary');
             if (!input.qualities) missingFields.push('qualities');
             if (!input.shot) missingFields.push('shot');
-            if (!input.when) missingFields.push('when');
             
             throw new McpError(
               ErrorCode.InvalidParams,
-              `Manual framing requires all parameters: emoji, summary, qualities, shot, and when.
+              `Manual framing requires: emoji, summary, qualities, and shot. The 'when' field is optional and will inherit from sources if not provided.
 
 Missing fields: ${missingFields.join(', ')}
 
 For AI-generated framing, provide only sourceIds:
 bridge:frame { sourceIds: ["src_xxx"] }
 
-For manual control, provide all required fields:
+For manual control, provide required fields:
 bridge:frame {
   sourceIds: ["src_xxx"],
   emoji: "🤔",
   summary: "Auto-framing reveals interpretive depth",
   qualities: [{type: "attentional", manifestation: "Noticing..."}],
-  shot: "moment-of-recognition",
-  when: "yesterday morning"
-}`
+  shot: "moment-of-recognition"
+}
+
+Optional: add 'when' to override temporal inheritance from sources.`
             );
           }
           
@@ -812,6 +812,14 @@ bridge:frame {
           
           // Create moment record
           const experiencer = validSources[0]?.experiencer || '';
+          
+          // Inherit 'when' from sources if not provided
+          let whenValue = input.when;
+          if (!whenValue && validSources.length > 0) {
+            // Use the first source's 'when' if available, otherwise use 'created'
+            whenValue = validSources[0].when || validSources[0].created;
+          }
+          
           const moment = await saveMoment({
             id: generateId('mom'),
             ...( {
@@ -822,7 +830,7 @@ bridge:frame {
               shot: input.shot,
               sources: input.sourceIds.map(sourceId => ({ sourceId })),
               created: new Date().toISOString(),
-              when: input.when,
+              when: whenValue,
               experiencer,
             } as any ),
           });
@@ -910,33 +918,33 @@ bridge:frame {
             }
           }
           
-          // Validate that all required manual parameters are provided
-          if (!input.emoji || !input.summary || !input.narrative || !input.shot || !input.when) {
+          // Validate that all required manual parameters are provided (when is optional)
+          if (!input.emoji || !input.summary || !input.narrative || !input.shot) {
             const missingFields = [];
             if (!input.emoji) missingFields.push('emoji');
             if (!input.summary) missingFields.push('summary');
             if (!input.narrative) missingFields.push('narrative');
             if (!input.shot) missingFields.push('shot');
-            if (!input.when) missingFields.push('when');
             
             throw new McpError(
               ErrorCode.InvalidParams,
-              `Manual weaving requires all parameters: emoji, summary, narrative, shot, and when.
+              `Manual weaving requires: emoji, summary, narrative, and shot. The 'when' field is optional and will inherit from moments if not provided.
 
 Missing fields: ${missingFields.join(', ')}
 
 For AI-generated weaving, provide only momentIds:
 bridge:weave { momentIds: ["mom_xxx"] }
 
-For manual control, provide all required fields:
+For manual control, provide required fields:
 bridge:weave {
   momentIds: ["mom_xxx"],
   emoji: "🎭",
   summary: "The journey of discovery",
   narrative: "A story that connects these moments...",
-  shot: "crossing-threshold",
-  when: "last week"
-}`
+  shot: "crossing-threshold"
+}
+
+Optional: add 'when' to override temporal inheritance from moments.`
             );
           }
           
@@ -959,6 +967,14 @@ bridge:weave {
           // Create scene record
           const validMoments = await Promise.all(input.momentIds.map(getMoment));
           const sceneExperiencer = validMoments[0]?.experiencer || '';
+          
+          // Inherit 'when' from moments if not provided
+          let whenValue = input.when;
+          if (!whenValue && validMoments.length > 0 && validMoments[0]) {
+            // Use the first moment's 'when' if available, otherwise use 'created'
+            whenValue = validMoments[0].when || validMoments[0].created;
+          }
+          
           const scene = await saveScene({
             id: generateId('sce'),
             emoji: input.emoji,
@@ -967,7 +983,7 @@ bridge:weave {
               narrative: input.narrative,
               momentIds: input.momentIds,
               shot: input.shot,
-              when: input.when,
+              when: whenValue,
               created: new Date().toISOString(),
               experiencer: sceneExperiencer,
             } as any ),
