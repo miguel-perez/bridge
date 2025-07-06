@@ -1,4 +1,5 @@
-import { getSources, getMoments, getScenes } from './storage.js';
+// Remove top-level storage imports to fix module load order
+// import { getSources, getMoments, getScenes } from './storage.js';
 import { getConfig } from './config.js';
 
 export interface ProcessingError {
@@ -24,6 +25,9 @@ export class StatusMonitor {
 
   async generateStatusReport(): Promise<StatusReport> {
     const config = getConfig();
+    
+    // Dynamic imports to fix module load order
+    const { getSources, getMoments, getScenes } = await import('./storage.js');
     
     // Get all records
     const sources = await getSources();

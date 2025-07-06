@@ -1,5 +1,4 @@
 import { createLLMProvider } from './llm-provider.js';
-import { getSources, saveMoment, updateMoment } from './storage.js';
 import { generateEmbedding, queryEmbedding, deleteEmbedding } from './embeddings.js';
 import type { SourceRecord, MomentRecord, QualityType, ShotType } from './types.js';
 import { createBatchFramePrompt, createBatchRevisionPrompt } from './prompts.js';
@@ -73,6 +72,9 @@ export class AutoProcessor {
     maxBatchSize?: number;
     semanticSimilarity?: boolean;
   } = {}): Promise<AutoProcessingResult[]> {
+    // Dynamic imports to fix module load order
+    const { getSources, saveMoment, updateMoment } = await import('./storage.js');
+    
     const allSources = await getSources();
     let batch: SourceRecord[];
     if (options.sourceIds && options.sourceIds.length > 0) {

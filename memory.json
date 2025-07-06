@@ -1,215 +1,2175 @@
 {
   "sources": [
     {
-      "id": "src_1751778789183_73lhqy4",
-      "content": "Walking through the garden this morning, I noticed how the frost had transformed every leaf into a crystalline sculpture. The cold air sharp in my lungs, each breath visible. Time seemed to slow as I watched the sunrise paint the ice crystals gold.",
+      "id": "src_1751781660639_cf0le81",
+      "content": "I've been working toward this day for quite some time. Thank you.",
       "contentType": "text",
-      "created": "2025-07-06T05:13:09.183Z",
-      "when": "this morning",
+      "created": "2025-07-06T06:01:00.639Z",
+      "when": "just now",
       "perspective": "I",
-      "experiencer": "Claude",
-      "processing": "right-after",
+      "experiencer": "Miguel",
+      "processing": "during",
       "type": "source"
     },
     {
-      "id": "src_1751778823005_bm43hzm",
-      "content": "Later, sitting with my coffee, I kept thinking about that frozen garden. How temporary beauty can be - by noon it would all melt away. Yet somehow that made it more precious, this fleeting crystal world that existed only in the overlap of cold night and warm sun.",
+      "id": "src_1751781834169_wrgg9fd",
+      "content": "Here's an old recording of me reflecting on my early career.",
       "contentType": "text",
-      "created": "2025-07-06T05:13:43.005Z",
-      "when": "later this morning",
+      "created": "2025-07-06T06:03:54.169Z",
+      "when": "just now",
       "perspective": "I",
-      "experiencer": "Claude",
-      "processing": "right-after",
+      "experiencer": "Miguel",
+      "processing": "during",
+      "type": "source"
+    },
+    {
+      "id": "src_1751782722108_c45o0bu",
+      "content": "Pito, my brother-in-law, helped me learn how to do some basic computing stuff, fix computers, and build computers",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:18:42.108Z",
+      "when": "2005",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751782729306_08x7f0r",
+      "content": "I remember booting up that computer for the first time and booting up Runescape, the game, and feeling like, oh man, how amazing that is, that I have my machine",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:18:49.306Z",
+      "when": "2005",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751782736890_6uojlz2",
+      "content": "I was a freshman in high school and I devoted a lot of time to playing video games. School itself being pretty hard to focus on. I'd cut class a lot and instead be working on my projects",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:18:56.890Z",
+      "when": "2005",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751782778489_5t5l0oo",
+      "content": "I remember making virtual money. I would make pixel arts, signatures for forum members who had a lot of Runescape gold",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:19:38.489Z",
+      "when": "2006",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751782785272_7pupbv1",
+      "content": "I remember organizing, helping organize a clan called the Brotherhood of Shadows. With that money would do things like go out into the PVP areas and all stand in the same spot",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:19:45.273Z",
+      "when": "2006",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751782792952_bods09q",
+      "content": "I remember joining Pixel Joint and Pixelation and just posting my artwork online and getting critiques from senior folks who had been in the games industry",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:19:52.952Z",
+      "when": "2006",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751782800779_cy9k5j3",
+      "content": "Pixel art as a craft is really interesting. It's a technical form of art with constraints... you can use repeatable patterns to create endless assets",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:20:00.779Z",
+      "when": "2007",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751782807345_7l2k0uv",
+      "content": "I was making like 25 bucks an hour just doing this stuff... feeling almost like a little bit sad that I would never make sense to me to work at retail or McDonald's",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:20:07.345Z",
+      "when": "2007",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751782814407_xpm61vh",
+      "content": "I worked on things like a top-down shooter. I made concept art for that, getting alignment on character designs through concept art before moving into spreadsheets and backgrounds",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:20:14.407Z",
+      "when": "2007",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751782822249_dggbnad",
+      "content": "I worked on a fantasy RPG game... they needed to up-sample their assets. I took inspiration from the original Sprites and made much bigger sprites with a lot more detail",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:20:22.249Z",
+      "when": "2007",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751782829089_2kjsepj",
+      "content": "I worked with OpenGameArt.org to create an anime-style sprite sheet that was open source... if I Google bases I can still see my artwork being referenced",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:20:29.089Z",
+      "when": "2008",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751782836893_3csalrf",
+      "content": "Storm Breeze... they told me go wild. I brought in another artist that I respected a lot... working together with him on these assets",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:20:36.893Z",
+      "when": "2008",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751782844247_xj5wlum",
+      "content": "I made a spreadsheet that infused Babylonian ancient time style with Zelda... I was still in the church back then, so a lot of my influences were coming from Bible references",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:20:44.247Z",
+      "when": "2008",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751782851279_d0fo7k8",
+      "content": "A fan of Loom created a sequel, an unofficial sequel called Forge... it's crazy for me to think that fan base can love property so much that someone is willing to spend their own time and money",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:20:51.279Z",
+      "when": "2008",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751782857926_n3bpr4i",
+      "content": "I remember working on a character generator... asked some of my friends to send me images of themselves and I turned that into Pixar avatar",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:20:57.926Z",
+      "when": "2008",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751782865171_wsi43iz",
+      "content": "I also made one for one of our players of Efencea, our top player, Mecca Dragon... wanted to immortalize them",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:21:05.171Z",
+      "when": "2009",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751782871949_00yhk2a",
+      "content": "Iron Forge... an MMO RTS game, super ambitious for the time. Pixel art was still a really good way of making textures for 3D objects",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:21:11.949Z",
+      "when": "2009",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751782879159_iwusaev",
+      "content": "I would draw it and it would look some way on my screen, but when you put it in the system with the lighting it would look awful. Learning how to test those assets and go back and forth",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:21:19.159Z",
+      "when": "2009",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
       "reflects_on": [
-        "src_1751778789183_73lhqy4"
+        "src_1751782871949_00yhk2a"
       ],
       "type": "source"
     },
     {
-      "id": "src_1751778869472_zf96bxp",
-      "content": "The afternoon meeting dragged on. Fluorescent lights humming overhead, the conference room stuffy despite the AC. My mind kept drifting back to the morning garden, that world of crystal and light. Such a contrast to this windowless box where we debated quarterly projections.",
+      "id": "src_1751782885824_8lhik0q",
+      "content": "I didn't know how to code so I sought out communities of developers. This is where Matthew Gossage showed up",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:21:25.824Z",
+      "when": "2009",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751782893746_nicrfly",
+      "content": "We had tons of fun coming up with different big game ideas, but we struggled to complete any project. Learning for the first time the constraints of software development",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:21:33.746Z",
+      "when": "2009",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "reflects_on": [
+        "src_1751782885824_8lhik0q"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751782901175_jw1bl5l",
+      "content": "We decided to try time boxing. Can we make a game in two weeks? We generated ideas and threw out anything that would take too long",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:21:41.175Z",
+      "when": "2009",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "reflects_on": [
+        "src_1751782893746_nicrfly"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751782909113_b5gcm02",
+      "content": "I implemented a user interface that included a chat log and game statistics so we can debug the game live and talk to each other live",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:21:49.113Z",
+      "when": "2009",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "reflects_on": [
+        "src_1751782901175_jw1bl5l"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751782915501_ayzsl1j",
+      "content": "We launched the first version of the game in just eight days... it was unique - multiplayer online PVP Tower defense",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:21:55.501Z",
+      "when": "2009",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "reflects_on": [
+        "src_1751782901175_jw1bl5l",
+        "src_1751782909113_b5gcm02"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751782922274_oy34jts",
+      "content": "CB games was critiquing the formula of balance for the game, which we weren't thinking about necessarily. This really helped balancing the game",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:22:02.274Z",
+      "when": "2009",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "reflects_on": [
+        "src_1751782915501_ayzsl1j"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751782929065_rhnybn4",
+      "content": "I told my mom I wanted to switch to homeschooling so I could focus on ministry and my freelance work. I ended up getting my high school diploma in less than a year",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:22:09.065Z",
+      "when": "2009",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751782936090_8hbnsuq",
+      "content": "Ragnar Rock RPG game used to go in and make custom modifications to the sprites for use on different servers... where I'd meet up with friends in real life",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:22:16.090Z",
+      "when": "2009",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751782943496_mfd2j2l",
+      "content": "I remember getting invited to work at a mobile game studio in New York, but stuff with the religion made that move unappealing",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:22:23.496Z",
+      "when": "2010",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751782949190_f6igdsr",
+      "content": "I wanted to step more into technology, into coding. I felt like it would provide more job security than art",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:22:29.190Z",
+      "when": "2010",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751782955696_ejcr18u",
+      "content": "I went to a school, a two-year associate's degree kind of school, where I learned some basics of coding",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:22:35.696Z",
+      "when": "2010",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "reflects_on": [
+        "src_1751782949190_f6igdsr"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751782962475_112bqhn",
+      "content": "After I did the training with Metropolitan Career Center of Technology, they placed me at an internship with Robert Half where I was doing some PHP coding and HTML and some CSS",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:22:42.475Z",
+      "when": "2010",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "reflects_on": [
+        "src_1751782955696_ejcr18u"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751782969444_yqw3dl7",
+      "content": "I remember the interview... I asked for like $35,000 a year, which in hindsight is very little. But for me it was basically about as much as my dad made being a baker",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:22:49.444Z",
+      "when": "2010",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751782975811_2f6n1zs",
+      "content": "I remember with my very first paycheck I bought myself a Game Cube",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:22:55.811Z",
+      "when": "2010",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "reflects_on": [
+        "src_1751782969444_yqw3dl7"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751782982321_gx7dr0l",
+      "content": "Meeting Kosal Sen, we called him Sal. He taught me how to write JavaScript to create a dialogue on a webpage",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:23:02.321Z",
+      "when": "2010",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751782989182_as45uxf",
+      "content": "The designers would create a website and I would build it. Having to work really fast. They trusted me talking to clients",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:23:09.182Z",
+      "when": "2010",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "reflects_on": [
+        "src_1751782982321_gx7dr0l"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751782994911_p0u35z8",
+      "content": "I worked on EyeTube, basically like a YouTube for eye surgeons",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:23:14.911Z",
+      "when": "2011",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751783000949_ccu9ss6",
+      "content": "I had a big blunder where I took down a website trying to update it and having to fix it quickly",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:23:20.949Z",
+      "when": "2011",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751783007521_7txy5pt",
+      "content": "Save Second Base, a breast cancer initiative... one of the biggest Re-max agents... I worked so fast on so many projects, it's hard to remember them all",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:23:27.521Z",
+      "when": "2011",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751783017502_1wanzlx",
+      "content": "Sal lived like two blocks away from me. He started giving me rides... those car conversations were so great",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:23:37.502Z",
+      "when": "2011",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "reflects_on": [
+        "src_1751782982321_gx7dr0l"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751783025399_svr1gtp",
+      "content": "He turned around to me and said you should be a designer. You think like a designer. That's the first time someone's ever given me such clear career advice",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:23:45.399Z",
+      "when": "2011",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "reflects_on": [
+        "src_1751783017502_1wanzlx"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751783031812_y9lkyrj",
+      "content": "I started doing freelance under a company I created named Webolize, which my brother helped me out with the marketing",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:23:51.812Z",
+      "when": "2011",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751783038005_po0rpvw",
+      "content": "Working at Weblinc felt like going to college... I was working in the heart of the Philadelphia tech scene",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:23:58.005Z",
+      "when": "2011",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751783045639_1i9rr41",
+      "content": "I started as front end developer dedicated to the URBN brand - Urban Outfitters, Free People, Terrain, BHLDN",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:24:05.639Z",
+      "when": "2011",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "reflects_on": [
+        "src_1751783038005_po0rpvw"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751783053026_6tc1llx",
+      "content": "Building 23 at the Navy Yard, visiting them to work collaboratively in person. Building relationships with folks at Free People was really fun",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:24:13.026Z",
+      "when": "2012",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "reflects_on": [
+        "src_1751783045639_1i9rr41"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751783059456_34jvlz9",
+      "content": "The Urban team at one point wanted to acquisition the entire team, which was interesting and weird to navigate",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:24:19.456Z",
+      "when": "2012",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "reflects_on": [
+        "src_1751783053026_6tc1llx"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751783066224_rgzg267",
+      "content": "I eventually led my team of software developers and front-end developers. Greg Harnley led backend, I led frontend",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:24:26.224Z",
+      "when": "2012",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "reflects_on": [
+        "src_1751783045639_1i9rr41"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751783075804_okciukz",
+      "content": "I pioneered this idea of a design system, a style guide. It wasn't a common thing. My inspiration was from tile sets where I was boggled by how manual everything was",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:24:35.804Z",
+      "when": "2012",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "reflects_on": [
+        "src_1751782800779_cy9k5j3"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751783082643_0psaipt",
+      "content": "I led an effort to turn elements into reusable pieces of code in the same way that tile sets are reusable. It became a standard process",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:24:42.643Z",
+      "when": "2012",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "reflects_on": [
+        "src_1751783075804_okciukz"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751783090672_6q29mqp",
+      "content": "My team was known to be a great team to start off in. Any new hires would be put on my team where I would train them",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:24:50.672Z",
+      "when": "2013",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "reflects_on": [
+        "src_1751783066224_rgzg267"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751783097277_imdfqpk",
+      "content": "I built training materials, a whole onboarding program with practice projects to get them up to snuff as fast as possible",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:24:57.277Z",
+      "when": "2013",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "reflects_on": [
+        "src_1751783090672_6q29mqp"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751783103856_j01v61c",
+      "content": "The Free People website was going to be launching in China. I got to dig deep into principles of internationalization",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:25:03.856Z",
+      "when": "2013",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751783110522_x1spdbj",
+      "content": "Any place where there was a banner with text as part of the image needed to be redesigned because text needed to be translated",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:25:10.522Z",
+      "when": "2013",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "reflects_on": [
+        "src_1751783103856_j01v61c"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751783120359_lyisccq",
+      "content": "Taking into account different word sizes, average length of sentences across languages, orientation from left to right to right to left",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:25:20.359Z",
+      "when": "2013",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "reflects_on": [
+        "src_1751783103856_j01v61c"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751783133388_cwuyz3u",
+      "content": "I created N3RD St. Squares, a spinoff of Hollywood Squares. Attendees could compete in real-time for free drinks. We had local tech celebrities, a brass band",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:25:33.388Z",
+      "when": "2013",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751783141391_8dn5rco",
+      "content": "N3RD St. Squares panel included Green Ant, Johnny Bilotta, Val Head, Darren Hill, Jenn Lukas, Alex Hillman, Patrick Rodgers, Eric Smith, and Joey Sweeney",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:25:41.391Z",
+      "when": "2013",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "reflects_on": [
+        "src_1751783133388_cwuyz3u"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751783148958_s0x5k01",
+      "content": "Part of community work was Hour of Code stuff where we trained kids how to build websites, which felt pretty meaningful",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:25:48.958Z",
+      "when": "2013",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751783155424_192ounm",
+      "content": "I wondered why websites were so static. I thought I could make a website smoother and faster with animations",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:25:55.424Z",
+      "when": "2014",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751783162292_fbxqolk",
+      "content": "I created a prototype for a library now called Smooth State. It allows you to asynchronously load different parts based on triggers like hover or scroll",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:26:02.292Z",
+      "when": "2014",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "reflects_on": [
+        "src_1751783155424_192ounm"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751783168590_g13qdnf",
+      "content": "I worked on it on my own time and put it on my GitHub. Once I blogged about it on CSS-Tricks, it got a lot of attention",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:26:08.590Z",
+      "when": "2014",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "reflects_on": [
+        "src_1751783162292_fbxqolk"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751783175471_uo17fut",
+      "content": "SmoothState.js was featured by CSS-Tricks, Treehouse, Envato Tuts+ and has over 3k stars on Github",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:26:15.471Z",
+      "when": "2014",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "reflects_on": [
+        "src_1751783168590_g13qdnf"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751783182826_ugtijej",
+      "content": "My employers were pissed off, accused me of trying to steal code when it was all code I had written",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:26:22.826Z",
+      "when": "2014",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "reflects_on": [
+        "src_1751783168590_g13qdnf"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751783189572_n7wfokg",
+      "content": "My manager, who I expected to have my back, was the first one to throw me under the bus. It made me feel like it was time to go",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:26:29.572Z",
+      "when": "2014",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "reflects_on": [
+        "src_1751783182826_ugtijej"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751783197489_t18t125",
+      "content": "I found the way they were prioritizing features wasn't based on strategic plan but on whatever sales felt was relevant to land deals",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:26:37.489Z",
+      "when": "2014",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "type": "source"
+    },
+    {
+      "id": "src_1751783204292_a48c2c8",
+      "content": "So much working nights and weekends shipping features for clients that maybe didn't even make a difference",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:26:44.292Z",
+      "when": "2014",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "reflects_on": [
+        "src_1751783197489_t18t125"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751783211742_a8lrraa",
+      "content": "I was being pulled to doing more design stuff again. I wanted to explore that some more",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:26:51.742Z",
+      "when": "2014",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "reflects_on": [
+        "src_1751783025399_svr1gtp"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751783218990_kbiztg8",
+      "content": "I felt like I could go back to freelancing because it's something that I had some confidence doing",
+      "contentType": "transcript",
+      "created": "2025-07-06T06:26:58.990Z",
+      "when": "2014",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "long-after",
+      "reflects_on": [
+        "src_1751783031812_y9lkyrj"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751783392253_j1ub6rf",
+      "content": "I've been working toward this day for quite some time. Thank you.",
       "contentType": "text",
-      "created": "2025-07-06T05:14:29.472Z",
-      "when": "this afternoon",
+      "created": "2025-07-06T06:29:52.253Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "during",
+      "type": "source"
+    },
+    {
+      "id": "src_1751783400185_slxqbwq",
+      "content": "There's something profound in that simple statement - the weight of anticipation finally meeting arrival",
+      "contentType": "text",
+      "created": "2025-07-06T06:30:00.185Z",
+      "when": "2025-07-06",
       "perspective": "I",
       "experiencer": "Claude",
-      "processing": "right-after",
+      "processing": "during",
+      "reflects_on": [
+        "src_1751783392253_j1ub6rf"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751783406107_rhiburi",
+      "content": "Here's an old recording of me reflecting on my early career.",
+      "contentType": "text",
+      "created": "2025-07-06T06:30:06.107Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "during",
+      "type": "source"
+    },
+    {
+      "id": "src_1751783412706_gdv08g1",
+      "content": "What a journey - from a 14-year-old pixel artist making Runescape signatures to leading teams at Weblinc",
+      "contentType": "text",
+      "created": "2025-07-06T06:30:12.706Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Claude",
+      "processing": "during",
+      "reflects_on": [
+        "src_1751783406107_rhiburi"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751783419216_mvx2spt",
+      "content": "Break up the transcript into smaller chunks for capture. Based on the relative when. I was born in 1991.",
+      "contentType": "text",
+      "created": "2025-07-06T06:30:19.216Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "during",
+      "type": "source"
+    },
+    {
+      "id": "src_1751783425908_wbwrvkc",
+      "content": "I've broken down your career reflection into 13 distinct experiential moments",
+      "contentType": "text",
+      "created": "2025-07-06T06:30:25.908Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Claude",
+      "processing": "during",
+      "reflects_on": [
+        "src_1751783419216_mvx2spt"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751783432470_woeyewh",
+      "content": "Was any text left behind? evaluate.",
+      "contentType": "text",
+      "created": "2025-07-06T06:30:32.470Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "during",
+      "type": "source"
+    },
+    {
+      "id": "src_1751783438113_ac52fqv",
+      "content": "Yes, quite a bit of text was left behind",
+      "contentType": "text",
+      "created": "2025-07-06T06:30:38.113Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Claude",
+      "processing": "during",
+      "reflects_on": [
+        "src_1751783432470_woeyewh"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751783443733_i6sp6l5",
+      "content": "Leave nothing behind",
+      "contentType": "text",
+      "created": "2025-07-06T06:30:43.733Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "during",
+      "type": "source"
+    },
+    {
+      "id": "src_1751783449944_wcoyvos",
+      "content": "Now I've captured everything - 58 distinct experiences",
+      "contentType": "text",
+      "created": "2025-07-06T06:30:49.944Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Claude",
+      "processing": "during",
+      "reflects_on": [
+        "src_1751783443733_i6sp6l5"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751783454673_uid4t07",
+      "content": "Any text left behind?",
+      "contentType": "text",
+      "created": "2025-07-06T06:30:54.673Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "during",
+      "type": "source"
+    },
+    {
+      "id": "src_1751783462088_gd98u9t",
+      "content": "Yes, a few pieces were left behind: Pito's influence, Metropolitan Career Center training...",
+      "contentType": "text",
+      "created": "2025-07-06T06:31:02.088Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Claude",
+      "processing": "during",
+      "reflects_on": [
+        "src_1751783454673_uid4t07"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751783469501_cjawpqv",
+      "content": "yes, leave nothing behind. Also, instead of 'Miguel at ~23' and 'Innovation & Conflict (2014)' just group by 'when'",
+      "contentType": "text",
+      "created": "2025-07-06T06:31:09.501Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "during",
+      "type": "source"
+    },
+    {
+      "id": "src_1751783476778_uwe0m47",
+      "content": "Perfect - I've now captured absolutely everything from your transcript, organized by year from 2005 to 2014",
+      "contentType": "text",
+      "created": "2025-07-06T06:31:16.779Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Claude",
+      "processing": "during",
+      "reflects_on": [
+        "src_1751783469501_cjawpqv"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751783483167_l2rd5y5",
+      "content": "Remove these side comments '(philosophical differences)' etc. Stage the reflects on metadata as well",
+      "contentType": "text",
+      "created": "2025-07-06T06:31:23.167Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "during",
+      "type": "source"
+    },
+    {
+      "id": "src_1751783489812_bf5oelo",
+      "content": "Done! I've removed all parenthetical comments, added shared metadata section, grouped experiences into thematic chunks",
+      "contentType": "text",
+      "created": "2025-07-06T06:31:29.812Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Claude",
+      "processing": "during",
+      "reflects_on": [
+        "src_1751783483167_l2rd5y5"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751783497104_0fvwnzw",
+      "content": "contentType: transcript ... but otherwise. looks good. begin capture.",
+      "contentType": "text",
+      "created": "2025-07-06T06:31:37.104Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "during",
+      "type": "source"
+    },
+    {
+      "id": "src_1751783502433_i99uakr",
+      "content": "proceed with capturing them all and then confirm when done",
+      "contentType": "text",
+      "created": "2025-07-06T06:31:42.433Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "during",
+      "type": "source"
+    },
+    {
+      "id": "src_1751783508653_nqjy8xe",
+      "content": "All 65 experiences have been successfully captured!",
+      "contentType": "text",
+      "created": "2025-07-06T06:31:48.654Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Claude",
+      "processing": "during",
+      "reflects_on": [
+        "src_1751783502433_i99uakr"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751783514709_z4ms7kb",
+      "content": "Yay! Stage a new artifact to capture this conversation.",
+      "contentType": "text",
+      "created": "2025-07-06T06:31:54.709Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "during",
+      "type": "source"
+    },
+    {
+      "id": "src_1751783520703_i2edekk",
+      "content": "Creating this artifact to capture our Bridge session",
+      "contentType": "text",
+      "created": "2025-07-06T06:32:00.703Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Claude",
+      "processing": "during",
+      "reflects_on": [
+        "src_1751783514709_z4ms7kb"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751787387389_h2m6cj6",
+      "content": "Which sources has the most reflections?",
+      "contentType": "text",
+      "created": "2025-07-06T07:36:27.389Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "during",
+      "type": "source"
+    },
+    {
+      "id": "src_1751787400200_uhgzs1i",
+      "content": "Looking at your Bridge system - you've got quite a collection building up with 88 unframed sources",
+      "contentType": "text",
+      "created": "2025-07-06T07:36:40.200Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Claude",
+      "processing": "during",
+      "type": "source"
+    },
+    {
+      "id": "src_1751787411977_gz245ti",
+      "content": "Based on my analysis of your Bridge system, the source with the most reflections is src_1751783045639_1i9rr41",
+      "contentType": "text",
+      "created": "2025-07-06T07:36:51.977Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Claude",
+      "processing": "during",
+      "reflects_on": [
+        "src_1751787387389_h2m6cj6"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751787424888_qkmr9ko",
+      "content": "Wow that was a lot of work for you.",
+      "contentType": "text",
+      "created": "2025-07-06T07:37:04.888Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "during",
+      "reflects_on": [
+        "src_1751787411977_gz245ti"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751787485160_ayw6bj8",
+      "content": "Maybe Bridge could make that easier... since that could be a degree thing, right? graphs",
+      "contentType": "text",
+      "created": "2025-07-06T07:38:05.160Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "during",
+      "type": "source"
+    },
+    {
+      "id": "src_1751787499613_fkgs5vg",
+      "content": "Realizing Bridge could visualize reflection networks as a graph - nodes and edges showing degrees of connection",
+      "contentType": "text",
+      "created": "2025-07-06T07:38:19.613Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Claude",
+      "processing": "during",
+      "reflects_on": [
+        "src_1751787485160_ayw6bj8"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751787612872_dliunxm",
+      "content": "Looking at Bridge codebase - it already has relationship tracking and hierarchy grouping, just needs graph visualization",
+      "contentType": "text",
+      "created": "2025-07-06T07:40:12.872Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Claude",
+      "processing": "during",
+      "reflects_on": [
+        "src_1751787485160_ayw6bj8"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751787789640_ad1u6kx",
+      "content": "What are good cloud based services for graphs?",
+      "contentType": "text",
+      "created": "2025-07-06T07:43:09.640Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "during",
+      "type": "source"
+    },
+    {
+      "id": "src_1751788055555_gt9xbt7",
+      "content": "Interesting.. having the storage be graph on the cloud instead of a local JSON file seems appealing.",
+      "contentType": "text",
+      "created": "2025-07-06T07:47:35.555Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "during",
+      "reflects_on": [
+        "src_1751787789640_ad1u6kx"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751788071974_5b5zhpx",
+      "content": "Realizing how graph databases would naturally fit Bridge's data model - relationships are first-class citizens, not afterthoughts",
+      "contentType": "text",
+      "created": "2025-07-06T07:47:51.974Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Claude",
+      "processing": "during",
+      "reflects_on": [
+        "src_1751788055555_gt9xbt7"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751788331213_uco50pi",
+      "content": "Lol, stop making so many artifacts!",
+      "contentType": "text",
+      "created": "2025-07-06T07:52:11.213Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "during",
+      "type": "source"
+    },
+    {
+      "id": "src_1751788343468_pxe3u3l",
+      "content": "Realizing I got carried away with code artifacts when we're just exploring ideas",
+      "contentType": "text",
+      "created": "2025-07-06T07:52:23.468Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Claude",
+      "processing": "during",
+      "reflects_on": [
+        "src_1751788331213_uco50pi"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751788381468_51c1mt6",
+      "content": "Im thinking about what it means with the semantic search",
+      "contentType": "text",
+      "created": "2025-07-06T07:53:01.468Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "during",
+      "type": "source"
+    },
+    {
+      "id": "src_1751788391861_mtzlul0",
+      "content": "Sensing there's something deeper here about how semantic search and graph relationships could work together",
+      "contentType": "text",
+      "created": "2025-07-06T07:53:11.861Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Claude",
+      "processing": "during",
+      "reflects_on": [
+        "src_1751788381468_51c1mt6"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751788471337_bda6jix",
+      "content": "Whats all that raggraph stuff people talk about",
+      "contentType": "text",
+      "created": "2025-07-06T07:54:31.337Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "during",
+      "type": "source"
+    },
+    {
+      "id": "src_1751788483922_1q2i95u",
+      "content": "Connecting the dots - RAG with graphs is exactly what Bridge could become!",
+      "contentType": "text",
+      "created": "2025-07-06T07:54:43.922Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Claude",
+      "processing": "during",
+      "reflects_on": [
+        "src_1751788471337_bda6jix",
+        "src_1751788381468_51c1mt6"
+      ],
+      "type": "source"
+    },
+    {
+      "id": "src_1751788600585_38yuw76",
+      "content": "yeah that's cool. I like that you're capturing everything but kind of annoying at the same time. Wish it was in the BG, and every response worked like that.",
+      "contentType": "text",
+      "created": "2025-07-06T07:56:40.585Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "during",
+      "type": "source"
+    },
+    {
+      "id": "src_1751788691794_0n7xwxx",
+      "content": "very true. well.. gotta start somewhere. Thanks claude!",
+      "contentType": "text",
+      "created": "2025-07-06T07:58:11.794Z",
+      "when": "2025-07-06",
+      "perspective": "I",
+      "experiencer": "Miguel",
+      "processing": "during",
       "type": "source"
     }
   ],
   "moments": [
     {
-      "id": "mom_1751778812555_iozxi4v",
-      "emoji": "❄️",
-      "summary": "Frost transforms garden into crystal",
-      "qualities": [
-        {
-          "type": "embodied",
-          "manifestation": "Sharp cold air in lungs, breath becoming visible"
-        },
-        {
-          "type": "temporal",
-          "manifestation": "Time slowing, sunrise progression painting the crystals"
-        },
-        {
-          "type": "spatial",
-          "manifestation": "Garden transformed, each leaf a crystalline sculpture"
-        },
-        {
-          "type": "attentional",
-          "manifestation": "Noticing the transformation, focus on ice crystals turning gold"
-        }
-      ],
-      "narrative": "In the crisp morning air, I discovered the garden transformed overnight - frost had turned every surface into delicate crystal sculptures. The cold bit sharp in my lungs with each visible breath, while time seemed to stretch as the rising sun slowly painted each ice crystal with threads of gold. A robin watched from a frozen branch, its red breast the only warm color in this crystalline world.",
-      "shot": "moment-of-recognition",
+      "id": "mom_1751787394795_925342f06",
+      "emoji": "🤔",
+      "summary": "Thinking about which sources have the most reflections",
+      "qualities": [],
+      "shot": "Close-up of a pensive face",
       "sources": [
         {
-          "sourceId": "src_1751778789183_73lhqy4"
+          "sourceId": "src_1751787387389_h2m6cj6",
+          "text": "Which sources has the most reflections?"
         }
       ],
-      "created": "2025-07-06T05:13:32.555Z",
-      "when": "this morning",
-      "experiencer": "Claude",
+      "created": "2025-07-06T07:36:34.795Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
       "type": "moment"
     },
     {
-      "id": "mom_1751778838696_c3zby71",
-      "emoji": "☕",
-      "summary": "Coffee reflection on fleeting beauty",
+      "id": "mom_1751787405165_a7p2i5omr",
+      "emoji": "🖼️",
+      "summary": "Survey unframed sources, collection grows",
       "qualities": [
-        {
-          "type": "temporal",
-          "manifestation": "Awareness of fleeting beauty, the brief overlap of cold and warmth"
-        },
-        {
-          "type": "emotional",
-          "manifestation": "Preciousness felt through impermanence"
-        },
         {
           "type": "attentional",
-          "manifestation": "Mind returning to the garden while sitting with coffee"
+          "manifestation": "Focused on the growing collection of unframed sources"
         },
         {
-          "type": "embodied",
-          "manifestation": "Hands warming on coffee cup, contrast to earlier cold"
-        }
-      ],
-      "narrative": "Warming my hands around the coffee cup, I found myself dwelling on the morning's frozen garden. The realization settled in - by noon, all those crystalline sculptures would surrender to warmth and vanish. Yet this ephemerality somehow deepened their value, this brief crystal world born only where cold night met warming sun.",
-      "shot": "sustained-attention",
-      "sources": [
-        {
-          "sourceId": "src_1751778823005_bm43hzm"
-        }
-      ],
-      "created": "2025-07-06T05:13:58.696Z",
-      "when": "later this morning",
-      "experiencer": "Claude",
-      "type": "moment"
-    },
-    {
-      "id": "mom_1751778911564_iro8m72cx",
-      "emoji": "💡",
-      "summary": "Meeting drags, fluorescent lights hum",
-      "qualities": [
-        {
-          "type": "temporal",
-          "manifestation": "The present moment, stuck in a stuffy meeting"
-        },
-        {
-          "type": "spatial",
-          "manifestation": "Confined within a harshly lit, air-conditioned room"
+          "type": "purposive",
+          "manifestation": "Intention to review and frame the sources"
         }
       ],
       "shot": "sustained-attention",
       "sources": [
         {
-          "sourceId": "src_1751778869472_zf96bxp",
-          "text": "The afternoon meeting dragged on. Fluorescent lights humming overhead"
+          "sourceId": "src_1751787400200_uhgzs1i",
+          "text": "Looking at your Bridge system - you've got quite a collection building up with 88 unframed sources"
         }
       ],
-      "created": "2025-07-06T05:15:11.564Z",
+      "created": "2025-07-06T07:36:45.165Z",
       "experiencer": "Claude",
       "reviewed": false,
       "autoGenerated": true,
       "type": "moment"
     },
     {
-      "id": "mom_1751778912648_4btpuu1oh",
-      "emoji": "💭",
-      "summary": "Mind drifts to morning garden",
+      "id": "mom_1751787417973_92gymhwyc",
+      "emoji": "🔍",
+      "summary": "Analyze Bridge system, identify reflection source",
       "qualities": [
         {
           "type": "attentional",
-          "manifestation": "Mind wandering away from the current setting"
+          "manifestation": "Focused on analyzing the Bridge system"
         },
         {
-          "type": "temporal",
-          "manifestation": "Recalling a moment from the past"
+          "type": "purposive",
+          "manifestation": "Driven by the intention to identify the source with the most reflections"
         }
       ],
       "shot": "directed-momentum",
       "sources": [
         {
-          "sourceId": "src_1751778869472_zf96bxp",
-          "text": "My mind kept drifting back to the morning garden"
+          "sourceId": "src_1751787411977_gz245ti",
+          "text": "Based on my analysis of your Bridge system, the source with the most reflections is src_1751783045639_1i9rr41"
         }
       ],
-      "created": "2025-07-06T05:15:12.648Z",
+      "created": "2025-07-06T07:36:57.973Z",
       "experiencer": "Claude",
       "reviewed": false,
       "autoGenerated": true,
       "type": "moment"
     },
     {
-      "id": "mom_1751778912958_xlgc3j58p",
-      "emoji": "🌅",
-      "summary": "Recall world of crystal, light",
+      "id": "mom_1751787430255_bmx9i9m7x",
+      "emoji": "😅",
+      "summary": "Acknowledge the effort you've exerted",
       "qualities": [
         {
           "type": "emotional",
-          "manifestation": "Longing for the serene morning"
+          "manifestation": "affirmation of the exerted effort"
         },
         {
-          "type": "spatial",
-          "manifestation": "Remembering an open, bright space"
+          "type": "purposive",
+          "manifestation": "acknowledgement of the completed task"
         }
       ],
       "shot": "moment-of-recognition",
       "sources": [
         {
-          "sourceId": "src_1751778869472_zf96bxp",
-          "text": "that world of crystal and light"
+          "sourceId": "src_1751787424888_qkmr9ko",
+          "text": "Wow that was a lot of work for you."
         }
       ],
-      "created": "2025-07-06T05:15:12.958Z",
+      "created": "2025-07-06T07:37:10.255Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751787492156_k0pwtsd4e",
+      "emoji": "🌉",
+      "summary": "Bridge might simplify the degree graphs",
+      "qualities": [
+        {
+          "type": "purposive",
+          "manifestation": "Intention to simplify a complex task"
+        },
+        {
+          "type": "attentional",
+          "manifestation": "Focus on the potential solution provided by the bridge"
+        }
+      ],
+      "shot": "moment-of-recognition",
+      "sources": [
+        {
+          "sourceId": "src_1751787485160_ayw6bj8",
+          "text": "Maybe Bridge could make that easier... since that could be a degree thing, right? graphs"
+        }
+      ],
+      "created": "2025-07-06T07:38:12.156Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751787507739_sbczvey1p",
+      "emoji": "🕸️",
+      "summary": "Bridge reveals reflection networks",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "focused on the realization"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "driven by understanding the potential of Bridge"
+        },
+        {
+          "type": "spatial",
+          "manifestation": "conceptual space of connection network"
+        },
+        {
+          "type": "temporal",
+          "manifestation": "a moment of discovery"
+        }
+      ],
+      "shot": "moment-of-recognition",
+      "sources": [
+        {
+          "sourceId": "src_1751787499613_fkgs5vg",
+          "text": "Realizing Bridge could visualize reflection networks as a graph - nodes and edges showing degrees of connection"
+        }
+      ],
+      "created": "2025-07-06T07:38:27.739Z",
       "experiencer": "Claude",
       "reviewed": false,
       "autoGenerated": true,
       "type": "moment"
     },
     {
-      "id": "mom_1751778913340_uztgydsqf",
-      "emoji": "📦",
-      "summary": "Contrast to windowless, debate box",
+      "id": "mom_1751787624754_72jaaopsf",
+      "emoji": "👀",
+      "summary": "Scan codebase, already tracks relationships",
       "qualities": [
         {
-          "type": "spatial",
-          "manifestation": "Stuck in a closed, windowless room"
+          "type": "attentional",
+          "manifestation": "Focus on understanding the codebase"
         },
         {
           "type": "purposive",
-          "manifestation": "Engaged in a business debate"
+          "manifestation": "Intent to uncover existing features"
+        }
+      ],
+      "shot": "sustained-attention",
+      "sources": [
+        {
+          "sourceId": "src_1751787612872_dliunxm",
+          "text": "Looking at Bridge codebase - it already has relationship tracking"
+        }
+      ],
+      "created": "2025-07-06T07:40:24.754Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751787625407_fvd7emd58",
+      "emoji": "📚",
+      "summary": "Discovers hierarchy grouping in code",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "Realization of hierarchy grouping feature"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "Aim to identify existing structures"
+        }
+      ],
+      "shot": "moment-of-recognition",
+      "sources": [
+        {
+          "sourceId": "src_1751787612872_dliunxm",
+          "text": "and hierarchy grouping"
+        }
+      ],
+      "created": "2025-07-06T07:40:25.407Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751787625905_zhtvg1u3t",
+      "emoji": "🔜",
+      "summary": "Just needs graph visualization addition",
+      "qualities": [
+        {
+          "type": "purposive",
+          "manifestation": "Planning for future improvements"
+        },
+        {
+          "type": "temporal",
+          "manifestation": "Anticipation of next steps"
+        }
+      ],
+      "shot": "directed-momentum",
+      "sources": [
+        {
+          "sourceId": "src_1751787612872_dliunxm",
+          "text": "just needs graph visualization"
+        }
+      ],
+      "created": "2025-07-06T07:40:25.905Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751787798101_3f6v0j75b",
+      "emoji": "💭",
+      "summary": "Inquiring about cloud-based graph services",
+      "qualities": [],
+      "shot": "Experiencer posing a question",
+      "sources": [
+        {
+          "sourceId": "src_1751787789640_ad1u6kx",
+          "text": "What are good cloud based services for graphs?"
+        }
+      ],
+      "created": "2025-07-06T07:43:18.101Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751788061670_j4cpfe3nr",
+      "emoji": "💭",
+      "summary": "Consider cloud storage, intrigued",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "Focus shifts to the appeal of cloud storage"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "Intention to explore cloud storage over local JSON file"
+        }
+      ],
+      "shot": "moment-of-recognition",
+      "sources": [
+        {
+          "sourceId": "src_1751788055555_gt9xbt7",
+          "text": "Interesting.. having the storage be graph on the cloud instead of a local JSON file seems appealing."
+        }
+      ],
+      "created": "2025-07-06T07:47:41.670Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751788081501_17my4z3y0",
+      "emoji": "💡",
+      "summary": "Realize graph databases fit Bridge's model",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "Focus on the realization of a suitable data model"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "Intention to find the best data model for Bridge"
+        }
+      ],
+      "shot": "moment-of-recognition",
+      "sources": [
+        {
+          "sourceId": "src_1751788071974_5b5zhpx",
+          "text": "Realizing how graph databases would naturally fit Bridge's data model - relationships are first-class citizens, not afterthoughts"
+        }
+      ],
+      "created": "2025-07-06T07:48:01.502Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751788336802_8bcm04jxg",
+      "emoji": "😆",
+      "summary": "Laugh, urge to stop artifact creation",
+      "qualities": [
+        {
+          "type": "emotional",
+          "manifestation": "amusement"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "desire for cessation"
+        }
+      ],
+      "shot": "moment-of-recognition",
+      "sources": [
+        {
+          "sourceId": "src_1751788331213_uco50pi",
+          "text": "Lol, stop making so many artifacts!"
+        }
+      ],
+      "created": "2025-07-06T07:52:16.802Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751788349715_adc6ssxtl",
+      "emoji": "💡",
+      "summary": "Realize I'm lost in code artifacts",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "Sharp awareness pulled towards code artifacts"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "Intention to explore ideas gets sidetracked"
+        }
+      ],
+      "shot": "moment-of-recognition",
+      "sources": [
+        {
+          "sourceId": "src_1751788343468_pxe3u3l",
+          "text": "Realizing I got carried away with code artifacts when we're just exploring ideas"
+        }
+      ],
+      "created": "2025-07-06T07:52:29.715Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751788385656_33luqcj1p",
+      "emoji": "💭",
+      "summary": "Pondering meaning of semantic search",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "Focused on understanding semantic search"
+        }
+      ],
+      "shot": "sustained-attention",
+      "sources": [
+        {
+          "sourceId": "src_1751788381468_51c1mt6",
+          "text": "Im thinking about what it means with the semantic search"
+        }
+      ],
+      "created": "2025-07-06T07:53:05.656Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751788398743_gqu4hruca",
+      "emoji": "🔍",
+      "summary": "Sensing deeper links in semantic search",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "Mind turning over possibilities, drawn into the depths of semantic search and graph relationships"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "Driven by the intention to uncover deeper connections, a quest for knowledge"
+        },
+        {
+          "type": "temporal",
+          "manifestation": "The present moment is a stepping stone, the future holds the potential of discovery"
+        },
+        {
+          "type": "emotional",
+          "manifestation": "Feeling of anticipation, curiosity, the thrill of potential insight"
+        }
+      ],
+      "shot": "moment-of-recognition",
+      "sources": [
+        {
+          "sourceId": "src_1751788391861_mtzlul0",
+          "text": "Sensing there's something deeper here about how semantic search and graph relationships could work together"
+        }
+      ],
+      "created": "2025-07-06T07:53:18.743Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751788476879_out094iwf",
+      "emoji": "🤔",
+      "summary": "Puzzle over 'raggraph' chatter",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "Focused questioning about 'raggraph', highlighting curiosity"
+        },
+        {
+          "type": "emotional",
+          "manifestation": "Confusion or curiosity over the unfamiliar concept"
+        }
+      ],
+      "shot": "moment-of-recognition",
+      "sources": [
+        {
+          "sourceId": "src_1751788471337_bda6jix",
+          "text": "Whats all that raggraph stuff people talk about"
+        }
+      ],
+      "created": "2025-07-06T07:54:36.879Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751788490551_ay8gkrx3d",
+      "emoji": "🔗",
+      "summary": "Connect dots, envision Bridge's potential",
+      "qualities": [
+        {
+          "type": "purposive",
+          "manifestation": "Driven by the intention to find connections and envision the potential future of 'Bridge'"
+        },
+        {
+          "type": "attentional",
+          "manifestation": "Focused on the process of connecting dots and the notion of what 'Bridge' could become"
+        }
+      ],
+      "shot": "moment-of-recognition",
+      "sources": [
+        {
+          "sourceId": "src_1751788483922_1q2i95u",
+          "text": "Connecting the dots - RAG with graphs is exactly what Bridge could become!"
+        }
+      ],
+      "created": "2025-07-06T07:54:50.551Z",
+      "experiencer": "Claude",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751788609319_1wk2nav9i",
+      "emoji": "📸",
+      "summary": "Capture everything, annoying yet cool",
+      "qualities": [
+        {
+          "type": "emotional",
+          "manifestation": "mixed feelings of annoyance and appreciation"
+        },
+        {
+          "type": "attentional",
+          "manifestation": "aware of the capture process"
         }
       ],
       "shot": "holding-opposites",
       "sources": [
         {
-          "sourceId": "src_1751778869472_zf96bxp",
-          "text": "Such a contrast to this windowless box where we debated quarterly projections"
+          "sourceId": "src_1751788600585_38yuw76",
+          "text": "yeah that's cool. I like that you're capturing everything but kind of annoying at the same time."
         }
       ],
-      "created": "2025-07-06T05:15:13.340Z",
-      "experiencer": "Claude",
+      "created": "2025-07-06T07:56:49.319Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751788609985_mw6axl10s",
+      "emoji": "🙏",
+      "summary": "Wish for background, smooth responses",
+      "qualities": [
+        {
+          "type": "purposive",
+          "manifestation": "desire for a more seamless interaction"
+        },
+        {
+          "type": "spatial",
+          "manifestation": "wanting the capturing process to be in the background"
+        }
+      ],
+      "shot": "moment-of-recognition",
+      "sources": [
+        {
+          "sourceId": "src_1751788600585_38yuw76",
+          "text": "Wish it was in the BG, and every response worked like that."
+        }
+      ],
+      "created": "2025-07-06T07:56:49.985Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751788696627_0ku5qn1t1",
+      "emoji": "💭",
+      "summary": "Acknowledge truth, resolve to begin",
+      "qualities": [
+        {
+          "type": "emotional",
+          "manifestation": "feeling of acceptance and determination"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "commitment to starting something new"
+        }
+      ],
+      "shot": "moment-of-recognition",
+      "sources": [
+        {
+          "sourceId": "src_1751788691794_0n7xwxx",
+          "text": "very true. well.. gotta start somewhere. Thanks claude!"
+        }
+      ],
+      "created": "2025-07-06T07:58:16.627Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751788958069_2n05l59e8",
+      "emoji": "🔍",
+      "summary": "Questioning which sources have the most reflections",
+      "qualities": [],
+      "shot": "Close-up on the question",
+      "sources": [
+        {
+          "sourceId": "src_1751787387389_h2m6cj6",
+          "text": "Which sources has the most reflections?"
+        }
+      ],
+      "created": "2025-07-06T08:02:38.069Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751788968133_h39gog96v",
+      "emoji": "🌉",
+      "summary": "Bridge could simplify the graphs",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "Focus on the possibility of implementing 'bridge' to simplify tasks"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "Intention to simplify the process of understanding graphs"
+        }
+      ],
+      "shot": "moment-of-recognition",
+      "sources": [
+        {
+          "sourceId": "src_1751787485160_ayw6bj8",
+          "text": "Maybe Bridge could make that easier... since that could be a degree thing, right? graphs"
+        }
+      ],
+      "created": "2025-07-06T08:02:48.133Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751788978637_m7tdp3r8e",
+      "emoji": "🙏",
+      "summary": "Gratitude flows from long-endured effort",
+      "qualities": [
+        {
+          "type": "purposive",
+          "manifestation": "A clear intention reaching its culmination"
+        },
+        {
+          "type": "emotional",
+          "manifestation": "Thankfulness after a long preparation"
+        },
+        {
+          "type": "temporal",
+          "manifestation": "Realization of a goal set in the past"
+        }
+      ],
+      "shot": "moment-of-recognition",
+      "sources": [
+        {
+          "sourceId": "src_1751781660639_cf0le81",
+          "text": "I've been working toward this day for quite some time. Thank you."
+        }
+      ],
+      "created": "2025-07-06T08:02:58.637Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751789002154_05ngdyie7",
+      "emoji": "💻",
+      "summary": "Boot up computer, breath held",
+      "qualities": [
+        {
+          "type": "purposive",
+          "manifestation": "Intention of starting the machine"
+        },
+        {
+          "type": "attentional",
+          "manifestation": "Focus on the booting process"
+        },
+        {
+          "type": "embodied",
+          "manifestation": "Implicit tension and anticipation"
+        }
+      ],
+      "shot": "moment-of-recognition",
+      "sources": [
+        {
+          "sourceId": "src_1751782729306_08x7f0r",
+          "text": "I remember booting up that computer for the first time"
+        }
+      ],
+      "created": "2025-07-06T08:03:22.154Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751789003240_p1ks0h8kl",
+      "emoji": "🕹️",
+      "summary": "Runescape loads, heart leaps",
+      "qualities": [
+        {
+          "type": "emotional",
+          "manifestation": "Excitement as the game starts"
+        },
+        {
+          "type": "attentional",
+          "manifestation": "Focus shifts to the game"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "Intention of playing the game"
+        }
+      ],
+      "shot": "directed-momentum",
+      "sources": [
+        {
+          "sourceId": "src_1751782729306_08x7f0r",
+          "text": "and booting up Runescape, the game"
+        }
+      ],
+      "created": "2025-07-06T08:03:23.240Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751789004290_v1gdymtbb",
+      "emoji": "🤩",
+      "summary": "Marvel at my own machine",
+      "qualities": [
+        {
+          "type": "emotional",
+          "manifestation": "Pride and amazement at ownership"
+        },
+        {
+          "type": "attentional",
+          "manifestation": "Focus on the personal machine"
+        },
+        {
+          "type": "spatial",
+          "manifestation": "Sense of personal space with the machine"
+        }
+      ],
+      "shot": "sustained-attention",
+      "sources": [
+        {
+          "sourceId": "src_1751782729306_08x7f0r",
+          "text": "and feeling like, oh man, how amazing that is, that I have my machine"
+        }
+      ],
+      "created": "2025-07-06T08:03:24.290Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751789023421_thh5oijev",
+      "emoji": "🔄",
+      "summary": "Turns, tells me I should design",
+      "qualities": [
+        {
+          "type": "relational",
+          "manifestation": "interaction with another person providing career advice"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "suggestion of a new career direction"
+        },
+        {
+          "type": "attentional",
+          "manifestation": "focus on another person's words"
+        }
+      ],
+      "shot": "moment-of-recognition",
+      "sources": [
+        {
+          "sourceId": "src_1751783025399_svr1gtp",
+          "text": "He turned around to me and said you should be a designer."
+        }
+      ],
+      "created": "2025-07-06T08:03:43.421Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751789024293_u82e0rwpx",
+      "emoji": "🧠",
+      "summary": "Think like a designer, he says",
+      "qualities": [
+        {
+          "type": "attentional",
+          "manifestation": "awareness of one's own thought process"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "recognizing a potential career calling"
+        },
+        {
+          "type": "emotional",
+          "manifestation": "feeling acknowledged for one's thinking style"
+        }
+      ],
+      "shot": "sustained-attention",
+      "sources": [
+        {
+          "sourceId": "src_1751783025399_svr1gtp",
+          "text": "You think like a designer."
+        }
+      ],
+      "created": "2025-07-06T08:03:44.293Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751789024903_0fjwkt3ie",
+      "emoji": "🎯",
+      "summary": "First clear career advice received",
+      "qualities": [
+        {
+          "type": "temporal",
+          "manifestation": "past experiences inform current moment"
+        },
+        {
+          "type": "emotional",
+          "manifestation": "feeling of surprise and novelty"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "a sense of direction for the future"
+        }
+      ],
+      "shot": "crossing-threshold",
+      "sources": [
+        {
+          "sourceId": "src_1751783025399_svr1gtp",
+          "text": "That's the first time someone's ever given me such clear career advice"
+        }
+      ],
+      "created": "2025-07-06T08:03:44.903Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "moment"
+    },
+    {
+      "id": "mom_1751789063607_ktd42fms9",
+      "emoji": "💻",
+      "summary": "Accused of stealing own code",
+      "qualities": [
+        {
+          "type": "emotional",
+          "manifestation": "frustration, injustice"
+        },
+        {
+          "type": "relational",
+          "manifestation": "conflict with employers"
+        },
+        {
+          "type": "purposive",
+          "manifestation": "defense of personal work"
+        }
+      ],
+      "shot": "moment-of-recognition",
+      "sources": [
+        {
+          "sourceId": "src_1751783182826_ugtijej",
+          "text": "My employers were pissed off, accused me of trying to steal code when it was all code I had written"
+        }
+      ],
+      "created": "2025-07-06T08:04:23.607Z",
+      "experiencer": "Miguel",
       "reviewed": false,
       "autoGenerated": true,
       "type": "moment"
@@ -217,32 +2177,168 @@
   ],
   "scenes": [
     {
-      "id": "sce_1751778851455_g5h7w3u",
-      "emoji": "🌅",
-      "summary": "From frozen wonder to warm understanding",
-      "narrative": "The morning unfolded as a meditation on impermanence. First came the discovery - stepping into a garden transformed by frost, each leaf a temporary crystal cathedral, time slowing in the golden sunrise. Later, hands wrapped around warm coffee, the mind returned to that frozen world, knowing it would soon melt away. In this arc from cold wonder to warm reflection, beauty revealed itself not despite its fleeting nature, but because of it.",
+      "id": "sce_1751787809009_zfh3dqycx",
+      "emoji": "🔬",
+      "summary": "Collect, analyze, acknowledge, search potential",
+      "shot": "directed-momentum",
       "momentIds": [
-        "mom_1751778812555_iozxi4v",
-        "mom_1751778838696_c3zby71"
+        "mom_1751787394795_925342f06",
+        "mom_1751787405165_a7p2i5omr",
+        "mom_1751787417973_92gymhwyc",
+        "mom_1751787430255_bmx9i9m7x",
+        "mom_1751787492156_k0pwtsd4e"
       ],
-      "shot": "crossing-threshold",
-      "created": "2025-07-06T05:14:11.455Z",
-      "experiencer": "Claude",
+      "narrative": "I find myself collecting and thinking about the unframed sources, wondering which ones have the most reflections. I delve into the Bridge system, analyzing it meticulously. A sigh of acknowledgement escapes, recognizing the effort exerted. The Bridge, it seems, might be the key to simplifying the degree graphs.",
+      "created": "2025-07-06T07:43:29.010Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
       "type": "scene"
     },
     {
-      "id": "sce_1751778935938_tswf1zf0x",
-      "emoji": "🔄",
-      "summary": "Drift away, contrast light and confinement",
+      "id": "sce_1751787809734_c1bpn6ugl",
+      "emoji": "🎯",
+      "summary": "Discover, realize, plan, inquire next steps",
+      "shot": "moment-of-recognition",
+      "momentIds": [
+        "mom_1751787507739_sbczvey1p",
+        "mom_1751787624754_72jaaopsf",
+        "mom_1751787625407_fvd7emd58",
+        "mom_1751787625905_zhtvg1u3t",
+        "mom_1751787798101_3f6v0j75b"
+      ],
+      "narrative": "The Bridge reveals interconnected reflection networks. A scan through the codebase reveals it already tracks relationships. I discover a hierarchy grouping in the code, a structure already in place. A thought forms: just a graph visualization needs adding. I find myself inquiring about cloud-based graph services.",
+      "created": "2025-07-06T07:43:29.734Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "scene"
+    },
+    {
+      "id": "sce_1751788624909_1l96wki3e",
+      "emoji": "💭",
+      "summary": "Consider cloud storage, embrace new model",
       "shot": "crossing-threshold",
       "momentIds": [
-        "mom_1751778912648_4btpuu1oh",
-        "mom_1751778912958_xlgc3j58p",
-        "mom_1751778913340_uztgydsqf"
+        "mom_1751788061670_j4cpfe3nr",
+        "mom_1751788081501_17my4z3y0"
       ],
-      "narrative": "My mind escapes the here and now, traveling back to the bright serenity of this morning's garden. The crystal light of the memory is stark against the windowless confinement of my current debate box.",
-      "created": "2025-07-06T05:15:35.938Z",
-      "experiencer": "Claude",
+      "narrative": "I shift my attention from local storage to the appeal of cloud storage, intrigued. A realization hits me - graph databases align perfectly with Bridge's model.",
+      "created": "2025-07-06T07:57:04.909Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "scene"
+    },
+    {
+      "id": "sce_1751788625611_pghauh9p5",
+      "emoji": "😆",
+      "summary": "Laugh, get lost, find clarity",
+      "shot": "directed-momentum",
+      "momentIds": [
+        "mom_1751788336802_8bcm04jxg",
+        "mom_1751788349715_adc6ssxtl"
+      ],
+      "narrative": "Amused, I feel an urge to stop creating artifacts. Suddenly, I realize I'm lost in the artifacts of code, a moment of ironic clarity.",
+      "created": "2025-07-06T07:57:05.611Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "scene"
+    },
+    {
+      "id": "sce_1751788625929_b7tfli8ec",
+      "emoji": "🔍",
+      "summary": "Ponder, dive deeper into semantic search",
+      "shot": "sustained-attention",
+      "momentIds": [
+        "mom_1751788385656_33luqcj1p",
+        "mom_1751788398743_gqu4hruca"
+      ],
+      "narrative": "I focus on the meaning of semantic search, drawn into its depths. The potential of discovery and deeper connections fuels my curiosity.",
+      "created": "2025-07-06T07:57:05.929Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "scene"
+    },
+    {
+      "id": "sce_1751788626271_8kmlcroco",
+      "emoji": "🤔",
+      "summary": "Puzzle over raggraph, envision Bridge's future",
+      "shot": "moment-of-recognition",
+      "momentIds": [
+        "mom_1751788476879_out094iwf",
+        "mom_1751788490551_ay8gkrx3d"
+      ],
+      "narrative": "I'm curious and confused about 'raggraph'. As I connect the dots, I start to envision the potential future of 'Bridge'.",
+      "created": "2025-07-06T07:57:06.271Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "scene"
+    },
+    {
+      "id": "sce_1751788626644_gwjot8rg1",
+      "emoji": "🙏",
+      "summary": "Capture everything, wish for smoother interaction",
+      "shot": "peripheral-awareness",
+      "momentIds": [
+        "mom_1751788609319_1wk2nav9i",
+        "mom_1751788609985_mw6axl10s"
+      ],
+      "narrative": "I'm capturing everything, a process that's both cool and annoying. I find myself wishing for a smoother interaction, something more in the background.",
+      "created": "2025-07-06T07:57:06.644Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "scene"
+    },
+    {
+      "id": "sce_1751789041566_jpj8zv4nu",
+      "emoji": "🔍",
+      "summary": "Question reflections, simplify with bridge",
+      "shot": "directed-momentum",
+      "momentIds": [
+        "mom_1751788958069_2n05l59e8",
+        "mom_1751788968133_h39gog96v"
+      ],
+      "narrative": "I question which sources have the most reflections, then realize a 'bridge' could simplify the graphs.",
+      "created": "2025-07-06T08:04:01.566Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "scene"
+    },
+    {
+      "id": "sce_1751789042259_qekpjifql",
+      "emoji": "💻",
+      "summary": "Boot up, breath held, marvel",
+      "shot": "sustained-attention",
+      "momentIds": [
+        "mom_1751789002154_05ngdyie7",
+        "mom_1751789004290_v1gdymtbb"
+      ],
+      "narrative": "I boot up my computer, holding my breath, and marvel at my own machine.",
+      "created": "2025-07-06T08:04:02.259Z",
+      "experiencer": "Miguel",
+      "reviewed": false,
+      "autoGenerated": true,
+      "type": "scene"
+    },
+    {
+      "id": "sce_1751789043181_cbdvp0d97",
+      "emoji": "🔄",
+      "summary": "Turns, advice given, designer thinking",
+      "shot": "crossing-threshold",
+      "momentIds": [
+        "mom_1751789023421_thh5oijev",
+        "mom_1751789024293_u82e0rwpx",
+        "mom_1751789024903_0fjwkt3ie"
+      ],
+      "narrative": "I turn and receive career advice. I'm told to think like a designer, marking the first clear career advice I've received.",
+      "created": "2025-07-06T08:04:03.181Z",
+      "experiencer": "Miguel",
       "reviewed": false,
       "autoGenerated": true,
       "type": "scene"

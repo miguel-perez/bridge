@@ -1,7 +1,6 @@
 // When returning search results with includeContext, the UI expects type: 'text' and a JSON string, not type: 'object'. This is handled in index.ts.
 import type { SourceRecord, MomentRecord, SceneRecord } from './types.js';
 import type { QualityType } from './types.js';
-import { getAllRecords, getSearchableText } from './storage.js';
 import { generateEmbedding, queryEmbedding } from './embeddings.js';
 
 // For temporal parsing
@@ -269,6 +268,9 @@ export function groupResults(results: SearchResult[], groupBy: GroupOption = 'no
 
 // 3. Main entry point
 export async function search(options: SearchOptions): Promise<SearchResult[] | GroupedResults> {
+  // Dynamic imports to fix module load order
+  const { getAllRecords, getSearchableText } = await import('./storage.js');
+  
   const records = await getAllRecords();
   let results: SearchResult[] = [];
   let searchRecords = records;
@@ -518,8 +520,6 @@ export function findReflectsOnRecords(recordId: string, allRecords: StorageRecor
 export function findReflectionsAbout(recordId: string, allRecords: StorageRecord[]): SourceRecord[] {
   return allRecords.filter(r => r.type === 'source' && Array.isArray((r as SourceRecord).reflects_on) && (r as SourceRecord).reflects_on!.includes(recordId)) as SourceRecord[];
 }
-
-export { getSearchableText };
 
 // Helper to safely get created/when fields for sorting
 function getCreated(result: SearchResult): string {
