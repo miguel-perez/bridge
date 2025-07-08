@@ -100,8 +100,7 @@ describe('Config', () => {
     });
 
     test('should throw with empty data file path', () => {
-      setDataFilePath('');
-      expect(() => validateConfiguration()).toThrow('Data file path is required.');
+      expect(() => setDataFilePath('')).toThrow('Data file path must be a non-empty string.');
     });
   });
 
