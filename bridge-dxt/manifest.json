@@ -1,12 +1,12 @@
 {
   "dxt_version": "0.1",
-  "name": "bridge-experiential-data",
+  "name": "bridge",
   "version": "0.1.0",
-  "description": "Capture, frame, and weave personal experiences into meaningful narratives",
-  "long_description": "Bridge is an experiential data management system that helps you capture raw experiences, transform them into structured moments with emotional and experiential qualities, and weave them into larger narratives. Features AI-powered framing, semantic search, multi-experiencer support, and comprehensive reflection tools.",
+  "description": "Capture experiences into a structured format for Humans & AI to use, allowing them to work together better as a distirbuted cognition to create a better futures.",
+  "long_description": "Bridge is an experiential data management system that helps you capture raw experiences, transform them into structured moments with emotional and experiential qualities. Features semantic search, multi-experiencer support, and comprehensive reflection tools.",
   "author": {
-    "name": "Bridge Development Team",
-    "email": "support@bridge-mcp.dev",
+    "name": "Miguel Angel Perez",
+    "email": "mail@miguel.design",
     "url": "https://github.com/miguel-perez/bridge"
   },
   "license": "MIT",

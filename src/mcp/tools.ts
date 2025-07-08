@@ -130,8 +130,7 @@ Each entry provides evidence for a quality, including the prominence (rating), a
               },
               required: ["embodied", "attentional", "affective", "purposive", "spatial", "temporal", "intersubjective"]
             }
-          },
-          required: ["vector"]
+          }
         }
       },
       required: ["experiencer", "perspective", "processing"]
@@ -273,8 +272,7 @@ Each entry provides evidence for a quality, including the prominence (rating), a
               },
               required: ["embodied", "attentional", "affective", "purposive", "spatial", "temporal", "intersubjective"]
             }
-          },
-          required: ["vector"]
+          }
         },
         regenerate_embeddings: { type: "boolean", description: "Whether to regenerate content embeddings (defaults to false, but will regenerate if content is changed)", default: false }
       },

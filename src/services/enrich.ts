@@ -20,7 +20,16 @@ export const enrichSchema = z.object({
       type: z.enum(['embodied', 'attentional', 'affective', 'purposive', 'spatial', 'temporal', 'intersubjective']),
       prominence: z.number().min(0).max(1),
       manifestation: z.string()
-    }))
+    })),
+    vector: z.object({
+      embodied: z.number().min(0).max(1),
+      attentional: z.number().min(0).max(1),
+      affective: z.number().min(0).max(1),
+      purposive: z.number().min(0).max(1),
+      spatial: z.number().min(0).max(1),
+      temporal: z.number().min(0).max(1),
+      intersubjective: z.number().min(0).max(1)
+    }).optional(),
   }).optional().describe('Updated experiential qualities'),
   regenerate_embeddings: z.boolean().optional().default(false).describe('Whether to regenerate content embeddings')
 });
@@ -40,6 +49,7 @@ export interface EnrichInput {
       prominence: number;
       manifestation: string;
     }>;
+    vector?: QualityVector;
   };
   regenerate_embeddings?: boolean;
 }
@@ -54,8 +64,9 @@ export interface EnrichResult {
 function generateQualityVector(qualities: Array<{
   type: 'embodied' | 'attentional' | 'affective' | 'purposive' | 'spatial' | 'temporal' | 'intersubjective';
   prominence: number;
-}>): QualityVector {
-  const vector: QualityVector = {
+}>, providedVector?: QualityVector): QualityVector {
+  // Start with provided vector or all zeros
+  const vector: QualityVector = providedVector ? { ...providedVector } : {
     embodied: 0,
     attentional: 0,
     affective: 0,
@@ -65,7 +76,7 @@ function generateQualityVector(qualities: Array<{
     intersubjective: 0
   };
 
-  // Set values based on provided qualities
+  // Override only the dimensions that appear in the qualities array
   for (const quality of qualities) {
     vector[quality.type] = quality.prominence;
   }
@@ -87,16 +98,20 @@ export class EnrichService {
       occurredDate = await parseOccurredDate(input.occurred);
     }
 
-
-
     // Process experiential qualities - generate vector if not provided
     let processedExperientialQualities: import('../core/types.js').ExperientialQualities | undefined = undefined;
     if (input.experiential_qualities?.qualities) {
-      // Always generate vector from qualities
-      const generatedVector = generateQualityVector(input.experiential_qualities.qualities);
+      // Generate vector from qualities, using provided vector as base if available
+      const generatedVector = generateQualityVector(input.experiential_qualities.qualities, input.experiential_qualities.vector);
       processedExperientialQualities = {
         qualities: input.experiential_qualities.qualities,
         vector: generatedVector
+      };
+    } else if (input.experiential_qualities?.vector) {
+      // Handle case where only vector is provided without qualities array
+      processedExperientialQualities = {
+        qualities: [],
+        vector: input.experiential_qualities.vector
       };
     }
 
