@@ -18,11 +18,11 @@ export interface FilterOptions {
   perspectives?: string[];
   processing?: string[];
   timeRange?: { start?: string; end?: string };
-  createdRange?: { start: string; end: string };
-  whenRange?: { start: string; end: string };
+  systemTimeRange?: { start: string; end: string };
+  eventTimeRange?: { start: string; end: string };
 }
 
-export type SortOption = 'relevance' | 'created' | 'when';
+export type SortOption = 'relevance' | 'system_time' | 'event_time';
 export type GroupOption = 'none' | 'day' | 'week' | 'month' | 'experiencer';
 
 export interface SearchOptions {
@@ -53,8 +53,8 @@ export interface GroupedResults {
 export interface FilterStats {
   initial: number;
   afterTimeRange?: number;
-  afterCreatedRange?: number;
-  afterWhenRange?: number;
+  afterSystemTimeRange?: number;
+  afterEventTimeRange?: number;
   afterExperiencers?: number;
   afterPerspectives?: number;
   afterProcessing?: number;
@@ -82,20 +82,20 @@ function normalizeToEndOfDay(date: Date): Date {
 
 // Helper: get date from record
 function getRecordDate(record: SourceRecord): Date | null {
-  if (record.created) return new Date(record.created);
-  if (record.when) return new Date(record.when);
+  if (record.system_time) return new Date(record.system_time);
+  if (record.event_time) return new Date(record.event_time);
   return null;
 }
 
-// Helper: get created date specifically
-function getCreatedDate(record: SourceRecord): Date | null {
-  if (record.created) return new Date(record.created);
+// Helper: get system_time date specifically
+function getSystemTimeDate(record: SourceRecord): Date | null {
+  if (record.system_time) return new Date(record.system_time);
   return null;
 }
 
-// Helper: get when date specifically
-function getWhenDate(record: SourceRecord): Date | null {
-  if (record.when) return new Date(record.when);
+// Helper: get event_time date specifically
+function getEventTimeDate(record: SourceRecord): Date | null {
+  if (record.event_time) return new Date(record.event_time);
   return null;
 }
 
@@ -121,26 +121,26 @@ export function advancedFilters(results: SearchResult[], filters?: FilterOptions
     stats.afterTimeRange = filtered.length;
   }
   
-  // Created range filter
-  if (filters.createdRange) {
+  // System time range filter
+  if (filters.systemTimeRange) {
     filtered = filtered.filter(result => {
-      const recDate = getCreatedDate(result.source);
-      const start = new Date(filters.createdRange!.start);
-      const end = new Date(filters.createdRange!.end);
+      const recDate = getSystemTimeDate(result.source);
+      const start = new Date(filters.systemTimeRange!.start);
+      const end = new Date(filters.systemTimeRange!.end);
       return recDate && isWithinRange(recDate, start, end);
     });
-    stats.afterCreatedRange = filtered.length;
+    stats.afterSystemTimeRange = filtered.length;
   }
   
-  // When range filter
-  if (filters.whenRange) {
+  // Event time range filter
+  if (filters.eventTimeRange) {
     filtered = filtered.filter(result => {
-      const recDate = getWhenDate(result.source);
-      const start = new Date(filters.whenRange!.start);
-      const end = new Date(filters.whenRange!.end);
+      const recDate = getEventTimeDate(result.source);
+      const start = new Date(filters.eventTimeRange!.start);
+      const end = new Date(filters.eventTimeRange!.end);
       return recDate && isWithinRange(recDate, start, end);
     });
-    stats.afterWhenRange = filtered.length;
+    stats.afterEventTimeRange = filtered.length;
   }
   
   // Experiencers filter
@@ -194,11 +194,12 @@ export function groupResults(results: SearchResult[], groupBy: GroupOption = 'no
     let key = '';
     
     switch (groupBy) {
-      case 'day':
+      case 'day': {
         const date = getRecordDate(result.source);
         key = date ? date.toISOString().split('T')[0] : 'Unknown';
         break;
-      case 'week':
+      }
+      case 'week': {
         const weekDate = getRecordDate(result.source);
         if (weekDate) {
           const startOfWeek = new Date(weekDate);
@@ -208,10 +209,12 @@ export function groupResults(results: SearchResult[], groupBy: GroupOption = 'no
           key = 'Unknown';
         }
         break;
-      case 'month':
+      }
+      case 'month': {
         const monthDate = getRecordDate(result.source);
         key = monthDate ? `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, '0')}` : 'Unknown';
         break;
+      }
       case 'experiencer':
         key = getExperiencer(result);
         break;
@@ -261,16 +264,18 @@ export async function search(options: SearchOptions): Promise<{ results: SearchR
   if (options.sort) {
     results.sort((a, b) => {
       switch (options.sort) {
-        case 'created':
-          const aCreated = getCreatedDate(a.source);
-          const bCreated = getCreatedDate(b.source);
-          if (!aCreated || !bCreated) return 0;
-          return bCreated.getTime() - aCreated.getTime();
-        case 'when':
-          const aWhen = getWhenDate(a.source);
-          const bWhen = getWhenDate(b.source);
-          if (!aWhen || !bWhen) return 0;
-          return bWhen.getTime() - aWhen.getTime();
+        case 'system_time': {
+          const aSystemTime = getSystemTimeDate(a.source);
+          const bSystemTime = getSystemTimeDate(b.source);
+          if (!aSystemTime || !bSystemTime) return 0;
+          return bSystemTime.getTime() - aSystemTime.getTime();
+        }
+        case 'event_time': {
+          const aEventTime = getEventTimeDate(a.source);
+          const bEventTime = getEventTimeDate(b.source);
+          if (!aEventTime || !bEventTime) return 0;
+          return bEventTime.getTime() - aEventTime.getTime();
+        }
         case 'relevance':
         default:
           return (b.relevance || 0) - (a.relevance || 0);
@@ -308,57 +313,37 @@ export function parseTemporalQuery(query: string): { dateRange?: DateRange, clea
   return { dateRange, cleanQuery };
 }
 
-// Find related records
+// Find all records related to a given record (for relationship search)
 export function findAllRelatedRecords(recordId: string, allRecords: SourceRecord[]): SourceRecord[] {
-  const related: SourceRecord[] = [];
-  const processed = new Set<string>();
+  const related = new Set<string>();
+  const toProcess = [recordId];
   
   function addRelated(record: SourceRecord) {
-    if (processed.has(record.id)) return;
-    processed.add(record.id);
-    related.push(record);
-    
-    // Add records this one reflects on
-    if (record.reflects_on) {
-      for (const refId of record.reflects_on) {
-        const refRecord = allRecords.find(r => r.id === refId);
-        if (refRecord) addRelated(refRecord);
-      }
-    }
-    
-    // Add records that reflect on this one
-    const reflections = allRecords.filter(r => r.reflects_on?.includes(record.id));
-    for (const reflection of reflections) {
-      addRelated(reflection);
-    }
+    if (related.has(record.id)) return;
+    related.add(record.id);
+    toProcess.push(record.id);
   }
   
-  const startRecord = allRecords.find(r => r.id === recordId);
-  if (startRecord) {
-    addRelated(startRecord);
+  while (toProcess.length > 0) {
+    const currentId = toProcess.shift()!;
+    const record = allRecords.find(r => r.id === currentId);
+    if (!record) continue;
+    
+    // Add the record itself
+    related.add(record.id);
+    
+    // Find records that reference this one (for future graph features)
+    // This is a placeholder for when we add graph relationships
   }
   
-  return related;
-}
-
-// Find records that this record reflects on
-export function findReflectsOnRecords(recordId: string, allRecords: SourceRecord[]): SourceRecord[] {
-  const record = allRecords.find(r => r.id === recordId);
-  if (!record || !record.reflects_on) return [];
-  
-  return allRecords.filter(r => record.reflects_on!.includes(r.id));
-}
-
-// Find records that reflect on this record
-export function findReflectionsAbout(recordId: string, allRecords: SourceRecord[]): SourceRecord[] {
-  return allRecords.filter(r => r.reflects_on?.includes(recordId));
+  return allRecords.filter(r => related.has(r.id));
 }
 
 // Helper functions for sorting
-function getCreated(result: SearchResult): string {
-  return result.source.created;
+function getSystemTime(result: SearchResult): string {
+  return result.source.system_time || '';
 }
 
-function getWhen(result: SearchResult): string {
-  return result.source.when || result.source.created;
+function getEventTime(result: SearchResult): string {
+  return result.source.event_time || '';
 } 

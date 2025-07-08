@@ -1,6 +1,7 @@
 import { promises as fs } from 'fs';
 import { join, dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
+import { nanoid } from 'nanoid';
 import type { 
   SourceRecord
 } from './types.js';
@@ -92,11 +93,10 @@ export async function storeFile(sourcePath: string, sourceId: string): Promise<s
   }
 }
 
-// Generate unique IDs
+// Generate unique IDs using nanoid
 export function generateId(prefix: string): string {
-  const timestamp = Date.now();
-  const random = Math.random().toString(36).substring(2, 9);
-  return `${prefix}_${timestamp}_${random}`;
+  const id = nanoid();
+  return `${prefix}_${id}`;
 }
 
 // Read/write helpers for new JSON structure
@@ -149,4 +149,10 @@ export async function getAllRecords(): Promise<SourceRecord[]> {
 // Helper: Extract all searchable text from a record
 export function getSearchableText(record: SourceRecord): string {
   return record.content;
+}
+
+// Clear the current data file (for test use only)
+export async function clearTestStorage(): Promise<void> {
+  await ensureStorageDir();
+  await fs.writeFile(getDataFile(), JSON.stringify({ sources: [] }, null, 2), 'utf8');
 } 

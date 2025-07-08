@@ -2,23 +2,51 @@
 
 export type Perspective = "I" | "we" | "you" | "they" | string;
 export type ProcessingLevel = "during" | "right-after" | "long-after" | "crafted";
-export type ContentType = "text" | "voice" | "image" | "link" | string;
+export type ContentType = "text" | "audio" | string;
+
+export type QualityType = "embodied" | "attentional" | "affective" | "purposive" | "spatial" | "temporal" | "intersubjective";
+
+export interface QualityEvidence {
+  type: QualityType;
+  excerpt: string;        // Exact phrase showing this quality
+  prominence: number;     // 0.0-1.0 score
+  manifestation: string;  // How it manifests in experience
+}
+
+export interface QualityVector {
+  embodied: number;       // 0.0-1.0
+  attentional: number;    // 0.0-1.0
+  affective: number;      // 0.0-1.0
+  purposive: number;      // 0.0-1.0
+  spatial: number;        // 0.0-1.0
+  temporal: number;       // 0.0-1.0
+  intersubjective: number; // 0.0-1.0
+}
+
+export interface ExperientialQualities {
+  qualities: QualityEvidence[];
+  vector: QualityVector;
+}
 
 export interface Source {
   id: string; // Generated
   content: string; 
-  contentType: ContentType; // Default: "text"
-  created: string; // ISO timestamp
-  when?: string; // When it happened (defaults to created)
+  contentType?: ContentType; // Default: "text"
+  system_time: string; // Auto-generated ISO timestamp
+  event_time?: string; // When it happened
+  capture_time?: string; // When captured (defaults to system_time)
   
   // Context
   perspective?: Perspective; // Default: "I"
   experiencer?: string; // Default: "self"
   processing?: ProcessingLevel; // Default: "during"
-  reflects_on?: string[]; // IDs of sources this record reflects on
+  crafted?: boolean; // as in blog = true, journal = false
   
-  // File reference (for non-text content)
-  file?: string; // Path to file, validated against MCP roots
+  // Experiential analysis
+  experiential_qualities?: ExperientialQualities;
+  
+  // Vector embeddings
+  content_embedding?: number[]; // Text embedding for semantic search
 }
 
 // Storage record types

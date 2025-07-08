@@ -10,8 +10,8 @@ describe('Storage Layer', () => {
       const id1 = generateId('src');
       const id2 = generateId('src');
       
-      expect(id1).toMatch(/^src_\d+_[a-z0-9]+$/);
-      expect(id2).toMatch(/^src_\d+_[a-z0-9]+$/);
+      expect(id1).toMatch(/^src_[A-Za-z0-9_-]+$/);
+      expect(id2).toMatch(/^src_[A-Za-z0-9_-]+$/);
       expect(id1).not.toBe(id2);
     });
 

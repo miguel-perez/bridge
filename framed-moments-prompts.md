@@ -239,10 +239,11 @@ Examples (do not copy, use for style and compression guidance):
 ```json
 {
   "metadata": {
+    "id": "nanoid",
     "experiencer": "name or anonymous",
     "perspective": "I|we|you|they",
     "processing": "during|right-after|long-after",
-    "audience_aware": true|false,
+    "crafted": true|false, // as in blog = true, journal; = false
     "event_time": "when it happened",
     "capture_time": "when recorded",
     "system_time": "[auto-generated]"

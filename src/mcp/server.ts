@@ -11,7 +11,9 @@ const SERVER_NAME = 'captain';
 const SERVER_VERSION = '0.1.0';
 
 // Define data file path using environment variable with fallback in project root
-const defaultDataPath = path.resolve(process.cwd(), 'bridge.json');
+const defaultDataPath = process.env.NODE_ENV === 'test' 
+  ? path.resolve(process.cwd(), 'data', 'bridge-test.json')
+  : path.resolve(process.cwd(), 'bridge.json');
 const DATA_FILE_PATH = process.env.BRIDGE_FILE_PATH
   ? path.isAbsolute(process.env.BRIDGE_FILE_PATH)
     ? process.env.BRIDGE_FILE_PATH
@@ -62,10 +64,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return await toolHandlers.handleRelease(args);
 
       case 'search':
-        return await toolHandlers.handleSearch(args);
-
-      case 'status':
-        return await toolHandlers.handleStatus();
+        return await toolHandlers.handleSearch(args ?? {});
 
       default:
         throw new McpError(
