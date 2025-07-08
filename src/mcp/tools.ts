@@ -17,6 +17,42 @@ export const tools = [
           type: "object", 
           description: `REQUIRED experiential quality analysis. The AI assistant MUST analyze the content and provide quality scores. Each quality describes a phenomenological dimension of experience, scored 0.0-1.0.
 
+**IMPORTANT: You only need to analyze qualities that are actually present in the experience.**
+- **Minimum requirement**: At least 1 quality (you don't need to analyze all 7)
+- **Focus on what's relevant**: Only analyze qualities that are noticeable in the moment
+- **Missing dimensions default to 0.0**: Dimensions not in the qualities array will be set to 0 in the final vector
+
+**Example - Single Quality:**
+{
+  "experiential_qualities": {
+    "qualities": [
+      {
+        "type": "affective",
+        "prominence": 0.8,
+        "manifestation": "strong anxiety"
+      }
+    ]
+  }
+}
+
+**Example - Multiple Qualities:**
+{
+  "experiential_qualities": {
+    "qualities": [
+      {
+        "type": "affective",
+        "prominence": 0.8,
+        "manifestation": "strong anxiety"
+      },
+      {
+        "type": "spatial",
+        "prominence": 0.4,
+        "manifestation": "confined space"
+      }
+    ]
+  }
+}
+
 **How to Break Down Larger Content into Smaller Captures :**
 To identify experiential boundaries, look for natural breaks where qualities shift:
 - Attention redirects or refocuses
@@ -100,6 +136,7 @@ Each boundary marks a new moment. Use these cues to segment continuous experienc
 - **qualities**: Array of specific quality evidence that overrides vector values for those dimensions.
 - **Final vector**: Combines base values from vector (or 0 if not provided) with overrides from qualities array.
 - **Example**: If vector has spatial: 0.3 but qualities array specifies spatial: 0.8, the final spatial value will be 0.8.
+- **Missing dimensions**: Any dimension not in the qualities array defaults to 0.0 (or the vector base value if provided).
 `,
           properties: {
             qualities: {
@@ -247,11 +284,17 @@ Each boundary marks a new moment. Use these cues to segment continuous experienc
           type: "object", 
           description: `Updated experiential quality analysis. Each quality describes a phenomenological dimension of experience, scored 0.0-1.0. See capture tool for detailed scoring guidelines.
 
+**IMPORTANT: You only need to analyze qualities that are actually present in the experience.**
+- **Minimum requirement**: At least 1 quality (you don't need to analyze all 7)
+- **Focus on what's relevant**: Only analyze qualities that are noticeable in the moment
+- **Missing dimensions default to 0.0**: Dimensions not in the qualities array will be set to 0 in the final vector
+
 **Vector and Qualities Interaction:**
 - **vector**: Optional base values for all dimensions. If provided, these serve as starting values.
 - **qualities**: Array of specific quality evidence that overrides vector values for those dimensions.
 - **Final vector**: Combines base values from vector (or 0 if not provided) with overrides from qualities array.
-- **Example**: If vector has spatial: 0.3 but qualities array specifies spatial: 0.8, the final spatial value will be 0.8.`,
+- **Example**: If vector has spatial: 0.3 but qualities array specifies spatial: 0.8, the final spatial value will be 0.8.
+- **Missing dimensions**: Any dimension not in the qualities array defaults to 0.0 (or the vector base value if provided).`,
           properties: {
             qualities: {
               type: "array",
