@@ -2,7 +2,39 @@ import { SourceRecord } from '../core/types.js';
 import { getAllRecords } from '../core/storage.js';
 import type { QualityVector } from '../core/types.js';
 import { embeddingService } from './embeddings.js';
-import { vectorStore } from './vector-store.js';
+import { getVectorStore } from './vector-store.js';
+
+// Debug mode configuration
+const DEBUG_MODE = process.env.BRIDGE_SEARCH_DEBUG === 'true' || process.env.BRIDGE_DEBUG === 'true';
+
+// Debug logging utility
+function debugLog(message: string, data?: any) {
+  if (DEBUG_MODE) {
+    const timestamp = new Date().toISOString();
+    console.log(`[SEARCH DEBUG ${timestamp}] ${message}`);
+    if (data !== undefined) {
+      console.log(JSON.stringify(data, null, 2));
+    }
+  }
+}
+
+// Error logging utility with MCP-compliant formatting
+function logSearchError(context: string, error: any, details?: any) {
+  const errorMessage = `Search error in ${context}: ${error.message || error}`;
+  console.error(`[SEARCH ERROR] ${errorMessage}`);
+  
+  if (DEBUG_MODE && details) {
+    console.error('[SEARCH DEBUG] Error details:', JSON.stringify(details, null, 2));
+  }
+  
+  // Return MCP-compliant error structure
+  return {
+    error: true,
+    message: errorMessage,
+    context,
+    details: DEBUG_MODE ? details : undefined
+  };
+}
 
 export interface SearchInput {
   query?: string;
@@ -68,6 +100,42 @@ export interface SearchServiceResponse {
   total: number;
   query: string;
   filters: Record<string, any>;
+  debug?: {
+    search_started: string;
+    total_records: number;
+    filtered_records: number;
+    vector_search_performed: boolean;
+    semantic_search_performed: boolean;
+    vector_store_stats?: {
+      total_vectors: number;
+      valid_vectors: number;
+      invalid_vectors: number;
+    };
+    query_embedding_dimension?: number;
+    similarity_scores?: Array<{
+      id: string;
+      score: number;
+      type: 'vector' | 'semantic';
+    }>;
+    filter_breakdown?: {
+      type_filter?: number;
+      experiencer_filter?: number;
+      perspective_filter?: number;
+      processing_filter?: number;
+      contentType_filter?: number;
+      crafted_filter?: number;
+      temporal_filter?: number;
+      qualities_filter?: number;
+      vector_threshold_filter?: number;
+      semantic_threshold_filter?: number;
+    };
+    no_results_reason?: string;
+    errors?: Array<{
+      context: string;
+      message: string;
+      details?: any;
+    }>;
+  };
 }
 
 // Calculate text relevance score based on query matching
@@ -237,222 +305,413 @@ function calculateRelevanceScore(
 }
 
 export async function search(input: SearchInput): Promise<SearchServiceResponse> {
-  // Get all records from storage
-  const allRecords = await getAllRecords();
-  
-  // Apply filters
-  let filteredRecords = allRecords;
-  
-  // Filter by type
-  if (input.type && input.type.length > 0) {
-    filteredRecords = filteredRecords.filter(record => input.type!.includes(record.type));
-  }
-  
-  // Filter by experiencer
-  if (input.experiencer) {
-    filteredRecords = filteredRecords.filter(record => record.experiencer === input.experiencer);
-  }
-  
-  // Filter by perspective
-  if (input.perspective) {
-    filteredRecords = filteredRecords.filter(record => record.perspective === input.perspective);
-  }
-  
-  // Filter by processing
-  if (input.processing) {
-    filteredRecords = filteredRecords.filter(record => record.processing === input.processing);
-  }
-  
-  // Filter by contentType
-  if (input.contentType) {
-    filteredRecords = filteredRecords.filter(record => record.contentType === input.contentType);
-  }
-  
-  // Filter by crafted
-  if (input.crafted !== undefined) {
-    filteredRecords = filteredRecords.filter(record => record.crafted === input.crafted);
-  }
-  
-  // Apply temporal filters
-  if (input.system_time) {
-    filteredRecords = applyTemporalFilter(filteredRecords, input.system_time, 'system_time');
-  }
-  
-  if (input.occurred) {
-    filteredRecords = applyTemporalFilter(filteredRecords, input.occurred, 'occurred');
-  }
+  const searchStartTime = new Date().toISOString();
+  const debugInfo: SearchServiceResponse['debug'] = {
+    search_started: searchStartTime,
+    total_records: 0,
+    filtered_records: 0,
+    vector_search_performed: false,
+    semantic_search_performed: false,
+    filter_breakdown: {},
+    errors: []
+  };
 
-  // Experiential qualities min/max filtering
-  const qualities: (keyof QualityVector)[] = [
-    'embodied', 'attentional', 'affective', 'purposive', 'spatial', 'temporal', 'intersubjective'
-  ];
-  for (const q of qualities) {
-    const minKey = `min_${q}` as keyof SearchInput;
-    const maxKey = `max_${q}` as keyof SearchInput;
-    if (input[minKey] !== undefined) {
-      filteredRecords = filteredRecords.filter(record => {
-        const v = record.experiential_qualities?.vector?.[q];
-        // Only include records that have the quality score and meet the minimum threshold
-        return v !== undefined && v >= (input[minKey] as number);
-      });
-    }
-    if (input[maxKey] !== undefined) {
-      filteredRecords = filteredRecords.filter(record => {
-        const v = record.experiential_qualities?.vector?.[q];
-        // Only include records that have the quality score and meet the maximum threshold
-        return v !== undefined && v <= (input[maxKey] as number);
-      });
-    }
-  }
-
-  // Vector similarity search
-  let vectorSimilarityMap: Record<string, number> = {};
-  if (input.vector) {
-    type WithSimilarity = typeof filteredRecords[number] & { _similarity?: number };
-    const withSim: WithSimilarity[] = filteredRecords.map(record => {
-      const v = record.experiential_qualities?.vector;
-      if (!v) return { ...record, _similarity: undefined };
-      // Convert QualityVector to Record<string, number> for cosineSimilarity, ensure all values are numbers
-      const vObj: Record<string, number> = {
-        embodied: v.embodied ?? 0,
-        attentional: v.attentional ?? 0,
-        affective: v.affective ?? 0,
-        purposive: v.purposive ?? 0,
-        spatial: v.spatial ?? 0,
-        temporal: v.temporal ?? 0,
-        intersubjective: v.intersubjective ?? 0
-      };
-      const sim = cosineSimilarity(input.vector!, vObj);
-      return { ...record, _similarity: sim };
-    });
-    let filteredWithSim = withSim;
-    if (input.vector_similarity_threshold !== undefined) {
-      filteredWithSim = filteredWithSim.filter(record => {
-        return record._similarity !== undefined && record._similarity >= input.vector_similarity_threshold!;
-      });
-    }
-    // Save similarity for output
-    vectorSimilarityMap = Object.fromEntries(filteredWithSim.map(r => [r.id, r._similarity ?? 0]));
-    // Remove _similarity property for downstream code, but keep filteredRecords as SourceRecord[]
-    filteredRecords = filteredWithSim.map(record => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { _similarity, ...rest } = record;
-      return rest as SourceRecord;
-    });
-  }
-
-  // Semantic search
-  const semanticSimilarityMap: Record<string, number> = {};
-  if (input.semantic_query) {
-    try {
-      // Generate embedding for the semantic query
-      const queryEmbedding = await embeddingService.generateEmbedding(input.semantic_query);
-      // Validate and potentially clean up vectors before searching
-      const validation = await vectorStore.validateVectors(queryEmbedding.length);
-      if (validation.invalid > 0) {
-        console.warn(`Found ${validation.invalid} vectors with mismatched dimensions. Cleaning up...`);
-        console.warn('Invalid vectors:', validation.details.slice(0, 5)); // Show first 5
-        const removed = await vectorStore.removeInvalidVectors(queryEmbedding.length);
-        console.log(`Removed ${removed} invalid vectors`);
-      }
-      // Find similar vectors in the vector store
-      let similarResults = await vectorStore.findSimilar(
-        queryEmbedding, 
-        input.limit || 50, 
-        input.semantic_threshold || 0.7
-      );
-      // Fallback: if no results and threshold > 0.4, try again with lower threshold
-      if (similarResults.length === 0 && (input.semantic_threshold === undefined || input.semantic_threshold > 0.4)) {
-        console.warn('No semantic results found, retrying with lower threshold 0.4');
-        similarResults = await vectorStore.findSimilar(
-          queryEmbedding,
-          input.limit || 50,
-          0.4
-        );
-      }
-      // Filter records to only include semantically similar ones
-      const semanticIds = new Set(similarResults.map(r => r.id));
-      filteredRecords = filteredRecords.filter(record => semanticIds.has(record.id));
-      // Add semantic similarity scores to the similarity map
-      for (const result of similarResults) {
-        semanticSimilarityMap[result.id] = result.similarity;
-      }
-    } catch (error) {
-      console.warn('Semantic search failed:', error);
-      // Continue without semantic filtering if it fails
-    }
-  }
-
-  // Calculate relevance scores for all filtered records
-  const recordsWithRelevance = filteredRecords.map(record => {
-    const relevance = calculateRelevanceScore(
-      record, 
-      input, 
-      vectorSimilarityMap[record.id], 
-      semanticSimilarityMap[record.id]
-    );
-    return { ...record, _relevance: relevance };
+  debugLog('Starting semantic search', { 
+    query: input.query, 
+    semantic_query: input.semantic_query,
+    vector: input.vector,
+    filters: Object.fromEntries(Object.entries(input).filter(([, v]) => v !== undefined))
   });
 
-  // If a text query is provided, filter out records with zero text relevance
-  let finalRecords = recordsWithRelevance;
-  if (input.query && input.query.trim()) {
-    finalRecords = finalRecords.filter(r => r._relevance.breakdown.text_match > 0);
-  }
-
-  // Apply sorting
-  if (input.sort) {
-    finalRecords.sort((a, b) => {
-      switch (input.sort) {
-        case 'system_time': {
-          const aTime = new Date(a.system_time).getTime();
-          const bTime = new Date(b.system_time).getTime();
-          return bTime - aTime; // Descending
-        }
-        case 'occurred': {
-          const aTime = new Date(a.occurred || a.system_time).getTime();
-          const bTime = new Date(b.occurred || b.system_time).getTime();
-          return bTime - aTime; // Descending
-        }
-        case 'relevance':
-        default: {
-          // Sort by relevance score
-          return b._relevance.score - a._relevance.score;
-        }
+  try {
+    // Get all records from storage
+    const allRecords = await getAllRecords();
+    debugInfo.total_records = allRecords.length;
+    debugLog(`Loaded ${allRecords.length} total records`);
+    
+    // Apply filters
+    let filteredRecords = allRecords;
+  
+        // Filter by type
+    if (input.type && input.type.length > 0) {
+      const beforeCount = filteredRecords.length;
+      filteredRecords = filteredRecords.filter(record => input.type!.includes(record.type));
+      const afterCount = filteredRecords.length;
+      debugInfo.filter_breakdown!.type_filter = beforeCount - afterCount;
+      debugLog(`Type filter applied: ${beforeCount} -> ${afterCount} records`);
+    }
+    
+    // Filter by experiencer
+    if (input.experiencer) {
+      const beforeCount = filteredRecords.length;
+      filteredRecords = filteredRecords.filter(record => record.experiencer === input.experiencer);
+      const afterCount = filteredRecords.length;
+      debugInfo.filter_breakdown!.experiencer_filter = beforeCount - afterCount;
+      debugLog(`Experiencer filter applied: ${beforeCount} -> ${afterCount} records`);
+    }
+    
+    // Filter by perspective
+    if (input.perspective) {
+      const beforeCount = filteredRecords.length;
+      filteredRecords = filteredRecords.filter(record => record.perspective === input.perspective);
+      const afterCount = filteredRecords.length;
+      debugInfo.filter_breakdown!.perspective_filter = beforeCount - afterCount;
+      debugLog(`Perspective filter applied: ${beforeCount} -> ${afterCount} records`);
+    }
+    
+    // Filter by processing
+    if (input.processing) {
+      const beforeCount = filteredRecords.length;
+      filteredRecords = filteredRecords.filter(record => record.processing === input.processing);
+      const afterCount = filteredRecords.length;
+      debugInfo.filter_breakdown!.processing_filter = beforeCount - afterCount;
+      debugLog(`Processing filter applied: ${beforeCount} -> ${afterCount} records`);
+    }
+    
+    // Filter by contentType
+    if (input.contentType) {
+      const beforeCount = filteredRecords.length;
+      filteredRecords = filteredRecords.filter(record => record.contentType === input.contentType);
+      const afterCount = filteredRecords.length;
+      debugInfo.filter_breakdown!.contentType_filter = beforeCount - afterCount;
+      debugLog(`ContentType filter applied: ${beforeCount} -> ${afterCount} records`);
+    }
+    
+    // Filter by crafted
+    if (input.crafted !== undefined) {
+      const beforeCount = filteredRecords.length;
+      filteredRecords = filteredRecords.filter(record => record.crafted === input.crafted);
+      const afterCount = filteredRecords.length;
+      debugInfo.filter_breakdown!.crafted_filter = beforeCount - afterCount;
+      debugLog(`Crafted filter applied: ${beforeCount} -> ${afterCount} records`);
+    }
+    
+    // Apply temporal filters
+    if (input.system_time || input.occurred) {
+      const beforeCount = filteredRecords.length;
+      if (input.system_time) {
+        filteredRecords = applyTemporalFilter(filteredRecords, input.system_time, 'system_time');
       }
+      if (input.occurred) {
+        filteredRecords = applyTemporalFilter(filteredRecords, input.occurred, 'occurred');
+      }
+      const afterCount = filteredRecords.length;
+      debugInfo.filter_breakdown!.temporal_filter = beforeCount - afterCount;
+      debugLog(`Temporal filter applied: ${beforeCount} -> ${afterCount} records`);
+    }
+
+    // Experiential qualities min/max filtering
+    const qualities: (keyof QualityVector)[] = [
+      'embodied', 'attentional', 'affective', 'purposive', 'spatial', 'temporal', 'intersubjective'
+    ];
+    let qualitiesFilterCount = 0;
+    for (const q of qualities) {
+      const minKey = `min_${q}` as keyof SearchInput;
+      const maxKey = `max_${q}` as keyof SearchInput;
+      if (input[minKey] !== undefined) {
+        const beforeCount = filteredRecords.length;
+        filteredRecords = filteredRecords.filter(record => {
+          const v = record.experiential_qualities?.vector?.[q];
+          // Only include records that have the quality score and meet the minimum threshold
+          return v !== undefined && v >= (input[minKey] as number);
+        });
+        qualitiesFilterCount += beforeCount - filteredRecords.length;
+      }
+      if (input[maxKey] !== undefined) {
+        const beforeCount = filteredRecords.length;
+        filteredRecords = filteredRecords.filter(record => {
+          const v = record.experiential_qualities?.vector?.[q];
+          // Only include records that have the quality score and meet the maximum threshold
+          return v !== undefined && v <= (input[maxKey] as number);
+        });
+        qualitiesFilterCount += beforeCount - filteredRecords.length;
+      }
+    }
+    if (qualitiesFilterCount > 0) {
+      debugInfo.filter_breakdown!.qualities_filter = qualitiesFilterCount;
+      debugLog(`Qualities filter applied: ${qualitiesFilterCount} records filtered`);
+    }
+
+    // Vector similarity search
+    let vectorSimilarityMap: Record<string, number> = {};
+    if (input.vector) {
+      debugInfo.vector_search_performed = true;
+      debugLog('Starting vector similarity search', { 
+        vector: input.vector, 
+        threshold: input.vector_similarity_threshold 
+      });
+      
+      type WithSimilarity = typeof filteredRecords[number] & { _similarity?: number };
+      const withSim: WithSimilarity[] = filteredRecords.map(record => {
+        const v = record.experiential_qualities?.vector;
+        if (!v) return { ...record, _similarity: undefined };
+        // Convert QualityVector to Record<string, number> for cosineSimilarity, ensure all values are numbers
+        const vObj: Record<string, number> = {
+          embodied: v.embodied ?? 0,
+          attentional: v.attentional ?? 0,
+          affective: v.affective ?? 0,
+          purposive: v.purposive ?? 0,
+          spatial: v.spatial ?? 0,
+          temporal: v.temporal ?? 0,
+          intersubjective: v.intersubjective ?? 0
+        };
+        const sim = cosineSimilarity(input.vector!, vObj);
+        return { ...record, _similarity: sim };
+      });
+      
+      // Log top similarity scores
+      const topScores = withSim
+        .filter(r => r._similarity !== undefined)
+        .sort((a, b) => (b._similarity ?? 0) - (a._similarity ?? 0))
+        .slice(0, 10)
+        .map(r => ({ id: r.id, score: r._similarity ?? 0 }));
+      
+      debugLog('Top 10 vector similarity scores', topScores);
+      
+      let filteredWithSim = withSim;
+      if (input.vector_similarity_threshold !== undefined) {
+        const beforeCount = filteredWithSim.length;
+        filteredWithSim = filteredWithSim.filter(record => {
+          return record._similarity !== undefined && record._similarity >= input.vector_similarity_threshold!;
+        });
+        const afterCount = filteredWithSim.length;
+        debugInfo.filter_breakdown!.vector_threshold_filter = beforeCount - afterCount;
+        debugLog(`Vector threshold filter applied: ${beforeCount} -> ${afterCount} records (threshold: ${input.vector_similarity_threshold})`);
+      }
+      
+      // Save similarity for output
+      vectorSimilarityMap = Object.fromEntries(filteredWithSim.map(r => [r.id, r._similarity ?? 0]));
+      
+      // Add to debug similarity scores
+      if (!debugInfo.similarity_scores) debugInfo.similarity_scores = [];
+      debugInfo.similarity_scores.push(...topScores.map(s => ({ ...s, type: 'vector' as const })));
+      
+      // Remove _similarity property for downstream code, but keep filteredRecords as SourceRecord[]
+      filteredRecords = filteredWithSim.map(record => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { _similarity, ...rest } = record;
+        return rest as SourceRecord;
+      });
+    }
+
+    // Semantic search
+    const semanticSimilarityMap: Record<string, number> = {};
+    if (input.semantic_query) {
+      debugInfo.semantic_search_performed = true;
+      debugLog('Starting semantic search', { 
+        query: input.semantic_query, 
+        threshold: input.semantic_threshold 
+      });
+      
+      try {
+        // Generate embedding for the semantic query
+        const queryEmbedding = await embeddingService.generateEmbedding(input.semantic_query);
+        debugInfo.query_embedding_dimension = queryEmbedding.length;
+        debugLog(`Generated query embedding with dimension: ${queryEmbedding.length}`);
+        
+        // Get vector store stats
+        const vectorStore = getVectorStore();
+        const health = await vectorStore.getHealthStats();
+        debugInfo.vector_store_stats = {
+          total_vectors: health.total,
+          valid_vectors: health.valid,
+          invalid_vectors: health.invalid
+        };
+        debugLog('Vector store stats', debugInfo.vector_store_stats);
+        
+        // Validate and potentially clean up vectors before searching
+        const validation = await vectorStore.validateVectors(queryEmbedding.length);
+        if (validation.invalid > 0) {
+          debugLog(`Found ${validation.invalid} vectors with mismatched dimensions. Cleaning up...`);
+          debugLog('Invalid vectors:', validation.details.slice(0, 5)); // Show first 5
+          const removed = await vectorStore.removeInvalidVectors(queryEmbedding.length);
+          debugLog(`Removed ${removed} invalid vectors`);
+        }
+        
+        // Find similar vectors in the vector store
+        let similarResults = await vectorStore.findSimilar(
+          queryEmbedding, 
+          input.limit || 50, 
+          input.semantic_threshold || 0.7
+        );
+        
+        debugLog(`Initial semantic search found ${similarResults.length} results with threshold ${input.semantic_threshold || 0.7}`);
+        
+        // Fallback: if no results and threshold > 0.4, try again with lower threshold
+        if (similarResults.length === 0 && (input.semantic_threshold === undefined || input.semantic_threshold > 0.4)) {
+          debugLog('No semantic results found, retrying with lower threshold 0.4');
+          similarResults = await vectorStore.findSimilar(
+            queryEmbedding,
+            input.limit || 50,
+            0.4
+          );
+          debugLog(`Fallback semantic search found ${similarResults.length} results with threshold 0.4`);
+        }
+        
+        // Log top similarity scores
+        const topSemanticScores = similarResults
+          .slice(0, 10)
+          .map(r => ({ id: r.id, score: r.similarity }));
+        
+        debugLog('Top 10 semantic similarity scores', topSemanticScores);
+        
+        // Filter records to only include semantically similar ones
+        const beforeCount = filteredRecords.length;
+        const semanticIds = new Set(similarResults.map(r => r.id));
+        filteredRecords = filteredRecords.filter(record => semanticIds.has(record.id));
+        const afterCount = filteredRecords.length;
+        debugInfo.filter_breakdown!.semantic_threshold_filter = beforeCount - afterCount;
+        debugLog(`Semantic threshold filter applied: ${beforeCount} -> ${afterCount} records`);
+        
+        // Add semantic similarity scores to the similarity map
+        for (const result of similarResults) {
+          semanticSimilarityMap[result.id] = result.similarity;
+        }
+        
+        // Add to debug similarity scores
+        if (!debugInfo.similarity_scores) debugInfo.similarity_scores = [];
+        debugInfo.similarity_scores.push(...topSemanticScores.map(s => ({ ...s, type: 'semantic' as const })));
+        
+      } catch (error) {
+        const errorInfo = logSearchError('semantic_search', error, { 
+          query: input.semantic_query, 
+          threshold: input.semantic_threshold 
+        });
+        debugInfo.errors!.push(errorInfo);
+        debugLog('Semantic search failed, continuing without semantic filtering');
+        // Continue without semantic filtering if it fails
+      }
+    }
+
+    // Calculate relevance scores for all filtered records
+    const recordsWithRelevance = filteredRecords.map(record => {
+      const relevance = calculateRelevanceScore(
+        record, 
+        input, 
+        vectorSimilarityMap[record.id], 
+        semanticSimilarityMap[record.id]
+      );
+      return { ...record, _relevance: relevance };
     });
+
+    // If a text query is provided, filter out records with zero text relevance
+    let finalRecords = recordsWithRelevance;
+    if (input.query && input.query.trim()) {
+      const beforeCount = finalRecords.length;
+      finalRecords = finalRecords.filter(r => r._relevance.breakdown.text_match > 0);
+      const afterCount = finalRecords.length;
+      debugLog(`Text relevance filter applied: ${beforeCount} -> ${afterCount} records`);
+    }
+
+    // Apply sorting
+    if (input.sort) {
+      debugLog(`Applying sort: ${input.sort}`);
+      finalRecords.sort((a, b) => {
+        switch (input.sort) {
+          case 'system_time': {
+            const aTime = new Date(a.system_time).getTime();
+            const bTime = new Date(b.system_time).getTime();
+            return bTime - aTime; // Descending
+          }
+          case 'occurred': {
+            const aTime = new Date(a.occurred || a.system_time).getTime();
+            const bTime = new Date(b.occurred || b.system_time).getTime();
+            return bTime - aTime; // Descending
+          }
+          case 'relevance':
+          default: {
+            // Sort by relevance score
+            return b._relevance.score - a._relevance.score;
+          }
+        }
+      });
+    }
+
+    // Apply limit
+    if (input.limit) {
+      debugLog(`Applying limit: ${input.limit}`);
+      finalRecords.splice(input.limit);
+    }
+
+    // Check for no results and provide debugging info
+    if (finalRecords.length === 0) {
+      debugInfo.no_results_reason = determineNoResultsReason(input, debugInfo);
+      debugLog('No results found', { reason: debugInfo.no_results_reason });
+    }
+
+    debugInfo.filtered_records = finalRecords.length;
+    debugLog(`Search completed: ${finalRecords.length} final results`);
+
+    // Convert to SearchServiceResult format
+    const results: SearchServiceResult[] = finalRecords.map(record => ({
+      id: record.id,
+      type: record.type,
+      snippet: record.content.substring(0, 200) + (record.content.length > 200 ? '...' : ''),
+      metadata: {
+        contentType: record.contentType,
+        perspective: record.perspective,
+        experiencer: record.experiencer,
+        processing: record.processing,
+        crafted: record.crafted,
+        system_time: record.system_time,
+        occurred: record.occurred,
+        experiential_qualities: record.experiential_qualities
+      },
+      relevance_score: record._relevance.score,
+      relevance_breakdown: record._relevance.breakdown
+    }));
+
+    return {
+      results,
+      total: results.length,
+      query: input.query || '',
+      filters: Object.fromEntries(Object.entries(input).filter(([, v]) => v !== undefined && v !== '')),
+      debug: DEBUG_MODE ? debugInfo : undefined
+    };
+    
+  } catch (error) {
+    const errorInfo = logSearchError('search_execution', error, { input });
+    debugInfo.errors!.push(errorInfo);
+    
+    // Return error response with debug info
+    return {
+      results: [],
+      total: 0,
+      query: input.query || '',
+      filters: Object.fromEntries(Object.entries(input).filter(([, v]) => v !== undefined && v !== '')),
+      debug: DEBUG_MODE ? debugInfo : undefined
+    };
   }
+}
 
-  // Apply limit
-  if (input.limit) {
-    finalRecords.splice(input.limit);
+// Determine why no results were found
+function determineNoResultsReason(input: SearchInput, debugInfo: SearchServiceResponse['debug']): string {
+  if (debugInfo?.total_records === 0) {
+    return 'Vector store is empty - no records available';
   }
-
-  // Convert to SearchServiceResult format
-  const results: SearchServiceResult[] = finalRecords.map(record => ({
-    id: record.id,
-    type: record.type,
-    snippet: record.content.substring(0, 200) + (record.content.length > 200 ? '...' : ''),
-    metadata: {
-      contentType: record.contentType,
-      perspective: record.perspective,
-      experiencer: record.experiencer,
-      processing: record.processing,
-      crafted: record.crafted,
-      system_time: record.system_time,
-      occurred: record.occurred,
-      experiential_qualities: record.experiential_qualities
-    },
-    relevance_score: record._relevance.score,
-    relevance_breakdown: record._relevance.breakdown
-  }));
-
-  return {
-    results,
-    total: results.length,
-    query: input.query || '',
-    filters: Object.fromEntries(Object.entries(input).filter(([, v]) => v !== undefined && v !== ''))
-  };
+  
+  if (input.semantic_query && debugInfo?.vector_store_stats?.total_vectors === 0) {
+    return 'Vector store has no vectors for semantic search';
+  }
+  
+  if (input.semantic_threshold && input.semantic_threshold > 0.9) {
+    return 'Semantic similarity threshold too high - try lowering threshold';
+  }
+  
+  if (input.vector_similarity_threshold && input.vector_similarity_threshold > 0.9) {
+    return 'Vector similarity threshold too high - try lowering threshold';
+  }
+  
+  if (input.query && debugInfo?.filter_breakdown?.type_filter === debugInfo?.total_records) {
+    return 'Text query too restrictive - no records match the query';
+  }
+  
+  const totalFiltered = Object.values(debugInfo?.filter_breakdown || {}).reduce((sum, count) => sum + (count || 0), 0);
+  if (totalFiltered === debugInfo?.total_records) {
+    return 'All records filtered out by applied filters';
+  }
+  
+  return 'Unknown reason - check debug information for details';
 }
 
 // Cosine similarity between two vectors

@@ -3,7 +3,7 @@ import { getSource, saveSource, deleteSource } from '../core/storage.js';
 import type { SourceRecord, ProcessingLevel, QualityVector } from '../core/types.js';
 import { parseOccurredDate } from '../utils/validation.js';
 import { embeddingService } from './embeddings.js';
-import { vectorStore } from './vector-store.js';
+import { getVectorStore } from './vector-store.js';
 
 // Enrich input schema - allows partial updates to existing captures
 export const enrichSchema = z.object({
@@ -152,9 +152,9 @@ export class EnrichService {
     if (shouldRegenerateEmbeddings && contentEmbedding) {
       try {
         // Remove old vector
-        await vectorStore.removeVector(input.id);
+        await getVectorStore().removeVector(input.id);
         // Add new vector
-        await vectorStore.addVector(source.id, contentEmbedding, {
+        await getVectorStore().addVector(source.id, contentEmbedding, {
           content: input.content?.substring(0, 100) ?? existingSource.content.substring(0, 100),
           contentType: input.contentType ?? existingSource.contentType,
           experiencer: input.experiencer ?? existingSource.experiencer,

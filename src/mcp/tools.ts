@@ -95,11 +95,11 @@ Each boundary marks a new moment. Use these cues to segment continuous experienc
 - 0.7-0.8: Prominent feature
 - 0.9-1.0: Dominant/defining
 
-**Vector:**
-A 7-dimensional object with a number (0.0-1.0) for each quality, representing the prominence of that quality in the moment.
-
-**Qualities Array:**
-Each entry provides evidence for a quality, including the prominence (rating), and manifestation (how it appears in the experience).
+**Vector and Qualities Interaction:**
+- **vector**: Optional base values for all dimensions. If provided, these serve as starting values.
+- **qualities**: Array of specific quality evidence that overrides vector values for those dimensions.
+- **Final vector**: Combines base values from vector (or 0 if not provided) with overrides from qualities array.
+- **Example**: If vector has spatial: 0.3 but qualities array specifies spatial: 0.8, the final spatial value will be 0.8.
 `,
           properties: {
             qualities: {
@@ -118,19 +118,20 @@ Each entry provides evidence for a quality, including the prominence (rating), a
             },
             vector: {
               type: "object",
-              description: `A 7-dimensional vector with a number (0.0-1.0) for each quality, representing the overall prominence of each experiential dimension in the moment.`,
+              description: `Optional 7-dimensional vector with base values (0.0-1.0) for each quality. If provided, these values serve as the starting point for the final vector. The qualities array will override specific dimensions, while dimensions not in the qualities array retain these base values (or default to 0 if no vector provided).`,
               properties: {
-                embodied: { type: "number", minimum: 0, maximum: 1, description: "Embodied Presence (see above)" },
-                attentional: { type: "number", minimum: 0, maximum: 1, description: "Attentional Flow (see above)" },
-                affective: { type: "number", minimum: 0, maximum: 1, description: "Affective Atmosphere (see above)" },
-                purposive: { type: "number", minimum: 0, maximum: 1, description: "Purposive Momentum (see above)" },
-                spatial: { type: "number", minimum: 0, maximum: 1, description: "Spatial Situation (see above)" },
-                temporal: { type: "number", minimum: 0, maximum: 1, description: "Temporal Flow (see above)" },
-                intersubjective: { type: "number", minimum: 0, maximum: 1, description: "Intersubjective Field (see above)" }
+                embodied: { type: "number", minimum: 0, maximum: 1, description: "Embodied Presence base value (see above)" },
+                attentional: { type: "number", minimum: 0, maximum: 1, description: "Attentional Flow base value (see above)" },
+                affective: { type: "number", minimum: 0, maximum: 1, description: "Affective Atmosphere base value (see above)" },
+                purposive: { type: "number", minimum: 0, maximum: 1, description: "Purposive Momentum base value (see above)" },
+                spatial: { type: "number", minimum: 0, maximum: 1, description: "Spatial Situation base value (see above)" },
+                temporal: { type: "number", minimum: 0, maximum: 1, description: "Temporal Flow base value (see above)" },
+                intersubjective: { type: "number", minimum: 0, maximum: 1, description: "Intersubjective Field base value (see above)" }
               },
               required: ["embodied", "attentional", "affective", "purposive", "spatial", "temporal", "intersubjective"]
             }
-          }
+          },
+          required: ["qualities"]
         }
       },
       required: ["experiencer", "perspective", "processing"]
@@ -242,7 +243,13 @@ Each entry provides evidence for a quality, including the prominence (rating), a
         crafted: { type: "boolean", description: "Updated crafted flag" },
         experiential_qualities: { 
           type: "object", 
-          description: `Updated experiential quality analysis. Each quality describes a phenomenological dimension of experience, scored 0.0-1.0. See capture tool for detailed scoring guidelines.`,
+          description: `Updated experiential quality analysis. Each quality describes a phenomenological dimension of experience, scored 0.0-1.0. See capture tool for detailed scoring guidelines.
+
+**Vector and Qualities Interaction:**
+- **vector**: Optional base values for all dimensions. If provided, these serve as starting values.
+- **qualities**: Array of specific quality evidence that overrides vector values for those dimensions.
+- **Final vector**: Combines base values from vector (or 0 if not provided) with overrides from qualities array.
+- **Example**: If vector has spatial: 0.3 but qualities array specifies spatial: 0.8, the final spatial value will be 0.8.`,
           properties: {
             qualities: {
               type: "array",
@@ -260,19 +267,20 @@ Each entry provides evidence for a quality, including the prominence (rating), a
             },
             vector: {
               type: "object",
-              description: `A 7-dimensional vector with a number (0.0-1.0) for each quality, representing the overall prominence of each experiential dimension in the moment.`,
+              description: `Optional 7-dimensional vector with base values (0.0-1.0) for each quality. If provided, these values serve as the starting point for the final vector. The qualities array will override specific dimensions, while dimensions not in the qualities array retain these base values (or default to 0 if no vector provided).`,
               properties: {
-                embodied: { type: "number", minimum: 0, maximum: 1, description: "Embodied Presence" },
-                attentional: { type: "number", minimum: 0, maximum: 1, description: "Attentional Flow" },
-                affective: { type: "number", minimum: 0, maximum: 1, description: "Affective Atmosphere" },
-                purposive: { type: "number", minimum: 0, maximum: 1, description: "Purposive Momentum" },
-                spatial: { type: "number", minimum: 0, maximum: 1, description: "Spatial Situation" },
-                temporal: { type: "number", minimum: 0, maximum: 1, description: "Temporal Flow" },
-                intersubjective: { type: "number", minimum: 0, maximum: 1, description: "Intersubjective Field" }
+                embodied: { type: "number", minimum: 0, maximum: 1, description: "Embodied Presence base value" },
+                attentional: { type: "number", minimum: 0, maximum: 1, description: "Attentional Flow base value" },
+                affective: { type: "number", minimum: 0, maximum: 1, description: "Affective Atmosphere base value" },
+                purposive: { type: "number", minimum: 0, maximum: 1, description: "Purposive Momentum base value" },
+                spatial: { type: "number", minimum: 0, maximum: 1, description: "Spatial Situation base value" },
+                temporal: { type: "number", minimum: 0, maximum: 1, description: "Temporal Flow base value" },
+                intersubjective: { type: "number", minimum: 0, maximum: 1, description: "Intersubjective Field base value" }
               },
               required: ["embodied", "attentional", "affective", "purposive", "spatial", "temporal", "intersubjective"]
             }
-          }
+          },
+          required: ["qualities"]
         },
         regenerate_embeddings: { type: "boolean", description: "Whether to regenerate content embeddings (defaults to false, but will regenerate if content is changed)", default: false }
       },

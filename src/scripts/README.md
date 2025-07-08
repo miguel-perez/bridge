@@ -122,4 +122,79 @@ Great! The capture tool worked as expected. Now let me test the search functiona
 Overall, the Bridge tool provides an intuitive way to capture experiential data...
 
 💾 Test results saved to: test-results/llm-integration-test-2024-01-15T10-30-45-123Z.json
-🎉 LLM integration test completed successfully! 
+🎉 LLM integration test completed successfully!
+
+# Bridge Scripts
+
+This directory contains utility scripts for the Bridge MCP system.
+
+## Available Scripts
+
+### `generate-embeddings.ts`
+
+A migration script that generates embeddings for existing source records that don't have them.
+
+**Usage:**
+```bash
+npm run migrate:embeddings
+```
+
+**What it does:**
+1. Loads all existing source records from the database
+2. For each record without a `content_embedding`:
+   - Generates a 384-dimensional embedding using the embedding service
+   - Updates the record with the embedding
+   - Adds the embedding to the vector store for semantic search
+3. For records with existing embeddings:
+   - Validates the embedding dimension (must be 384)
+   - Regenerates invalid embeddings
+   - Ensures embeddings are in the vector store
+4. Reports comprehensive statistics including:
+   - Total records processed
+   - Embeddings generated vs validated
+   - Errors encountered
+   - Invalid embeddings found and fixed
+5. Processes records in batches with progress tracking
+6. Includes error handling to continue on individual failures
+7. Runs final validation and cleanup of the vector store
+
+**Example output:**
+```
+🚀 Starting embedding migration...
+📋 Initializing configuration...
+🗄️  Initializing vector store...
+🧠 Initializing embedding service...
+📖 Loading source records...
+Found 45 source records
+
+📦 Processing batch 1/5 (records 1-10)
+🔄 Generating embedding for src_1751836721307_8o7r6ww...
+✅ Generated embedding for src_1751836721307_8o7r6ww
+...
+
+🎉 EMBEDDING MIGRATION COMPLETE
+============================================================
+⏱️  Duration: 45 seconds
+📊 Total records: 45
+✅ Records with embeddings: 45
+🔄 Records without embeddings: 0
+🆕 Embeddings generated: 45
+🔍 Embeddings validated: 0
+❌ Errors: 0
+⚠️  Invalid embeddings found: 0
+============================================================
+```
+
+**Note:** This script is designed to be safe to run multiple times. It will skip records that already have valid embeddings and only regenerate invalid ones.
+
+### `test-data-setup.ts`
+
+Sets up test data for development and testing.
+
+### `llm-integration-test.ts`
+
+Tests LLM integration functionality.
+
+### `test-semantic-search.ts`
+
+Tests semantic search functionality. 

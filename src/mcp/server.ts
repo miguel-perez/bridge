@@ -3,8 +3,9 @@ import { CallToolRequestSchema, ListToolsRequestSchema, ErrorCode, McpError } fr
 import { z } from 'zod';
 import { validateConfiguration, getDataFilePath } from '../core/config.js';
 import { setStorageConfig } from '../core/storage.js';
+import { initializeVectorStore } from '../services/vector-store.js';
 import { mkdirSync } from 'fs';
-import { dirname } from 'path';
+import { dirname, join } from 'path';
 import { MCPToolHandlers } from './handlers.js';
 import { tools } from './tools.js';
 
@@ -13,7 +14,7 @@ const SERVER_NAME = 'bridge';
 const SERVER_VERSION = '0.1.0';
 
 // Initialize configuration and validate on startup
-function initializeConfiguration() {
+async function initializeConfiguration() {
   try {
     // Validate configuration
     validateConfiguration();
@@ -21,12 +22,28 @@ function initializeConfiguration() {
     // Get data file path from config
     const dataFilePath = getDataFilePath();
     
-    // Ensure directory exists
+    // Ensure main data directory exists
     const dataDir = dirname(dataFilePath);
     mkdirSync(dataDir, { recursive: true });
     
+    // Ensure vector store data directory exists (vectors.json will be in the same directory)
+    const vectorStoreDir = dirname(join(dataDir, 'vectors.json'));
+    mkdirSync(vectorStoreDir, { recursive: true });
+    
     // Set storage configuration
     setStorageConfig({ dataFile: dataFilePath });
+    
+    // Initialize vector store with the same data directory
+    try {
+      const vectorStore = initializeVectorStore(dataDir);
+      await vectorStore.initialize();
+      const vectorCount = await vectorStore.getVectorCount();
+      console.log(`Vector store initialized with ${vectorCount} vectors from ${join(dataDir, 'vectors.json')}`);
+    } catch (vectorError) {
+      console.error('Failed to initialize vector store:', vectorError);
+      // Don't throw here - vector store is optional for basic functionality
+      // but semantic search won't work without it
+    }
     
     console.log(`Bridge DXT initialized with data file: ${dataFilePath}`);
   } catch (error) {
@@ -58,7 +75,12 @@ const server = new Server(
 );
 
 // Initialize configuration before setting up handlers
-initializeConfiguration();
+// Note: This is now async, but we can't await it here since this is module-level code
+// The initialization will happen when the module is imported
+initializeConfiguration().catch(error => {
+  console.error('Failed to initialize Bridge DXT:', error);
+  process.exit(1);
+});
 
 // Create tool handlers
 const toolHandlers = new MCPToolHandlers();

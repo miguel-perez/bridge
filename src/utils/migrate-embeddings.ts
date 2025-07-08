@@ -1,6 +1,6 @@
 import { getSources, saveSource } from '../core/storage.js';
 import { embeddingService } from '../services/embeddings.js';
-import { vectorStore } from '../services/vector-store.js';
+import { getVectorStore } from '../services/vector-store.js';
 import type { SourceRecord } from '../core/types.js';
 
 export interface MigrationStats {
@@ -23,7 +23,7 @@ export async function migrateExistingRecords(): Promise<MigrationStats> {
   try {
     // Initialize services
     await embeddingService.initialize();
-    await vectorStore.initialize();
+    await getVectorStore().initialize();
 
     // Get all existing sources
     const sources = await getSources();
@@ -52,7 +52,7 @@ export async function migrateExistingRecords(): Promise<MigrationStats> {
         await saveSource(updatedSource);
 
         // Add to vector store
-        await vectorStore.addVector(source.id, embedding, {
+        await getVectorStore().addVector(source.id, embedding, {
           content: source.content.substring(0, 100),
           contentType: source.contentType || 'text',
           experiencer: source.experiencer || 'self',

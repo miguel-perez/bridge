@@ -3,7 +3,7 @@ import { generateId, saveSource } from '../core/storage.js';
 import type { SourceRecord, ProcessingLevel, QualityVector } from '../core/types.js';
 import { parseOccurredDate } from '../utils/validation.js';
 import { embeddingService } from './embeddings.js';
-import { vectorStore } from './vector-store.js';
+import { getVectorStore } from './vector-store.js';
 
 // Capture input schema - make vector optional since we can generate it from qualities
 export const captureSchema = z.object({
@@ -146,7 +146,7 @@ export class CaptureService {
     // Store vector in vector store if embedding was generated
     if (contentEmbedding) {
       try {
-        await vectorStore.addVector(source.id, contentEmbedding, {
+        await getVectorStore().addVector(source.id, contentEmbedding, {
           content: input.content.substring(0, 100), // Store first 100 chars as metadata
           contentType: input.contentType || 'text',
           experiencer: input.experiencer,

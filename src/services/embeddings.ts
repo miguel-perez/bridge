@@ -23,6 +23,13 @@ export class EmbeddingService {
     }
   }
 
+  /**
+   * Returns the expected embedding dimension for this service.
+   */
+  static getExpectedDimension(): number {
+    return 384;
+  }
+
   async generateEmbedding(text: string): Promise<number[]> {
     await this.initialize();
     
@@ -53,26 +60,41 @@ export class EmbeddingService {
         throw new Error('Generated embedding is empty');
       }
       
-      // The model is returning sequence embeddings (variable length)
-      // We need to pool them to get a fixed-size representation
-      // For now, let's use mean pooling to get a fixed-size embedding
-      const sequenceLength = embedding.length / 384; // Assuming 384 is the hidden size
-      if (sequenceLength > 1) {
-        // This is a sequence embedding, we need to pool it
-        const pooledEmbedding = new Array(384).fill(0);
-        
-        for (let i = 0; i < 384; i++) {
+      // Pooling: always produce a 384-dim vector
+      const expectedDim = EmbeddingService.getExpectedDimension();
+      if (embedding.length === expectedDim) {
+        // Already correct size
+      } else if (embedding.length % expectedDim === 0) {
+        // Sequence embedding, mean pool
+        const sequenceLength = embedding.length / expectedDim;
+        const pooledEmbedding = new Array(expectedDim).fill(0);
+        for (let i = 0; i < expectedDim; i++) {
           let sum = 0;
           for (let j = 0; j < sequenceLength; j++) {
-            sum += embedding[j * 384 + i] || 0;
+            sum += embedding[j * expectedDim + i] || 0;
           }
           pooledEmbedding[i] = sum / sequenceLength;
         }
-        
         embedding = pooledEmbedding;
+      } else {
+        // Invalid dimension
+        console.error(
+          `Embedding dimension mismatch: expected ${expectedDim} or a multiple, got ${embedding.length}`
+        );
+        throw new Error(
+          `Embedding dimension mismatch: expected ${expectedDim} or a multiple, got ${embedding.length}`
+        );
       }
       
-
+      // Final assertion
+      if (embedding.length !== expectedDim) {
+        console.error(
+          `Final embedding dimension error: expected ${expectedDim}, got ${embedding.length}`
+        );
+        throw new Error(
+          `Final embedding dimension error: expected ${expectedDim}, got ${embedding.length}`
+        );
+      }
       
       // Cache the result
       this.cache.set(hash, embedding);
