@@ -95,8 +95,6 @@ export class CaptureService {
       occurredDate = await parseOccurredDate(input.occurred);
     }
 
-
-
     // Create source record for non-file captures
     if (!input.content) {
       throw new Error('Content is required when no file is provided');
@@ -125,8 +123,8 @@ export class CaptureService {
     try {
       contentEmbedding = await embeddingService.generateEmbedding(input.content);
     } catch (error) {
-      console.warn('Failed to generate embedding for content:', error);
-      // Continue without embedding - it's optional
+      // Silently handle embedding generation errors in MCP context
+      // The record will still be saved without embedding
     }
     
     const source = await saveSource({
@@ -146,15 +144,11 @@ export class CaptureService {
     // Store vector in vector store if embedding was generated
     if (contentEmbedding) {
       try {
-        await getVectorStore().addVector(source.id, contentEmbedding, {
-          content: input.content.substring(0, 100), // Store first 100 chars as metadata
-          contentType: input.contentType || 'text',
-          experiencer: input.experiencer,
-          perspective: input.perspective,
-        });
+        const vectorStore = getVectorStore();
+        vectorStore.addVector(source.id, contentEmbedding);
       } catch (error) {
-        console.warn('Failed to store vector:', error);
-        // Continue without vector storage - it's optional
+        // Silently handle vector storage errors in MCP context
+        // The record will still be saved without vector storage
       }
     }
 

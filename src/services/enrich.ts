@@ -125,8 +125,8 @@ export class EnrichService {
       try {
         contentEmbedding = await embeddingService.generateEmbedding(input.content);
       } catch (error) {
-        console.warn('Failed to generate embedding for updated content:', error);
-        // Keep existing embedding if generation fails
+        // Silently handle embedding generation errors in MCP context
+        // The record will still be updated without embedding
       }
     }
 
@@ -154,15 +154,10 @@ export class EnrichService {
         // Remove old vector
         await getVectorStore().removeVector(input.id);
         // Add new vector
-        await getVectorStore().addVector(source.id, contentEmbedding, {
-          content: input.content?.substring(0, 100) ?? existingSource.content.substring(0, 100),
-          contentType: input.contentType ?? existingSource.contentType,
-          experiencer: input.experiencer ?? existingSource.experiencer,
-          perspective: input.perspective ?? existingSource.perspective,
-        });
+        await getVectorStore().addVector(source.id, contentEmbedding);
       } catch (error) {
-        console.warn('Failed to update vector store:', error);
-        // Continue without vector storage update - it's optional
+        // Silently handle vector store update errors in MCP context
+        // The record will still be updated without vector store update
       }
     }
 

@@ -27,29 +27,30 @@ export class VectorStore {
     this.storageFile = storageFile || join(__dirname, '..', 'data', 'vectors.json');
   }
 
-  async addVector(id: string, vector: number[], metadata?: Record<string, any>): Promise<void> {
+  addVector(id: string, vector: number[]): boolean {
     if (vector.length !== VectorStore.EXPECTED_DIMENSION) {
-      console.warn(`Rejected vector ${id}: expected ${VectorStore.EXPECTED_DIMENSION} dimensions, got ${vector.length}`);
-      return;
+      // Silently reject invalid vectors in MCP context
+      return false;
     }
-    this.vectors.set(id, { id, vector, metadata });
-    await this.saveToDisk();
+    this.vectors.set(id, { id, vector });
+    return true;
   }
 
-  async addVectors(records: VectorRecord[]): Promise<void> {
+  addVectors(records: Array<{ id: string; vector: number[] }>): { added: number; rejected: number } {
+    let added = 0;
     let rejected = 0;
+
     for (const record of records) {
       if (record.vector.length !== VectorStore.EXPECTED_DIMENSION) {
-        console.warn(`Rejected vector ${record.id}: expected ${VectorStore.EXPECTED_DIMENSION} dimensions, got ${record.vector.length}`);
+        // Silently reject invalid vectors in MCP context
         rejected++;
         continue;
       }
       this.vectors.set(record.id, record);
+      added++;
     }
-    if (rejected > 0) {
-      console.warn(`Rejected ${rejected} vectors due to dimension mismatch during addVectors.`);
-    }
-    await this.saveToDisk();
+
+    return { added, rejected };
   }
 
   async removeVector(id: string): Promise<void> {
@@ -57,34 +58,27 @@ export class VectorStore {
     await this.saveToDisk();
   }
 
-  async findSimilar(
-    queryVector: number[], 
-    limit: number = 10, 
-    threshold: number = 0.0
-  ): Promise<SimilarityResult[]> {
-    const results: SimilarityResult[] = [];
-    console.log(`Searching for similar vectors. Query vector has ${queryVector.length} dimensions`);
-    console.log(`Total vectors in store: ${this.vectors.size}`);
+  async findSimilar(queryVector: number[], limit: number = 10, threshold: number = 0.7): Promise<Array<{ id: string; similarity: number }>> {
+    const results: Array<{ id: string; similarity: number }> = [];
+
     for (const [id, record] of this.vectors) {
       if (record.vector.length !== VectorStore.EXPECTED_DIMENSION) {
-        // Skip invalid vectors
-        console.warn(`Skipping vector ${id} due to dimension mismatch: expected ${VectorStore.EXPECTED_DIMENSION}, got ${record.vector.length}`);
+        // Silently skip invalid vectors in MCP context
         continue;
       }
+
       try {
         const similarity = this.cosineSimilarity(queryVector, record.vector);
         if (similarity >= threshold) {
-          results.push({
-            id,
-            similarity,
-            metadata: record.metadata
-          });
+          results.push({ id, similarity });
         }
       } catch (error) {
-        console.error(`Error comparing with vector ${id}:`, error);
+        // Silently handle errors in MCP context
         continue;
       }
     }
+
+    // Sort by similarity (descending) and limit results
     return results
       .sort((a, b) => b.similarity - a.similarity)
       .slice(0, limit);
@@ -123,12 +117,8 @@ export class VectorStore {
 
   private cosineSimilarity(a: number[], b: number[]): number {
     if (a.length !== b.length) {
-      console.error(`Vector dimension mismatch: query vector has ${a.length} dimensions, stored vector has ${b.length} dimensions`);
-      console.error('Query vector length:', a.length);
-      console.error('Stored vector length:', b.length);
-      console.error('Query vector preview:', a.slice(0, 5));
-      console.error('Stored vector preview:', b.slice(0, 5));
-      throw new Error(`Vectors must have the same length. Query: ${a.length}, Stored: ${b.length}`);
+      // Return 0 similarity for dimension mismatches
+      return 0;
     }
 
     let dotProduct = 0;
@@ -148,35 +138,30 @@ export class VectorStore {
     return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
   }
 
-  private async saveToDisk(): Promise<void> {
+  async saveToDisk(): Promise<void> {
     try {
       const data = Array.from(this.vectors.values());
       await fs.writeFile(this.storageFile, JSON.stringify(data, null, 2), 'utf8');
     } catch (error) {
-      console.error('Failed to save vectors to disk:', error);
+      // Silently handle save errors in MCP context
+      throw new Error('Failed to save vectors to disk');
     }
   }
 
   async loadFromDisk(): Promise<void> {
     try {
-      const content = await fs.readFile(this.storageFile, 'utf8');
-      const data: VectorRecord[] = JSON.parse(content);
-      this.vectors.clear();
-      let invalid = 0;
-      for (const record of data) {
+      const data = await fs.readFile(this.storageFile, 'utf8');
+      const records = JSON.parse(data) as Array<{ id: string; vector: number[] }>;
+
+      for (const record of records) {
         if (record.vector.length === VectorStore.EXPECTED_DIMENSION) {
           this.vectors.set(record.id, record);
-        } else {
-          console.warn(`Skipped loading vector ${record.id}: expected ${VectorStore.EXPECTED_DIMENSION} dimensions, got ${record.vector.length}`);
-          invalid++;
         }
-      }
-      if (invalid > 0) {
-        console.warn(`Skipped ${invalid} invalid vectors during loadFromDisk.`);
+        // Silently skip invalid vectors in MCP context
       }
     } catch (error) {
-      // File doesn't exist yet, that's okay
-      console.log('No existing vector data found, starting fresh');
+      // File doesn't exist or is invalid, start fresh
+      this.vectors.clear();
     }
   }
 
@@ -201,47 +186,39 @@ export class VectorStore {
     return { valid, invalid, details };
   }
 
-  async removeInvalidVectors(expectedDimension: number = VectorStore.EXPECTED_DIMENSION): Promise<number> {
+  async removeInvalidVectors(expectedDimension: number): Promise<number> {
     let removed = 0;
     const toRemove: string[] = [];
+
     for (const [id, record] of this.vectors) {
       if (record.vector.length !== expectedDimension) {
         toRemove.push(id);
-        removed++;
       }
     }
+
     for (const id of toRemove) {
       this.vectors.delete(id);
-      console.warn(`Removed invalid vector ${id} during removeInvalidVectors.`);
+      removed++;
     }
-    if (removed > 0) {
-      await this.saveToDisk();
-      console.warn(`removeInvalidVectors removed ${removed} invalid vectors.`);
-    }
+
     return removed;
   }
 
-  /**
-   * Remove all invalid vectors (wrong dimension) from the store and save.
-   * @returns {Promise<number>} Number of vectors removed.
-   */
-  async cleanupInvalidVectors(): Promise<number> {
+  async cleanup(): Promise<number> {
     let removed = 0;
     const toRemove: string[] = [];
+
     for (const [id, record] of this.vectors) {
       if (record.vector.length !== VectorStore.EXPECTED_DIMENSION) {
         toRemove.push(id);
-        removed++;
       }
     }
+
     for (const id of toRemove) {
       this.vectors.delete(id);
-      console.warn(`Removed invalid vector ${id} during cleanup.`);
+      removed++;
     }
-    if (removed > 0) {
-      await this.saveToDisk();
-      console.warn(`Cleanup removed ${removed} invalid vectors.`);
-    }
+
     return removed;
   }
 

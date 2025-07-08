@@ -7,25 +7,24 @@ import { getVectorStore } from './vector-store.js';
 // Debug mode configuration
 const DEBUG_MODE = process.env.BRIDGE_SEARCH_DEBUG === 'true' || process.env.BRIDGE_DEBUG === 'true';
 
-// Debug logging utility
+// Debug logging utility - silent in MCP context
 function debugLog(message: string, data?: any) {
+  // In MCP context, we don't use console.log
+  // Debug information is returned in the response instead
   if (DEBUG_MODE) {
-    const timestamp = new Date().toISOString();
-    console.log(`[SEARCH DEBUG ${timestamp}] ${message}`);
-    if (data !== undefined) {
-      console.log(JSON.stringify(data, null, 2));
-    }
+    // Store debug info for inclusion in response
+    return {
+      timestamp: new Date().toISOString(),
+      message,
+      data
+    };
   }
+  return null;
 }
 
 // Error logging utility with MCP-compliant formatting
 function logSearchError(context: string, error: any, details?: any) {
   const errorMessage = `Search error in ${context}: ${error.message || error}`;
-  console.error(`[SEARCH ERROR] ${errorMessage}`);
-  
-  if (DEBUG_MODE && details) {
-    console.error('[SEARCH DEBUG] Error details:', JSON.stringify(details, null, 2));
-  }
   
   // Return MCP-compliant error structure
   return {
@@ -134,6 +133,11 @@ export interface SearchServiceResponse {
       context: string;
       message: string;
       details?: any;
+    }>;
+    debug_logs?: Array<{
+      timestamp: string;
+      message: string;
+      data?: any;
     }>;
   };
 }
@@ -313,10 +317,19 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
     vector_search_performed: false,
     semantic_search_performed: false,
     filter_breakdown: {},
-    errors: []
+    errors: [],
+    debug_logs: []
   };
 
-  debugLog('Starting semantic search', { 
+  // Collect debug logs instead of printing them
+  const addDebugLog = (message: string, data?: any) => {
+    const logEntry = debugLog(message, data);
+    if (logEntry) {
+      debugInfo.debug_logs!.push(logEntry);
+    }
+  };
+
+  addDebugLog('Starting semantic search', { 
     query: input.query, 
     semantic_query: input.semantic_query,
     vector: input.vector,
@@ -327,7 +340,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
     // Get all records from storage
     const allRecords = await getAllRecords();
     debugInfo.total_records = allRecords.length;
-    debugLog(`Loaded ${allRecords.length} total records`);
+    addDebugLog(`Loaded ${allRecords.length} total records`);
     
     // Apply filters
     let filteredRecords = allRecords;
@@ -338,7 +351,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
       filteredRecords = filteredRecords.filter(record => input.type!.includes(record.type));
       const afterCount = filteredRecords.length;
       debugInfo.filter_breakdown!.type_filter = beforeCount - afterCount;
-      debugLog(`Type filter applied: ${beforeCount} -> ${afterCount} records`);
+      addDebugLog(`Type filter applied: ${beforeCount} -> ${afterCount} records`);
     }
     
     // Filter by experiencer
@@ -347,7 +360,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
       filteredRecords = filteredRecords.filter(record => record.experiencer === input.experiencer);
       const afterCount = filteredRecords.length;
       debugInfo.filter_breakdown!.experiencer_filter = beforeCount - afterCount;
-      debugLog(`Experiencer filter applied: ${beforeCount} -> ${afterCount} records`);
+      addDebugLog(`Experiencer filter applied: ${beforeCount} -> ${afterCount} records`);
     }
     
     // Filter by perspective
@@ -356,7 +369,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
       filteredRecords = filteredRecords.filter(record => record.perspective === input.perspective);
       const afterCount = filteredRecords.length;
       debugInfo.filter_breakdown!.perspective_filter = beforeCount - afterCount;
-      debugLog(`Perspective filter applied: ${beforeCount} -> ${afterCount} records`);
+      addDebugLog(`Perspective filter applied: ${beforeCount} -> ${afterCount} records`);
     }
     
     // Filter by processing
@@ -365,7 +378,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
       filteredRecords = filteredRecords.filter(record => record.processing === input.processing);
       const afterCount = filteredRecords.length;
       debugInfo.filter_breakdown!.processing_filter = beforeCount - afterCount;
-      debugLog(`Processing filter applied: ${beforeCount} -> ${afterCount} records`);
+      addDebugLog(`Processing filter applied: ${beforeCount} -> ${afterCount} records`);
     }
     
     // Filter by contentType
@@ -374,7 +387,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
       filteredRecords = filteredRecords.filter(record => record.contentType === input.contentType);
       const afterCount = filteredRecords.length;
       debugInfo.filter_breakdown!.contentType_filter = beforeCount - afterCount;
-      debugLog(`ContentType filter applied: ${beforeCount} -> ${afterCount} records`);
+      addDebugLog(`ContentType filter applied: ${beforeCount} -> ${afterCount} records`);
     }
     
     // Filter by crafted
@@ -383,7 +396,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
       filteredRecords = filteredRecords.filter(record => record.crafted === input.crafted);
       const afterCount = filteredRecords.length;
       debugInfo.filter_breakdown!.crafted_filter = beforeCount - afterCount;
-      debugLog(`Crafted filter applied: ${beforeCount} -> ${afterCount} records`);
+      addDebugLog(`Crafted filter applied: ${beforeCount} -> ${afterCount} records`);
     }
     
     // Apply temporal filters
@@ -397,7 +410,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
       }
       const afterCount = filteredRecords.length;
       debugInfo.filter_breakdown!.temporal_filter = beforeCount - afterCount;
-      debugLog(`Temporal filter applied: ${beforeCount} -> ${afterCount} records`);
+      addDebugLog(`Temporal filter applied: ${beforeCount} -> ${afterCount} records`);
     }
 
     // Experiential qualities min/max filtering
@@ -429,14 +442,14 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
     }
     if (qualitiesFilterCount > 0) {
       debugInfo.filter_breakdown!.qualities_filter = qualitiesFilterCount;
-      debugLog(`Qualities filter applied: ${qualitiesFilterCount} records filtered`);
+      addDebugLog(`Qualities filter applied: ${qualitiesFilterCount} records filtered`);
     }
 
     // Vector similarity search
     let vectorSimilarityMap: Record<string, number> = {};
     if (input.vector) {
       debugInfo.vector_search_performed = true;
-      debugLog('Starting vector similarity search', { 
+      addDebugLog('Starting vector similarity search', { 
         vector: input.vector, 
         threshold: input.vector_similarity_threshold 
       });
@@ -466,7 +479,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
         .slice(0, 10)
         .map(r => ({ id: r.id, score: r._similarity ?? 0 }));
       
-      debugLog('Top 10 vector similarity scores', topScores);
+      addDebugLog('Top 10 vector similarity scores', topScores);
       
       let filteredWithSim = withSim;
       if (input.vector_similarity_threshold !== undefined) {
@@ -476,7 +489,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
         });
         const afterCount = filteredWithSim.length;
         debugInfo.filter_breakdown!.vector_threshold_filter = beforeCount - afterCount;
-        debugLog(`Vector threshold filter applied: ${beforeCount} -> ${afterCount} records (threshold: ${input.vector_similarity_threshold})`);
+        addDebugLog(`Vector threshold filter applied: ${beforeCount} -> ${afterCount} records (threshold: ${input.vector_similarity_threshold})`);
       }
       
       // Save similarity for output
@@ -498,7 +511,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
     const semanticSimilarityMap: Record<string, number> = {};
     if (input.semantic_query) {
       debugInfo.semantic_search_performed = true;
-      debugLog('Starting semantic search', { 
+      addDebugLog('Starting semantic search', { 
         query: input.semantic_query, 
         threshold: input.semantic_threshold 
       });
@@ -507,7 +520,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
         // Generate embedding for the semantic query
         const queryEmbedding = await embeddingService.generateEmbedding(input.semantic_query);
         debugInfo.query_embedding_dimension = queryEmbedding.length;
-        debugLog(`Generated query embedding with dimension: ${queryEmbedding.length}`);
+        addDebugLog(`Generated query embedding with dimension: ${queryEmbedding.length}`);
         
         // Get vector store stats
         const vectorStore = getVectorStore();
@@ -517,15 +530,15 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
           valid_vectors: health.valid,
           invalid_vectors: health.invalid
         };
-        debugLog('Vector store stats', debugInfo.vector_store_stats);
+        addDebugLog('Vector store stats', debugInfo.vector_store_stats);
         
         // Validate and potentially clean up vectors before searching
         const validation = await vectorStore.validateVectors(queryEmbedding.length);
         if (validation.invalid > 0) {
-          debugLog(`Found ${validation.invalid} vectors with mismatched dimensions. Cleaning up...`);
-          debugLog('Invalid vectors:', validation.details.slice(0, 5)); // Show first 5
+          addDebugLog(`Found ${validation.invalid} vectors with mismatched dimensions. Cleaning up...`);
+          addDebugLog('Invalid vectors:', validation.details.slice(0, 5)); // Show first 5
           const removed = await vectorStore.removeInvalidVectors(queryEmbedding.length);
-          debugLog(`Removed ${removed} invalid vectors`);
+          addDebugLog(`Removed ${removed} invalid vectors`);
         }
         
         // Find similar vectors in the vector store
@@ -535,17 +548,17 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
           input.semantic_threshold || 0.7
         );
         
-        debugLog(`Initial semantic search found ${similarResults.length} results with threshold ${input.semantic_threshold || 0.7}`);
+        addDebugLog(`Initial semantic search found ${similarResults.length} results with threshold ${input.semantic_threshold || 0.7}`);
         
         // Fallback: if no results and threshold > 0.4, try again with lower threshold
         if (similarResults.length === 0 && (input.semantic_threshold === undefined || input.semantic_threshold > 0.4)) {
-          debugLog('No semantic results found, retrying with lower threshold 0.4');
+          addDebugLog('No semantic results found, retrying with lower threshold 0.4');
           similarResults = await vectorStore.findSimilar(
             queryEmbedding,
             input.limit || 50,
             0.4
           );
-          debugLog(`Fallback semantic search found ${similarResults.length} results with threshold 0.4`);
+          addDebugLog(`Fallback semantic search found ${similarResults.length} results with threshold 0.4`);
         }
         
         // Log top similarity scores
@@ -553,7 +566,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
           .slice(0, 10)
           .map(r => ({ id: r.id, score: r.similarity }));
         
-        debugLog('Top 10 semantic similarity scores', topSemanticScores);
+        addDebugLog('Top 10 semantic similarity scores', topSemanticScores);
         
         // Filter records to only include semantically similar ones
         const beforeCount = filteredRecords.length;
@@ -561,7 +574,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
         filteredRecords = filteredRecords.filter(record => semanticIds.has(record.id));
         const afterCount = filteredRecords.length;
         debugInfo.filter_breakdown!.semantic_threshold_filter = beforeCount - afterCount;
-        debugLog(`Semantic threshold filter applied: ${beforeCount} -> ${afterCount} records`);
+        addDebugLog(`Semantic threshold filter applied: ${beforeCount} -> ${afterCount} records`);
         
         // Add semantic similarity scores to the similarity map
         for (const result of similarResults) {
@@ -578,7 +591,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
           threshold: input.semantic_threshold 
         });
         debugInfo.errors!.push(errorInfo);
-        debugLog('Semantic search failed, continuing without semantic filtering');
+        addDebugLog('Semantic search failed, continuing without semantic filtering');
         // Continue without semantic filtering if it fails
       }
     }
@@ -600,12 +613,12 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
       const beforeCount = finalRecords.length;
       finalRecords = finalRecords.filter(r => r._relevance.breakdown.text_match > 0);
       const afterCount = finalRecords.length;
-      debugLog(`Text relevance filter applied: ${beforeCount} -> ${afterCount} records`);
+      addDebugLog(`Text relevance filter applied: ${beforeCount} -> ${afterCount} records`);
     }
 
     // Apply sorting
     if (input.sort) {
-      debugLog(`Applying sort: ${input.sort}`);
+      addDebugLog(`Applying sort: ${input.sort}`);
       finalRecords.sort((a, b) => {
         switch (input.sort) {
           case 'system_time': {
@@ -629,18 +642,18 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
 
     // Apply limit
     if (input.limit) {
-      debugLog(`Applying limit: ${input.limit}`);
+      addDebugLog(`Applying limit: ${input.limit}`);
       finalRecords.splice(input.limit);
     }
 
     // Check for no results and provide debugging info
     if (finalRecords.length === 0) {
       debugInfo.no_results_reason = determineNoResultsReason(input, debugInfo);
-      debugLog('No results found', { reason: debugInfo.no_results_reason });
+      addDebugLog('No results found', { reason: debugInfo.no_results_reason });
     }
 
     debugInfo.filtered_records = finalRecords.length;
-    debugLog(`Search completed: ${finalRecords.length} final results`);
+    addDebugLog(`Search completed: ${finalRecords.length} final results`);
 
     // Convert to SearchServiceResult format
     const results: SearchServiceResult[] = finalRecords.map(record => ({

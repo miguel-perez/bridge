@@ -33,24 +33,22 @@ async function initializeConfiguration() {
     // Set storage configuration
     setStorageConfig({ dataFile: dataFilePath });
     
-    // Initialize vector store with the same data directory
-    try {
-      const vectorStore = initializeVectorStore(dataDir);
-      await vectorStore.initialize();
-      const vectorCount = await vectorStore.getVectorCount();
-      console.log(`Vector store initialized with ${vectorCount} vectors from ${join(dataDir, 'vectors.json')}`);
-    } catch (vectorError) {
-      console.error('Failed to initialize vector store:', vectorError);
-      // Don't throw here - vector store is optional for basic functionality
-      // but semantic search won't work without it
+          // Initialize vector store with the same data directory
+      try {
+        const vectorStore = initializeVectorStore(dataDir);
+        await vectorStore.initialize();
+        await vectorStore.getVectorCount(); // Initialize and verify vector count
+        // Vector store initialized successfully
+      } catch (vectorError) {
+        // Vector store initialization failed - semantic search won't work without it
+        // but basic functionality will still work
+      }
+      
+      // Bridge DXT initialized successfully
+      } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown configuration error';
+      throw new Error(`Bridge DXT configuration failed: ${errorMessage}`);
     }
-    
-    console.log(`Bridge DXT initialized with data file: ${dataFilePath}`);
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown configuration error';
-    console.error('Configuration error:', errorMessage);
-    throw new Error(`Bridge DXT configuration failed: ${errorMessage}`);
-  }
 }
 
 // Create server instance
@@ -77,8 +75,8 @@ const server = new Server(
 // Initialize configuration before setting up handlers
 // Note: This is now async, but we can't await it here since this is module-level code
 // The initialization will happen when the module is imported
-initializeConfiguration().catch(error => {
-  console.error('Failed to initialize Bridge DXT:', error);
+initializeConfiguration().catch(() => {
+  // Configuration failed - exit with error code
   process.exit(1);
 });
 

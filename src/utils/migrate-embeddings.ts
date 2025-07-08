@@ -52,12 +52,7 @@ export async function migrateExistingRecords(): Promise<MigrationStats> {
         await saveSource(updatedSource);
 
         // Add to vector store
-        await getVectorStore().addVector(source.id, embedding, {
-          content: source.content.substring(0, 100),
-          contentType: source.contentType || 'text',
-          experiencer: source.experiencer || 'self',
-          perspective: source.perspective || 'I',
-        });
+        await getVectorStore().addVector(source.id, embedding);
 
         stats.processed++;
         

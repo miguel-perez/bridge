@@ -16,10 +16,8 @@ export class EmbeddingService {
         quantized: false
       });
       this.initialized = true;
-      console.log('Embedding service initialized successfully');
     } catch (error) {
-      console.error('Failed to initialize embedding service:', error);
-      throw new Error('Failed to initialize embedding service');
+      throw new Error(`Failed to initialize embedding service: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -38,9 +36,9 @@ export class EmbeddingService {
     if (this.cache.has(hash)) {
       return this.cache.get(hash)!;
     }
-    
+
     try {
-      const result = await this.embedder(text);
+      const result = await this.embedder(text, { pooling: 'mean', normalize: true });
       
       // Extract the embedding from the result
       let embedding: number[];
@@ -51,10 +49,9 @@ export class EmbeddingService {
       } else if (result && Array.isArray(result)) {
         embedding = Array.from(result);
       } else {
-        console.error('Unexpected result format:', typeof result, result);
         throw new Error('Unexpected embedding result format');
       }
-      
+
       // Ensure we have a reasonable embedding size
       if (embedding.length === 0) {
         throw new Error('Generated embedding is empty');
@@ -78,9 +75,6 @@ export class EmbeddingService {
         embedding = pooledEmbedding;
       } else {
         // Invalid dimension
-        console.error(
-          `Embedding dimension mismatch: expected ${expectedDim} or a multiple, got ${embedding.length}`
-        );
         throw new Error(
           `Embedding dimension mismatch: expected ${expectedDim} or a multiple, got ${embedding.length}`
         );
@@ -88,9 +82,6 @@ export class EmbeddingService {
       
       // Final assertion
       if (embedding.length !== expectedDim) {
-        console.error(
-          `Final embedding dimension error: expected ${expectedDim}, got ${embedding.length}`
-        );
         throw new Error(
           `Final embedding dimension error: expected ${expectedDim}, got ${embedding.length}`
         );
@@ -98,11 +89,10 @@ export class EmbeddingService {
       
       // Cache the result
       this.cache.set(hash, embedding);
-      
+
       return embedding;
     } catch (error) {
-      console.error('Failed to generate embedding:', error);
-      throw new Error('Failed to generate embedding for text');
+      throw new Error(`Failed to generate embedding: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
