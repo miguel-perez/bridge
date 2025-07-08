@@ -314,6 +314,10 @@ function calculateRelevanceScore(
 
 // Helper function to apply temporal filters with validation and MCP-compliant errors
 async function applyTemporalFilter(records: SourceRecord[], filter: string | { start: string; end: string }, field: 'system_time' | 'occurred'): Promise<SourceRecord[]> {
+  function toUTCDateString(dateStr: string): string {
+    const d = new Date(dateStr);
+    return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(d.getUTCDate()).padStart(2, '0');
+  }
   try {
     if (typeof filter === 'string') {
       // Single date filter - treat as same-day range
@@ -322,40 +326,40 @@ async function applyTemporalFilter(records: SourceRecord[], filter: string | { s
         throw new Error(`Invalid date format for filter: '${filter}'. Example valid formats: '2024-01-15', 'yesterday', 'last week'.`);
       }
       
-      // For single date, create a range from start of day to end of day
-      const startOfDay = new Date(filterDate);
-      startOfDay.setUTCHours(0, 0, 0, 0);
-      
-      const endOfDay = new Date(filterDate);
-      endOfDay.setUTCHours(23, 59, 59, 999);
+      // Extract just the UTC date part (YYYY-MM-DD) for comparison
+      const filterDateOnly = toUTCDateString(filterDate);
       
       return records.filter(record => {
         const recordDateRaw = record[field] || record.system_time;
         const recordDate = parseSingleDate(recordDateRaw);
         if (!recordDate || isNaN(Date.parse(recordDate))) return false;
         
-        const recordDateTime = new Date(recordDate);
-        return recordDateTime >= startOfDay && recordDateTime <= endOfDay;
+        // Extract just the UTC date part for comparison
+        const recordDateOnly = toUTCDateString(recordDate);
+        return recordDateOnly === filterDateOnly;
       });
     } else {
-      // Date range filter - use inclusive comparisons
+      // Date range filter - use UTC date-only comparisons for inclusive ranges
       const dateRange = parseFlexibleDate(filter) as { start: string; end: string };
       if (!dateRange.start || !dateRange.end || isNaN(Date.parse(dateRange.start)) || isNaN(Date.parse(dateRange.end))) {
         throw new Error(`Invalid date range format for filter: ${JSON.stringify(filter)}. Example: { start: '2024-01-01', end: '2024-01-31' } or { start: 'last week', end: 'today' }.`);
       }
       
+      // Extract UTC date parts for comparison
+      const startDateOnly = toUTCDateString(dateRange.start);
+      const endDateOnly = toUTCDateString(dateRange.end);
+      
       return records.filter(record => {
         const recordDateRaw = record[field] || record.system_time;
         const recordDate = parseSingleDate(recordDateRaw);
         if (!recordDate || isNaN(Date.parse(recordDate))) return false;
         
-        const recordDateTime = new Date(recordDate);
-        const startDateTime = new Date(dateRange.start);
-        const endDateTime = new Date(dateRange.end);
+        // Extract just the UTC date part for comparison
+        const recordDateOnly = toUTCDateString(recordDate);
         
-        // Use inclusive comparisons: >= start and <= end
-        if (dateRange.start && recordDateTime < startDateTime) return false;
-        if (dateRange.end && recordDateTime > endDateTime) return false;
+        // Use inclusive comparisons with date strings (YYYY-MM-DD format allows direct comparison)
+        if (dateRange.start && recordDateOnly < startDateOnly) return false;
+        if (dateRange.end && recordDateOnly > endDateOnly) return false;
         return true;
       });
     }

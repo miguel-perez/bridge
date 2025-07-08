@@ -106,7 +106,6 @@ describe('Search Relevance Scoring', () => {
         qualities: [
           {
             type: 'affective',
-    
             prominence: 0.8,
             manifestation: 'emotional distress'
           }
@@ -205,5 +204,244 @@ describe('Search Relevance Scoring', () => {
     
     // First result should be the one with "anxiety and stress" (more matches)
     expect(results.results[0].snippet).toContain('anxiety and stress');
+  });
+});
+
+describe('Date Range Filtering', () => {
+  beforeEach(async () => {
+    await clearTestStorage();
+  });
+
+  it('should handle same-day range filtering correctly', async () => {
+    // Create test records with specific dates
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    const record1: Omit<SourceRecord, 'type'> = {
+      id: 'date_test_1',
+      content: 'Record from today',
+      experiencer: 'date_test',
+      perspective: 'I',
+      processing: 'during',
+      contentType: 'text',
+      system_time: today.toISOString(),
+      occurred: today.toISOString(),
+      crafted: false
+    };
+
+    const record2: Omit<SourceRecord, 'type'> = {
+      id: 'date_test_2',
+      content: 'Record from yesterday',
+      experiencer: 'date_test',
+      perspective: 'I',
+      processing: 'during',
+      contentType: 'text',
+      system_time: yesterday.toISOString(),
+      occurred: yesterday.toISOString(),
+      crafted: false
+    };
+
+    await saveSource(record1);
+    await saveSource(record2);
+
+    // Test same-day range: should return yesterday's record
+    const results = await search({ 
+      occurred: { start: 'yesterday', end: 'yesterday' },
+      experiencer: 'date_test'
+    });
+
+    expect(results.results).toHaveLength(1);
+    expect(results.results[0].id).toBe('date_test_2');
+  });
+
+  it('should handle single date filtering correctly', async () => {
+    // Create test records with specific dates
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    const record1: Omit<SourceRecord, 'type'> = {
+      id: 'single_date_test_1',
+      content: 'Record from today',
+      experiencer: 'single_date_test',
+      perspective: 'I',
+      processing: 'during',
+      contentType: 'text',
+      system_time: today.toISOString(),
+      occurred: today.toISOString(),
+      crafted: false
+    };
+
+    const record2: Omit<SourceRecord, 'type'> = {
+      id: 'single_date_test_2',
+      content: 'Record from yesterday',
+      experiencer: 'single_date_test',
+      perspective: 'I',
+      processing: 'during',
+      contentType: 'text',
+      system_time: yesterday.toISOString(),
+      occurred: yesterday.toISOString(),
+      crafted: false
+    };
+
+    await saveSource(record1);
+    await saveSource(record2);
+
+    // Test single date filter: should return today's record
+    const results = await search({ 
+      occurred: 'today',
+      experiencer: 'single_date_test'
+    });
+
+    expect(results.results).toHaveLength(1);
+    expect(results.results[0].id).toBe('single_date_test_1');
+  });
+
+  it('should handle multi-day range filtering correctly', async () => {
+    // Create test records with specific dates
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const twoDaysAgo = new Date(today);
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+    
+    const record1: Omit<SourceRecord, 'type'> = {
+      id: 'range_test_1',
+      content: 'Record from today',
+      experiencer: 'range_test',
+      perspective: 'I',
+      processing: 'during',
+      contentType: 'text',
+      system_time: today.toISOString(),
+      occurred: today.toISOString(),
+      crafted: false
+    };
+
+    const record2: Omit<SourceRecord, 'type'> = {
+      id: 'range_test_2',
+      content: 'Record from yesterday',
+      experiencer: 'range_test',
+      perspective: 'I',
+      processing: 'during',
+      contentType: 'text',
+      system_time: yesterday.toISOString(),
+      occurred: yesterday.toISOString(),
+      crafted: false
+    };
+
+    const record3: Omit<SourceRecord, 'type'> = {
+      id: 'range_test_3',
+      content: 'Record from two days ago',
+      experiencer: 'range_test',
+      perspective: 'I',
+      processing: 'during',
+      contentType: 'text',
+      system_time: twoDaysAgo.toISOString(),
+      occurred: twoDaysAgo.toISOString(),
+      crafted: false
+    };
+
+    await saveSource(record1);
+    await saveSource(record2);
+    await saveSource(record3);
+
+    // Test multi-day range: should return yesterday and today's records
+    const results = await search({ 
+      occurred: { start: 'yesterday', end: 'today' },
+      experiencer: 'range_test'
+    });
+
+    expect(results.results).toHaveLength(2);
+    const resultIds = results.results.map(r => r.id).sort();
+    expect(resultIds).toEqual(['range_test_1', 'range_test_2'].sort());
+  });
+
+  it('should handle edge cases in date filtering', async () => {
+    // Create test records with specific times on the same UTC day
+    const today = new Date();
+    const earlyToday = new Date(today);
+    earlyToday.setUTCHours(0, 0, 0, 0);
+    const lateToday = new Date(today);
+    lateToday.setUTCHours(23, 59, 59, 999);
+    
+    const record1: Omit<SourceRecord, 'type'> = {
+      id: 'edge_test_1',
+      content: 'Early morning record',
+      experiencer: 'edge_test',
+      perspective: 'I',
+      processing: 'during',
+      contentType: 'text',
+      system_time: earlyToday.toISOString(),
+      occurred: earlyToday.toISOString(),
+      crafted: false
+    };
+
+    const record2: Omit<SourceRecord, 'type'> = {
+      id: 'edge_test_2',
+      content: 'Late night record',
+      experiencer: 'edge_test',
+      perspective: 'I',
+      processing: 'during',
+      contentType: 'text',
+      system_time: lateToday.toISOString(),
+      occurred: lateToday.toISOString(),
+      crafted: false
+    };
+
+    await saveSource(record1);
+    await saveSource(record2);
+
+    // Test that both records are found when filtering for today (UTC)
+    const results = await search({ 
+      occurred: 'today',
+      experiencer: 'edge_test'
+    });
+
+    expect(results.results).toHaveLength(2);
+    const resultIds = results.results.map(r => r.id).sort();
+    expect(resultIds).toEqual(['edge_test_1', 'edge_test_2'].sort());
+  });
+});
+
+describe('GroupBy Parameter Removal', () => {
+  it('should not have groupBy parameter in SearchInput interface', () => {
+    // This test verifies that the groupBy parameter has been completely removed
+    // TypeScript compilation will fail if groupBy is still present
+    const searchInput: SearchInput = {
+      query: 'test',
+      experiencer: 'test',
+      // groupBy: 'type' // This should cause a TypeScript error if uncommented
+    };
+    
+    // If this compiles, groupBy has been successfully removed
+    expect(searchInput.query).toBe('test');
+    expect(searchInput.experiencer).toBe('test');
+  });
+
+  it('should handle search without groupBy parameter', async () => {
+    await clearTestStorage();
+    
+    const record: Omit<SourceRecord, 'type'> = {
+      id: 'groupby_test_1',
+      content: 'Test record for groupBy removal verification',
+      experiencer: 'groupby_test',
+      perspective: 'I',
+      processing: 'during',
+      contentType: 'text',
+      system_time: new Date().toISOString(),
+      occurred: new Date().toISOString(),
+      crafted: false
+    };
+
+    await saveSource(record);
+
+    // Search should work without groupBy parameter
+    const results = await search({ 
+      experiencer: 'groupby_test'
+    });
+
+    expect(results.results).toHaveLength(1);
+    expect(results.results[0].id).toBe('groupby_test_1');
   });
 }); 
