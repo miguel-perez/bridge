@@ -2,7 +2,7 @@
   "dxt_version": "0.1",
   "name": "bridge",
   "version": "0.1.0",
-  "description": "Capture experiences into a structured format for Humans & AI to use, allowing them to work together better as a distirbuted cognition to create a better futures.",
+  "description": "Capture experiences into a structured format for Humans & AI to use, allowing for better distirbuted cognition.",
   "long_description": "Bridge is an experiential data management system that helps you capture raw experiences, transform them into structured moments with emotional and experiential qualities. Features semantic search, multi-experiencer support, and comprehensive reflection tools.",
   "author": {
     "name": "Miguel Angel Perez",

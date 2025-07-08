@@ -217,7 +217,6 @@ Each boundary marks a new moment. Use these cues to segment continuous experienc
         processing: { type: "string", description: "Only records with this processing level" },
         contentType: { type: "string", description: "Only records with this content type (e.g., 'text', 'audio')" },
         crafted: { type: "boolean", description: "Only records with this crafted status (true = crafted for audience, false = raw)" },
-        groupBy: { type: "string", enum: ["type", "experiencer", "day", "week", "month", "hierarchy"], description: "Group results by this field" },
         sort: { type: "string", enum: ["relevance", "system_time", "occurred"], description: "Sort by field" },
         limit: { type: "number", description: "Maximum results to return" },
         includeContext: { type: "boolean", description: "Return full record metadata as structured JSON" },

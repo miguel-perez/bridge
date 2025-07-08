@@ -46,7 +46,6 @@ export interface SearchInput {
   processing?: string;
   contentType?: string;
   crafted?: boolean;
-  groupBy?: 'type' | 'experiencer' | 'day' | 'week' | 'month' | 'hierarchy';
   sort?: 'relevance' | 'system_time' | 'occurred';
   limit?: number;
   includeContext?: boolean;
