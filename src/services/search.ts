@@ -316,29 +316,46 @@ function calculateRelevanceScore(
 async function applyTemporalFilter(records: SourceRecord[], filter: string | { start: string; end: string }, field: 'system_time' | 'occurred'): Promise<SourceRecord[]> {
   try {
     if (typeof filter === 'string') {
-      // Single date filter
+      // Single date filter - treat as same-day range
       const filterDate = parseSingleDate(filter);
       if (!filterDate || isNaN(Date.parse(filterDate))) {
         throw new Error(`Invalid date format for filter: '${filter}'. Example valid formats: '2024-01-15', 'yesterday', 'last week'.`);
       }
+      
+      // For single date, create a range from start of day to end of day
+      const startOfDay = new Date(filterDate);
+      startOfDay.setUTCHours(0, 0, 0, 0);
+      
+      const endOfDay = new Date(filterDate);
+      endOfDay.setUTCHours(23, 59, 59, 999);
+      
       return records.filter(record => {
         const recordDateRaw = record[field] || record.system_time;
         const recordDate = parseSingleDate(recordDateRaw);
         if (!recordDate || isNaN(Date.parse(recordDate))) return false;
-        return recordDate.split('T')[0] === filterDate.split('T')[0]; // Compare date part only
+        
+        const recordDateTime = new Date(recordDate);
+        return recordDateTime >= startOfDay && recordDateTime <= endOfDay;
       });
     } else {
-      // Date range filter
+      // Date range filter - use inclusive comparisons
       const dateRange = parseFlexibleDate(filter) as { start: string; end: string };
       if (!dateRange.start || !dateRange.end || isNaN(Date.parse(dateRange.start)) || isNaN(Date.parse(dateRange.end))) {
         throw new Error(`Invalid date range format for filter: ${JSON.stringify(filter)}. Example: { start: '2024-01-01', end: '2024-01-31' } or { start: 'last week', end: 'today' }.`);
       }
+      
       return records.filter(record => {
         const recordDateRaw = record[field] || record.system_time;
         const recordDate = parseSingleDate(recordDateRaw);
         if (!recordDate || isNaN(Date.parse(recordDate))) return false;
-        if (dateRange.start && recordDate < dateRange.start) return false;
-        if (dateRange.end && recordDate > dateRange.end) return false;
+        
+        const recordDateTime = new Date(recordDate);
+        const startDateTime = new Date(dateRange.start);
+        const endDateTime = new Date(dateRange.end);
+        
+        // Use inclusive comparisons: >= start and <= end
+        if (dateRange.start && recordDateTime < startDateTime) return false;
+        if (dateRange.end && recordDateTime > endDateTime) return false;
         return true;
       });
     }
