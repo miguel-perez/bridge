@@ -4,7 +4,7 @@
       "command": "node",
       "args": ["path/to/bridge/dist/index.js"],
       "env": {
-        "BRIDGE_FILE_PATH": "path/to/your/data.json"
+        "NODE_ENV": "production"
       }
     }
   }

@@ -4,9 +4,9 @@ export interface BridgeConfig {
   dataFilePath: string;
 }
 
-// Default configuration - use relative path .bridge/bridge.json
+// Default configuration - use bridge.json in root directory
 const defaultConfig: BridgeConfig = {
-  dataFilePath: process.env.BRIDGE_FILE_PATH || '.bridge/bridge.json',
+  dataFilePath: process.env.BRIDGE_FILE_PATH || 'bridge.json',
 };
 
 let currentConfig = { ...defaultConfig };
@@ -30,7 +30,7 @@ export function getDataFilePath(): string {
 // Validate configuration on startup
 export function validateConfiguration(): void {
   if (!currentConfig.dataFilePath) {
-    throw new Error('Data file path is required. Please configure this in the Claude Desktop extension settings.');
+    throw new Error('Data file path is required.');
   }
 }
 

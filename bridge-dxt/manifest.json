@@ -24,8 +24,7 @@
       "command": "node",
       "args": ["${__dirname}/dist/index.js"],
       "env": {
-        "NODE_ENV": "production",
-        "BRIDGE_FILE_PATH": "${user_config.data_file_path}"
+        "NODE_ENV": "production"
       }
     }
   },
@@ -48,16 +47,6 @@
       "description": "Edit and enrich existing source records"
     }
   ],
-  
-  "user_config": {
-    "data_file_path": {
-      "type": "string",
-      "title": "Data Storage Path",
-      "description": "Path to store your experiential data JSON file",
-      "required": false,
-      "default": "data/bridge.json"
-    }
-  },
   
   "compatibility": {
     "claude_desktop": ">=0.11.0",
