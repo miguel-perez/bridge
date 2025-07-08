@@ -12,7 +12,7 @@ interface TestScenario {
     processing: string;
     occurred?: string; // When it happened (chrono-node compatible)
     crafted: boolean;
-    experiential_qualities?: {
+    experiential_qualities: {
       qualities: Array<{
         type: "attentional" | "affective" | "purposive" | "embodied" | "temporal" | "intersubjective" | "spatial";
         prominence: number;

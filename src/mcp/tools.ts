@@ -2,7 +2,7 @@
 export const tools = [
   {
     name: "capture",
-    description: "Capture raw experiential text as a source record. For unprocessed, in-the-moment entries such as journal notes, chat messages, or direct transcripts.",
+    description: "Capture raw experiential text as a source record. For unprocessed, in-the-moment entries such as journal notes, chat messages, or direct transcripts. The AI assistant MUST analyze and provide experiential quality scores for each capture.",
     inputSchema: {
       type: "object",
       properties: {
@@ -15,7 +15,7 @@ export const tools = [
         crafted: { type: "boolean", description: "Whether content was crafted for an audience (e.g., blog post = true, journal entry = false)" },
         experiential_qualities: { 
           type: "object", 
-          description: `Optional experiential quality analysis. Each quality describes a phenomenological dimension of experience, scored 0.0-1.0.
+          description: `REQUIRED experiential quality analysis. The AI assistant MUST analyze the content and provide quality scores. Each quality describes a phenomenological dimension of experience, scored 0.0-1.0.
 
 **How to Break Down Larger Content into Smaller Captures :**
 To identify experiential boundaries, look for natural breaks where qualities shift:
@@ -134,7 +134,7 @@ Each boundary marks a new moment. Use these cues to segment continuous experienc
           required: ["qualities"]
         }
       },
-      required: ["experiencer", "perspective", "processing"]
+      required: ["experiencer", "perspective", "processing", "experiential_qualities"]
     },
     annotations: {
       title: "Capture Experience",
@@ -147,13 +147,13 @@ Each boundary marks a new moment. Use these cues to segment continuous experienc
 
   {
     name: "release",
-    description: "Release (delete) a source. If no id is provided, performs a bulk cleanup of all reframed (superseded) records. In bulk mode, cleanupReframed defaults to true.",
+    description: "Release (delete) a source record by ID.",
     inputSchema: {
       type: "object",
       properties: {
-        id: { type: "string", description: "ID of source to release (optional for bulk cleanup)" },
-        cleanupReframed: { type: "boolean", description: "If true, also delete any reframed records that were superseded by this record, or perform bulk cleanup if no ID provided. Defaults to true if no id is provided, otherwise false." }
-      }
+        id: { type: "string", description: "ID of source to release" }
+      },
+      required: ["id"]
     },
     annotations: {
       title: "Release Record",
@@ -170,6 +170,7 @@ Each boundary marks a new moment. Use these cues to segment continuous experienc
     inputSchema: {
       type: "object",
       properties: {
+        id: { type: "string", description: "Search for a specific record by ID" },
         query: { type: "string", description: "Semantic search query (natural language or keywords)" },
         system_time: { oneOf: [ { type: "string" }, { type: "object", properties: { start: { type: "string" }, end: { type: "string" } }, required: ["start", "end"] } ], description: "Filter by record creation time (auto-generated timestamp)" },
         occurred: { oneOf: [ { type: "string" }, { type: "object", properties: { start: { type: "string" }, end: { type: "string" } }, required: ["start", "end"] } ], description: "Filter by occurred time (chrono-node compatible)" },

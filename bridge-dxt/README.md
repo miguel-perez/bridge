@@ -70,7 +70,7 @@ Add more detail to moment src_abc123
 ```
 bridge:release
 ```
-Delete records or cleanup reframed records.
+Delete records by ID.
 
 **Example:**
 ```

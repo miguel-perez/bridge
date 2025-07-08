@@ -13,6 +13,36 @@ import { tools } from './tools.js';
 const SERVER_NAME = 'bridge';
 const SERVER_VERSION = '0.1.0';
 
+// Helper function to recursively parse stringified JSON in arguments
+// This is a workaround for MCP transport layer stringification of complex objects
+function parseStringifiedJson(obj: any): any {
+  if (typeof obj === 'string') {
+    // Check if string looks like JSON (starts with { or [)
+    const trimmed = obj.trim();
+    if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || 
+        (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        // Recursively parse the parsed object
+        return parseStringifiedJson(parsed);
+      } catch (error) {
+        // If parsing fails, return the original string
+        return obj;
+      }
+    }
+    return obj;
+  } else if (Array.isArray(obj)) {
+    return obj.map(parseStringifiedJson);
+  } else if (obj && typeof obj === 'object' && obj !== null) {
+    const result: any = {};
+    for (const [key, value] of Object.entries(obj)) {
+      result[key] = parseStringifiedJson(value);
+    }
+    return result;
+  }
+  return obj;
+}
+
 // Initialize configuration and validate on startup
 async function initializeConfiguration() {
   try {
@@ -92,18 +122,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
 
   try {
+    // Parse stringified JSON in arguments before passing to handlers
+    const parsedArgs = parseStringifiedJson(args);
+
     switch (name) {
       case 'capture':
-        return await toolHandlers.handleCapture(args);
+        return await toolHandlers.handleCapture(parsedArgs);
 
       case 'release':
-        return await toolHandlers.handleRelease(args);
+        return await toolHandlers.handleRelease(parsedArgs);
 
       case 'search':
-        return await toolHandlers.handleSearch(args ?? {});
+        return await toolHandlers.handleSearch(parsedArgs ?? {});
 
       case 'enrich':
-        return await toolHandlers.handleEnrich(args);
+        return await toolHandlers.handleEnrich(parsedArgs);
 
       default:
         throw new McpError(

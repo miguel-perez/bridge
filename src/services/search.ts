@@ -3,6 +3,7 @@ import { getAllRecords } from '../core/storage.js';
 import type { QualityVector } from '../core/types.js';
 import { embeddingService } from './embeddings.js';
 import { getVectorStore } from './vector-store.js';
+import { parseDate } from 'chrono-node';
 
 // Debug mode configuration
 const DEBUG_MODE = process.env.BRIDGE_SEARCH_DEBUG === 'true' || process.env.BRIDGE_DEBUG === 'true';
@@ -78,6 +79,8 @@ export interface SearchInput {
   // Semantic search
   semantic_query?: string;
   semantic_threshold?: number;
+  // ID search
+  id?: string;
 }
 
 export interface SearchServiceResult {
@@ -127,6 +130,7 @@ export interface SearchServiceResponse {
       qualities_filter?: number;
       vector_threshold_filter?: number;
       semantic_threshold_filter?: number;
+      id_filter?: number;
     };
     no_results_reason?: string;
     errors?: Array<{
@@ -399,14 +403,24 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
       addDebugLog(`Crafted filter applied: ${beforeCount} -> ${afterCount} records`);
     }
     
+    // Filter by ID
+    if (input.id) {
+      const beforeCount = filteredRecords.length;
+      filteredRecords = filteredRecords.filter(record => record.id === input.id);
+      const afterCount = filteredRecords.length;
+      if (!debugInfo.filter_breakdown) debugInfo.filter_breakdown = {};
+      debugInfo.filter_breakdown.id_filter = beforeCount - afterCount;
+      addDebugLog(`ID filter applied: ${beforeCount} -> ${afterCount} records (id: ${input.id})`);
+    }
+
     // Apply temporal filters
     if (input.system_time || input.occurred) {
       const beforeCount = filteredRecords.length;
       if (input.system_time) {
-        filteredRecords = applyTemporalFilter(filteredRecords, input.system_time, 'system_time');
+        filteredRecords = await applyTemporalFilter(filteredRecords, input.system_time, 'system_time');
       }
       if (input.occurred) {
-        filteredRecords = applyTemporalFilter(filteredRecords, input.occurred, 'occurred');
+        filteredRecords = await applyTemporalFilter(filteredRecords, input.occurred, 'occurred');
       }
       const afterCount = filteredRecords.length;
       debugInfo.filter_breakdown!.temporal_filter = beforeCount - afterCount;
@@ -743,22 +757,33 @@ function cosineSimilarity(a: Record<string, number>, b: Record<string, number>):
 }
 
 // Helper function to apply temporal filters
-function applyTemporalFilter(records: SourceRecord[], filter: string | { start: string; end: string }, field: 'system_time' | 'occurred'): SourceRecord[] {
-  // Basic temporal filtering implementation
+async function applyTemporalFilter(records: SourceRecord[], filter: string | { start: string; end: string }, field: 'system_time' | 'occurred'): Promise<SourceRecord[]> {
   if (typeof filter === 'string') {
     // Single date filter
-    const filterDate = new Date(filter);
+    const filterDate = parseDate(filter);
+    if (!filterDate) {
+      throw new Error(`Invalid date string for temporal filter: '${filter}'. Please provide a valid date or time expression.`);
+    }
     return records.filter(record => {
-      const recordDate = new Date(record[field] || record.system_time);
+      const recordDateRaw = record[field] || record.system_time;
+      const recordDate = parseDate(recordDateRaw);
+      if (!recordDate) return false;
       return recordDate.toDateString() === filterDate.toDateString();
     });
   } else {
     // Date range filter
-    const startDate = filter.start ? new Date(filter.start) : null;
-    const endDate = filter.end ? new Date(filter.end) : null;
-    
+    const startDate = filter.start ? parseDate(filter.start) : null;
+    const endDate = filter.end ? parseDate(filter.end) : null;
+    if (filter.start && !startDate) {
+      throw new Error(`Invalid start date for temporal filter: '${filter.start}'. Please provide a valid date or time expression.`);
+    }
+    if (filter.end && !endDate) {
+      throw new Error(`Invalid end date for temporal filter: '${filter.end}'. Please provide a valid date or time expression.`);
+    }
     return records.filter(record => {
-      const recordDate = new Date(record[field] || record.system_time);
+      const recordDateRaw = record[field] || record.system_time;
+      const recordDate = parseDate(recordDateRaw);
+      if (!recordDate) return false;
       if (startDate && recordDate < startDate) return false;
       if (endDate && recordDate > endDate) return false;
       return true;

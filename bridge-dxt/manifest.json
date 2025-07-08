@@ -41,7 +41,7 @@
     },
     {
       "name": "release",
-      "description": "Delete records or cleanup reframed records"
+      "description": "Delete records by ID"
     },
     {
       "name": "enrich",
@@ -55,7 +55,7 @@
       "title": "Data Storage Path",
       "description": "Path to store your experiential data JSON file",
       "required": false,
-      "default": ".bridge/bridge.json"
+      "default": "data/bridge.json"
     }
   },
   

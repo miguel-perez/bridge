@@ -41,7 +41,7 @@
     },
     {
       "name": "release",
-      "description": "Delete records or cleanup reframed records"
+      "description": "Delete records by ID"
     },
     {
       "name": "enrich",

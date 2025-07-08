@@ -9,10 +9,10 @@ import { getVectorStore } from './vector-store.js';
 export const captureSchema = z.object({
   content: z.string().optional(), // Make content optional to allow file auto-read
   contentType: z.string().optional().default('text'),
-  perspective: z.enum(['I', 'we', 'you', 'they']),
-  processing: z.enum(['during', 'right-after', 'long-after', 'crafted']),
+  perspective: z.enum(['I', 'we', 'you', 'they']).optional().default('I'),
+  processing: z.enum(['during', 'right-after', 'long-after', 'crafted']).optional().default('during'),
   occurred: z.string().optional(), // When it happened (chrono-node compatible)
-  experiencer: z.string(),
+  experiencer: z.string().optional().default('self'),
   crafted: z.boolean().optional(),
   experiential_qualities: z.object({
     qualities: z.array(z.object({
@@ -29,7 +29,7 @@ export const captureSchema = z.object({
       temporal: z.number().min(0).max(1),
       intersubjective: z.number().min(0).max(1)
     }).optional(),
-  }).optional(),
+  }),
 }).refine((data) => {
   // Ensure content is provided
   if (!data.content) {
@@ -43,12 +43,12 @@ export const captureSchema = z.object({
 export interface CaptureInput {
   content?: string;
   contentType?: string;
-  perspective: 'I' | 'we' | 'you' | 'they';
-  processing: 'during' | 'right-after' | 'long-after' | 'crafted';
+  perspective?: 'I' | 'we' | 'you' | 'they';
+  processing?: 'during' | 'right-after' | 'long-after' | 'crafted';
   occurred?: string; // When it happened (chrono-node compatible)
-  experiencer: string;
+  experiencer?: string;
   crafted?: boolean;
-  experiential_qualities?: {
+  experiential_qualities: {
     qualities: Array<{
       type: 'embodied' | 'attentional' | 'affective' | 'purposive' | 'spatial' | 'temporal' | 'intersubjective';
       prominence: number;
@@ -89,6 +89,11 @@ function generateQualityVector(qualities: Array<{
 
 export class CaptureService {
   async captureSource(input: CaptureInput): Promise<CaptureResult> {
+    // Validate experiential qualities are provided
+    if (!input.experiential_qualities || !input.experiential_qualities.qualities || input.experiential_qualities.qualities.length === 0) {
+      throw new Error('Experiential qualities analysis is required. The AI assistant must analyze the content and provide quality scores.');
+    }
+
     // Validate occurred field with chrono-node parsing
     let occurredDate: string | undefined;
     if (input.occurred) {
@@ -100,23 +105,30 @@ export class CaptureService {
       throw new Error('Content is required when no file is provided');
     }
     
+    // Use defaults for perspective, processing, experiencer
+    const perspective = input.perspective ?? 'I';
+    const processing = input.processing ?? 'during';
+    const experiencer = input.experiencer ?? 'self';
+    
     // Process experiential qualities - generate vector if not provided
-    let processedExperientialQualities: import('../core/types.js').ExperientialQualities | undefined = undefined;
-    if (input.experiential_qualities?.qualities) {
+    let processedExperientialQualities: import('../core/types.js').ExperientialQualities;
+    if (input.experiential_qualities.qualities) {
       // Generate vector from qualities, using provided vector as base if available
       const generatedVector = generateQualityVector(input.experiential_qualities.qualities, input.experiential_qualities.vector);
       processedExperientialQualities = {
         qualities: input.experiential_qualities.qualities,
         vector: generatedVector
       };
-    } else if (input.experiential_qualities?.vector) {
+    } else if (input.experiential_qualities.vector) {
       // Handle case where only vector is provided without qualities array
       processedExperientialQualities = {
         qualities: [],
         vector: input.experiential_qualities.vector
       };
+    } else {
+      // This should not happen due to validation above, but TypeScript requires it
+      throw new Error('Experiential qualities analysis is required. The AI assistant must analyze the content and provide quality scores.');
     }
-    // If no experiential qualities provided, processedExperientialQualities remains undefined
     
     // Generate embedding for content
     let contentEmbedding: number[] | undefined;
@@ -133,9 +145,9 @@ export class CaptureService {
       contentType: input.contentType || 'text',
       system_time: new Date().toISOString(),
       occurred: occurredDate || new Date().toISOString(),
-      perspective: input.perspective,
-      experiencer: input.experiencer,
-      processing: input.processing as ProcessingLevel,
+      perspective,
+      experiencer,
+      processing: processing as ProcessingLevel,
       crafted: input.crafted,
       experiential_qualities: processedExperientialQualities,
       content_embedding: contentEmbedding,
