@@ -1,14 +1,12 @@
 // Configuration for Bridge DXT - simplified for local-only operation
-import { homedir } from 'os';
-import { join } from 'path';
 
 export interface BridgeConfig {
   dataFilePath: string;
 }
 
-// Default configuration
+// Default configuration - use relative path .bridge/bridge.json
 const defaultConfig: BridgeConfig = {
-  dataFilePath: process.env.BRIDGE_FILE_PATH || join(homedir(), '.bridge', 'bridge.json'),
+  dataFilePath: process.env.BRIDGE_FILE_PATH || '.bridge/bridge.json',
 };
 
 let currentConfig = { ...defaultConfig };

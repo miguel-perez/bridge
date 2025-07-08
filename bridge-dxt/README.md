@@ -23,7 +23,7 @@ Bridge is an experiential data management system that helps you capture raw expe
 After installation, you can optionally configure the extension:
 
 1. Click the gear icon next to Bridge in the Extensions panel
-2. Enter your preferred data file location (defaults to `~/.bridge/bridge.json`)
+2. Enter your preferred data file location (defaults to `.bridge/bridge.json`)
 
 **Note**: No API keys required! Bridge uses local AI models for all processing.
 
@@ -94,7 +94,7 @@ Each quality is scored 0.0-1.0 based on its prominence in the experience.
 ## Data Storage
 
 Your experiential data is stored in a JSON file on your local machine.
-Default location: `~/.bridge/bridge.json`
+Default location: `.bridge/bridge.json` (relative to current working directory)
 
 **Back up this file regularly** to preserve your experiences.
 
