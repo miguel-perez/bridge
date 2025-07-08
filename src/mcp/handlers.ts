@@ -1,6 +1,7 @@
 import { CaptureService } from '../services/capture.js';
 import { ReleaseService } from '../services/release.js';
 import { SearchService, type SearchInput, type SearchServiceResult } from '../services/search.js';
+import { EnrichService } from '../services/enrich.js';
 // import { StatusService } from '../services/status.js';
 
 // Utility to strip content_embedding from Source/SourceRecord(s)
@@ -26,12 +27,14 @@ export class MCPToolHandlers {
   private captureService: CaptureService;
   private releaseService: ReleaseService;
   private searchService: SearchService;
+  private enrichService: EnrichService;
   // private statusService: StatusService;
 
   constructor() {
     this.captureService = new CaptureService();
     this.releaseService = new ReleaseService();
     this.searchService = new SearchService();
+    this.enrichService = new EnrichService();
     // this.statusService = new StatusService();
   }
 
@@ -96,6 +99,23 @@ export class MCPToolHandlers {
         { type: 'text', text: summary },
         ...resultContent
       ]
+    };
+  }
+
+  // Enrich handler
+  async handleEnrich(args: any) {
+    const input = args as any;
+    const result = await this.enrichService.enrichSource(input);
+    
+    // Create a summary of what was updated
+    const summary = `Enriched source with ID: ${result.source.id}\nUpdated fields: ${result.updatedFields.join(', ')}${result.embeddingsRegenerated ? '\nEmbeddings were regenerated' : ''}`;
+    
+    return {
+      content: [{
+        type: 'text',
+        text: summary
+      }],
+      source: stripEmbeddings(result.source)
     };
   }
 

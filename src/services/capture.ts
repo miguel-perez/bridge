@@ -18,7 +18,7 @@ export const captureSchema = z.object({
   experiential_qualities: z.object({
     qualities: z.array(z.object({
       type: z.enum(['embodied', 'attentional', 'affective', 'purposive', 'spatial', 'temporal', 'intersubjective']),
-      excerpt: z.string(),
+    
       prominence: z.number().min(0).max(1),
       manifestation: z.string()
     })),
@@ -54,7 +54,7 @@ export interface CaptureInput {
   experiential_qualities?: {
     qualities: Array<{
       type: 'embodied' | 'attentional' | 'affective' | 'purposive' | 'spatial' | 'temporal' | 'intersubjective';
-      excerpt: string;
+    
       prominence: number;
       manifestation: string;
     }>;

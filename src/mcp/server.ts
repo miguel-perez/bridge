@@ -66,6 +66,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'search':
         return await toolHandlers.handleSearch(args ?? {});
 
+      case 'enrich':
+        return await toolHandlers.handleEnrich(args);
+
       default:
         throw new McpError(
           ErrorCode.InvalidParams,

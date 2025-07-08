@@ -8,7 +8,6 @@ export type QualityType = "embodied" | "attentional" | "affective" | "purposive"
 
 export interface QualityEvidence {
   type: QualityType;
-  excerpt: string;        // Exact phrase showing this quality
   prominence: number;     // 0.0-1.0 score
   manifestation: string;  // How it manifests in experience
 }

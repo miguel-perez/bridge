@@ -100,21 +100,21 @@ Each boundary marks a new moment. Use these cues to segment continuous experienc
 A 7-dimensional object with a number (0.0-1.0) for each quality, representing the prominence of that quality in the moment.
 
 **Qualities Array:**
-Each entry provides evidence for a quality, including the excerpt, prominence (rating), and manifestation (how it appears in the experience).
+Each entry provides evidence for a quality, including the prominence (rating), and manifestation (how it appears in the experience).
 `,
           properties: {
             qualities: {
               type: "array",
-              description: `Array of quality evidence. Each entry describes how a quality manifests in the moment, with a rating and supporting excerpt.\n- **type**: One of the seven qualities.\n- **excerpt**: Exact phrase showing this quality.\n- **prominence**: 0.0-1.0 score (see rubric).\n- **manifestation**: How this quality appears in the experience.`,
+              description: `Array of quality evidence. Each entry describes how a quality manifests in the moment, with a rating.\n- **type**: One of the seven qualities.\n- **prominence**: 0.0-1.0 score (see rubric).\n- **manifestation**: How this quality appears in the experience.`,
               items: {
                 type: "object",
-                properties: {
-                  type: { type: "string", enum: ["embodied", "attentional", "affective", "purposive", "spatial", "temporal", "intersubjective"], description: "Phenomenological quality type. See above for definitions." },
-                  excerpt: { type: "string", description: "Exact phrase showing this quality." },
-                  prominence: { type: "number", minimum: 0, maximum: 1, description: "How prominent this quality is (0.0-1.0). See scoring rubric." },
-                  manifestation: { type: "string", description: "How this quality manifests in the experience (e.g., 'physical anxiety', 'diffuse attention', 'background sadness')." }
-                },
-                required: ["type", "excerpt", "prominence", "manifestation"]
+                                  properties: {
+                    type: { type: "string", enum: ["embodied", "attentional", "affective", "purposive", "spatial", "temporal", "intersubjective"], description: "Phenomenological quality type. See above for definitions." },
+ 
+                    prominence: { type: "number", minimum: 0, maximum: 1, description: "How prominent this quality is (0.0-1.0). See scoring rubric." },
+                    manifestation: { type: "string", description: "How this quality manifests in the experience (e.g., 'physical anxiety', 'diffuse attention', 'background sadness')." }
+                  },
+                  required: ["type", "prominence", "manifestation"]
               }
             },
             vector: {
@@ -225,6 +225,69 @@ Each entry provides evidence for a quality, including the excerpt, prominence (r
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
+      openWorldHint: false
+    }
+  },
+
+  {
+    name: "enrich",
+    description: "Edit and enrich an existing source record. Allows updating any field including content, experiential qualities, metadata, and optionally regenerating embeddings. Only provide the fields you want to change - unchanged fields will retain their original values.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "The ID of the source to enrich" },
+        content: { type: "string", description: "Updated content text" },
+        contentType: { type: "string", description: "Updated content type" },
+        perspective: { type: "string", enum: ["I", "we", "you", "they"], description: "Updated perspective" },
+        processing: { type: "string", enum: ["during", "right-after", "long-after", "crafted"], description: "Updated processing level" },
+        event_time: { type: "string", description: "Updated event time (ISO timestamp or descriptive like 'yesterday morning')" },
+        capture_time: { type: "string", description: "Updated capture time (ISO timestamp or descriptive like 'yesterday morning')" },
+        experiencer: { type: "string", description: "Updated experiencer" },
+        crafted: { type: "boolean", description: "Updated crafted flag" },
+        experiential_qualities: { 
+          type: "object", 
+          description: `Updated experiential quality analysis. Each quality describes a phenomenological dimension of experience, scored 0.0-1.0. See capture tool for detailed scoring guidelines.`,
+          properties: {
+            qualities: {
+              type: "array",
+              description: `Array of quality evidence. Each entry describes how a quality manifests in the moment, with a rating.`,
+              items: {
+                type: "object",
+                                  properties: {
+                    type: { type: "string", enum: ["embodied", "attentional", "affective", "purposive", "spatial", "temporal", "intersubjective"], description: "Phenomenological quality type" },
+ 
+                    prominence: { type: "number", minimum: 0, maximum: 1, description: "How prominent this quality is (0.0-1.0)" },
+                    manifestation: { type: "string", description: "How this quality manifests in the experience" }
+                  },
+                  required: ["type", "prominence", "manifestation"]
+              }
+            },
+            vector: {
+              type: "object",
+              description: `A 7-dimensional vector with a number (0.0-1.0) for each quality, representing the overall prominence of each experiential dimension in the moment.`,
+              properties: {
+                embodied: { type: "number", minimum: 0, maximum: 1, description: "Embodied Presence" },
+                attentional: { type: "number", minimum: 0, maximum: 1, description: "Attentional Flow" },
+                affective: { type: "number", minimum: 0, maximum: 1, description: "Affective Atmosphere" },
+                purposive: { type: "number", minimum: 0, maximum: 1, description: "Purposive Momentum" },
+                spatial: { type: "number", minimum: 0, maximum: 1, description: "Spatial Situation" },
+                temporal: { type: "number", minimum: 0, maximum: 1, description: "Temporal Flow" },
+                intersubjective: { type: "number", minimum: 0, maximum: 1, description: "Intersubjective Field" }
+              },
+              required: ["embodied", "attentional", "affective", "purposive", "spatial", "temporal", "intersubjective"]
+            }
+          },
+          required: ["vector"]
+        },
+        regenerate_embeddings: { type: "boolean", description: "Whether to regenerate content embeddings (defaults to false, but will regenerate if content is changed)", default: false }
+      },
+      required: ["id"]
+    },
+    annotations: {
+      title: "Enrich Record",
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
       openWorldHint: false
     }
   }

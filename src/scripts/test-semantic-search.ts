@@ -27,7 +27,7 @@ async function testSemanticSearch() {
         qualities: [
           {
             type: 'attentional',
-            excerpt: 'deeply focused',
+    
             prominence: 0.8,
             manifestation: 'concentrated attention'
           }
@@ -58,7 +58,7 @@ async function testSemanticSearch() {
         qualities: [
           {
             type: 'affective',
-            excerpt: 'anxious and distracted',
+    
             prominence: 0.7,
             manifestation: 'emotional distress'
           }

@@ -111,7 +111,7 @@ describe('Search Relevance Scoring', () => {
         qualities: [
           {
             type: 'affective',
-            excerpt: 'anxious and stressed',
+    
             prominence: 0.8,
             manifestation: 'emotional distress'
           }
