@@ -1,3 +1,8 @@
+/**
+ * Enrich service for Bridge experiential data.
+ * Handles partial updates, vector regeneration, and embedding updates for experiential sources.
+ */
+
 import { z } from 'zod';
 import { getSource, saveSource, deleteSource } from '../core/storage.js';
 import type { SourceRecord, ProcessingLevel, QualityVector } from '../core/types.js';
@@ -5,7 +10,32 @@ import { parseOccurredDate } from '../utils/validation.js';
 import { embeddingService } from './embeddings.js';
 import { getVectorStore } from './vector-store.js';
 
-// Enrich input schema - allows partial updates to existing captures
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+
+/** Default values for enrichment fields */
+export const ENRICH_DEFAULTS = {
+  CONTENT_TYPE: 'text',
+  PERSPECTIVE: 'I',
+  PROCESSING: 'during',
+  EXPERIENCER: 'self',
+};
+
+/** Valid quality types */
+export const QUALITY_TYPES = [
+  'embodied', 'attentional', 'affective', 'purposive',
+  'spatial', 'temporal', 'intersubjective',
+] as const;
+
+// ============================================================================
+// SCHEMA & TYPES
+// ============================================================================
+
+/**
+ * Zod schema for validating enrich input.
+ * Allows partial updates to existing captures.
+ */
 export const enrichSchema = z.object({
   id: z.string().describe('The ID of the source to enrich'),
   content: z.string().optional().describe('Updated content text'),
@@ -17,9 +47,9 @@ export const enrichSchema = z.object({
   crafted: z.boolean().optional().describe('Updated crafted flag'),
   experiential_qualities: z.object({
     qualities: z.array(z.object({
-      type: z.enum(['embodied', 'attentional', 'affective', 'purposive', 'spatial', 'temporal', 'intersubjective']),
+      type: z.enum(QUALITY_TYPES),
       prominence: z.number().min(0).max(1),
-      manifestation: z.string()
+      manifestation: z.string(),
     })),
     vector: z.object({
       embodied: z.number().min(0).max(1),
@@ -28,24 +58,27 @@ export const enrichSchema = z.object({
       purposive: z.number().min(0).max(1),
       spatial: z.number().min(0).max(1),
       temporal: z.number().min(0).max(1),
-      intersubjective: z.number().min(0).max(1)
+      intersubjective: z.number().min(0).max(1),
     }).optional(),
   }).optional().describe('Updated experiential qualities'),
-  regenerate_embeddings: z.boolean().optional().default(false).describe('Whether to regenerate content embeddings')
+  regenerate_embeddings: z.boolean().optional().default(false).describe('Whether to regenerate content embeddings'),
 });
 
+/**
+ * Input type for enriching experiential data.
+ */
 export interface EnrichInput {
   id: string;
   content?: string;
   contentType?: string;
   perspective?: 'I' | 'we' | 'you' | 'they';
   processing?: 'during' | 'right-after' | 'long-after' | 'crafted';
-  occurred?: string; // New preferred field (chrono-node compatible)
+  occurred?: string;
   experiencer?: string;
   crafted?: boolean;
   experiential_qualities?: {
     qualities: Array<{
-      type: 'embodied' | 'attentional' | 'affective' | 'purposive' | 'spatial' | 'temporal' | 'intersubjective';
+      type: typeof QUALITY_TYPES[number];
       prominence: number;
       manifestation: string;
     }>;
@@ -54,18 +87,29 @@ export interface EnrichInput {
   regenerate_embeddings?: boolean;
 }
 
+/**
+ * Result of an enrich operation.
+ */
 export interface EnrichResult {
   source: SourceRecord;
   updatedFields: string[];
   embeddingsRegenerated: boolean;
 }
 
-// Generate experiential quality vector from qualities array
-function generateQualityVector(qualities: Array<{
-  type: 'embodied' | 'attentional' | 'affective' | 'purposive' | 'spatial' | 'temporal' | 'intersubjective';
-  prominence: number;
-}>, providedVector?: QualityVector): QualityVector {
-  // Start with provided vector or all zeros
+// ============================================================================
+// QUALITY VECTOR GENERATION
+// ============================================================================
+
+/**
+ * Generates a quality vector from an array of qualities.
+ * @param qualities - Array of quality evidence
+ * @param providedVector - Optional base vector to override
+ * @returns Quality vector with all dimensions
+ */
+function generateQualityVector(
+  qualities: Array<{ type: typeof QUALITY_TYPES[number]; prominence: number }>,
+  providedVector?: QualityVector
+): QualityVector {
   const vector: QualityVector = providedVector ? { ...providedVector } : {
     embodied: 0,
     attentional: 0,
@@ -73,18 +117,28 @@ function generateQualityVector(qualities: Array<{
     purposive: 0,
     spatial: 0,
     temporal: 0,
-    intersubjective: 0
+    intersubjective: 0,
   };
-
-  // Override only the dimensions that appear in the qualities array
   for (const quality of qualities) {
     vector[quality.type] = quality.prominence;
   }
-
   return vector;
 }
 
+// ============================================================================
+// ENRICH SERVICE
+// ============================================================================
+
+/**
+ * Service for enriching and updating experiential sources.
+ */
 export class EnrichService {
+  /**
+   * Enriches an existing experiential source, validates input, updates embeddings, and stores it.
+   * @param input - Enrich input data
+   * @returns Enrich result with updated source record and fields
+   * @throws Error if validation fails or source is not found
+   */
   async enrichSource(input: EnrichInput): Promise<EnrichResult> {
     // Get the existing source
     const existingSource = await getSource(input.id);
@@ -95,23 +149,25 @@ export class EnrichService {
     // Validate and parse occurred field with chrono-node
     let occurredDate: string | undefined;
     if (input.occurred) {
-      occurredDate = await parseOccurredDate(input.occurred);
+      try {
+        occurredDate = await parseOccurredDate(input.occurred);
+      } catch {
+        throw new Error('Invalid occurred date format. Example valid formats: "2024-01-15", "yesterday", "last week", "2024-01-01T10:00:00Z".');
+      }
     }
 
     // Process experiential qualities - generate vector if not provided
     let processedExperientialQualities: import('../core/types.js').ExperientialQualities | undefined = undefined;
     if (input.experiential_qualities?.qualities) {
-      // Generate vector from qualities, using provided vector as base if available
       const generatedVector = generateQualityVector(input.experiential_qualities.qualities, input.experiential_qualities.vector);
       processedExperientialQualities = {
         qualities: input.experiential_qualities.qualities,
-        vector: generatedVector
+        vector: generatedVector,
       };
     } else if (input.experiential_qualities?.vector) {
-      // Handle case where only vector is provided without qualities array
       processedExperientialQualities = {
         qualities: [],
-        vector: input.experiential_qualities.vector
+        vector: input.experiential_qualities.vector,
       };
     }
 
@@ -126,7 +182,6 @@ export class EnrichService {
         contentEmbedding = await embeddingService.generateEmbedding(input.content);
       } catch (error) {
         // Silently handle embedding generation errors in MCP context
-        // The record will still be updated without embedding
       }
     }
 
@@ -151,13 +206,10 @@ export class EnrichService {
     // Update vector store if embeddings were regenerated
     if (shouldRegenerateEmbeddings && contentEmbedding) {
       try {
-        // Remove old vector
         await getVectorStore().removeVector(input.id);
-        // Add new vector
         await getVectorStore().addVector(source.id, contentEmbedding);
       } catch (error) {
         // Silently handle vector store update errors in MCP context
-        // The record will still be updated without vector store update
       }
     }
 
@@ -167,13 +219,18 @@ export class EnrichService {
     return { 
       source, 
       updatedFields,
-      embeddingsRegenerated: shouldRegenerateEmbeddings || false
+      embeddingsRegenerated: shouldRegenerateEmbeddings || false,
     };
   }
 
+  /**
+   * Returns a list of which fields were updated in the enrichment.
+   * @param original - Original source record
+   * @param updated - Updated source record (without type field)
+   * @returns Array of updated field names
+   */
   private getUpdatedFields(original: SourceRecord, updated: Omit<SourceRecord, 'type'>): string[] {
     const fields: string[] = [];
-    
     if (original.content !== updated.content) fields.push('content');
     if (original.contentType !== updated.contentType) fields.push('contentType');
     if (original.perspective !== updated.perspective) fields.push('perspective');
@@ -187,7 +244,6 @@ export class EnrichService {
     if (JSON.stringify(original.content_embedding) !== JSON.stringify(updated.content_embedding)) {
       fields.push('content_embedding');
     }
-    
     return fields;
   }
 } 
