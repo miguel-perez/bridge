@@ -1,8 +1,24 @@
+/**
+ * Embedding Migration Utilities for Bridge
+ * 
+ * This module provides utilities for migrating existing records to include
+ * embeddings, enabling semantic search functionality.
+ * 
+ * @module utils/migrate-embeddings
+ */
+
 import { getSources, saveSource } from '../core/storage.js';
 import { embeddingService } from '../services/embeddings.js';
 import { getVectorStore } from '../services/vector-store.js';
 import type { SourceRecord } from '../core/types.js';
 
+// ============================================================================
+// TYPES
+// ============================================================================
+
+/**
+ * Statistics for the migration process
+ */
 export interface MigrationStats {
   total: number;
   processed: number;
@@ -11,6 +27,25 @@ export interface MigrationStats {
   errors: string[];
 }
 
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+
+const PROGRESS_REPORT_INTERVAL = 10; // Report progress every N records
+
+// ============================================================================
+// MIGRATION FUNCTIONS
+// ============================================================================
+
+/**
+ * Migrate existing records to include embeddings
+ * 
+ * This function processes all existing source records that don't have
+ * embeddings and generates them using the embedding service. It also
+ * adds the embeddings to the vector store for semantic search.
+ * 
+ * @returns Promise that resolves to migration statistics
+ */
 export async function migrateExistingRecords(): Promise<MigrationStats> {
   const stats: MigrationStats = {
     total: 0,
@@ -76,7 +111,8 @@ export async function migrateExistingRecords(): Promise<MigrationStats> {
 
         stats.processed++;
         
-        if (stats.processed % 10 === 0) {
+        // Report progress periodically
+        if (stats.processed % PROGRESS_REPORT_INTERVAL === 0) {
           console.log(`Processed ${stats.processed}/${stats.total} sources`);
         }
 
@@ -108,7 +144,16 @@ export async function migrateExistingRecords(): Promise<MigrationStats> {
   }
 }
 
-// CLI entry point
+// ============================================================================
+// CLI ENTRY POINT
+// ============================================================================
+
+/**
+ * CLI entry point for running the migration
+ * 
+ * This allows the migration to be run directly as a script:
+ * node migrate-embeddings.js
+ */
 if (import.meta.url === `file://${process.argv[1]}`) {
   migrateExistingRecords()
     .then(stats => {
