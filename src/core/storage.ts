@@ -121,14 +121,6 @@ export async function saveSource(source: Omit<SourceRecord, 'type'>): Promise<So
   const data = await readData();
   data.sources.push(record);
   await writeData(data);
-  // Add embedding after save
-  try {
-    const { updateRecordEmbedding } = await import('./embeddings.js');
-    await updateRecordEmbedding(record);
-  } catch (err) {
-    // MCP best practice: do not use console.log, but you may want to log to a file or error handler
-    // For now, fail silently
-  }
   return record;
 }
 

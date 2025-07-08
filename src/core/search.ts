@@ -1,6 +1,5 @@
 // Simplified search functionality for sources only
 import type { SourceRecord } from './types.js';
-import { generateEmbedding, queryEmbedding } from './embeddings.js';
 
 // For temporal parsing
 import * as chrono from 'chrono-node';
@@ -62,10 +61,7 @@ export interface FilterStats {
   final: number;
 }
 
-// Core semantic similarity search
-export async function semanticSearch(): Promise<SearchResult[]> {
-  return [];
-}
+
 
 // Helper: check if a date is within a range
 function isWithinRange(date: Date, start?: Date, end?: Date): boolean {

@@ -35,13 +35,4 @@ export function setOpenAIConfig(config: Partial<OpenAIConfig>): void {
 
 export const config = {
   bridgeFilePath: process.env.BRIDGE_FILE_PATH,
-  openai: {
-    apiKey: process.env.OPENAI_API_KEY,
-    embeddingModel: process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-large',
-  },
-  pinecone: {
-    apiKey: process.env.PINECONE_API_KEY,
-    environment: process.env.PINECONE_ENVIRONMENT,
-    indexName: process.env.PINECONE_INDEX || 'bridge-index',
-  },
 }; 
