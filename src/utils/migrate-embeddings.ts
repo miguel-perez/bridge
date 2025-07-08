@@ -21,9 +21,12 @@ export async function migrateExistingRecords(): Promise<MigrationStats> {
   };
 
   try {
+    console.log('Initializing services...');
+    
     // Initialize services
     await embeddingService.initialize();
-    await getVectorStore().initialize();
+    const vectorStore = getVectorStore();
+    await vectorStore.initialize();
 
     // Get all existing sources
     const sources = await getSources();
@@ -39,9 +42,23 @@ export async function migrateExistingRecords(): Promise<MigrationStats> {
           continue;
         }
 
+        // Skip if no content
+        if (!source.content || source.content.trim().length === 0) {
+          stats.skipped++;
+          console.log(`Skipping source ${source.id}: no content`);
+          continue;
+        }
+
+        console.log(`Processing source ${source.id}...`);
+
         // Generate embedding
         const embedding = await embeddingService.generateEmbedding(source.content);
         
+        // Validate embedding
+        if (!embedding || embedding.length === 0) {
+          throw new Error('Generated embedding is empty');
+        }
+
         // Update source with embedding
         const updatedSource: SourceRecord = {
           ...source,
@@ -52,7 +69,10 @@ export async function migrateExistingRecords(): Promise<MigrationStats> {
         await saveSource(updatedSource);
 
         // Add to vector store
-        await getVectorStore().addVector(source.id, embedding);
+        const added = vectorStore.addVector(source.id, embedding);
+        if (!added) {
+          throw new Error('Failed to add vector to vector store');
+        }
 
         stats.processed++;
         
@@ -68,7 +88,16 @@ export async function migrateExistingRecords(): Promise<MigrationStats> {
       }
     }
 
+    // Save vector store to disk
+    await vectorStore.saveToDisk();
+
     console.log(`Migration completed: ${stats.processed} processed, ${stats.skipped} skipped, ${stats.failed} failed`);
+    
+    if (stats.errors.length > 0) {
+      console.log('\nErrors encountered:');
+      stats.errors.forEach(error => console.log(`- ${error}`));
+    }
+    
     return stats;
 
   } catch (error) {
@@ -83,7 +112,7 @@ export async function migrateExistingRecords(): Promise<MigrationStats> {
 if (import.meta.url === `file://${process.argv[1]}`) {
   migrateExistingRecords()
     .then(stats => {
-      console.log('Migration stats:', stats);
+      console.log('\nMigration stats:', stats);
       process.exit(stats.failed > 0 ? 1 : 0);
     })
     .catch(error => {
