@@ -184,6 +184,7 @@ Each boundary marks a new moment. Use these cues to segment continuous experienc
         sort: { type: "string", enum: ["relevance", "system_time", "occurred"], description: "Sort by field" },
         limit: { type: "number", description: "Maximum results to return" },
         includeContext: { type: "boolean", description: "Return full record metadata as structured JSON" },
+        includeFullContent: { type: "boolean", description: "Include full content instead of 200-character snippets" },
         // Experiential qualities min/max
         min_embodied: { type: "number", minimum: 0, maximum: 1, description: "Minimum embodied value" },
         max_embodied: { type: "number", minimum: 0, maximum: 1, description: "Maximum embodied value" },

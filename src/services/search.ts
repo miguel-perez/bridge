@@ -50,6 +50,7 @@ export interface SearchInput {
   sort?: 'relevance' | 'system_time' | 'occurred';
   limit?: number;
   includeContext?: boolean;
+  includeFullContent?: boolean;
   // Experiential qualities min/max
   min_embodied?: number;
   max_embodied?: number;
@@ -673,7 +674,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
     const results: SearchServiceResult[] = finalRecords.map(record => ({
       id: record.id,
       type: record.type,
-      snippet: record.content.substring(0, 200) + (record.content.length > 200 ? '...' : ''),
+      snippet: input.includeFullContent ? record.content : record.content.substring(0, 200) + (record.content.length > 200 ? '...' : ''),
       metadata: {
         contentType: record.contentType,
         perspective: record.perspective,
