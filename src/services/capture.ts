@@ -1,3 +1,8 @@
+/**
+ * Capture service for Bridge experiential data.
+ * Handles validation, vector generation, embedding, and storage of experiential sources.
+ */
+
 import { z } from 'zod';
 import { generateId, saveSource } from '../core/storage.js';
 import type { SourceRecord, ProcessingLevel, QualityVector } from '../core/types.js';
@@ -5,20 +10,45 @@ import { parseOccurredDate } from '../utils/validation.js';
 import { embeddingService } from './embeddings.js';
 import { getVectorStore } from './vector-store.js';
 
-// Capture input schema - make vector optional since we can generate it from qualities
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+
+/** Default values for capture fields */
+export const CAPTURE_DEFAULTS = {
+  CONTENT_TYPE: 'text',
+  PERSPECTIVE: 'I',
+  PROCESSING: 'during',
+  EXPERIENCER: 'self',
+};
+
+/** Valid quality types */
+export const QUALITY_TYPES = [
+  'embodied', 'attentional', 'affective', 'purposive',
+  'spatial', 'temporal', 'intersubjective',
+] as const;
+
+// ============================================================================
+// SCHEMA & TYPES
+// ============================================================================
+
+/**
+ * Zod schema for validating capture input.
+ * Vector is optional since it can be generated from qualities.
+ */
 export const captureSchema = z.object({
-  content: z.string().optional(), // Make content optional to allow file auto-read
-  contentType: z.string().optional().default('text'),
-  perspective: z.enum(['I', 'we', 'you', 'they']).optional().default('I'),
-  processing: z.enum(['during', 'right-after', 'long-after', 'crafted']).optional().default('during'),
-  occurred: z.string().optional(), // When it happened (chrono-node compatible)
-  experiencer: z.string().optional().default('self'),
+  content: z.string().optional(),
+  contentType: z.string().optional().default(CAPTURE_DEFAULTS.CONTENT_TYPE),
+  perspective: z.enum(['I', 'we', 'you', 'they']).optional().default(CAPTURE_DEFAULTS.PERSPECTIVE),
+  processing: z.enum(['during', 'right-after', 'long-after', 'crafted']).optional().default(CAPTURE_DEFAULTS.PROCESSING),
+  occurred: z.string().optional(),
+  experiencer: z.string().optional().default(CAPTURE_DEFAULTS.EXPERIENCER),
   crafted: z.boolean().optional(),
   experiential_qualities: z.object({
     qualities: z.array(z.object({
-      type: z.enum(['embodied', 'attentional', 'affective', 'purposive', 'spatial', 'temporal', 'intersubjective']),
+      type: z.enum(QUALITY_TYPES),
       prominence: z.number().min(0).max(1),
-      manifestation: z.string()
+      manifestation: z.string(),
     })),
     vector: z.object({
       embodied: z.number().min(0).max(1),
@@ -27,30 +57,32 @@ export const captureSchema = z.object({
       purposive: z.number().min(0).max(1),
       spatial: z.number().min(0).max(1),
       temporal: z.number().min(0).max(1),
-      intersubjective: z.number().min(0).max(1)
+      intersubjective: z.number().min(0).max(1),
     }).optional(),
   }),
 }).refine((data) => {
-  // Ensure content is provided
   if (!data.content) {
     throw new Error('Content must be provided');
   }
   return true;
 }, {
-  message: 'Content must be provided'
+  message: 'Content must be provided',
 });
 
+/**
+ * Input type for capturing experiential data.
+ */
 export interface CaptureInput {
   content?: string;
   contentType?: string;
   perspective?: 'I' | 'we' | 'you' | 'they';
   processing?: 'during' | 'right-after' | 'long-after' | 'crafted';
-  occurred?: string; // When it happened (chrono-node compatible)
+  occurred?: string;
   experiencer?: string;
   crafted?: boolean;
   experiential_qualities: {
     qualities: Array<{
-      type: 'embodied' | 'attentional' | 'affective' | 'purposive' | 'spatial' | 'temporal' | 'intersubjective';
+      type: typeof QUALITY_TYPES[number];
       prominence: number;
       manifestation: string;
     }>;
@@ -58,17 +90,28 @@ export interface CaptureInput {
   };
 }
 
+/**
+ * Result of a capture operation.
+ */
 export interface CaptureResult {
   source: SourceRecord;
   defaultsUsed: string[];
 }
 
-// Generate experiential quality vector from qualities array
-function generateQualityVector(qualities: Array<{
-  type: 'embodied' | 'attentional' | 'affective' | 'purposive' | 'spatial' | 'temporal' | 'intersubjective';
-  prominence: number;
-}>, providedVector?: QualityVector): QualityVector {
-  // Start with provided vector or all zeros
+// ============================================================================
+// QUALITY VECTOR GENERATION
+// ============================================================================
+
+/**
+ * Generates a quality vector from an array of qualities.
+ * @param qualities - Array of quality evidence
+ * @param providedVector - Optional base vector to override
+ * @returns Quality vector with all dimensions
+ */
+function generateQualityVector(
+  qualities: Array<{ type: typeof QUALITY_TYPES[number]; prominence: number }>,
+  providedVector?: QualityVector
+): QualityVector {
   const vector: QualityVector = providedVector ? { ...providedVector } : {
     embodied: 0,
     attentional: 0,
@@ -76,18 +119,28 @@ function generateQualityVector(qualities: Array<{
     purposive: 0,
     spatial: 0,
     temporal: 0,
-    intersubjective: 0
+    intersubjective: 0,
   };
-
-  // Override only the dimensions that appear in the qualities array
   for (const quality of qualities) {
     vector[quality.type] = quality.prominence;
   }
-
   return vector;
 }
 
+// ============================================================================
+// CAPTURE SERVICE
+// ============================================================================
+
+/**
+ * Service for capturing and storing experiential sources.
+ */
 export class CaptureService {
+  /**
+   * Captures a new experiential source, validates input, generates embeddings, and stores it.
+   * @param input - Capture input data
+   * @returns Capture result with source record and defaults used
+   * @throws Error if validation fails or required fields are missing
+   */
   async captureSource(input: CaptureInput): Promise<CaptureResult> {
     // Validate experiential qualities are provided
     if (!input.experiential_qualities || !input.experiential_qualities.qualities || input.experiential_qualities.qualities.length === 0) {
@@ -107,49 +160,45 @@ export class CaptureService {
       }
     }
 
-    // Create source record for non-file captures
+    // Ensure content is provided
     if (!input.content) {
       throw new Error('Content is required. Example: { content: "I felt a wave of anxiety as I entered the room." }');
     }
-    
+
     // Use defaults for perspective, processing, experiencer
-    const perspective = input.perspective ?? 'I';
-    const processing = input.processing ?? 'during';
-    const experiencer = input.experiencer ?? 'self';
-    
+    const perspective = input.perspective ?? CAPTURE_DEFAULTS.PERSPECTIVE;
+    const processing = input.processing ?? CAPTURE_DEFAULTS.PROCESSING;
+    const experiencer = input.experiencer ?? CAPTURE_DEFAULTS.EXPERIENCER;
+
     // Process experiential qualities - generate vector if not provided
     let processedExperientialQualities: import('../core/types.js').ExperientialQualities;
     if (input.experiential_qualities.qualities) {
-      // Generate vector from qualities, using provided vector as base if available
       const generatedVector = generateQualityVector(input.experiential_qualities.qualities, input.experiential_qualities.vector);
       processedExperientialQualities = {
         qualities: input.experiential_qualities.qualities,
-        vector: generatedVector
+        vector: generatedVector,
       };
     } else if (input.experiential_qualities.vector) {
-      // Handle case where only vector is provided without qualities array
       processedExperientialQualities = {
         qualities: [],
-        vector: input.experiential_qualities.vector
+        vector: input.experiential_qualities.vector,
       };
     } else {
-      // This should not happen due to validation above, but TypeScript requires it
       throw new Error('Experiential qualities analysis is required. The AI assistant must analyze the content and provide quality scores. Example: { experiential_qualities: { qualities: [ { type: "embodied", prominence: 0.7, manifestation: "tense shoulders" }, ... ] } }');
     }
-    
+
     // Generate embedding for content
     let contentEmbedding: number[] | undefined;
     try {
       contentEmbedding = await embeddingService.generateEmbedding(input.content);
     } catch (error) {
       // Silently handle embedding generation errors in MCP context
-      // The record will still be saved without embedding
     }
-    
+
     const source = await saveSource({
       id: generateId('src'),
       content: input.content,
-      contentType: input.contentType || 'text',
+      contentType: input.contentType || CAPTURE_DEFAULTS.CONTENT_TYPE,
       system_time: new Date().toISOString(),
       occurred: occurredDate || new Date().toISOString(),
       perspective,
@@ -167,7 +216,6 @@ export class CaptureService {
         vectorStore.addVector(source.id, contentEmbedding);
       } catch (error) {
         // Silently handle vector storage errors in MCP context
-        // The record will still be saved without vector storage
       }
     }
 
@@ -175,6 +223,11 @@ export class CaptureService {
     return { source, defaultsUsed };
   }
 
+  /**
+   * Returns a list of which defaults were used for the capture input.
+   * @param input - Capture input data
+   * @returns Array of default field descriptions
+   */
   private getDefaultsUsed(input: CaptureInput): string[] {
     const defaultsUsed = [];
     if (!input.perspective) defaultsUsed.push('perspective="I"');
