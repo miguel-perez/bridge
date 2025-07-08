@@ -675,7 +675,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
       id: record.id,
       type: record.type,
       snippet: input.includeFullContent ? record.content : record.content.substring(0, 200) + (record.content.length > 200 ? '...' : ''),
-      metadata: {
+      metadata: input.includeContext ? {
         contentType: record.contentType,
         perspective: record.perspective,
         experiencer: record.experiencer,
@@ -684,7 +684,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
         system_time: record.system_time,
         occurred: record.occurred,
         experiential_qualities: record.experiential_qualities
-      },
+      } : undefined,
       relevance_score: record._relevance.score,
       relevance_breakdown: record._relevance.breakdown
     }));
