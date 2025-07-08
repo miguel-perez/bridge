@@ -18,7 +18,8 @@
     "format": "prettier --write src/**/*.ts",
     "migrate-embeddings": "node dist/utils/migrate-embeddings.js",
     "test:llm": "node dist/scripts/llm-integration-test.js",
-    "setup:test-data": "node dist/scripts/test-data-setup.js"
+    "setup:test-data": "node dist/scripts/test-data-setup.js",
+    "build:dxt": "powershell -ExecutionPolicy Bypass -File build-dxt.ps1"
   },
   "keywords": [
     "mcp",

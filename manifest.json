@@ -1,0 +1,76 @@
+{
+  "dxt_version": "0.1",
+  "name": "bridge-experiential-data",
+  "version": "0.1.0",
+  "description": "Capture, frame, and weave personal experiences into meaningful narratives",
+  "long_description": "Bridge is an experiential data management system that helps you capture raw experiences, transform them into structured moments with emotional and experiential qualities, and weave them into larger narratives. Features AI-powered framing, semantic search, multi-experiencer support, and comprehensive reflection tools.",
+  "author": {
+    "name": "Bridge Development Team",
+    "email": "support@bridge-mcp.dev",
+    "url": "https://github.com/miguel-perez/bridge"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/miguel-perez/bridge",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/miguel-perez/bridge.git"
+  },
+  "keywords": ["experience", "moments", "journaling", "narrative", "phenomenology", "mcp", "ai"],
+  
+  "server": {
+    "type": "node",
+    "entry_point": "dist/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/dist/index.js"],
+      "env": {
+        "NODE_ENV": "production",
+        "BRIDGE_FILE_PATH": "${user_config.data_file_path}"
+      }
+    }
+  },
+  
+  "tools": [
+    {
+      "name": "capture",
+      "description": "Capture raw experiential text as a source record"
+    },
+    {
+      "name": "search",
+      "description": "Search across all experiential records"
+    },
+    {
+      "name": "release",
+      "description": "Delete records or cleanup reframed records"
+    },
+    {
+      "name": "enrich",
+      "description": "Edit and enrich existing source records"
+    }
+  ],
+  
+  "user_config": {
+    "data_file_path": {
+      "type": "string",
+      "title": "Data Storage Path",
+      "description": "Path to store your experiential data JSON file",
+      "required": false,
+      "default": "${HOME}/.bridge/bridge.json"
+    }
+  },
+  
+  "compatibility": {
+    "claude_desktop": ">=0.11.0",
+    "platforms": ["darwin", "win32", "linux"],
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  },
+  
+  "icon": "icon.png",
+  "screenshots": [
+    "assets/screenshots/capture.png",
+    "assets/screenshots/search.png",
+    "assets/screenshots/weave.png"
+  ]
+} 

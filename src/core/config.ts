@@ -1,38 +1,41 @@
-// No imports needed; config is built from environment variables only
+// Configuration for Bridge DXT - simplified for local-only operation
+import { homedir } from 'os';
+import { join } from 'path';
 
-export interface OpenAIConfig {
-  apiKey?: string;
-  model?: string;
-}
-
-export interface IntegrationConfig {
-  openai: OpenAIConfig;
+export interface BridgeConfig {
+  dataFilePath: string;
 }
 
 // Default configuration
-const defaultConfig: IntegrationConfig = {
-  openai: {
-    apiKey: process.env.OPENAI_API_KEY,
-    model: process.env.OPENAI_MODEL || 'gpt-4',
-  },
+const defaultConfig: BridgeConfig = {
+  dataFilePath: process.env.BRIDGE_FILE_PATH || join(homedir(), '.bridge', 'bridge.json'),
 };
 
 let currentConfig = { ...defaultConfig };
 
-export function getConfig(): IntegrationConfig {
+export function getConfig(): BridgeConfig {
   return currentConfig;
 }
 
-export function updateConfig(updates: Partial<IntegrationConfig>): void {
+export function updateConfig(updates: Partial<BridgeConfig>): void {
   currentConfig = { ...currentConfig, ...updates };
 }
 
-export function setOpenAIConfig(config: Partial<OpenAIConfig>): void {
-  currentConfig.openai = { ...currentConfig.openai, ...config };
+export function setDataFilePath(path: string): void {
+  currentConfig.dataFilePath = path;
 }
 
+export function getDataFilePath(): string {
+  return currentConfig.dataFilePath;
+}
 
+// Validate configuration on startup
+export function validateConfiguration(): void {
+  if (!currentConfig.dataFilePath) {
+    throw new Error('Data file path is required. Please configure this in the Claude Desktop extension settings.');
+  }
+}
 
 export const config = {
-  bridgeFilePath: process.env.BRIDGE_FILE_PATH,
+  bridgeFilePath: getDataFilePath(),
 }; 

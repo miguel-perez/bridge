@@ -1,24 +1,40 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { CallToolRequestSchema, ListToolsRequestSchema, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
+import { validateConfiguration, getDataFilePath } from '../core/config.js';
 import { setStorageConfig } from '../core/storage.js';
-import path from 'path';
+import { mkdirSync } from 'fs';
+import { dirname } from 'path';
 import { MCPToolHandlers } from './handlers.js';
 import { tools } from './tools.js';
 
 // Constants
-const SERVER_NAME = 'captain';
+const SERVER_NAME = 'bridge';
 const SERVER_VERSION = '0.1.0';
 
-// Define data file path using environment variable with fallback in project root
-const defaultDataPath = process.env.NODE_ENV === 'test' 
-  ? path.resolve(process.cwd(), 'data', 'bridge-test.json')
-  : path.resolve(process.cwd(), 'bridge.json');
-const DATA_FILE_PATH = process.env.BRIDGE_FILE_PATH
-  ? path.isAbsolute(process.env.BRIDGE_FILE_PATH)
-    ? process.env.BRIDGE_FILE_PATH
-    : path.resolve(process.cwd(), process.env.BRIDGE_FILE_PATH)
-  : defaultDataPath;
+// Initialize configuration and validate on startup
+function initializeConfiguration() {
+  try {
+    // Validate configuration
+    validateConfiguration();
+    
+    // Get data file path from config
+    const dataFilePath = getDataFilePath();
+    
+    // Ensure directory exists
+    const dataDir = dirname(dataFilePath);
+    mkdirSync(dataDir, { recursive: true });
+    
+    // Set storage configuration
+    setStorageConfig({ dataFile: dataFilePath });
+    
+    console.log(`Bridge DXT initialized with data file: ${dataFilePath}`);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown configuration error';
+    console.error('Configuration error:', errorMessage);
+    throw new Error(`Bridge DXT configuration failed: ${errorMessage}`);
+  }
+}
 
 // Create server instance
 const server = new Server(
@@ -41,8 +57,8 @@ const server = new Server(
   }
 );
 
-// Set storage and embeddings config to use DATA_FILE_PATH
-setStorageConfig({ dataFile: DATA_FILE_PATH });
+// Initialize configuration before setting up handlers
+initializeConfiguration();
 
 // Create tool handlers
 const toolHandlers = new MCPToolHandlers();
