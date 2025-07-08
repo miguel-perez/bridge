@@ -1,9 +1,47 @@
-// Simplified search functionality for sources only
-import type { SourceRecord } from './types.js';
+/**
+ * Core search functionality for Bridge experiential data.
+ * Provides semantic, temporal, and relationship-based search capabilities
+ * with advanced filtering, sorting, and grouping options.
+ */
 
-// For temporal parsing
+import type { SourceRecord } from './types.js';
 import * as chrono from 'chrono-node';
 
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+
+/** Default search configuration values */
+export const SEARCH_DEFAULTS = {
+  LIMIT: 50,
+  GROUP_BY: 'none' as const,
+  SORT: 'relevance' as const,
+  MODE: 'similarity' as const
+} as const;
+
+/** Valid search modes */
+export const SEARCH_MODES = ['similarity', 'temporal', 'relationship'] as const;
+
+/** Valid sort options */
+export const SORT_OPTIONS = ['relevance', 'system_time', 'occurred'] as const;
+
+/** Valid grouping options */
+export const GROUP_OPTIONS = ['none', 'day', 'week', 'month', 'experiencer'] as const;
+
+/** Default values for experiential data fields */
+export const FIELD_DEFAULTS = {
+  EXPERIENCER: 'self',
+  PERSPECTIVE: 'I',
+  PROCESSING: 'during'
+} as const;
+
+// ============================================================================
+// TYPE DEFINITIONS
+// ============================================================================
+
+/**
+ * A search result containing source data and metadata.
+ */
 export interface SearchResult {
   type: 'source';
   id: string;
@@ -12,6 +50,9 @@ export interface SearchResult {
   source: SourceRecord;
 }
 
+/**
+ * Filter options for narrowing search results.
+ */
 export interface FilterOptions {
   experiencer?: string;
   experiencers?: string[];
@@ -22,12 +63,21 @@ export interface FilterOptions {
   occurredRange?: { start: string; end: string };
 }
 
-export type SortOption = 'relevance' | 'system_time' | 'occurred';
-export type GroupOption = 'none' | 'day' | 'week' | 'month' | 'experiencer';
+/** Valid sort options for search results */
+export type SortOption = typeof SORT_OPTIONS[number];
 
+/** Valid grouping options for search results */
+export type GroupOption = typeof GROUP_OPTIONS[number];
+
+/** Valid search modes */
+export type SearchMode = typeof SEARCH_MODES[number];
+
+/**
+ * Complete search configuration options.
+ */
 export interface SearchOptions {
   query: string;
-  mode?: 'similarity' | 'temporal' | 'relationship';
+  mode?: SearchMode;
   filters?: FilterOptions;
   sort?: SortOption;
   groupBy?: GroupOption;
@@ -35,11 +85,17 @@ export interface SearchOptions {
   includeContext?: boolean;
 }
 
+/**
+ * Date range for temporal filtering.
+ */
 export interface DateRange {
   start: Date;
   end: Date;
 }
 
+/**
+ * Grouped search results with metadata.
+ */
 export interface GroupedResults {
   groups: Array<{
     label: string;
@@ -49,7 +105,9 @@ export interface GroupedResults {
   totalResults: number;
 }
 
-// Filter impact tracking interface
+/**
+ * Statistics tracking the impact of each filter stage.
+ */
 export interface FilterStats {
   initial: number;
   afterTimeRange?: number;
@@ -61,32 +119,156 @@ export interface FilterStats {
   final: number;
 }
 
+// ============================================================================
+// VALIDATION FUNCTIONS
+// ============================================================================
 
+/**
+ * Validates search options and provides defaults.
+ * @param options - The search options to validate
+ * @returns Validated options with defaults applied
+ * @throws Error if options are invalid
+ */
+export function validateSearchOptions(options: Partial<SearchOptions>): SearchOptions {
+  if (!options.query) {
+    throw new Error('Search query is required');
+  }
 
-// Helper: check if a date is within a range
+  if (options.mode && !SEARCH_MODES.includes(options.mode)) {
+    throw new Error(`Invalid search mode: ${options.mode}. Valid modes: ${SEARCH_MODES.join(', ')}`);
+  }
+
+  if (options.sort && !SORT_OPTIONS.includes(options.sort)) {
+    throw new Error(`Invalid sort option: ${options.sort}. Valid options: ${SORT_OPTIONS.join(', ')}`);
+  }
+
+  if (options.groupBy && !GROUP_OPTIONS.includes(options.groupBy)) {
+    throw new Error(`Invalid group option: ${options.groupBy}. Valid options: ${GROUP_OPTIONS.join(', ')}`);
+  }
+
+  if (options.limit !== undefined && (options.limit < 1 || options.limit > 1000)) {
+    throw new Error('Limit must be between 1 and 1000');
+  }
+
+  return {
+    query: options.query,
+    mode: options.mode || SEARCH_DEFAULTS.MODE,
+    filters: options.filters,
+    sort: options.sort || SEARCH_DEFAULTS.SORT,
+    groupBy: options.groupBy || SEARCH_DEFAULTS.GROUP_BY,
+    limit: options.limit || SEARCH_DEFAULTS.LIMIT,
+    includeContext: options.includeContext || false
+  };
+}
+
+/**
+ * Validates filter options.
+ * @param filters - The filter options to validate
+ * @returns True if filters are valid
+ * @throws Error if filters are invalid
+ */
+export function validateFilterOptions(filters?: FilterOptions): boolean {
+  if (!filters) return true;
+
+  // Validate date ranges
+  if (filters.timeRange) {
+    if (filters.timeRange.start && isNaN(Date.parse(filters.timeRange.start))) {
+      throw new Error('Invalid timeRange.start date');
+    }
+    if (filters.timeRange.end && isNaN(Date.parse(filters.timeRange.end))) {
+      throw new Error('Invalid timeRange.end date');
+    }
+  }
+
+  if (filters.systemTimeRange) {
+    if (isNaN(Date.parse(filters.systemTimeRange.start))) {
+      throw new Error('Invalid systemTimeRange.start date');
+    }
+    if (isNaN(Date.parse(filters.systemTimeRange.end))) {
+      throw new Error('Invalid systemTimeRange.end date');
+    }
+  }
+
+  if (filters.occurredRange) {
+    if (isNaN(Date.parse(filters.occurredRange.start))) {
+      throw new Error('Invalid occurredRange.start date');
+    }
+    if (isNaN(Date.parse(filters.occurredRange.end))) {
+      throw new Error('Invalid occurredRange.end date');
+    }
+  }
+
+  return true;
+}
+
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+/**
+ * Checks if a date is within a specified range.
+ * @param date - The date to check
+ * @param start - Optional start date (inclusive)
+ * @param end - Optional end date (inclusive)
+ * @returns True if the date is within the range
+ */
 function isWithinRange(date: Date, start?: Date, end?: Date): boolean {
   if (start && date < start) return false;
   if (end && date > end) return false;
   return true;
 }
 
-
-
-// Helper: get occurred date specifically
+/**
+ * Gets the occurred date from a source record.
+ * @param record - The source record
+ * @returns The occurred date or null if not available
+ */
 function getOccurredDate(record: SourceRecord): Date | null {
-  if (record.occurred) return new Date(record.occurred);
-  return null;
+  if (!record.occurred) return null;
+  const date = new Date(record.occurred);
+  return isNaN(date.getTime()) ? null : date;
 }
 
-// Helper: get system_time date specifically
+/**
+ * Gets the system time date from a source record.
+ * @param record - The source record
+ * @returns The system time date or null if not available
+ */
 function getSystemTimeDate(record: SourceRecord): Date | null {
-  if (record.system_time) return new Date(record.system_time);
-  return null;
+  if (!record.system_time) return null;
+  const date = new Date(record.system_time);
+  return isNaN(date.getTime()) ? null : date;
 }
 
-// Advanced filtering with impact tracking
+/**
+ * Gets the experiencer from a search result.
+ * @param result - The search result
+ * @returns The experiencer or default value
+ */
+function getExperiencer(result: SearchResult): string {
+  return result.source.experiencer || FIELD_DEFAULTS.EXPERIENCER;
+}
+
+// ============================================================================
+// FILTERING FUNCTIONS
+// ============================================================================
+
+/**
+ * Applies advanced filters to search results with impact tracking.
+ * @param results - The search results to filter
+ * @param filters - The filter options to apply
+ * @returns Filtered results and statistics
+ */
 export function advancedFilters(results: SearchResult[], filters?: FilterOptions): { filtered: SearchResult[], stats: FilterStats } {
-  if (!filters) return { filtered: results, stats: { initial: results.length, final: results.length } };
+  if (!filters) {
+    return { 
+      filtered: results, 
+      stats: { initial: results.length, final: results.length } 
+    };
+  }
+
+  // Validate filters
+  validateFilterOptions(filters);
   
   const stats: FilterStats = {
     initial: results.length,
@@ -131,7 +313,7 @@ export function advancedFilters(results: SearchResult[], filters?: FilterOptions
   // Experiencers filter
   if (filters.experiencers && filters.experiencers.length > 0) {
     filtered = filtered.filter(result => {
-      const experiencer = result.source.experiencer || 'self';
+      const experiencer = result.source.experiencer || FIELD_DEFAULTS.EXPERIENCER;
       return filters.experiencers!.includes(experiencer);
     });
     stats.afterExperiencers = filtered.length;
@@ -140,7 +322,7 @@ export function advancedFilters(results: SearchResult[], filters?: FilterOptions
   // Perspectives filter
   if (filters.perspectives && filters.perspectives.length > 0) {
     filtered = filtered.filter(result => {
-      const perspective = result.source.perspective || 'I';
+      const perspective = result.source.perspective || FIELD_DEFAULTS.PERSPECTIVE;
       return filters.perspectives!.includes(perspective);
     });
     stats.afterPerspectives = filtered.length;
@@ -149,7 +331,7 @@ export function advancedFilters(results: SearchResult[], filters?: FilterOptions
   // Processing filter
   if (filters.processing && filters.processing.length > 0) {
     filtered = filtered.filter(result => {
-      const processing = result.source.processing || 'during';
+      const processing = result.source.processing || FIELD_DEFAULTS.PROCESSING;
       return filters.processing!.includes(processing);
     });
     stats.afterProcessing = filtered.length;
@@ -159,12 +341,16 @@ export function advancedFilters(results: SearchResult[], filters?: FilterOptions
   return { filtered, stats };
 }
 
-// Helper: get experiencer for grouping
-function getExperiencer(result: SearchResult): string {
-  return result.source.experiencer || 'self';
-}
+// ============================================================================
+// GROUPING FUNCTIONS
+// ============================================================================
 
-// Group results by various criteria
+/**
+ * Groups search results by various criteria.
+ * @param results - The search results to group
+ * @param groupBy - The grouping criteria
+ * @returns Grouped results with metadata
+ */
 export function groupResults(results: SearchResult[], groupBy: GroupOption = 'none'): GroupedResults {
   if (groupBy === 'none') {
     return {
@@ -221,8 +407,19 @@ export function groupResults(results: SearchResult[], groupBy: GroupOption = 'no
   };
 }
 
-// Main search function
+// ============================================================================
+// MAIN SEARCH FUNCTION
+// ============================================================================
+
+/**
+ * Performs a comprehensive search across experiential data.
+ * @param options - Search configuration options
+ * @returns Search results and optional statistics
+ */
 export async function search(options: SearchOptions): Promise<{ results: SearchResult[] | GroupedResults, stats?: FilterStats }> {
+  // Validate and normalize options
+  const validatedOptions = validateSearchOptions(options);
+  
   const { getSources } = await import('./storage.js');
   const sources = await getSources();
   
@@ -234,21 +431,21 @@ export async function search(options: SearchOptions): Promise<{ results: SearchR
   }));
   
   // Apply filters
-  const { filtered, stats } = advancedFilters(results, options.filters);
+  const { filtered, stats } = advancedFilters(results, validatedOptions.filters);
   results = filtered;
   
   // Apply search query
-  if (options.query.trim()) {
-    const query = options.query.toLowerCase();
+  if (validatedOptions.query.trim()) {
+    const query = validatedOptions.query.toLowerCase();
     results = results.filter(result => {
       return result.source.content.toLowerCase().includes(query);
     });
   }
   
   // Apply sorting
-  if (options.sort) {
+  if (validatedOptions.sort) {
     results.sort((a, b) => {
-      switch (options.sort) {
+      switch (validatedOptions.sort) {
         case 'system_time': {
           const aSystemTime = getSystemTimeDate(a.source);
           const bSystemTime = getSystemTimeDate(b.source);
@@ -269,21 +466,33 @@ export async function search(options: SearchOptions): Promise<{ results: SearchR
   }
   
   // Apply limit
-  if (options.limit) {
-    results = results.slice(0, options.limit);
+  if (validatedOptions.limit) {
+    results = results.slice(0, validatedOptions.limit);
   }
   
   // Apply grouping
-  if (options.groupBy && options.groupBy !== 'none') {
-    const grouped = groupResults(results, options.groupBy);
+  if (validatedOptions.groupBy && validatedOptions.groupBy !== 'none') {
+    const grouped = groupResults(results, validatedOptions.groupBy);
     return { results: grouped, stats };
   }
   
   return { results, stats };
 }
 
-// Parse temporal queries
+// ============================================================================
+// TEMPORAL SEARCH FUNCTIONS
+// ============================================================================
+
+/**
+ * Parses temporal expressions from search queries.
+ * @param query - The search query to parse
+ * @returns Date range and cleaned query
+ */
 export function parseTemporalQuery(query: string): { dateRange?: DateRange, cleanQuery: string } {
+  if (!query.trim()) {
+    return { cleanQuery: query };
+  }
+
   const parsed = chrono.parse(query);
   if (parsed.length === 0) {
     return { cleanQuery: query };
@@ -298,7 +507,16 @@ export function parseTemporalQuery(query: string): { dateRange?: DateRange, clea
   return { dateRange, cleanQuery };
 }
 
-// Find all records related to a given record (for relationship search)
+// ============================================================================
+// RELATIONSHIP SEARCH FUNCTIONS
+// ============================================================================
+
+/**
+ * Finds all records related to a given record (placeholder for future graph features).
+ * @param recordId - The ID of the record to find relationships for
+ * @param allRecords - All available records
+ * @returns Related records
+ */
 export function findAllRelatedRecords(recordId: string, allRecords: SourceRecord[]): SourceRecord[] {
   const related = new Set<string>();
   const toProcess = [recordId];
@@ -311,8 +529,8 @@ export function findAllRelatedRecords(recordId: string, allRecords: SourceRecord
     // Add the record itself
     related.add(record.id);
     
-    // Find records that reference this one (for future graph features)
-    // This is a placeholder for when we add graph relationships
+    // TODO: Implement graph relationship logic when graph features are added
+    // This is a placeholder for future relationship search capabilities
   }
   
   return allRecords.filter(r => related.has(r.id));
