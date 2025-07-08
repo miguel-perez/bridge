@@ -1,9 +1,10 @@
 {
   "dxt_version": "0.1",
   "name": "bridge",
-  "version": "0.1.0",
-  "description": "Capture experiences into a structured format for Humans & AI to use, allowing for better distirbuted cognition.",
-  "long_description": "Bridge is an experiential data management system that helps you capture raw experiences, transform them into structured moments with emotional and experiential qualities. Features semantic search, multi-experiencer support, and comprehensive reflection tools.",
+  "display_name": "Bridge: Phenomenological Data Capture",
+  "version": "0.2.0",
+  "description": "Capture and analyze experiential moments through seven phenomenological dimensions, enabling distributed cognition between humans and AI.",
+  "long_description": "Bridge implements a new approach to capturing consciousness by preserving experiential moments in their full phenomenological richness. Drawing from decades of research in embodied cognition, micro-phenomenology, and extended mind theory, Bridge transforms raw experience into computationally accessible data without losing its essential qualities.\n\nEach captured moment is analyzed across seven fundamental dimensions: embodied (physical presence), attentional (awareness patterns), affective (emotional atmosphere), purposive (directional momentum), spatial (lived place), temporal (time flow), and intersubjective (social dynamics).\n\nBridge enables multi-modal search combining text matching (40%), vector similarity (30%), semantic search (20%), and contextual filters (10%). This allows navigation through experiential data by meaning, feeling, and phenomenological signature—not just keywords.\n\nAs infrastructure for distributed cognition, Bridge serves researchers in consciousness studies, AI developers building empathetic systems, and pioneers exploring new forms of human-AI collaboration. It resolves the 'pragmatic paradox' of segmenting continuous consciousness while preserving experiential wholeness.",
   "author": {
     "name": "Miguel Angel Perez",
     "email": "mail@miguel.design",
@@ -15,7 +16,7 @@
     "type": "git",
     "url": "https://github.com/miguel-perez/bridge.git"
   },
-  "keywords": ["experience", "moments", "journaling", "narrative", "phenomenology", "mcp", "ai"],
+  "keywords": ["consciousness", "phenomenology", "mcp", "ai"],
   
   "server": {
     "type": "node",
@@ -24,27 +25,56 @@
       "command": "node",
       "args": ["${__dirname}/dist/index.js"],
       "env": {
-        "NODE_ENV": "production"
+        "NODE_ENV": "production",
+        "BRIDGE_DEBUG": "${BRIDGE_DEBUG:-false}",
+        "BRIDGE_SEARCH_DEBUG": "${BRIDGE_SEARCH_DEBUG:-false}",
+        "BRIDGE_FILE_PATH": "${user_config.data_file_path}"
       }
+    }
+  },
+  
+  "user_config": {
+    "data_file_path": {
+      "type": "file",
+      "title": "Bridge Data File",
+      "description": "Path to your Bridge experiential data file (bridge.json). This file stores all your captured moments and experiences.",
+      "required": false,
+      "default": "${HOME}/bridge.json",
+      "file_types": ["json"],
+      "help_text": "Leave empty to use the default location in your home directory, or specify a custom path to your bridge.json file."
+    },
+    "debug_mode": {
+      "type": "boolean",
+      "title": "Debug Mode",
+      "description": "Enable debug logging for troubleshooting",
+      "default": false,
+      "required": false
+    },
+    "search_debug": {
+      "type": "boolean", 
+      "title": "Search Debug Mode",
+      "description": "Enable detailed logging for search operations",
+      "default": false,
+      "required": false
     }
   },
   
   "tools": [
     {
       "name": "capture",
-      "description": "Capture raw experiential text as a source record"
+      "description": "Capture experiential moments with seven-dimensional phenomenological analysis (embodied, attentional, affective, purposive, spatial, temporal, intersubjective)"
     },
     {
       "name": "search",
-      "description": "Search across all experiential records"
-    },
-    {
-      "name": "release",
-      "description": "Delete records by ID"
+      "description": "Search experiences using multi-modal relevance: text matching, phenomenological vector similarity, semantic meaning, and contextual filters"
     },
     {
       "name": "enrich",
-      "description": "Edit and enrich existing source records"
+      "description": "Iteratively deepen experiential records through reflection, adding new insights while preserving original capture"
+    },
+    {
+      "name": "release",
+      "description": "Release experiential records back to consciousness flow (delete), acknowledging some moments need to be let go"
     }
   ],
   
@@ -60,6 +90,6 @@
   "screenshots": [
     "assets/screenshots/capture.png",
     "assets/screenshots/search.png",
-    "assets/screenshots/weave.png"
+    "assets/screenshots/pattern-recognition.png"
   ]
-} 
+}

@@ -33,8 +33,13 @@ function getStorageDir(): string {
 
 function getDataFile(): string {
   if (customDataFile) return customDataFile;
-  // Fallback to bridge.json in the script directory
-  return path.join(path.dirname(fileURLToPath(import.meta.url)), 'bridge.json');
+  // Use configurable data file path, fallback to bridge.json in the script directory
+  const configPath = process.env.BRIDGE_FILE_PATH || 'bridge.json';
+  if (configPath.startsWith('/') || configPath.match(/^[a-zA-Z]:[\\/]/)) {
+    return configPath; // Absolute path
+  }
+  // Relative path - resolve from project root
+  return path.join(process.cwd(), configPath);
 }
 
 // Ensure storage directory exists

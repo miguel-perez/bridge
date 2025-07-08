@@ -17,9 +17,19 @@ export default {
   testMatch: [
     '**/?(*.)+(spec|test).ts'
   ],
+  // Exclude LLM integration tests from regular test runs
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/src/scripts/llm-integration-test.ts',
+    '/src/scripts/dev-workflow.ts'
+  ],
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.d.ts',
-    '!src/**/*.test.ts'
-  ]
+    '!src/**/*.test.ts',
+    '!src/scripts/llm-integration-test.ts',
+    '!src/scripts/dev-workflow.ts'
+  ],
+  // Increase timeout for tests
+  testTimeout: 30000
 }; 

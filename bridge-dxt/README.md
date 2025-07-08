@@ -1,124 +1,135 @@
-# Bridge - Experiential Data Desktop Extension
+# Bridge: Infrastructure for Distributed Cognition
 
-Bridge is an experiential data management system that helps you capture raw experiences, transform them into structured moments with emotional and experiential qualities, and weave them into larger narratives.
+> "The mind is not in the head." — Andy Clark
 
-## Features
+Bridge is a phenomenological data capture system that enables genuine distributed cognition between humans and AI. It implements theoretical insights from embodied cognition, micro-phenomenology, and extended mind theory into practical infrastructure for the age of human-AI collaboration.
 
-- **AI-Powered Framing**: Automatically identify emotional, spatial, and temporal qualities
-- **Semantic Search**: Find experiences by meaning, not just keywords
-- **Multi-Experiencer Support**: Capture experiences from different perspectives
-- **Reflection Chains**: Link experiences that build on each other
-- **Privacy-First**: All data stored locally on your machine
-- **Offline Operation**: Works without internet connection
+## What is Bridge?
 
-## Installation
+Bridge captures and preserves the experiential dimensions of consciousness through a sophisticated multi-modal system. Unlike traditional knowledge management tools that focus on information, Bridge works with the phenomenological structure of experience itself.
 
-1. Download `bridge-experiential-data.dxt`
-2. Open Claude Desktop
-3. Navigate to Settings > Extensions
-4. Drag and drop the .dxt file or click "Install from file"
+### Core Innovation
 
-## Configuration
+Bridge resolves the "pragmatic paradox" identified by Bergson—that consciousness flows continuously but human communication requires discrete units—by preserving experiential wholeness within practical segmentation. Each captured moment maintains its phenomenological richness through seven fundamental dimensions:
 
-After installation, you can optionally configure the extension:
+- **Embodied**: Physical sensations and bodily presence
+- **Attentional**: Focus, awareness, and meta-attention patterns  
+- **Affective**: Emotional coloring and mood atmosphere
+- **Purposive**: Directedness, intention, and momentum
+- **Spatial**: Lived sense of place and environmental presence
+- **Temporal**: How past and future inhabit the present moment
+- **Intersubjective**: Social presence and relational dynamics
 
-1. Click the gear icon next to Bridge in the Extensions panel
-2. Enter your preferred data file location (defaults to `bridge.json`)
+## Why Bridge Matters
 
-**Note**: No API keys required! Bridge uses local AI models for all processing.
+### For Consciousness Researchers
+- First practical implementation of micro-phenomenological methods at scale
+- Computational approaches to traditionally qualitative data
+- Pattern recognition across thousands of experiential moments
 
-## Getting Started
+### For AI Developers
+- Training data that includes experiential dimensions, not just text
+- Infrastructure for empathetic AI systems
+- Bridge between symbolic AI and embodied cognition
 
-Once installed, use these commands in Claude:
+### For Tool-for-Thought Pioneers
+- Extends Zettelkasten to experiential knowledge
+- Implements Engelbart's vision of augmented intellect
+- Creates new possibilities for human-computer symbiosis
 
-### Capture Experiences
-```
-bridge:capture
-```
-Capture raw experiential text as a source record.
+## Technical Architecture
 
-**Example:**
-```
-Capture: Just had a breakthrough moment while debugging. The solution finally clicked and I felt a wave of relief and excitement.
-```
+### Multi-Modal Search
+Bridge employs four complementary search modalities:
+- **Text matching** (40% weight): Traditional query matching
+- **Vector similarity** (30% weight): Phenomenological dimension matching
+- **Semantic search** (20% weight): Meaning-based retrieval
+- **Filter relevance** (10% weight): Contextual constraints
 
-### Search Experiences
-```
-bridge:search
-```
-Search across all experiential records with semantic search.
-
-**Examples:**
-```
-Search for moments of clarity from this week
-Search for experiences with high affective qualities
-Search for creative breakthroughs
-```
-
-### Enrich Records
-```
-bridge:enrich
-```
-Edit and enrich existing source records.
-
-**Example:**
-```
-Add more detail to moment src_abc123
-```
-
-### Release Records
-```
-bridge:release
-```
-Delete records by ID.
-
-**Example:**
-```
-Release source src_abc123
+### Data Model
+```javascript
+{
+  content: "Raw experiential text",
+  experiential_qualities: {
+    qualities: [
+      {
+        type: "affective",
+        prominence: 0.8,
+        manifestation: "anxious anticipation"
+      }
+    ],
+    vector: {
+      embodied: 0.3,
+      attentional: 0.7,
+      affective: 0.8,
+      // ... all seven dimensions
+    }
+  },
+  // Temporal and contextual metadata
+}
 ```
 
-## Experiential Qualities
+## Philosophical Foundations
 
-Bridge analyzes experiences across seven phenomenological dimensions:
+Bridge builds on decades of research across multiple disciplines:
 
-- **Embodied**: Physical sensations, posture, gestures
-- **Attentional**: Focus, awareness, attention shifts
-- **Affective**: Emotional coloring, mood, feelings
-- **Purposive**: Goals, intentions, momentum
-- **Spatial**: Sense of place, location, boundaries
-- **Temporal**: Time experience, memory, anticipation
-- **Intersubjective**: Social dynamics, relationships
+### Phenomenology & Embodiment
+- Merleau-Ponty's embodied consciousness
+- Varela's enactive cognition
+- Bergson's durée and temporal flow
 
-Each quality is scored 0.0-1.0 based on its prominence in the experience.
+### Distributed Cognition
+- Clark & Chalmers' Extended Mind
+- Hutchins' Cognition in the Wild
+- Engelbart's Augmenting Human Intellect
 
-## Data Storage
+### Design Methods
+- Rittel's IBIS for wicked problems
+- Alexander's Pattern Language
+- Schön's reflective practice
 
-Your experiential data is stored in a JSON file on your local machine.
-Default location: `bridge.json` (in the root directory)
+[See full intellectual heritage in manifest.json]
 
-**Back up this file regularly** to preserve your experiences.
+## Roadmap
 
-## Troubleshooting
+### Current Focus
+- Robust phenomenological capture
+- Multi-modal search refinement
+- Core MCP integration
 
-- **"Configuration failed"**: Check the data file path in extension settings
-- **"File not found"**: Ensure the data directory exists and is writable
-- **Search not working**: Try restarting Claude Desktop
-- **Tool not responding**: Check Claude Desktop logs for errors
+### Near Future
+- Pattern recognition algorithms
+- Integration with IBIS/decision frameworks
+- Collaborative wisdom pools
+- Academic paper on phenomenological computing
 
-## Privacy & Security
+### Long-term Vision
+- Infrastructure for collective consciousness
+- Privacy-preserving experience sharing
+- New forms of human-AI collaboration
+- Transformation of knowledge work
 
-- All data is stored locally on your machine
-- No data is sent to external services
-- AI processing happens locally using embedded models
-- No internet connection required for core functionality
+## Citation
 
-## Support
+If you use Bridge in your research:
 
-For issues or questions:
-- Check the troubleshooting section above
-- Review Claude Desktop logs
-- Create an issue on the [GitHub repository](https://github.com/miguel-perez/bridge)
+```bibtex
+@software{bridge2024,
+  author = {Perez, Miguel Angel},
+  title = {Bridge: Infrastructure for Distributed Cognition},
+  year = {2024},
+  url = {https://github.com/miguel-perez/bridge}
+}
+```
 
 ## License
 
-MIT License - see LICENSE file for details. 
+MIT License - See [LICENSE](LICENSE) for details.
+
+---
+
+*"We shape our tools and thereafter they shape us." — Marshall McLuhan*
+
+Bridge isn't just a tool—it's infrastructure for the next phase of human consciousness. We're building the bridges between minds, between human and artificial intelligence, between experience and understanding.
+
+**Ready to extend your mind?**

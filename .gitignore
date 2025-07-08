@@ -31,9 +31,7 @@ data/
 *.jsonl
 
 # Personal data and logs
-memory.json
-test-openai-integration.log
-test_experience.txt
+bridge.json
 *.log
 
 # IDE configs with personal paths
