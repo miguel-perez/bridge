@@ -1,10 +1,10 @@
 import { config } from './config.js';
 import { OpenAI } from 'openai';
 import { Pinecone } from '@pinecone-database/pinecone';
-import type { SourceRecord, MomentRecord, SceneRecord } from './types.js';
+import type { SourceRecord } from './types.js';
 
 // Type for any record
-export type StorageRecord = SourceRecord | MomentRecord | SceneRecord;
+export type StorageRecord = SourceRecord;
 
 // Validate Pinecone config
 if (!config.pinecone.apiKey || !config.pinecone.environment) {
@@ -73,9 +73,5 @@ export async function updateRecordEmbedding(record: StorageRecord): Promise<void
   const embedding = await generateEmbedding(text);
   // Only upsert to Pinecone
   const metadata: any = { type: record.type, created: (record as any).created };
-  if (record.type === 'moment' || record.type === 'scene') {
-    metadata.summary = (record as any).summary;
-  }
-  // Do NOT store full content for sources
   await upsertEmbedding(record.id, embedding, metadata);
 } 

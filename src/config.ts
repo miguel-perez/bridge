@@ -3,24 +3,10 @@
 export interface OpenAIConfig {
   apiKey?: string;
   model?: string;
-  autoFrame: {
-    enabled: boolean;
-    batchSize: number;
-    threshold: number;
-  };
-  autoWeave: {
-    enabled: boolean;
-    threshold: number;
-  };
-}
-
-export interface ReviewConfig {
-  requireReview: boolean;
 }
 
 export interface IntegrationConfig {
   openai: OpenAIConfig;
-  review: ReviewConfig;
 }
 
 // Default configuration
@@ -28,18 +14,6 @@ const defaultConfig: IntegrationConfig = {
   openai: {
     apiKey: process.env.OPENAI_API_KEY,
     model: process.env.OPENAI_MODEL || 'gpt-4',
-    autoFrame: {
-      enabled: false,
-      batchSize: 10,
-      threshold: 5,
-    },
-    autoWeave: {
-      enabled: false,
-      threshold: 5,
-    },
-  },
-  review: {
-    requireReview: true,
   },
 };
 
@@ -57,9 +31,7 @@ export function setOpenAIConfig(config: Partial<OpenAIConfig>): void {
   currentConfig.openai = { ...currentConfig.openai, ...config };
 }
 
-export function setReviewConfig(config: Partial<ReviewConfig>): void {
-  currentConfig.review = { ...currentConfig.review, ...config };
-}
+
 
 export const config = {
   bridgeFilePath: process.env.BRIDGE_FILE_PATH,

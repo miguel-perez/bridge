@@ -74,20 +74,8 @@ The manifest must follow the DXT specification exactly:
       "description": "Capture raw experiential text as a source record"
     },
     {
-      "name": "frame",
-      "description": "Transform sources into structured moments"
-    },
-    {
-      "name": "weave",
-      "description": "Connect moments into larger scenes"
-    },
-    {
       "name": "search",
       "description": "Search across all experiential records"
-    },
-    {
-      "name": "enrich",
-      "description": "Update existing records"
     },
     {
       "name": "release",
@@ -103,7 +91,7 @@ The manifest must follow the DXT specification exactly:
     "openai_api_key": {
       "type": "string",
       "title": "OpenAI API Key",
-      "description": "Your OpenAI API key for AI-powered framing and weaving (required for auto-framing features)",
+      "description": "Your OpenAI API key for semantic search capabilities",
       "required": true,
       "sensitive": true
     },
