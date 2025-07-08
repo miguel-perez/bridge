@@ -1,3 +1,12 @@
+/**
+ * MCP Server Implementation for Bridge
+ * 
+ * This module implements the Model Context Protocol (MCP) server for Bridge,
+ * providing tools for capturing, searching, and enriching experiential data.
+ * 
+ * @module mcp/server
+ */
+
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { CallToolRequestSchema, ListToolsRequestSchema, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
@@ -9,12 +18,26 @@ import { dirname, join } from 'path';
 import { MCPToolHandlers } from './handlers.js';
 import { tools } from './tools.js';
 
-// Constants
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+
 const SERVER_NAME = 'bridge';
 const SERVER_VERSION = '0.1.0';
 
-// Helper function to recursively parse stringified JSON in arguments
-// This is a workaround for MCP transport layer stringification of complex objects
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+/**
+ * Recursively parses stringified JSON in arguments
+ * 
+ * This is a workaround for MCP transport layer stringification of complex objects.
+ * The MCP transport may stringify nested objects, so we need to parse them back.
+ * 
+ * @param obj - The object to parse
+ * @returns The parsed object with any stringified JSON converted back to objects
+ */
 function parseStringifiedJson(obj: any): any {
   if (typeof obj === 'string') {
     // Check if string looks like JSON (starts with { or [)
@@ -43,8 +66,18 @@ function parseStringifiedJson(obj: any): any {
   return obj;
 }
 
-// Initialize configuration and validate on startup
-async function initializeConfiguration() {
+/**
+ * Initializes Bridge configuration and validates on startup
+ * 
+ * This function:
+ * 1. Validates the configuration
+ * 2. Creates necessary directories
+ * 3. Sets up storage configuration
+ * 4. Initializes the vector store
+ * 
+ * @throws {Error} If configuration fails
+ */
+async function initializeConfiguration(): Promise<void> {
   try {
     // Validate configuration
     validateConfiguration();
@@ -63,25 +96,32 @@ async function initializeConfiguration() {
     // Set storage configuration
     setStorageConfig({ dataFile: dataFilePath });
     
-          // Initialize vector store with the same data directory
-      try {
-        const vectorStore = initializeVectorStore(dataDir);
-        await vectorStore.initialize();
-        await vectorStore.getVectorCount(); // Initialize and verify vector count
-        // Vector store initialized successfully
-      } catch (vectorError) {
-        // Vector store initialization failed - semantic search won't work without it
-        // but basic functionality will still work
-      }
-      
-      // Bridge DXT initialized successfully
-      } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown configuration error';
-      throw new Error(`Bridge DXT configuration failed: ${errorMessage}`);
+    // Initialize vector store with the same data directory
+    try {
+      const vectorStore = initializeVectorStore(dataDir);
+      await vectorStore.initialize();
+      await vectorStore.getVectorCount(); // Initialize and verify vector count
+      // Vector store initialized successfully
+    } catch (vectorError) {
+      // Vector store initialization failed - semantic search won't work without it
+      // but basic functionality will still work
+      console.warn('Vector store initialization failed:', vectorError);
     }
+    
+    // Bridge DXT initialized successfully
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown configuration error';
+    throw new Error(`Bridge DXT configuration failed: ${errorMessage}`);
+  }
 }
 
-// Create server instance
+// ============================================================================
+// SERVER SETUP
+// ============================================================================
+
+/**
+ * Creates the MCP server instance with appropriate capabilities
+ */
 const server = new Server(
   {
     name: SERVER_NAME,
@@ -105,7 +145,8 @@ const server = new Server(
 // Initialize configuration before setting up handlers
 // Note: This is now async, but we can't await it here since this is module-level code
 // The initialization will happen when the module is imported
-initializeConfiguration().catch(() => {
+initializeConfiguration().catch((error) => {
+  console.error('Failed to initialize Bridge configuration:', error);
   // Configuration failed - exit with error code
   process.exit(1);
 });
@@ -113,11 +154,25 @@ initializeConfiguration().catch(() => {
 // Create tool handlers
 const toolHandlers = new MCPToolHandlers();
 
-// Set up request handlers
+// ============================================================================
+// REQUEST HANDLERS
+// ============================================================================
+
+/**
+ * Handles tool listing requests
+ */
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return { tools };
 });
 
+/**
+ * Handles tool execution requests
+ * 
+ * This handler:
+ * 1. Parses stringified JSON in arguments
+ * 2. Routes to appropriate tool handler
+ * 3. Provides user-friendly error messages
+ */
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
 

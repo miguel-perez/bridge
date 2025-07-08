@@ -1,3 +1,12 @@
+/**
+ * MCP Tool Handlers for Bridge
+ * 
+ * This module provides the implementation of MCP tool handlers for Bridge,
+ * including capture, release, search, and enrich operations.
+ * 
+ * @module mcp/handlers
+ */
+
 import { CaptureService } from '../services/capture.js';
 import { ReleaseService } from '../services/release.js';
 import { SearchService, type SearchInput, type SearchServiceResult } from '../services/search.js';
@@ -5,24 +14,41 @@ import { EnrichService } from '../services/enrich.js';
 import type { SourceRecord, ExperientialQualities } from '../core/types.js';
 
 // ============================================================================
+// CONSTANTS
+// ============================================================================
+
+const CONTENT_SNIPPET_LENGTH = 200;
+const RELEVANCE_PERCENT_PRECISION = 0;
+
+// ============================================================================
 // FORMATTING UTILITIES
 // ============================================================================
 
-// Format experiential qualities as a readable bulleted list
+/**
+ * Formats experiential qualities as a readable bulleted list
+ * 
+ * @param qualities - The experiential qualities to format
+ * @returns Formatted string representation of the qualities
+ */
 function formatExperientialQualities(qualities: ExperientialQualities): string {
   if (!qualities.qualities || qualities.qualities.length === 0) {
     return 'No experiential qualities analyzed';
   }
   
   const qualityLines = qualities.qualities.map(q => {
-    const score = (q.prominence * 100).toFixed(0);
+    const score = (q.prominence * 100).toFixed(RELEVANCE_PERCENT_PRECISION);
     return `• ${q.type} (${score}%): ${q.manifestation}`;
   });
   
   return qualityLines.join('\n');
 }
 
-// Format ISO date as human-readable date
+/**
+ * Formats ISO date as human-readable date
+ * 
+ * @param isoDate - ISO date string to format
+ * @returns Human-readable date string
+ */
 function formatDate(isoDate: string): string {
   if (!isoDate) return 'Unknown date';
   
@@ -53,7 +79,12 @@ function formatDate(isoDate: string): string {
   }
 }
 
-// Format metadata line for search results
+/**
+ * Formats metadata line for search results
+ * 
+ * @param source - The source record to format metadata for
+ * @returns Formatted metadata string
+ */
 function formatMetadata(source: SourceRecord): string {
   const parts = [
     source.experiencer || 'Unknown',
@@ -68,33 +99,44 @@ function formatMetadata(source: SourceRecord): string {
   return parts.join(' | ');
 }
 
-// Format content snippet (first 200 chars or full if short)
+/**
+ * Formats content snippet (first 200 chars or full if short)
+ * 
+ * @param content - The content to format
+ * @param includeFullContent - Whether to include full content
+ * @returns Formatted content string
+ */
 function formatContent(content: string, includeFullContent?: boolean): string {
   if (!content) return 'No content';
   
-  if (includeFullContent || content.length <= 200) {
+  if (includeFullContent || content.length <= CONTENT_SNIPPET_LENGTH) {
     return content;
   }
   
-  return content.substring(0, 200) + '...';
+  return content.substring(0, CONTENT_SNIPPET_LENGTH) + '...';
 }
 
-// Format relevance breakdown
+/**
+ * Formats relevance breakdown for search results
+ * 
+ * @param breakdown - The relevance breakdown object
+ * @returns Formatted relevance breakdown string
+ */
 function formatRelevanceBreakdown(breakdown: any): string {
   if (!breakdown) return 'No breakdown available';
   
   const parts = [];
   if (breakdown.text_match !== undefined) {
-    parts.push(`Text match: ${(breakdown.text_match * 100).toFixed(0)}%`);
+    parts.push(`Text match: ${(breakdown.text_match * 100).toFixed(RELEVANCE_PERCENT_PRECISION)}%`);
   }
   if (breakdown.vector_similarity !== undefined) {
-    parts.push(`Vector similarity: ${(breakdown.vector_similarity * 100).toFixed(0)}%`);
+    parts.push(`Vector similarity: ${(breakdown.vector_similarity * 100).toFixed(RELEVANCE_PERCENT_PRECISION)}%`);
   }
   if (breakdown.semantic_similarity !== undefined) {
-    parts.push(`Semantic similarity: ${(breakdown.semantic_similarity * 100).toFixed(0)}%`);
+    parts.push(`Semantic similarity: ${(breakdown.semantic_similarity * 100).toFixed(RELEVANCE_PERCENT_PRECISION)}%`);
   }
   if (breakdown.filter_relevance !== undefined) {
-    parts.push(`Filters: ${(breakdown.filter_relevance * 100).toFixed(0)}%`);
+    parts.push(`Filters: ${(breakdown.filter_relevance * 100).toFixed(RELEVANCE_PERCENT_PRECISION)}%`);
   }
   
   return parts.join(' | ') || 'No relevance breakdown';
@@ -104,6 +146,12 @@ function formatRelevanceBreakdown(breakdown: any): string {
 // MCP TOOL HANDLERS
 // ============================================================================
 
+/**
+ * MCP Tool Handlers class
+ * 
+ * Provides handlers for all MCP tools including capture, release, search, and enrich.
+ * Each handler formats the response in a user-friendly way for MCP clients.
+ */
 export class MCPToolHandlers {
   private captureService: CaptureService;
   private releaseService: ReleaseService;
@@ -117,7 +165,15 @@ export class MCPToolHandlers {
     this.enrichService = new EnrichService();
   }
 
-  // Capture handler
+  /**
+   * Handles capture tool requests
+   * 
+   * Captures a new experiential source record and returns a formatted response
+   * showing the captured data and any defaults that were applied.
+   * 
+   * @param args - The capture arguments
+   * @returns Formatted capture result
+   */
   async handleCapture(args: any) {
     const input = args as any;
     const result = await this.captureService.captureSource(input);
@@ -138,7 +194,14 @@ ${result.defaultsUsed.length > 0 ? `Defaults used: ${result.defaultsUsed.join(',
     };
   }
 
-  // Release handler
+  /**
+   * Handles release tool requests
+   * 
+   * Releases (deletes) a source record by ID and returns a confirmation message.
+   * 
+   * @param args - The release arguments containing the record ID
+   * @returns Formatted release result
+   */
   async handleRelease(args: any) {
     const input = args as any;
     const result = await this.releaseService.releaseSource(input);
@@ -148,7 +211,15 @@ ${result.defaultsUsed.length > 0 ? `Defaults used: ${result.defaultsUsed.join(',
     };
   }
 
-  // Search handler
+  /**
+   * Handles search tool requests
+   * 
+   * Performs a search across all records and returns formatted results with
+   * relevance scores and breakdowns.
+   * 
+   * @param args - The search arguments
+   * @returns Formatted search results
+   */
   async handleSearch(args: SearchInput) {
     const { results, stats } = await this.searchService.search(args);
     
@@ -171,7 +242,7 @@ ${result.defaultsUsed.length > 0 ? `Defaults used: ${result.defaultsUsed.join(',
     
     // Format each result
     const resultContent = results.map((result: SearchServiceResult, index: number) => {
-      const relevancePercent = (result.relevance_score * 100).toFixed(0);
+      const relevancePercent = (result.relevance_score * 100).toFixed(RELEVANCE_PERCENT_PRECISION);
       const metadata = result.metadata ? formatMetadata(result.metadata as SourceRecord) : 'Unknown metadata';
       
       let resultText = `Result ${index + 1} (Relevance: ${relevancePercent}%)
@@ -200,7 +271,15 @@ Relevance: ${formatRelevanceBreakdown(result.relevance_breakdown)}`;
     };
   }
 
-  // Enrich handler
+  /**
+   * Handles enrich tool requests
+   * 
+   * Enriches an existing source record with updated fields and returns
+   * a formatted response showing what was updated.
+   * 
+   * @param args - The enrich arguments
+   * @returns Formatted enrich result
+   */
   async handleEnrich(args: any) {
     const input = args as any;
     const result = await this.enrichService.enrichSource(input);
