@@ -24,8 +24,7 @@ describe('Search Relevance Scoring', () => {
       processing: 'during',
       contentType: 'text',
       system_time: new Date().toISOString(),
-      event_time: new Date().toISOString(),
-      capture_time: new Date().toISOString(),
+      occurred: new Date().toISOString(),
       crafted: false
     };
 
@@ -37,8 +36,7 @@ describe('Search Relevance Scoring', () => {
       processing: 'during',
       contentType: 'text',
       system_time: new Date().toISOString(),
-      event_time: new Date().toISOString(),
-      capture_time: new Date().toISOString(),
+      occurred: new Date().toISOString(),
       crafted: false
     };
 
@@ -64,8 +62,7 @@ describe('Search Relevance Scoring', () => {
       processing: 'during',
       contentType: 'text',
       system_time: new Date().toISOString(),
-      event_time: new Date().toISOString(),
-      capture_time: new Date().toISOString(),
+      occurred: new Date().toISOString(),
       crafted: false
     };
 
@@ -77,8 +74,7 @@ describe('Search Relevance Scoring', () => {
       processing: 'during',
       contentType: 'text',
       system_time: new Date().toISOString(),
-      event_time: new Date().toISOString(),
-      capture_time: new Date().toISOString(),
+      occurred: new Date().toISOString(),
       crafted: false
     };
 
@@ -104,8 +100,7 @@ describe('Search Relevance Scoring', () => {
       processing: 'during',
       contentType: 'text',
       system_time: new Date().toISOString(),
-      event_time: new Date().toISOString(),
-      capture_time: new Date().toISOString(),
+      occurred: new Date().toISOString(),
       crafted: false,
       experiential_qualities: {
         qualities: [
@@ -163,8 +158,7 @@ describe('Search Relevance Scoring', () => {
       processing: 'during',
       contentType: 'text',
       system_time: new Date().toISOString(),
-      event_time: new Date().toISOString(),
-      capture_time: new Date().toISOString(),
+      occurred: new Date().toISOString(),
       crafted: false
     };
 
@@ -176,8 +170,7 @@ describe('Search Relevance Scoring', () => {
       processing: 'during',
       contentType: 'text',
       system_time: new Date().toISOString(),
-      event_time: new Date().toISOString(),
-      capture_time: new Date().toISOString(),
+      occurred: new Date().toISOString(),
       crafted: false
     };
 
@@ -189,8 +182,7 @@ describe('Search Relevance Scoring', () => {
       processing: 'during',
       contentType: 'text',
       system_time: new Date().toISOString(),
-      event_time: new Date().toISOString(),
-      capture_time: new Date().toISOString(),
+      occurred: new Date().toISOString(),
       crafted: false
     };
 

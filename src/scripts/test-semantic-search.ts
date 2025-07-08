@@ -20,8 +20,7 @@ async function testSemanticSearch() {
       processing: 'during',
       contentType: 'text',
       system_time: new Date().toISOString(),
-      event_time: new Date().toISOString(),
-      capture_time: new Date().toISOString(),
+      occurred: new Date().toISOString(),
       crafted: false,
       experiential_qualities: {
         qualities: [
@@ -51,8 +50,7 @@ async function testSemanticSearch() {
       processing: 'during',
       contentType: 'text',
       system_time: new Date().toISOString(),
-      event_time: new Date().toISOString(),
-      capture_time: new Date().toISOString(),
+      occurred: new Date().toISOString(),
       crafted: false,
       experiential_qualities: {
         qualities: [

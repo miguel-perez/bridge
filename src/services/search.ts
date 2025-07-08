@@ -7,8 +7,7 @@ import { vectorStore } from './vector-store.js';
 export interface SearchInput {
   query?: string;
   system_time?: string | { start: string; end: string };
-  event_time?: string | { start: string; end: string };
-  capture_time?: string | { start: string; end: string };
+  occurred?: string | { start: string; end: string };
   type?: string[];
   experiencer?: string;
   perspective?: string;
@@ -16,7 +15,7 @@ export interface SearchInput {
   contentType?: string;
   crafted?: boolean;
   groupBy?: 'type' | 'experiencer' | 'day' | 'week' | 'month' | 'hierarchy';
-  sort?: 'relevance' | 'system_time' | 'event_time';
+  sort?: 'relevance' | 'system_time' | 'occurred';
   limit?: number;
   includeContext?: boolean;
   // Experiential qualities min/max
@@ -279,12 +278,8 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
     filteredRecords = applyTemporalFilter(filteredRecords, input.system_time, 'system_time');
   }
   
-  if (input.event_time) {
-    filteredRecords = applyTemporalFilter(filteredRecords, input.event_time, 'event_time');
-  }
-  
-  if (input.capture_time) {
-    filteredRecords = applyTemporalFilter(filteredRecords, input.capture_time, 'capture_time');
+  if (input.occurred) {
+    filteredRecords = applyTemporalFilter(filteredRecords, input.occurred, 'occurred');
   }
 
   // Experiential qualities min/max filtering
@@ -414,9 +409,9 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
           const bTime = new Date(b.system_time).getTime();
           return bTime - aTime; // Descending
         }
-        case 'event_time': {
-          const aTime = new Date(a.event_time || a.system_time).getTime();
-          const bTime = new Date(b.event_time || b.system_time).getTime();
+        case 'occurred': {
+          const aTime = new Date(a.occurred || a.system_time).getTime();
+          const bTime = new Date(b.occurred || b.system_time).getTime();
           return bTime - aTime; // Descending
         }
         case 'relevance':
@@ -445,8 +440,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
       processing: record.processing,
       crafted: record.crafted,
       system_time: record.system_time,
-      event_time: record.event_time,
-      capture_time: record.capture_time,
+      occurred: record.occurred,
       experiential_qualities: record.experiential_qualities
     },
     relevance_score: record._relevance.score,
@@ -477,7 +471,7 @@ function cosineSimilarity(a: Record<string, number>, b: Record<string, number>):
 }
 
 // Helper function to apply temporal filters
-function applyTemporalFilter(records: SourceRecord[], filter: string | { start: string; end: string }, field: 'system_time' | 'event_time' | 'capture_time'): SourceRecord[] {
+function applyTemporalFilter(records: SourceRecord[], filter: string | { start: string; end: string }, field: 'system_time' | 'occurred'): SourceRecord[] {
   // Basic temporal filtering implementation
   if (typeof filter === 'string') {
     // Single date filter

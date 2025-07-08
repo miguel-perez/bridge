@@ -11,8 +11,7 @@ export const tools = [
         perspective: { type: "string", enum: ["I", "we", "you", "they"], description: "Perspective used" },
         processing: { type: "string", enum: ["during", "right-after", "long-after", "crafted"], description: "When captured relative to experience" },
         contentType: { type: "string", description: "Type of content", default: "text" },
-        event_time: { type: "string", description: "When it happened (ISO timestamp or descriptive like 'yesterday morning')" },
-        capture_time: { type: "string", description: "When it was captured (ISO timestamp or descriptive like 'yesterday morning')" },
+        occurred: { type: "string", description: "When it happened (chrono-node compatible - e.g., 'yesterday morning', 'last week', '2024-01-15')" },
         crafted: { type: "boolean", description: "Whether content was crafted for an audience (e.g., blog post = true, journal entry = false)" },
         experiential_qualities: { 
           type: "object", 
@@ -167,22 +166,21 @@ Each entry provides evidence for a quality, including the prominence (rating), a
 
   {
     name: "search",
-    description: `Unified faceted search across all records with comprehensive relevance scoring.\n\nRELEVANCE SCORING:\nAll results include a relevance score (0-100%) that combines:\n- Text matching: How well the query matches the content\n- Vector similarity: Similarity to experiential quality vectors\n- Semantic similarity: Semantic similarity to natural language queries\n- Filter relevance: How well the record matches applied filters\n\nResults are automatically sorted by relevance when sort='relevance' (default).\n\nTEMPORAL FILTERING:\n- 'system_time': Filter by when record was created (auto-generated timestamp)\n  Example: system_time: { start: "2025-01-01", end: "2025-01-31" }\n- 'event_time': Filter by when event happened (user-provided time)\n  Example: event_time: "yesterday" or event_time: { start: "last week", end: "today" }\n- 'capture_time': Filter by when record was captured (separate from event time)\n  Example: capture_time: "yesterday" or capture_time: { start: "last week", end: "today" }\n\nCONTENT FILTERING:\n- 'contentType': Filter by content type (e.g., 'text', 'audio')\n- 'crafted': Filter by crafted status (true = crafted for audience, false = raw)\n\nSEMANTIC SEARCH:\n- 'semantic_query': Search for semantically similar content using natural language\n  Example: semantic_query: "moments of anxiety" or semantic_query: "creative breakthroughs"\n- 'semantic_threshold': Minimum similarity threshold (0.0-1.0, default: 0.7)\n\nEXPERIENTIAL QUALITIES FILTERING:\n- min_X / max_X: Filter by minimum/maximum value for each experiential quality (e.g., min_affective: 0.7)\n- vector: Search for records most similar to a provided experiential quality vector (e.g., vector: { embodied: 0.5, affective: 0.9, ... })\n- vector_similarity_threshold: Only return records with similarity above this threshold (0-1, higher = more similar)\n\nExample:\n{ min_affective: 0.7, crafted: false, semantic_query: "moments of anxiety", semantic_threshold: 0.8 }\n\nThe system uses chrono-node for flexible date parsing.\n\nResults include relevance scores and breakdowns to help understand why each result was ranked as it was.`,
+    description: `Unified faceted search across all records with comprehensive relevance scoring.\n\nRELEVANCE SCORING:\nAll results include a relevance score (0-100%) that combines:\n- Text matching: How well the query matches the content\n- Vector similarity: Similarity to experiential quality vectors\n- Semantic similarity: Semantic similarity to natural language queries\n- Filter relevance: How well the record matches applied filters\n\nResults are automatically sorted by relevance when sort='relevance' (default).\n\nTEMPORAL FILTERING:\n- 'system_time': Filter by when record was created (auto-generated timestamp)\n  Example: system_time: { start: "2025-01-01", end: "2025-01-31" }\n- 'occurred': Filter by when event happened (chrono-node compatible, preferred)\n  Example: occurred: "yesterday" or occurred: { start: "last week", end: "today" }\n\nCONTENT FILTERING:\n- 'contentType': Filter by content type (e.g., 'text', 'audio')\n- 'crafted': Filter by crafted status (true = crafted for audience, false = raw)\n\nSEMANTIC SEARCH:\n- 'semantic_query': Search for semantically similar content using natural language\n  Example: semantic_query: "moments of anxiety" or semantic_query: "creative breakthroughs"\n- 'semantic_threshold': Minimum similarity threshold (0.0-1.0, default: 0.7)\n\nEXPERIENTIAL QUALITIES FILTERING:\n- min_X / max_X: Filter by minimum/maximum value for each experiential quality (e.g., min_affective: 0.7)\n- vector: Search for records most similar to a provided experiential quality vector (e.g., vector: { embodied: 0.5, affective: 0.9, ... })\n- vector_similarity_threshold: Only return records with similarity above this threshold (0-1, higher = more similar)\n\nExample:\n{ min_affective: 0.7, crafted: false, semantic_query: "moments of anxiety", semantic_threshold: 0.8 }\n\nThe system uses chrono-node for flexible date parsing.\n\nResults include relevance scores and breakdowns to help understand why each result was ranked as it was.`,
     inputSchema: {
       type: "object",
       properties: {
         query: { type: "string", description: "Semantic search query (natural language or keywords)" },
         system_time: { oneOf: [ { type: "string" }, { type: "object", properties: { start: { type: "string" }, end: { type: "string" } }, required: ["start", "end"] } ], description: "Filter by record creation time (auto-generated timestamp)" },
-        event_time: { oneOf: [ { type: "string" }, { type: "object", properties: { start: { type: "string" }, end: { type: "string" } }, required: ["start", "end"] } ], description: "Filter by event time (user-supplied)" },
+        occurred: { oneOf: [ { type: "string" }, { type: "object", properties: { start: { type: "string" }, end: { type: "string" } }, required: ["start", "end"] } ], description: "Filter by occurred time (chrono-node compatible)" },
         type: { type: "array", items: { type: "string", enum: ["source"] }, description: "Restrict to certain record types" },
         experiencer: { type: "string", description: "Only records with this experiencer" },
         perspective: { type: "string", description: "Only records with this perspective" },
         processing: { type: "string", description: "Only records with this processing level" },
         contentType: { type: "string", description: "Only records with this content type (e.g., 'text', 'audio')" },
         crafted: { type: "boolean", description: "Only records with this crafted status (true = crafted for audience, false = raw)" },
-        capture_time: { oneOf: [ { type: "string" }, { type: "object", properties: { start: { type: "string" }, end: { type: "string" } }, required: ["start", "end"] } ], description: "Filter by when record was captured (separate from event time)" },
         groupBy: { type: "string", enum: ["type", "experiencer", "day", "week", "month", "hierarchy"], description: "Group results by this field" },
-        sort: { type: "string", enum: ["relevance", "system_time", "event_time"], description: "Sort by field" },
+        sort: { type: "string", enum: ["relevance", "system_time", "occurred"], description: "Sort by field" },
         limit: { type: "number", description: "Maximum results to return" },
         includeContext: { type: "boolean", description: "Return full record metadata as structured JSON" },
         // Experiential qualities min/max
@@ -240,8 +238,7 @@ Each entry provides evidence for a quality, including the prominence (rating), a
         contentType: { type: "string", description: "Updated content type" },
         perspective: { type: "string", enum: ["I", "we", "you", "they"], description: "Updated perspective" },
         processing: { type: "string", enum: ["during", "right-after", "long-after", "crafted"], description: "Updated processing level" },
-        event_time: { type: "string", description: "Updated event time (ISO timestamp or descriptive like 'yesterday morning')" },
-        capture_time: { type: "string", description: "Updated capture time (ISO timestamp or descriptive like 'yesterday morning')" },
+        occurred: { type: "string", description: "Updated occurred time (chrono-node compatible - e.g., 'yesterday morning', 'last week', '2024-01-15')" },
         experiencer: { type: "string", description: "Updated experiencer" },
         crafted: { type: "boolean", description: "Updated crafted flag" },
         experiential_qualities: { 

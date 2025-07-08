@@ -244,8 +244,7 @@ Examples (do not copy, use for style and compression guidance):
     "perspective": "I|we|you|they",
     "processing": "during|right-after|long-after",
     "crafted": true|false, // as in blog = true, journal; = false
-    "event_time": "when it happened",
-    "capture_time": "when recorded",
+    "occurred": "when it happened",
     "system_time": "[auto-generated]"
   },
   "moments": [

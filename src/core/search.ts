@@ -19,10 +19,10 @@ export interface FilterOptions {
   processing?: string[];
   timeRange?: { start?: string; end?: string };
   systemTimeRange?: { start: string; end: string };
-  eventTimeRange?: { start: string; end: string };
+  occurredRange?: { start: string; end: string };
 }
 
-export type SortOption = 'relevance' | 'system_time' | 'event_time';
+export type SortOption = 'relevance' | 'system_time' | 'occurred';
 export type GroupOption = 'none' | 'day' | 'week' | 'month' | 'experiencer';
 
 export interface SearchOptions {
@@ -70,32 +70,17 @@ function isWithinRange(date: Date, start?: Date, end?: Date): boolean {
   return true;
 }
 
-// Helper: normalize date to start of day for consistent comparison
-function normalizeToStartOfDay(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
 
-// Helper: normalize date to end of day for consistent comparison
-function normalizeToEndOfDay(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
-}
 
-// Helper: get date from record
-function getRecordDate(record: SourceRecord): Date | null {
-  if (record.system_time) return new Date(record.system_time);
-  if (record.event_time) return new Date(record.event_time);
+// Helper: get occurred date specifically
+function getOccurredDate(record: SourceRecord): Date | null {
+  if (record.occurred) return new Date(record.occurred);
   return null;
 }
 
 // Helper: get system_time date specifically
 function getSystemTimeDate(record: SourceRecord): Date | null {
   if (record.system_time) return new Date(record.system_time);
-  return null;
-}
-
-// Helper: get event_time date specifically
-function getEventTimeDate(record: SourceRecord): Date | null {
-  if (record.event_time) return new Date(record.event_time);
   return null;
 }
 
@@ -110,10 +95,10 @@ export function advancedFilters(results: SearchResult[], filters?: FilterOptions
   
   let filtered = results;
   
-  // Time range filter (timeRange)
+  // Time range filter (timeRange) - uses occurred date
   if (filters.timeRange) {
     filtered = filtered.filter(result => {
-      const recDate = getRecordDate(result.source);
+      const recDate = getOccurredDate(result.source) || getSystemTimeDate(result.source);
       const start = filters.timeRange!.start ? new Date(filters.timeRange!.start) : undefined;
       const end = filters.timeRange!.end ? new Date(filters.timeRange!.end) : undefined;
       return recDate && isWithinRange(recDate, start, end);
@@ -132,12 +117,12 @@ export function advancedFilters(results: SearchResult[], filters?: FilterOptions
     stats.afterSystemTimeRange = filtered.length;
   }
   
-  // Event time range filter
-  if (filters.eventTimeRange) {
+  // Occurred time range filter
+  if (filters.occurredRange) {
     filtered = filtered.filter(result => {
-      const recDate = getEventTimeDate(result.source);
-      const start = new Date(filters.eventTimeRange!.start);
-      const end = new Date(filters.eventTimeRange!.end);
+      const recDate = getOccurredDate(result.source);
+      const start = new Date(filters.occurredRange!.start);
+      const end = new Date(filters.occurredRange!.end);
       return recDate && isWithinRange(recDate, start, end);
     });
     stats.afterEventTimeRange = filtered.length;
@@ -195,12 +180,12 @@ export function groupResults(results: SearchResult[], groupBy: GroupOption = 'no
     
     switch (groupBy) {
       case 'day': {
-        const date = getRecordDate(result.source);
+        const date = getOccurredDate(result.source) || getSystemTimeDate(result.source);
         key = date ? date.toISOString().split('T')[0] : 'Unknown';
         break;
       }
       case 'week': {
-        const weekDate = getRecordDate(result.source);
+        const weekDate = getOccurredDate(result.source) || getSystemTimeDate(result.source);
         if (weekDate) {
           const startOfWeek = new Date(weekDate);
           startOfWeek.setDate(weekDate.getDate() - weekDate.getDay());
@@ -211,7 +196,7 @@ export function groupResults(results: SearchResult[], groupBy: GroupOption = 'no
         break;
       }
       case 'month': {
-        const monthDate = getRecordDate(result.source);
+        const monthDate = getOccurredDate(result.source) || getSystemTimeDate(result.source);
         key = monthDate ? `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, '0')}` : 'Unknown';
         break;
       }
@@ -270,11 +255,11 @@ export async function search(options: SearchOptions): Promise<{ results: SearchR
           if (!aSystemTime || !bSystemTime) return 0;
           return bSystemTime.getTime() - aSystemTime.getTime();
         }
-        case 'event_time': {
-          const aEventTime = getEventTimeDate(a.source);
-          const bEventTime = getEventTimeDate(b.source);
-          if (!aEventTime || !bEventTime) return 0;
-          return bEventTime.getTime() - aEventTime.getTime();
+        case 'occurred': {
+          const aOccurred = getOccurredDate(a.source);
+          const bOccurred = getOccurredDate(b.source);
+          if (!aOccurred || !bOccurred) return 0;
+          return bOccurred.getTime() - aOccurred.getTime();
         }
         case 'relevance':
         default:
@@ -318,12 +303,6 @@ export function findAllRelatedRecords(recordId: string, allRecords: SourceRecord
   const related = new Set<string>();
   const toProcess = [recordId];
   
-  function addRelated(record: SourceRecord) {
-    if (related.has(record.id)) return;
-    related.add(record.id);
-    toProcess.push(record.id);
-  }
-  
   while (toProcess.length > 0) {
     const currentId = toProcess.shift()!;
     const record = allRecords.find(r => r.id === currentId);
@@ -337,13 +316,4 @@ export function findAllRelatedRecords(recordId: string, allRecords: SourceRecord
   }
   
   return allRecords.filter(r => related.has(r.id));
-}
-
-// Helper functions for sorting
-function getSystemTime(result: SearchResult): string {
-  return result.source.system_time || '';
-}
-
-function getEventTime(result: SearchResult): string {
-  return result.source.event_time || '';
 } 

@@ -32,8 +32,7 @@ export interface Source {
   content: string; 
   contentType?: ContentType; // Default: "text"
   system_time: string; // Auto-generated ISO timestamp
-  event_time?: string; // When it happened
-  capture_time?: string; // When captured (defaults to system_time)
+  occurred?: string; // When it happened (chrono-node compatible)
   
   // Context
   perspective?: Perspective; // Default: "I"

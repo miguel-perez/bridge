@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { generateId, saveSource } from '../core/storage.js';
 import type { SourceRecord, ProcessingLevel, QualityVector } from '../core/types.js';
-import { validateFlexibleDate } from '../utils/validation.js';
+import { parseOccurredDate } from '../utils/validation.js';
 import { embeddingService } from './embeddings.js';
 import { vectorStore } from './vector-store.js';
 
@@ -11,8 +11,7 @@ export const captureSchema = z.object({
   contentType: z.string().optional().default('text'),
   perspective: z.enum(['I', 'we', 'you', 'they']),
   processing: z.enum(['during', 'right-after', 'long-after', 'crafted']),
-  event_time: z.string().optional(),
-  capture_time: z.string().optional(),
+  occurred: z.string().optional(), // When it happened (chrono-node compatible)
   experiencer: z.string(),
   crafted: z.boolean().optional(),
   experiential_qualities: z.object({
@@ -22,15 +21,6 @@ export const captureSchema = z.object({
       prominence: z.number().min(0).max(1),
       manifestation: z.string()
     })),
-    vector: z.object({
-      embodied: z.number().min(0).max(1),
-      attentional: z.number().min(0).max(1),
-      affective: z.number().min(0).max(1),
-      purposive: z.number().min(0).max(1),
-      spatial: z.number().min(0).max(1),
-      temporal: z.number().min(0).max(1),
-      intersubjective: z.number().min(0).max(1)
-    }).optional() // Make vector optional since we can generate it
   }).optional(),
 }).refine((data) => {
   // Ensure content is provided
@@ -47,26 +37,15 @@ export interface CaptureInput {
   contentType?: string;
   perspective: 'I' | 'we' | 'you' | 'they';
   processing: 'during' | 'right-after' | 'long-after' | 'crafted';
-  event_time?: string;
-  capture_time?: string;
+  occurred?: string; // When it happened (chrono-node compatible)
   experiencer: string;
   crafted?: boolean;
   experiential_qualities?: {
     qualities: Array<{
       type: 'embodied' | 'attentional' | 'affective' | 'purposive' | 'spatial' | 'temporal' | 'intersubjective';
-    
       prominence: number;
       manifestation: string;
     }>;
-    vector?: {
-      embodied: number;
-      attentional: number;
-      affective: number;
-      purposive: number;
-      spatial: number;
-      temporal: number;
-      intersubjective: number;
-    };
   };
 }
 
@@ -100,10 +79,13 @@ function generateQualityVector(qualities: Array<{
 
 export class CaptureService {
   async captureSource(input: CaptureInput): Promise<CaptureResult> {
-    // Validate when field with flexible date parsing
-    if (input.event_time && !(await validateFlexibleDate(input.event_time))) {
-      throw new Error(`Invalid date format for 'event_time': ${input.event_time}. Use natural language like 'yesterday', 'last week', '2024-01-15', or ISO 8601 format.`);
+    // Validate occurred field with chrono-node parsing
+    let occurredDate: string | undefined;
+    if (input.occurred) {
+      occurredDate = await parseOccurredDate(input.occurred);
     }
+
+
 
     // Create source record for non-file captures
     if (!input.content) {
@@ -113,20 +95,12 @@ export class CaptureService {
     // Process experiential qualities - generate vector if not provided
     let processedExperientialQualities: import('../core/types.js').ExperientialQualities | undefined = undefined;
     if (input.experiential_qualities?.qualities) {
-      if (!input.experiential_qualities.vector) {
-        // Generate vector from qualities
-        const generatedVector = generateQualityVector(input.experiential_qualities.qualities);
-        processedExperientialQualities = {
-          qualities: input.experiential_qualities.qualities,
-          vector: generatedVector
-        };
-      } else {
-        // Vector is provided, use as-is but ensure proper typing
-        processedExperientialQualities = {
-          qualities: input.experiential_qualities.qualities,
-          vector: input.experiential_qualities.vector
-        } as import('../core/types.js').ExperientialQualities;
-      }
+      // Generate vector from qualities
+      const generatedVector = generateQualityVector(input.experiential_qualities.qualities);
+      processedExperientialQualities = {
+        qualities: input.experiential_qualities.qualities,
+        vector: generatedVector
+      };
     }
     // If no experiential qualities provided, processedExperientialQualities remains undefined
     
@@ -144,8 +118,7 @@ export class CaptureService {
       content: input.content,
       contentType: input.contentType || 'text',
       system_time: new Date().toISOString(),
-      event_time: input.event_time || new Date().toISOString(),
-      capture_time: input.capture_time || new Date().toISOString(),
+      occurred: occurredDate || new Date().toISOString(),
       perspective: input.perspective,
       experiencer: input.experiencer,
       processing: input.processing as ProcessingLevel,

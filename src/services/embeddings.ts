@@ -10,7 +10,11 @@ export class EmbeddingService {
     
     try {
       // Use a lightweight, fast embedding model optimized for semantic similarity
-      this.embedder = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+      // This model should produce 384-dimensional embeddings
+      this.embedder = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2', {
+        revision: 'main',
+        quantized: false
+      });
       this.initialized = true;
       console.log('Embedding service initialized successfully');
     } catch (error) {
@@ -30,7 +34,45 @@ export class EmbeddingService {
     
     try {
       const result = await this.embedder(text);
-      const embedding = Array.from(result.data) as number[];
+      
+      // Extract the embedding from the result
+      let embedding: number[];
+      
+      if (result && result.data) {
+        // Convert the tensor data to a regular array
+        embedding = Array.from(result.data);
+      } else if (result && Array.isArray(result)) {
+        embedding = Array.from(result);
+      } else {
+        console.error('Unexpected result format:', typeof result, result);
+        throw new Error('Unexpected embedding result format');
+      }
+      
+      // Ensure we have a reasonable embedding size
+      if (embedding.length === 0) {
+        throw new Error('Generated embedding is empty');
+      }
+      
+      // The model is returning sequence embeddings (variable length)
+      // We need to pool them to get a fixed-size representation
+      // For now, let's use mean pooling to get a fixed-size embedding
+      const sequenceLength = embedding.length / 384; // Assuming 384 is the hidden size
+      if (sequenceLength > 1) {
+        // This is a sequence embedding, we need to pool it
+        const pooledEmbedding = new Array(384).fill(0);
+        
+        for (let i = 0; i < 384; i++) {
+          let sum = 0;
+          for (let j = 0; j < sequenceLength; j++) {
+            sum += embedding[j * 384 + i] || 0;
+          }
+          pooledEmbedding[i] = sum / sequenceLength;
+        }
+        
+        embedding = pooledEmbedding;
+      }
+      
+
       
       // Cache the result
       this.cache.set(hash, embedding);

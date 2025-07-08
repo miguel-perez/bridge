@@ -44,4 +44,18 @@ export async function validateAndParseDate(dateInput: string | { start: string; 
     const endDate = endResults[0].start.date().toISOString();
     return { start: startDate, end: endDate };
   }
+}
+
+// New helper function to parse occurred date with chrono-node
+export async function parseOccurredDate(occurred: string | undefined): Promise<string | undefined> {
+  if (!occurred) return undefined;
+  
+  const chrono = await import('chrono-node');
+  const results = chrono.parse(occurred);
+  
+  if (results.length === 0) {
+    throw new Error(`Invalid occurred date: ${occurred}. Use natural language like 'yesterday', 'last week', '2024-01-15', or ISO 8601 format.`);
+  }
+  
+  return results[0].start.date().toISOString();
 } 

@@ -17,7 +17,8 @@
     "lint": "eslint src/**/*.ts",
     "format": "prettier --write src/**/*.ts",
     "migrate-embeddings": "node dist/utils/migrate-embeddings.js",
-    "test:llm": "node dist/scripts/llm-integration-test.js"
+    "test:llm": "node dist/scripts/llm-integration-test.js",
+    "setup:test-data": "node dist/scripts/test-data-setup.js"
   },
   "keywords": [
     "mcp",
