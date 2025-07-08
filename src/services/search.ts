@@ -3,7 +3,7 @@ import { getAllRecords } from '../core/storage.js';
 import type { QualityVector } from '../core/types.js';
 import { embeddingService } from './embeddings.js';
 import { getVectorStore } from './vector-store.js';
-import { parseDate } from 'chrono-node';
+import { parseFlexibleDate, parseSingleDate } from '../utils/date-parser.js';
 
 // Debug mode configuration
 const DEBUG_MODE = process.env.BRIDGE_SEARCH_DEBUG === 'true' || process.env.BRIDGE_DEBUG === 'true';
@@ -760,32 +760,20 @@ function cosineSimilarity(a: Record<string, number>, b: Record<string, number>):
 async function applyTemporalFilter(records: SourceRecord[], filter: string | { start: string; end: string }, field: 'system_time' | 'occurred'): Promise<SourceRecord[]> {
   if (typeof filter === 'string') {
     // Single date filter
-    const filterDate = parseDate(filter);
-    if (!filterDate) {
-      throw new Error(`Invalid date string for temporal filter: '${filter}'. Please provide a valid date or time expression.`);
-    }
+    const filterDate = parseSingleDate(filter);
     return records.filter(record => {
       const recordDateRaw = record[field] || record.system_time;
-      const recordDate = parseDate(recordDateRaw);
-      if (!recordDate) return false;
-      return recordDate.toDateString() === filterDate.toDateString();
+      const recordDate = parseSingleDate(recordDateRaw);
+      return recordDate.split('T')[0] === filterDate.split('T')[0]; // Compare date part only
     });
   } else {
     // Date range filter
-    const startDate = filter.start ? parseDate(filter.start) : null;
-    const endDate = filter.end ? parseDate(filter.end) : null;
-    if (filter.start && !startDate) {
-      throw new Error(`Invalid start date for temporal filter: '${filter.start}'. Please provide a valid date or time expression.`);
-    }
-    if (filter.end && !endDate) {
-      throw new Error(`Invalid end date for temporal filter: '${filter.end}'. Please provide a valid date or time expression.`);
-    }
+    const dateRange = parseFlexibleDate(filter) as { start: string; end: string };
     return records.filter(record => {
       const recordDateRaw = record[field] || record.system_time;
-      const recordDate = parseDate(recordDateRaw);
-      if (!recordDate) return false;
-      if (startDate && recordDate < startDate) return false;
-      if (endDate && recordDate > endDate) return false;
+      const recordDate = parseSingleDate(recordDateRaw);
+      if (dateRange.start && recordDate < dateRange.start) return false;
+      if (dateRange.end && recordDate > dateRange.end) return false;
       return true;
     });
   }
