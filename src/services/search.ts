@@ -313,6 +313,41 @@ function calculateRelevanceScore(
   };
 }
 
+// Helper function to apply temporal filters with validation and MCP-compliant errors
+async function applyTemporalFilter(records: SourceRecord[], filter: string | { start: string; end: string }, field: 'system_time' | 'occurred'): Promise<SourceRecord[]> {
+  try {
+    if (typeof filter === 'string') {
+      // Single date filter
+      const filterDate = parseSingleDate(filter);
+      if (!filterDate || isNaN(Date.parse(filterDate))) {
+        throw new Error(`Invalid date format for filter: '${filter}'. Example valid formats: '2024-01-15', 'yesterday', 'last week'.`);
+      }
+      return records.filter(record => {
+        const recordDateRaw = record[field] || record.system_time;
+        const recordDate = parseSingleDate(recordDateRaw);
+        if (!recordDate || isNaN(Date.parse(recordDate))) return false;
+        return recordDate.split('T')[0] === filterDate.split('T')[0]; // Compare date part only
+      });
+    } else {
+      // Date range filter
+      const dateRange = parseFlexibleDate(filter) as { start: string; end: string };
+      if (!dateRange.start || !dateRange.end || isNaN(Date.parse(dateRange.start)) || isNaN(Date.parse(dateRange.end))) {
+        throw new Error(`Invalid date range format for filter: ${JSON.stringify(filter)}. Example: { start: '2024-01-01', end: '2024-01-31' } or { start: 'last week', end: 'today' }.`);
+      }
+      return records.filter(record => {
+        const recordDateRaw = record[field] || record.system_time;
+        const recordDate = parseSingleDate(recordDateRaw);
+        if (!recordDate || isNaN(Date.parse(recordDate))) return false;
+        if (dateRange.start && recordDate < dateRange.start) return false;
+        if (dateRange.end && recordDate > dateRange.end) return false;
+        return true;
+      });
+    }
+  } catch (error) {
+    throw new Error(`Temporal filter error: ${(error as Error).message}`);
+  }
+}
+
 export async function search(input: SearchInput): Promise<SearchServiceResponse> {
   const searchStartTime = new Date().toISOString();
   const debugInfo: SearchServiceResponse['debug'] = {
@@ -350,114 +385,123 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
     // Apply filters
     let filteredRecords = allRecords;
   
-        // Filter by type
+    // Filter by type
     if (input.type && input.type.length > 0) {
       const beforeCount = filteredRecords.length;
-      filteredRecords = filteredRecords.filter(record => input.type!.includes(record.type));
-      const afterCount = filteredRecords.length;
-      debugInfo.filter_breakdown!.type_filter = beforeCount - afterCount;
-      addDebugLog(`Type filter applied: ${beforeCount} -> ${afterCount} records`);
+      try {
+        filteredRecords = filteredRecords.filter(record => input.type!.includes(record.type));
+        debugInfo.filter_breakdown!.type_filter = beforeCount - filteredRecords.length;
+        addDebugLog(`Type filter applied: ${beforeCount} -> ${filteredRecords.length} records`);
+      } catch (error) {
+        debugInfo.errors!.push(logSearchError('type_filter', error as Error, { type: input.type }));
+        addDebugLog(`Type filter failed: ${(error as Error).message}`);
+      }
     }
-    
     // Filter by experiencer
     if (input.experiencer) {
       const beforeCount = filteredRecords.length;
-      filteredRecords = filteredRecords.filter(record => record.experiencer === input.experiencer);
-      const afterCount = filteredRecords.length;
-      debugInfo.filter_breakdown!.experiencer_filter = beforeCount - afterCount;
-      addDebugLog(`Experiencer filter applied: ${beforeCount} -> ${afterCount} records`);
+      try {
+        filteredRecords = filteredRecords.filter(record => record.experiencer === input.experiencer);
+        debugInfo.filter_breakdown!.experiencer_filter = beforeCount - filteredRecords.length;
+        addDebugLog(`Experiencer filter applied: ${beforeCount} -> ${filteredRecords.length} records`);
+      } catch (error) {
+        debugInfo.errors!.push(logSearchError('experiencer_filter', error as Error, { experiencer: input.experiencer }));
+        addDebugLog(`Experiencer filter failed: ${(error as Error).message}`);
+      }
     }
-    
     // Filter by perspective
     if (input.perspective) {
       const beforeCount = filteredRecords.length;
-      filteredRecords = filteredRecords.filter(record => record.perspective === input.perspective);
-      const afterCount = filteredRecords.length;
-      debugInfo.filter_breakdown!.perspective_filter = beforeCount - afterCount;
-      addDebugLog(`Perspective filter applied: ${beforeCount} -> ${afterCount} records`);
+      try {
+        filteredRecords = filteredRecords.filter(record => record.perspective === input.perspective);
+        debugInfo.filter_breakdown!.perspective_filter = beforeCount - filteredRecords.length;
+        addDebugLog(`Perspective filter applied: ${beforeCount} -> ${filteredRecords.length} records`);
+      } catch (error) {
+        debugInfo.errors!.push(logSearchError('perspective_filter', error as Error, { perspective: input.perspective }));
+        addDebugLog(`Perspective filter failed: ${(error as Error).message}`);
+      }
     }
-    
     // Filter by processing
     if (input.processing) {
       const beforeCount = filteredRecords.length;
-      filteredRecords = filteredRecords.filter(record => record.processing === input.processing);
-      const afterCount = filteredRecords.length;
-      debugInfo.filter_breakdown!.processing_filter = beforeCount - afterCount;
-      addDebugLog(`Processing filter applied: ${beforeCount} -> ${afterCount} records`);
+      try {
+        filteredRecords = filteredRecords.filter(record => record.processing === input.processing);
+        debugInfo.filter_breakdown!.processing_filter = beforeCount - filteredRecords.length;
+        addDebugLog(`Processing filter applied: ${beforeCount} -> ${filteredRecords.length} records`);
+      } catch (error) {
+        debugInfo.errors!.push(logSearchError('processing_filter', error as Error, { processing: input.processing }));
+        addDebugLog(`Processing filter failed: ${(error as Error).message}`);
+      }
     }
-    
     // Filter by contentType
     if (input.contentType) {
       const beforeCount = filteredRecords.length;
-      filteredRecords = filteredRecords.filter(record => record.contentType === input.contentType);
-      const afterCount = filteredRecords.length;
-      debugInfo.filter_breakdown!.contentType_filter = beforeCount - afterCount;
-      addDebugLog(`ContentType filter applied: ${beforeCount} -> ${afterCount} records`);
+      try {
+        filteredRecords = filteredRecords.filter(record => record.contentType === input.contentType);
+        debugInfo.filter_breakdown!.contentType_filter = beforeCount - filteredRecords.length;
+        addDebugLog(`ContentType filter applied: ${beforeCount} -> ${filteredRecords.length} records`);
+      } catch (error) {
+        debugInfo.errors!.push(logSearchError('contentType_filter', error as Error, { contentType: input.contentType }));
+        addDebugLog(`ContentType filter failed: ${(error as Error).message}`);
+      }
     }
-    
     // Filter by crafted
     if (input.crafted !== undefined) {
       const beforeCount = filteredRecords.length;
-      filteredRecords = filteredRecords.filter(record => record.crafted === input.crafted);
-      const afterCount = filteredRecords.length;
-      debugInfo.filter_breakdown!.crafted_filter = beforeCount - afterCount;
-      addDebugLog(`Crafted filter applied: ${beforeCount} -> ${afterCount} records`);
+      try {
+        filteredRecords = filteredRecords.filter(record => record.crafted === input.crafted);
+        debugInfo.filter_breakdown!.crafted_filter = beforeCount - filteredRecords.length;
+        addDebugLog(`Crafted filter applied: ${beforeCount} -> ${filteredRecords.length} records`);
+      } catch (error) {
+        debugInfo.errors!.push(logSearchError('crafted_filter', error as Error, { crafted: input.crafted }));
+        addDebugLog(`Crafted filter failed: ${(error as Error).message}`);
+      }
     }
-    
     // Filter by ID
     if (input.id) {
       const beforeCount = filteredRecords.length;
-      filteredRecords = filteredRecords.filter(record => record.id === input.id);
-      const afterCount = filteredRecords.length;
-      if (!debugInfo.filter_breakdown) debugInfo.filter_breakdown = {};
-      debugInfo.filter_breakdown.id_filter = beforeCount - afterCount;
-      addDebugLog(`ID filter applied: ${beforeCount} -> ${afterCount} records (id: ${input.id})`);
+      try {
+        filteredRecords = filteredRecords.filter(record => record.id === input.id);
+        debugInfo.filter_breakdown!.id_filter = beforeCount - filteredRecords.length;
+        addDebugLog(`ID filter applied: ${beforeCount} -> ${filteredRecords.length} records (id: ${input.id})`);
+      } catch (error) {
+        debugInfo.errors!.push(logSearchError('id_filter', error as Error, { id: input.id }));
+        addDebugLog(`ID filter failed: ${(error as Error).message}`);
+      }
     }
-
     // Apply temporal filters
     if (input.system_time || input.occurred) {
       const beforeCount = filteredRecords.length;
-      if (input.system_time) {
-        filteredRecords = await applyTemporalFilter(filteredRecords, input.system_time, 'system_time');
-      }
-      if (input.occurred) {
-        filteredRecords = await applyTemporalFilter(filteredRecords, input.occurred, 'occurred');
-      }
-      const afterCount = filteredRecords.length;
-      debugInfo.filter_breakdown!.temporal_filter = beforeCount - afterCount;
-      addDebugLog(`Temporal filter applied: ${beforeCount} -> ${afterCount} records`);
-    }
-
-    // Experiential qualities min/max filtering
-    const qualities: (keyof QualityVector)[] = [
-      'embodied', 'attentional', 'affective', 'purposive', 'spatial', 'temporal', 'intersubjective'
-    ];
-    let qualitiesFilterCount = 0;
-    for (const q of qualities) {
-      const minKey = `min_${q}` as keyof SearchInput;
-      const maxKey = `max_${q}` as keyof SearchInput;
-      if (input[minKey] !== undefined) {
-        const beforeCount = filteredRecords.length;
-        filteredRecords = filteredRecords.filter(record => {
-          const v = record.experiential_qualities?.vector?.[q];
-          // Only include records that have the quality score and meet the minimum threshold
-          return v !== undefined && v >= (input[minKey] as number);
-        });
-        qualitiesFilterCount += beforeCount - filteredRecords.length;
-      }
-      if (input[maxKey] !== undefined) {
-        const beforeCount = filteredRecords.length;
-        filteredRecords = filteredRecords.filter(record => {
-          const v = record.experiential_qualities?.vector?.[q];
-          // Only include records that have the quality score and meet the maximum threshold
-          return v !== undefined && v <= (input[maxKey] as number);
-        });
-        qualitiesFilterCount += beforeCount - filteredRecords.length;
+      try {
+        if (input.system_time) {
+          filteredRecords = await applyTemporalFilter(filteredRecords, input.system_time, 'system_time');
+        }
+        if (input.occurred) {
+          filteredRecords = await applyTemporalFilter(filteredRecords, input.occurred, 'occurred');
+        }
+        debugInfo.filter_breakdown!.temporal_filter = beforeCount - filteredRecords.length;
+        addDebugLog(`Temporal filter applied: ${beforeCount} -> ${filteredRecords.length} records`);
+      } catch (error) {
+        debugInfo.errors!.push(logSearchError('temporal_filter', error as Error, { system_time: input.system_time, occurred: input.occurred }));
+        addDebugLog(`Temporal filter failed: ${(error as Error).message}`);
       }
     }
-    if (qualitiesFilterCount > 0) {
-      debugInfo.filter_breakdown!.qualities_filter = qualitiesFilterCount;
-      addDebugLog(`Qualities filter applied: ${qualitiesFilterCount} records filtered`);
+    // Experiential qualities min/max filters
+    try {
+      const qualities = ['embodied', 'attentional', 'affective', 'purposive', 'spatial', 'temporal', 'intersubjective'] as const;
+      for (const q of qualities) {
+        const minKey = `min_${q}`;
+        const maxKey = `max_${q}`;
+        if ((input as any)[minKey] !== undefined) {
+          filteredRecords = filteredRecords.filter(r => r.experiential_qualities?.vector?.[q] !== undefined && (r.experiential_qualities.vector as any)[q] >= (input as any)[minKey]);
+        }
+        if ((input as any)[maxKey] !== undefined) {
+          filteredRecords = filteredRecords.filter(r => r.experiential_qualities?.vector?.[q] !== undefined && (r.experiential_qualities.vector as any)[q] <= (input as any)[maxKey]);
+        }
+      }
+    } catch (error) {
+      debugInfo.errors!.push(logSearchError('qualities_filter', error as Error));
+      addDebugLog(`Qualities filter failed: ${(error as Error).message}`);
     }
 
     // Vector similarity search
@@ -601,7 +645,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
         debugInfo.similarity_scores.push(...topSemanticScores.map(s => ({ ...s, type: 'semantic' as const })));
         
       } catch (error) {
-        const errorInfo = logSearchError('semantic_search', error, { 
+        const errorInfo = logSearchError('semantic_search', error as Error, { 
           query: input.semantic_query, 
           threshold: input.semantic_threshold 
         });
@@ -698,7 +742,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
     };
     
   } catch (error) {
-    const errorInfo = logSearchError('search_execution', error, { input });
+    const errorInfo = logSearchError('search_execution', error as Error, { input });
     debugInfo.errors!.push(errorInfo);
     
     // Return error response with debug info
@@ -755,29 +799,6 @@ function cosineSimilarity(a: Record<string, number>, b: Record<string, number>):
   }
   if (normA === 0 || normB === 0) return 0;
   return dot / (Math.sqrt(normA) * Math.sqrt(normB));
-}
-
-// Helper function to apply temporal filters
-async function applyTemporalFilter(records: SourceRecord[], filter: string | { start: string; end: string }, field: 'system_time' | 'occurred'): Promise<SourceRecord[]> {
-  if (typeof filter === 'string') {
-    // Single date filter
-    const filterDate = parseSingleDate(filter);
-    return records.filter(record => {
-      const recordDateRaw = record[field] || record.system_time;
-      const recordDate = parseSingleDate(recordDateRaw);
-      return recordDate.split('T')[0] === filterDate.split('T')[0]; // Compare date part only
-    });
-  } else {
-    // Date range filter
-    const dateRange = parseFlexibleDate(filter) as { start: string; end: string };
-    return records.filter(record => {
-      const recordDateRaw = record[field] || record.system_time;
-      const recordDate = parseSingleDate(recordDateRaw);
-      if (dateRange.start && recordDate < dateRange.start) return false;
-      if (dateRange.end && recordDate > dateRange.end) return false;
-      return true;
-    });
-  }
 }
 
 export class SearchService {

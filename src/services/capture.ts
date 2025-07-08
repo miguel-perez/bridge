@@ -91,18 +91,25 @@ export class CaptureService {
   async captureSource(input: CaptureInput): Promise<CaptureResult> {
     // Validate experiential qualities are provided
     if (!input.experiential_qualities || !input.experiential_qualities.qualities || input.experiential_qualities.qualities.length === 0) {
-      throw new Error('Experiential qualities analysis is required. The AI assistant must analyze the content and provide quality scores.');
+      throw new Error('Experiential qualities analysis is required. The AI assistant must analyze the content and provide quality scores. Example: { experiential_qualities: { qualities: [ { type: "embodied", prominence: 0.7, manifestation: "tense shoulders" }, ... ] } }');
     }
 
     // Validate occurred field with chrono-node parsing
     let occurredDate: string | undefined;
     if (input.occurred) {
-      occurredDate = await parseOccurredDate(input.occurred);
+      try {
+        occurredDate = await parseOccurredDate(input.occurred);
+        if (!occurredDate || isNaN(Date.parse(occurredDate))) {
+          throw new Error();
+        }
+      } catch {
+        throw new Error('Invalid occurred date format. Example valid formats: "2024-01-15", "yesterday", "last week", "2024-01-01T10:00:00Z".');
+      }
     }
 
     // Create source record for non-file captures
     if (!input.content) {
-      throw new Error('Content is required when no file is provided');
+      throw new Error('Content is required. Example: { content: "I felt a wave of anxiety as I entered the room." }');
     }
     
     // Use defaults for perspective, processing, experiencer
@@ -127,7 +134,7 @@ export class CaptureService {
       };
     } else {
       // This should not happen due to validation above, but TypeScript requires it
-      throw new Error('Experiential qualities analysis is required. The AI assistant must analyze the content and provide quality scores.');
+      throw new Error('Experiential qualities analysis is required. The AI assistant must analyze the content and provide quality scores. Example: { experiential_qualities: { qualities: [ { type: "embodied", prominence: 0.7, manifestation: "tense shoulders" }, ... ] } }');
     }
     
     // Generate embedding for content
