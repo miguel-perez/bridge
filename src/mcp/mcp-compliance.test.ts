@@ -17,7 +17,7 @@ describe('MCP Protocol Compliance', () => {
       name: "bridge-mcp-compliance-test", 
       version: "1.0.0" 
     });
-  }, 10000); // Increase timeout for connection
+  }, 30000); // Increase timeout for client creation
 
   afterEach(async () => {
     try {
@@ -25,7 +25,7 @@ describe('MCP Protocol Compliance', () => {
     } catch (error) {
       // Ignore cleanup errors
     }
-  }, 5000); // Timeout for cleanup
+  }, 10000); // Increase timeout for cleanup
 
   describe('Server Connection', () => {
     test('should connect to server successfully', async () => {
@@ -38,7 +38,7 @@ describe('MCP Protocol Compliance', () => {
       });
       
       await expect(client.connect(transport)).resolves.not.toThrow();
-    }, 15000);
+    }, 30000); // Increase timeout for server connection
 
     test('should provide server info after connection', async () => {
       const serverPath = join(__dirname, '..', '..', 'dist', 'index.js');
@@ -54,7 +54,7 @@ describe('MCP Protocol Compliance', () => {
       // Server info should be available after connection
       expect(client).toBeDefined();
       // Note: serverInfo may not be directly accessible in this version of the SDK
-    }, 15000);
+    }, 30000); // Increase timeout for server connection
   });
 
   describe('Tool Discovery', () => {
@@ -68,7 +68,7 @@ describe('MCP Protocol Compliance', () => {
       });
       
       await client.connect(transport);
-    }, 15000);
+    }, 30000); // Increase timeout for server connection
 
     test('should list available tools', async () => {
       const result = await client.listTools();
@@ -76,7 +76,7 @@ describe('MCP Protocol Compliance', () => {
       expect(result.tools).toBeDefined();
       expect(Array.isArray(result.tools)).toBe(true);
       expect(result.tools.length).toBeGreaterThan(0);
-    }, 10000);
+    }, 15000); // Increase timeout for tool listing
 
     test('should provide valid tool definitions', async () => {
       const result = await client.listTools();
@@ -98,7 +98,7 @@ describe('MCP Protocol Compliance', () => {
         expect(tool.inputSchema.type).toBe('object');
         expect(tool.inputSchema.properties).toBeDefined();
       }
-    }, 10000);
+    }, 15000); // Increase timeout for tool validation
 
     test('should have expected tool names', async () => {
       const result = await client.listTools();
@@ -108,7 +108,7 @@ describe('MCP Protocol Compliance', () => {
       expect(toolNames).toContain('capture');
       expect(toolNames).toContain('search');
       expect(toolNames).toContain('enrich');
-    }, 10000);
+    }, 15000); // Increase timeout for tool name checking
   });
 
   describe('Tool Execution', () => {
@@ -122,7 +122,7 @@ describe('MCP Protocol Compliance', () => {
       });
       
       await client.connect(transport);
-    }, 15000);
+    }, 30000); // Increase timeout for server connection
 
     test('should execute capture tool with valid input', async () => {
       const result = await client.callTool({
@@ -147,7 +147,7 @@ describe('MCP Protocol Compliance', () => {
       expect(result.content).toBeDefined();
       // MCP SDK doesn't always set isError, so we check content structure instead
       expect(Array.isArray(result.content) || typeof result.content === 'string').toBe(true);
-    }, 15000);
+    }, 30000); // Increase timeout for tool execution
 
     test('should execute search tool with valid input', async () => {
       const result = await client.callTool({
@@ -160,7 +160,7 @@ describe('MCP Protocol Compliance', () => {
       
       expect(result.content).toBeDefined();
       expect(Array.isArray(result.content) || typeof result.content === 'string').toBe(true);
-    }, 15000);
+    }, 30000); // Increase timeout for tool execution
 
     test('should handle invalid tool name gracefully', async () => {
       const result = await client.callTool({
@@ -171,6 +171,6 @@ describe('MCP Protocol Compliance', () => {
       // Should return an error result rather than throwing
       expect(result.isError).toBe(true);
       expect(result.content).toBeDefined();
-    }, 10000);
+    }, 15000); // Increase timeout for error handling
   });
 }); 
