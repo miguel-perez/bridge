@@ -36,7 +36,7 @@ export class EmbeddingService {
     if (this.cache.has(hash)) {
       return this.cache.get(hash)!;
     }
-
+    
     try {
       const result = await this.embedder(text, { pooling: 'mean', normalize: true });
       
@@ -51,7 +51,7 @@ export class EmbeddingService {
       } else {
         throw new Error('Unexpected embedding result format');
       }
-
+      
       // Ensure we have a reasonable embedding size
       if (embedding.length === 0) {
         throw new Error('Generated embedding is empty');
@@ -89,7 +89,7 @@ export class EmbeddingService {
       
       // Cache the result
       this.cache.set(hash, embedding);
-
+      
       return embedding;
     } catch (error) {
       throw new Error(`Failed to generate embedding: ${error instanceof Error ? error.message : 'Unknown error'}`);
