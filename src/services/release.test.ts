@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeEach } from '@jest/globals';
 import { ReleaseService } from './release.js';
-import { saveSource, getSource } from '../core/storage.js';
+import { saveSource, getSource, setupTestStorage, clearTestStorage } from '../core/storage.js';
 import type { SourceRecord } from '../core/types.js';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -10,6 +10,7 @@ function makeSource(overrides: Partial<SourceRecord> = {}): SourceRecord {
     id: overrides.id || uuidv4(),
     content: overrides.content || 'Release test content',
     contentType: overrides.contentType || 'text',
+    system_time: overrides.system_time || new Date().toISOString(),
     perspective: overrides.perspective || 'I',
     experiencer: overrides.experiencer || 'self',
     processing: overrides.processing || 'during',
@@ -34,6 +35,8 @@ describe('ReleaseService', () => {
   let baseSource: SourceRecord;
 
   beforeEach(async () => {
+    setupTestStorage('ReleaseService');
+    await clearTestStorage();
     releaseService = new ReleaseService();
     baseSource = makeSource();
     await saveSource(baseSource);

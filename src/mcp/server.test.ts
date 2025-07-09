@@ -194,8 +194,8 @@ describe('MCP Server Protocol Compliance', () => {
       
       expect(result.content).toBeDefined();
       expect(Array.isArray(result.content)).toBe(true);
-      // Should return an error response - experiential qualities validation happens first
-      expect((result.content as any[])[0].text).toContain('Experiential qualities analysis is required');
+      // Should return an error response - content validation happens first
+      expect((result.content as any[])[0].text).toContain('Content must be provided');
     }, 30000);
 
     test('should handle invalid perspective values', async () => {

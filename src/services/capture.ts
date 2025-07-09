@@ -212,20 +212,21 @@ export class CaptureService {
       }
     }
 
-    const defaultsUsed = this.getDefaultsUsed(validatedInput);
+    const defaultsUsed = this.getDefaultsUsed(input);
     return { source, defaultsUsed };
   }
 
   /**
    * Returns a list of which defaults were used for the capture input.
-   * @param input - Capture input data
+   * @param originalInput - Original input data
    * @returns Array of default field descriptions
    */
-  private getDefaultsUsed(input: CaptureInput): string[] {
+  private getDefaultsUsed(originalInput: CaptureInput): string[] {
     const defaultsUsed = [];
-    if (!input.perspective) defaultsUsed.push('perspective="I"');
-    if (!input.experiencer) defaultsUsed.push('experiencer="self"');
-    if (!input.processing) defaultsUsed.push('processing="during"');
+    if (!originalInput.perspective) defaultsUsed.push('perspective="I"');
+    if (!originalInput.experiencer) defaultsUsed.push('experiencer="self"');
+    if (!originalInput.processing) defaultsUsed.push('processing="during"');
+    if (!originalInput.contentType) defaultsUsed.push('contentType="text"');
     return defaultsUsed;
   }
 } 

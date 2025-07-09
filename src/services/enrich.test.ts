@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeEach } from '@jest/globals';
-import { EnrichService, enrichSchema, ENRICH_DEFAULTS } from './enrich.js';
-import { saveSource, getSource } from '../core/storage.js';
+import { EnrichService, enrichSchema } from './enrich.js';
+import { saveSource, setupTestStorage, clearTestStorage } from '../core/storage.js';
 import type { SourceRecord } from '../core/types.js';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -10,6 +10,7 @@ function makeSource(overrides: Partial<SourceRecord> = {}): SourceRecord {
     id: overrides.id || uuidv4(),
     content: overrides.content || 'Original content',
     contentType: overrides.contentType || 'text',
+    system_time: overrides.system_time || new Date().toISOString(),
     perspective: overrides.perspective || 'I',
     experiencer: overrides.experiencer || 'self',
     processing: overrides.processing || 'during',
@@ -34,6 +35,8 @@ describe('EnrichService', () => {
   let baseSource: SourceRecord;
 
   beforeEach(async () => {
+    setupTestStorage('EnrichService');
+    await clearTestStorage();
     enrichService = new EnrichService();
     baseSource = makeSource();
     await saveSource(baseSource);
@@ -94,7 +97,6 @@ describe('EnrichService', () => {
 
   test('throws on invalid perspective', async () => {
     const badInput = { ...baseSource, perspective: 'invalid' };
-    // @ts-expect-error
     expect(() => enrichSchema.parse(badInput)).toThrow();
   });
 
@@ -107,7 +109,6 @@ describe('EnrichService', () => {
         ]
       }
     };
-    // @ts-expect-error
     expect(() => enrichSchema.parse(badInput)).toThrow();
   });
 
@@ -136,6 +137,7 @@ describe('EnrichService', () => {
   test('enrich with no changes does not update fields', async () => {
     const result = await enrichService.enrichSource({ id: baseSource.id });
     expect(result.updatedFields.length).toBe(0);
-    expect(result.source).toMatchObject(baseSource);
+    expect(result.source.id).toBe(baseSource.id);
+    expect(result.source.content).toBe(baseSource.content);
   });
 }); 

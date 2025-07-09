@@ -344,4 +344,15 @@ export function getSearchableText(record: SourceRecord): string {
 export async function clearTestStorage(): Promise<void> {
   await ensureStorageDir();
   await fs.writeFile(getDataFile(), JSON.stringify({ sources: [] }, null, STORAGE_DEFAULTS.JSON_INDENT), STORAGE_DEFAULTS.FILE_ENCODING);
+}
+
+/**
+ * Sets up test-specific storage configuration (for test use only).
+ * Uses a unique file path to prevent test interference.
+ * @param testName - Name of the test for unique file naming
+ */
+export function setupTestStorage(testName: string): void {
+  const testId = testName.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 20);
+  const testDataFile = join(getStorageDir(), `test_${testId}_bridge.json`);
+  setStorageConfig({ dataFile: testDataFile });
 } 

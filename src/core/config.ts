@@ -97,20 +97,13 @@ export function isSearchDebugMode(): boolean {
 
 /**
  * Validate the current configuration. Throws if invalid.
- * Logs configuration in debug mode.
+ * Note: Debug logging is handled by MCP server, not console.log
  */
 export function validateConfiguration(): void {
   if (!currentConfig.dataFilePath || typeof currentConfig.dataFilePath !== 'string' || currentConfig.dataFilePath.trim().length === 0) {
     throw new Error('Data file path is required and must be a non-empty string.');
   }
-  // Log configuration in debug mode
-  if (currentConfig.debugMode) {
-    console.log('Bridge Configuration:', {
-      dataFilePath: currentConfig.dataFilePath,
-      debugMode: currentConfig.debugMode,
-      nodeEnv: process.env.NODE_ENV,
-    });
-  }
+  // Configuration is valid - debug logging handled by MCP server
 }
 
 /**
