@@ -2,7 +2,7 @@
 // Entry point for the Bridge MCP server. Launches the server using Stdio transport for integration with MCP clients (e.g., Claude Desktop).
 // Handles startup errors gracefully and logs them for troubleshooting.
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { server } from './mcp/server.js';
+import { server, initializeBridgeConfiguration } from './mcp/server.js';
 
 // MCP-compliant logging function
 function mcpLog(level: 'info' | 'warn' | 'error', message: string): void {
@@ -31,6 +31,11 @@ process.on('unhandledRejection', (reason) => {
     const transport = new StdioServerTransport();
     await server.connect(transport);
     mcpLog('info', 'Bridge MCP server started and connected successfully');
+    
+    // Initialize Bridge configuration after server connection
+    // This ensures MCP logging is available during initialization
+    await initializeBridgeConfiguration();
+    mcpLog('info', 'Bridge configuration initialized successfully');
   } catch (err) {
     mcpLog('error', `Failed to start Bridge MCP server: ${err instanceof Error ? err.message : err}`);
     process.exit(1);

@@ -162,17 +162,16 @@ const server = new Server(
   }
 );
 
-// Initialize configuration before setting up handlers
-// Note: This is now async, but we can't await it here since this is module-level code
-// The initialization will happen when the module is imported
-initializeConfiguration(server).catch((error) => {
-  mcpLog('error', `Failed to initialize Bridge configuration: ${error instanceof Error ? error.message : error}`, server);
-  // Configuration failed - exit with error code
-  process.exit(1);
-});
-
 // Create tool handlers
 const toolHandlers = new MCPToolHandlers();
+
+/**
+ * Initialize Bridge configuration after server connection
+ * This ensures MCP logging is available during initialization
+ */
+export async function initializeBridgeConfiguration(): Promise<void> {
+  await initializeConfiguration(server);
+}
 
 // ============================================================================
 // REQUEST HANDLERS

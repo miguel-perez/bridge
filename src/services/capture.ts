@@ -142,16 +142,14 @@ export class CaptureService {
    * @throws Error if validation fails or required fields are missing
    */
   async captureSource(input: CaptureInput): Promise<CaptureResult> {
-    // Validate experiential qualities are provided
-    if (!input.experiential_qualities || !input.experiential_qualities.qualities || input.experiential_qualities.qualities.length === 0) {
-      throw new Error('Experiential qualities analysis is required. The AI assistant must analyze the content and provide quality scores. Example: { experiential_qualities: { qualities: [ { type: "embodied", prominence: 0.7, manifestation: "tense shoulders" }, ... ] } }');
-    }
+    // Validate input using Zod schema first
+    const validatedInput = captureSchema.parse(input);
 
     // Validate occurred field with chrono-node parsing
     let occurredDate: string | undefined;
-    if (input.occurred) {
+    if (validatedInput.occurred) {
       try {
-        occurredDate = await parseOccurredDate(input.occurred);
+        occurredDate = await parseOccurredDate(validatedInput.occurred);
         if (!occurredDate || isNaN(Date.parse(occurredDate))) {
           throw new Error();
         }
@@ -160,28 +158,23 @@ export class CaptureService {
       }
     }
 
-    // Ensure content is provided
-    if (!input.content) {
-      throw new Error('Content is required. Example: { content: "I felt a wave of anxiety as I entered the room." }');
-    }
-
-    // Use defaults for perspective, processing, experiencer
-    const perspective = input.perspective ?? CAPTURE_DEFAULTS.PERSPECTIVE;
-    const processing = input.processing ?? CAPTURE_DEFAULTS.PROCESSING;
-    const experiencer = input.experiencer ?? CAPTURE_DEFAULTS.EXPERIENCER;
+    // Use validated input with defaults applied
+    const perspective = validatedInput.perspective;
+    const processing = validatedInput.processing;
+    const experiencer = validatedInput.experiencer;
 
     // Process experiential qualities - generate vector if not provided
     let processedExperientialQualities: import('../core/types.js').ExperientialQualities;
-    if (input.experiential_qualities.qualities) {
-      const generatedVector = generateQualityVector(input.experiential_qualities.qualities, input.experiential_qualities.vector);
+    if (validatedInput.experiential_qualities.qualities) {
+      const generatedVector = generateQualityVector(validatedInput.experiential_qualities.qualities, validatedInput.experiential_qualities.vector);
       processedExperientialQualities = {
-        qualities: input.experiential_qualities.qualities,
+        qualities: validatedInput.experiential_qualities.qualities,
         vector: generatedVector,
       };
-    } else if (input.experiential_qualities.vector) {
+    } else if (validatedInput.experiential_qualities.vector) {
       processedExperientialQualities = {
         qualities: [],
-        vector: input.experiential_qualities.vector,
+        vector: validatedInput.experiential_qualities.vector,
       };
     } else {
       throw new Error('Experiential qualities analysis is required. The AI assistant must analyze the content and provide quality scores. Example: { experiential_qualities: { qualities: [ { type: "embodied", prominence: 0.7, manifestation: "tense shoulders" }, ... ] } }');
@@ -190,21 +183,21 @@ export class CaptureService {
     // Generate embedding for content
     let contentEmbedding: number[] | undefined;
     try {
-      contentEmbedding = await embeddingService.generateEmbedding(input.content);
+      contentEmbedding = await embeddingService.generateEmbedding(validatedInput.content!);
     } catch (error) {
       // Silently handle embedding generation errors in MCP context
     }
 
     const source = await saveSource({
       id: generateId('src'),
-      content: input.content,
-      contentType: input.contentType || CAPTURE_DEFAULTS.CONTENT_TYPE,
+      content: validatedInput.content!,
+      contentType: validatedInput.contentType,
       system_time: new Date().toISOString(),
       occurred: occurredDate || new Date().toISOString(),
       perspective,
       experiencer,
       processing: processing as ProcessingLevel,
-      crafted: input.crafted,
+      crafted: validatedInput.crafted,
       experiential_qualities: processedExperientialQualities,
       content_embedding: contentEmbedding,
     });
@@ -219,7 +212,7 @@ export class CaptureService {
       }
     }
 
-    const defaultsUsed = this.getDefaultsUsed(input);
+    const defaultsUsed = this.getDefaultsUsed(validatedInput);
     return { source, defaultsUsed };
   }
 

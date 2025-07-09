@@ -204,10 +204,16 @@ ${result.defaultsUsed.length > 0 ? `Defaults used: ${result.defaultsUsed.join(',
    */
   async handleRelease(args: any) {
     const input = args as any;
-    const result = await this.releaseService.releaseSource(input);
+    const result = await this.releaseService.releaseSource({ id: input.source_id });
+    
+    const content = `✓ Released source record
+ID: ${input.source_id}
+Reason: ${input.reason || 'No reason provided'}
+
+The record has been permanently deleted from your experiential data.`;
     
     return {
-      content: [{ type: 'text', text: result.message }]
+      content: [{ type: 'text', text: content }]
     };
   }
 
@@ -282,7 +288,7 @@ Relevance: ${formatRelevanceBreakdown(result.relevance_breakdown)}`;
    */
   async handleEnrich(args: any) {
     const input = args as any;
-    const result = await this.enrichService.enrichSource(input);
+    const result = await this.enrichService.enrichSource({ ...input, id: input.source_id });
     
     let content = `✓ Enriched experience ${result.source.id}
 Updated: ${result.updatedFields.join(', ')}`;
