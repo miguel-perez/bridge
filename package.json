@@ -1,11 +1,11 @@
 {
-  "name": "moments-mcp",
+  "name": "bridge",
   "version": "0.1.0",
   "description": "MCP server for capturing and managing experiential data",
   "main": "dist/index.js",
   "type": "module",
   "bin": {
-    "moments-mcp": "./dist/index.js"
+    "bridge": "./dist/index.js"
   },
   "scripts": {
     "build": "tsc",

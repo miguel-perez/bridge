@@ -39,8 +39,8 @@ export const QUALITY_TYPES = [
 export const captureSchema = z.object({
   content: z.string().optional(),
   contentType: z.string().optional().default(CAPTURE_DEFAULTS.CONTENT_TYPE),
-  perspective: z.enum(['I', 'we', 'you', 'they']).optional().default(CAPTURE_DEFAULTS.PERSPECTIVE),
-  processing: z.enum(['during', 'right-after', 'long-after', 'crafted']).optional().default(CAPTURE_DEFAULTS.PROCESSING),
+  perspective: z.enum(['I', 'we', 'you', 'they']).optional().default(CAPTURE_DEFAULTS.PERSPECTIVE as 'I' | 'we' | 'you' | 'they'),
+  processing: z.enum(['during', 'right-after', 'long-after', 'crafted']).optional().default(CAPTURE_DEFAULTS.PROCESSING as 'during' | 'right-after' | 'long-after' | 'crafted'),
   occurred: z.string().optional(),
   experiencer: z.string().optional().default(CAPTURE_DEFAULTS.EXPERIENCER),
   crafted: z.boolean().optional(),
