@@ -23,10 +23,9 @@
     "entry_point": "dist/index.js",
     "mcp_config": {
       "command": "node",
-      "args": ["C:\\Users\\Miguel\\Git\\bridge\\dist\\index.js"],
+      "args": ["${__dirname}/dist/index.js"],
       "env": {
         "NODE_ENV": "production",
-        "APPDATA": "C:\\Users\\Miguel\\AppData\\Roaming\\",
         "BRIDGE_DEBUG": "${user_config.debug_mode}",
         "BRIDGE_SEARCH_DEBUG": "${user_config.debug_mode}",
         "BRIDGE_FILE_PATH": "${user_config.data_file_path}"
@@ -40,7 +39,7 @@
       "title": "Bridge Data File",
       "description": "Path to your Bridge experiential data file (bridge.json). This file stores all your captured moments and experiences.",
       "required": true,
-      "default": "C:\\Users\\Miguel\\bridge.json",
+      "default": "${HOME}/bridge.json",
       "file_types": ["json"],
       "help_text": "Leave empty to use the default location in your home directory, or specify a custom path to your bridge.json file."
     },
