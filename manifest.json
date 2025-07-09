@@ -1,10 +1,10 @@
 {
   "dxt_version": "0.1",
   "name": "bridge",
-  "display_name": "Bridge: Phenomenological Data Capture",
+  "display_name": "Bridge: Experiential Data Capture",
   "version": "0.1.0",
-  "description": "Capture and analyze experiential moments through seven phenomenological dimensions, enabling distributed cognition between humans and AI.",
-  "long_description": "Bridge implements a new approach to capturing consciousness by preserving experiential moments in their full phenomenological richness. Drawing from decades of research in embodied cognition, micro-phenomenology, and extended mind theory, Bridge transforms raw experience into computationally accessible data without losing its essential qualities.\n\nEach captured moment is analyzed across seven fundamental dimensions: embodied (physical presence), attentional (awareness patterns), affective (emotional atmosphere), purposive (directional momentum), spatial (lived place), temporal (time flow), and intersubjective (social dynamics).\n\nBridge enables multi-modal search combining text matching (40%), vector similarity (30%), semantic search (20%), and contextual filters (10%). This allows navigation through experiential data by meaning, feeling, and phenomenological signature—not just keywords.\n\nAs infrastructure for distributed cognition, Bridge serves researchers in consciousness studies, AI developers building empathetic systems, and pioneers exploring new forms of human-AI collaboration. It resolves the 'pragmatic paradox' of segmenting continuous consciousness while preserving experiential wholeness.",
+  "description": "Capture and analyze experiential moments for better distributed cognition between humans and AI.",
+  "long_description": "Drawing from research in embodied cognition, micro-phenomenology, and extended mind theory, Bridge transforms raw experience into computationally accessible data without losing its essential qualities.",
   "author": {
     "name": "Miguel Angel Perez",
     "email": "mail@miguel.design",
@@ -16,7 +16,7 @@
     "type": "git",
     "url": "https://github.com/miguel-perez/bridge.git"
   },
-  "keywords": ["consciousness", "phenomenology", "mcp", "ai"],
+  "keywords": ["consciousness", "experience", "mcp", "ai"],
   
   "server": {
     "type": "node",
@@ -38,7 +38,7 @@
       "type": "file",
       "title": "Bridge Data File",
       "description": "Path to your Bridge experiential data file (bridge.json). This file stores all your captured moments and experiences.",
-      "required": false,
+      "required": true,
       "default": "${HOME}/bridge.json",
       "file_types": ["json"],
       "help_text": "Leave empty to use the default location in your home directory, or specify a custom path to your bridge.json file."
