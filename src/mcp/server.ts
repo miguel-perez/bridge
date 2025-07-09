@@ -8,7 +8,7 @@
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { CallToolRequestSchema, ListToolsRequestSchema, ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
+import { CallToolRequestSchema, ListToolsRequestSchema, ErrorCode, McpError, InitializeRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { validateConfiguration, getDataFilePath } from '../core/config.js';
 import { setStorageConfig } from '../core/storage.js';
@@ -24,6 +24,23 @@ import { tools } from './tools.js';
 
 const SERVER_NAME = 'bridge';
 const SERVER_VERSION = '0.1.0';
+
+// ============================================================================
+// MCP LOGGING UTILITIES
+// ============================================================================
+
+/**
+ * Sends log messages to the MCP client using log/message notifications
+ * This is the proper way to log in MCP servers - never use console.log/console.error
+ */
+function mcpLog(level: 'info' | 'warn' | 'error', message: string, serverInstance?: Server): void {
+  if (serverInstance && typeof serverInstance.notification === 'function') {
+    serverInstance.notification({
+      method: 'log/message',
+      params: { level, data: message }
+    });
+  }
+}
 
 // ============================================================================
 // UTILITY FUNCTIONS
@@ -77,7 +94,7 @@ function parseStringifiedJson(obj: any): any {
  * 
  * @throws {Error} If configuration fails
  */
-async function initializeConfiguration(): Promise<void> {
+async function initializeConfiguration(serverInstance?: Server): Promise<void> {
   try {
     // Validate configuration
     validateConfiguration();
@@ -102,15 +119,18 @@ async function initializeConfiguration(): Promise<void> {
       await vectorStore.initialize();
       await vectorStore.getVectorCount(); // Initialize and verify vector count
       // Vector store initialized successfully
+      mcpLog('info', 'Vector store initialized successfully', serverInstance);
     } catch (vectorError) {
       // Vector store initialization failed - semantic search won't work without it
       // but basic functionality will still work
-      console.warn('Vector store initialization failed:', vectorError);
+      mcpLog('warn', `Vector store initialization failed: ${vectorError instanceof Error ? vectorError.message : vectorError}`, serverInstance);
     }
     
     // Bridge DXT initialized successfully
+    mcpLog('info', 'Bridge configuration initialized successfully', serverInstance);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown configuration error';
+    mcpLog('error', `Bridge DXT configuration failed: ${errorMessage}`, serverInstance);
     throw new Error(`Bridge DXT configuration failed: ${errorMessage}`);
   }
 }
@@ -145,8 +165,8 @@ const server = new Server(
 // Initialize configuration before setting up handlers
 // Note: This is now async, but we can't await it here since this is module-level code
 // The initialization will happen when the module is imported
-initializeConfiguration().catch((error) => {
-  console.error('Failed to initialize Bridge configuration:', error);
+initializeConfiguration(server).catch((error) => {
+  mcpLog('error', `Failed to initialize Bridge configuration: ${error instanceof Error ? error.message : error}`, server);
   // Configuration failed - exit with error code
   process.exit(1);
 });
@@ -157,6 +177,36 @@ const toolHandlers = new MCPToolHandlers();
 // ============================================================================
 // REQUEST HANDLERS
 // ============================================================================
+
+/**
+ * Handles initialization requests from MCP clients
+ * This is required for MCP protocol compliance
+ */
+server.setRequestHandler(InitializeRequestSchema, async (request) => {
+  const { clientInfo } = request.params;
+  
+  // Log the initialization request
+  mcpLog('info', `Initializing MCP server for client: ${clientInfo?.name || 'unknown'} (${clientInfo?.version || 'unknown'})`, server);
+  
+  return {
+    protocolVersion: "2024-11-05",
+    capabilities: {
+      tools: {
+        listChanged: false
+      },
+      resources: {
+        listChanged: false
+      },
+      prompts: {
+        listChanged: false
+      }
+    },
+    serverInfo: {
+      name: SERVER_NAME,
+      version: SERVER_VERSION
+    }
+  };
+});
 
 /**
  * Handles tool listing requests
@@ -200,6 +250,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         );
     }
   } catch (err) {
+    // Log the error via MCP for debugging
+    mcpLog('error', `Tool execution error in ${name}: ${err instanceof Error ? err.message : err}`, server);
+    
     // Improved error reporting for user clarity - return proper MCP tool result format
     let errorMessage = 'An unexpected error occurred';
     

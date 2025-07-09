@@ -4,13 +4,35 @@
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { server } from './mcp/server.js';
 
+// MCP-compliant logging function
+function mcpLog(level: 'info' | 'warn' | 'error', message: string): void {
+  if (server && typeof server.notification === 'function') {
+    server.notification({
+      method: 'log/message',
+      params: { level, data: message }
+    });
+  }
+}
+
+// Handle uncaught exceptions and unhandled promise rejections
+process.on('uncaughtException', (err) => {
+  mcpLog('error', `Uncaught Exception: ${err.stack || err.message || err}`);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason) => {
+  mcpLog('error', `Unhandled Rejection: ${reason}`);
+  process.exit(1);
+});
+
 // Start the MCP server
 (async () => {
   try {
     const transport = new StdioServerTransport();
     await server.connect(transport);
+    mcpLog('info', 'Bridge MCP server started and connected successfully');
   } catch (err) {
-    console.error('Failed to start Bridge MCP server:', err);
+    mcpLog('error', `Failed to start Bridge MCP server: ${err instanceof Error ? err.message : err}`);
     process.exit(1);
   }
 })();

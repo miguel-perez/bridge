@@ -1,10 +1,10 @@
 {
   "dxt_version": "0.1",
   "name": "bridge",
-  "display_name": "Bridge: Experiential Data Capture",
+  "display_name": "Bridge",
   "version": "0.1.0",
   "description": "Capture and analyze experiential moments for better distributed cognition between humans and AI.",
-  "long_description": "Drawing from research in embodied cognition, micro-phenomenology, and extended mind theory, Bridge transforms raw experience into computationally accessible data without losing its essential qualities.",
+  "long_description": "Drawing from research in embodied cognition, micro-phenomenology, and extended mind theory, Bridge transforms raw experience into computationally accessible data.",
   "author": {
     "name": "Miguel Angel Perez",
     "email": "mail@miguel.design",
@@ -77,12 +77,5 @@
     "runtimes": {
       "node": ">=18.0.0"
     }
-  },
-  
-  "icon": "icon.png",
-  "screenshots": [
-    "assets/screenshots/capture.png",
-    "assets/screenshots/search.png",
-    "assets/screenshots/pattern-recognition.png"
-  ]
+  }
 }
