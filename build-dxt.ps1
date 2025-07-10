@@ -1,125 +1,139 @@
-#!/usr/bin/env pwsh
-# Bridge DXT Build Script for Windows
-# Updated for DXT v0.1 specification compliance
+# Build script for Bridge Desktop Extension (DXT)
+# This script packages the Bridge MCP server into a .dxt file for Claude Desktop
 
-Write-Host "Building Bridge Desktop Extension..." -ForegroundColor Green
+Write-Host "Building Bridge Desktop Extension (DXT)..." -ForegroundColor Green
 
-# Clean previous builds
-if (Test-Path "bridge-dxt") {
-    Remove-Item -Recurse -Force "bridge-dxt"
-    Write-Host "Cleaned previous build directory" -ForegroundColor Yellow
+# Variables
+$extensionName = "bridge-experiential-data"
+$outputDir = "bridge-dxt"
+$serverDir = "$outputDir/server"
+$buildFileName = "$extensionName.dxt"
+$tempZipName = "$extensionName.zip"
+
+# Validate manifest first
+Write-Host "Validating manifest..." -ForegroundColor Yellow
+node src/scripts/test-dxt-manifest.cjs
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Manifest validation failed!" -ForegroundColor Red
+    exit 1
 }
 
-if (Test-Path "bridge-experiential-data.dxt") {
-    Remove-Item "bridge-experiential-data.dxt"
-    Write-Host "Removed previous .dxt file" -ForegroundColor Yellow
+# Clean up any existing build directory
+if (Test-Path $outputDir) {
+    Write-Host "Cleaning up existing build directory..." -ForegroundColor Yellow
+    Remove-Item -Path $outputDir -Recurse -Force
 }
 
-# Create extension directory structure
-Write-Host "Creating extension directory structure..." -ForegroundColor Cyan
-New-Item -ItemType Directory -Path "bridge-dxt" -Force | Out-Null
-New-Item -ItemType Directory -Path "bridge-dxt/assets/screenshots" -Force | Out-Null
+# Create build directory structure
+Write-Host "Creating build directory structure..." -ForegroundColor Yellow
+New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
+New-Item -ItemType Directory -Path $serverDir -Force | Out-Null
 
-# Build TypeScript
-Write-Host "Compiling TypeScript..." -ForegroundColor Cyan
+# Build the TypeScript project
+Write-Host "Building TypeScript project..." -ForegroundColor Yellow
 npm run build
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "TypeScript compilation failed!" -ForegroundColor Red
+    Write-Host "TypeScript build failed!" -ForegroundColor Red
     exit 1
 }
 
-# Copy compiled files
-Write-Host "Copying compiled files..." -ForegroundColor Cyan
-Copy-Item -Recurse "dist" "bridge-dxt/"
+# Copy manifest.json
+Write-Host "Copying manifest.json..." -ForegroundColor Yellow
+Copy-Item -Path "manifest.json" -Destination $outputDir
 
-# Install and copy production dependencies only
-Write-Host "Installing production dependencies..." -ForegroundColor Cyan
-npm ci --production
+# Copy icon if it exists
+if (Test-Path "icon.png") {
+    Write-Host "Copying icon.png..." -ForegroundColor Yellow
+    Copy-Item -Path "icon.png" -Destination $outputDir
+}
+
+# Copy package files
+Write-Host "Copying package files..." -ForegroundColor Yellow
+Copy-Item -Path "package.json" -Destination $serverDir
+Copy-Item -Path "package-lock.json" -Destination $serverDir -ErrorAction SilentlyContinue
+
+# Copy built files
+Write-Host "Copying built files..." -ForegroundColor Yellow
+Copy-Item -Path "dist" -Destination $serverDir -Recurse
+
+# Install production dependencies
+Write-Host "Installing production dependencies..." -ForegroundColor Yellow
+Push-Location $serverDir
+
+# Create a modified package.json without problematic dependencies
+$packageJson = Get-Content "package.json" -Raw | ConvertFrom-Json
+$packageJson.dependencies.PSObject.Properties.Remove("@xenova/transformers")
+
+# Save the modified package.json
+$packageJson | ConvertTo-Json -Depth 10 | Set-Content "package.json"
+
+# Install remaining dependencies
+npm ci --production --no-optional --omit=dev
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "Failed to install production dependencies!" -ForegroundColor Red
-    exit 1
-}
-
-Copy-Item -Recurse "node_modules" "bridge-dxt/"
-npm install  # Restore all dependencies for development
-
-# Copy required files
-Write-Host "Copying extension files..." -ForegroundColor Cyan
-Copy-Item "manifest.json" "bridge-dxt/"
-Copy-Item "README.md" "bridge-dxt/"
-Copy-Item "LICENSE" "bridge-dxt/"
-Copy-Item "package.json" "bridge-dxt/"
-
-# Validate manifest.json
-Write-Host "Validating manifest.json..." -ForegroundColor Cyan
-try {
-    $manifest = Get-Content "bridge-dxt/manifest.json" | ConvertFrom-Json
-    $requiredFields = @("dxt_version", "name", "version", "description", "author", "server")
-    foreach ($field in $requiredFields) {
-        if (-not $manifest.$field) {
-            throw "Missing required field: $field"
-        }
-    }
-    Write-Host "✅ Manifest validation passed" -ForegroundColor Green
-} catch {
-    Write-Host "❌ Manifest validation failed: $_" -ForegroundColor Red
-    exit 1
-}
-
-# Create placeholder icon if it doesn't exist
-if (!(Test-Path "icon.png")) {
-    Write-Host "Warning: icon.png not found - please create a 256x256 icon manually" -ForegroundColor Yellow
-    # Create a simple text file as placeholder
-    "Placeholder for icon.png - please create a 256x256 icon" | Out-File "icon.png" -Encoding UTF8
-}
-Copy-Item "icon.png" "bridge-dxt/" -ErrorAction SilentlyContinue
-
-# Create placeholder screenshots if they don't exist
-$screenshots = @("capture", "search", "pattern-recognition")
-foreach ($screenshot in $screenshots) {
-    $screenshotPath = "assets/screenshots/${screenshot}.png"
-    if (!(Test-Path $screenshotPath)) {
-        Write-Host "Warning: ${screenshotPath} not found - creating placeholder" -ForegroundColor Yellow
-        # Create placeholder text file
-        "Placeholder for ${screenshot}.png" | Out-File $screenshotPath -Encoding UTF8
-    }
-}
-Copy-Item "assets/screenshots/*.png" "bridge-dxt/assets/screenshots/" -ErrorAction SilentlyContinue
-
-# Copy .dxtignore if it exists
-if (Test-Path ".dxtignore") {
-    Copy-Item ".dxtignore" "bridge-dxt/"
-}
-
-# Package the extension
-Write-Host "Packaging extension..." -ForegroundColor Cyan
-Push-Location "bridge-dxt"
-try {
-    npx @anthropic-ai/dxt pack . ../bridge-experiential-data.dxt
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "Failed to package extension!" -ForegroundColor Red
-        exit 1
-    }
-} finally {
+    Write-Host "npm install failed!" -ForegroundColor Red
     Pop-Location
+    exit 1
 }
 
-# Get file size
-$fileSize = (Get-Item "bridge-experiential-data.dxt").Length
-$fileSizeMB = [math]::Round($fileSize / 1MB, 2)
+# Remove any sharp/onnx binaries that might have been installed
+$problematicPackages = @("sharp", "onnxruntime-node", "@onnxruntime", "cpu-features")
+foreach ($pkg in $problematicPackages) {
+    $pkgPath = Join-Path "node_modules" $pkg
+    if (Test-Path $pkgPath) {
+        Write-Host "Removing problematic package: $pkg" -ForegroundColor Yellow
+        Remove-Item -Path $pkgPath -Recurse -Force
+    }
+}
 
-Write-Host "`n✅ Build complete!" -ForegroundColor Green
-Write-Host "Extension saved as: bridge-experiential-data.dxt" -ForegroundColor White
-Write-Host "File size: ${fileSizeMB} MB" -ForegroundColor White
-Write-Host ""
-Write-Host "DXT Specification Compliance:" -ForegroundColor Cyan
-Write-Host "✅ Manifest structure: Valid" -ForegroundColor Green
-Write-Host "✅ User configuration: Supported" -ForegroundColor Green
-Write-Host "✅ Server configuration: Valid" -ForegroundColor Green
-Write-Host "✅ Tools declaration: Complete" -ForegroundColor Green
-Write-Host ""
-Write-Host "To install:" -ForegroundColor Cyan
-Write-Host "1. Open Claude Desktop" -ForegroundColor White
-Write-Host "2. Go to Settings > Extensions" -ForegroundColor White
-Write-Host "3. Drag and drop bridge-experiential-data.dxt" -ForegroundColor White
-Write-Host "4. Configure your bridge.json file path in the extension settings" -ForegroundColor White 
+Pop-Location
+
+# Copy README for documentation
+Write-Host "Copying README..." -ForegroundColor Yellow
+Copy-Item -Path "README.md" -Destination $outputDir
+
+# Create the .dxt file (ZIP archive)
+Write-Host "Creating .dxt file..." -ForegroundColor Yellow
+
+# Remove any existing files
+if (Test-Path $buildFileName) {
+    Write-Host "Removing existing .dxt file..." -ForegroundColor Yellow
+    Remove-Item -Path $buildFileName -Force
+}
+if (Test-Path $tempZipName) {
+    Remove-Item -Path $tempZipName -Force
+}
+
+# Create ZIP archive
+try {
+    Compress-Archive -Path "$outputDir\*" -DestinationPath $tempZipName -CompressionLevel Optimal -Force
+    Write-Host "ZIP archive created successfully!" -ForegroundColor Green
+    
+    # Rename .zip to .dxt
+    Rename-Item -Path $tempZipName -NewName $buildFileName
+    Write-Host "Renamed to .dxt extension!" -ForegroundColor Green
+} catch {
+    Write-Host "Failed to create ZIP archive: $_" -ForegroundColor Red
+    exit 1
+}
+
+# Verify the file was created
+if (Test-Path $buildFileName) {
+    $fileInfo = Get-Item $buildFileName
+    Write-Host "DXT file created: $($fileInfo.Name) ($([Math]::Round($fileInfo.Length / 1MB, 2)) MB)" -ForegroundColor Green
+} else {
+    Write-Host "ERROR: DXT file was not created!" -ForegroundColor Red
+    exit 1
+}
+
+# Clean up build directory
+Write-Host "Cleaning up build directory..." -ForegroundColor Yellow
+Remove-Item -Path $outputDir -Recurse -Force
+
+# Success message
+Write-Host "`nBridge Desktop Extension built successfully!" -ForegroundColor Green
+Write-Host "Output: $buildFileName" -ForegroundColor Cyan
+Write-Host "`nTo install in Claude Desktop:" -ForegroundColor Yellow
+Write-Host "1. Open Claude Desktop"
+Write-Host "2. Go to Settings > Extensions"
+Write-Host "3. Drag and drop '$buildFileName' into the window"
+Write-Host "4. Configure the extension with your preferred data file path" 

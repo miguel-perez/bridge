@@ -1,7 +1,7 @@
 {
   "name": "bridge",
   "version": "0.1.0",
-  "description": "MCP server for capturing and managing experiential data",
+  "description": "MCP server for capturing and analyzing experiential data",
   "main": "dist/index.js",
   "type": "module",
   "bin": {
@@ -9,21 +9,25 @@
   },
   "scripts": {
     "build": "tsc",
+    "bundle": "esbuild dist/index.js --bundle --platform=node --target=node18 --format=esm --outfile=dist/bundle.js --external:onnxruntime-node --external:@xenova/transformers",
+    "build:all": "npm run build && npm run bundle",
     "start": "node dist/index.js",
-    "dev": "tsc-watch --onSuccess \"node dist/index.js\"",
-    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js",
+    "dev": "tsx watch src/index.ts",
+    "test": "jest",
     "test:unit": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --testPathIgnorePatterns=src/scripts/llm-integration-test.ts",
     "test:integration": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js src/scripts/llm-integration-test.ts",
-    "test:quick": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --testPathIgnorePatterns=src/scripts/llm-integration-test.ts --passWithNoTests",
     "test:watch": "npm run test -- --watch",
     "test:coverage": "npm run test:unit -- --coverage",
     "lint": "eslint src/**/*.ts",
     "format": "prettier --write src/**/*.ts",
-    "test:llm": "node dist/scripts/llm-integration-test.js",
-    "test:llm:scenario": "tsx src/scripts/llm-integration-test.ts",
-    "migrate:memory": "tsx src/scripts/migrate-memory.ts",
-    "enrich:ai": "tsx src/scripts/enrich-with-ai.ts",
-    "build:dxt": "powershell -ExecutionPolicy Bypass -File build-dxt.ps1"
+    "validate:manifest": "node src/scripts/test-dxt-manifest.cjs",
+    "build:dxt": ".\\build-dxt.ps1",
+    "build:dxt:unix": "./build-dxt.sh",
+    "test:openai": "tsx src/scripts/llm-integration-test.ts",
+    "add-embeddings": "tsx src/scripts/add-embeddings.ts",
+    "migrate-memory": "tsx src/scripts/migrate-memory.ts",
+    "enrich-with-ai": "tsx src/scripts/enrich-with-ai.ts",
+    "migrate-embeddings": "tsx src/utils/migrate-embeddings.ts"
   },
   "keywords": [
     "mcp",
@@ -53,6 +57,7 @@
     "ts-node": "^10.9.2",
     "tsc-watch": "^6.0.4",
     "tsx": "^4.20.3",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "esbuild": "^0.17.19"
   }
 }
