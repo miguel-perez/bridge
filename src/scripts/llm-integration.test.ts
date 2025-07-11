@@ -28,10 +28,10 @@ const TEST_SCENARIOS = {
   `,
   
   // Complex workflow
-  'capture-search-enrich': `
+  'capture-search-update': `
     1. First, capture an experience about learning to code
     2. Then search for experiences about learning or education
-    3. Finally, enrich one of the search results with additional experiential analysis
+    3. Finally, update one of the search results with corrected experiential analysis
     Report on each step and any issues you encounter.
   `,
   

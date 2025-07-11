@@ -239,8 +239,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'search':
         return await toolHandlers.handleSearch(parsedArgs ?? {});
 
-      case 'enrich':
-        return await toolHandlers.handleEnrich(parsedArgs);
+      case 'update':
+        return await toolHandlers.handleUpdate(parsedArgs);
 
       default:
         throw new McpError(

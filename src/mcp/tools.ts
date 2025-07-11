@@ -2,244 +2,271 @@
 export const tools = [
   {
     name: "capture",
-    description: "Capture experiential moments with seven-dimensional phenomenological analysis (embodied, attentional, affective, purposive, spatial, temporal, intersubjective)",
+    description: "Preserve experiences exactly as they were shared with you, maintaining their authentic voice through seven-dimensional phenomenological analysis (embodied, attentional, affective, purposive, spatial, temporal, intersubjective)",
     inputSchema: {
       type: "object",
       properties: {
-        content: { 
-          type: "string", 
-          description: "Raw text from experiencer, either new experience or reflection or previous capture." 
-        },
-        experiencer: { 
-          type: "string", 
-          description: "Who experienced this (e.g., 'Claude', 'Sarah', 'Team')" 
-        },
-        perspective: { 
-          type: "string", 
-          enum: ["I", "we", "you", "they"], 
-          description: "Perspective used" 
-        },
-        processing: { 
-          type: "string", 
-          enum: ["during", "right-after", "long-after", "crafted"], 
-          description: "When captured relative to experience" 
-        },
-        experiential_qualities: { 
-          type: "object", 
-          description: "Analysis of experiential qualities in the content",
-          properties: {
-            qualities: {
-              type: "array",
-              items: {
-                type: "object",
+        experiences: {
+          type: "array",
+          description: "One or more experiences to capture (can be from different experiencers in the same moment)",
+          items: {
+            type: "object",
+            properties: {
+              content: { 
+                type: "string", 
+                description: "The exact words or experience as directly shared with you, preserving their original expression" 
+              },
+              experiencer: { 
+                type: "string", 
+                description: "The person whose experience this is (e.g., 'Miguel', 'Alicia', 'Claude-Captain')" 
+              },
+              perspective: { 
+                type: "string", 
+                enum: ["I", "we", "you", "they"], 
+                description: "The grammatical perspective from which the experience was shared" 
+              },
+              processing: { 
+                type: "string", 
+                enum: ["during", "right-after", "long-after", "crafted"], 
+                description: "When this was shared relative to when it happened" 
+              },
+              experiential_qualities: { 
+                type: "object", 
+                description: "Your phenomenological analysis of the qualities present in their experience",
                 properties: {
-                  type: {
-                    type: "string",
-                    enum: ["embodied", "attentional", "affective", "purposive", "spatial", "temporal", "intersubjective"]
-                  },
-                  prominence: {
-                    type: "number",
-                    minimum: 0,
-                    maximum: 1
-                  },
-                  manifestation: {
-                    type: "string"
+                  qualities: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        type: {
+                          type: "string",
+                          enum: ["embodied", "attentional", "affective", "purposive", "spatial", "temporal", "intersubjective"]
+                        },
+                        prominence: {
+                          type: "number",
+                          minimum: 0,
+                          maximum: 1,
+                          description: "How strongly this quality appears (0=absent, 1=dominant)"
+                        },
+                        manifestation: {
+                          type: "string",
+                          description: "How this quality specifically shows up in their experience"
+                        }
+                      },
+                      required: ["type", "prominence", "manifestation"]
+                    }
                   }
                 },
-                required: ["type", "prominence", "manifestation"]
+                required: ["qualities"]
+              },
+              contentType: { 
+                type: "string", 
+                description: "Type of content", 
+                default: "text" 
+              },
+              occurred: { 
+                type: "string", 
+                description: "When the experience actually happened (e.g., 'yesterday morning', 'last week', '2024-01-15', 'just now')" 
+              },
+              crafted: { 
+                type: "boolean", 
+                description: "Whether this was crafted for sharing (true) or raw/spontaneous expression (false)" 
               }
-            }
-          },
-          required: ["qualities"]
-        },
-        contentType: { 
-          type: "string", 
-          description: "Type of content", 
-          default: "text" 
-        },
-        occurred: { 
-          type: "string", 
-          description: "When it happened (chrono-node compatible - e.g., 'yesterday morning', 'last week', '2024-01-15')" 
-        },
-        crafted: { 
-          type: "boolean", 
-          description: "Whether content was crafted for an audience (e.g., blog post = true, journal entry = false)" 
+            },
+            required: ["content", "experiencer", "perspective", "processing", "experiential_qualities"]
+          }
         }
       },
-      required: ["content", "experiencer", "perspective", "processing", "experiential_qualities"]
+      required: ["experiences"]
     }
   },
 
   {
     name: "search",
-    description: "Search experiences using multi-modal relevance: text matching, phenomenological vector similarity, semantic meaning, and contextual filters",
+    description: "Find and explore captured experiences through text, phenomenological patterns, meaning, and context to understand journeys and connections",
     inputSchema: {
       type: "object",
       properties: {
-        query: {
-          type: "string",
-          description: "Search query text"
-        },
-        limit: {
-          type: "number",
-          description: "Maximum number of results to return",
-          default: 10
-        },
-        includeContext: {
-          type: "boolean",
-          description: "Include metadata like experiencer, perspective, processing level, and experiential qualities in results",
-          default: false
-        },
-        includeFullContent: {
-          type: "boolean",
-          description: "Include full content instead of truncated snippets",
-          default: false
-        },
-        filters: {
-          type: "object",
-          description: "Optional filters to apply to search results",
-          properties: {
-            experiencer: {
-              type: "string",
-              description: "Filter by experiencer"
-            },
-            perspective: {
-              type: "string",
-              enum: ["I", "we", "you", "they"],
-              description: "Filter by perspective"
-            },
-            processing: {
-              type: "string",
-              enum: ["during", "right-after", "long-after", "crafted"],
-              description: "Filter by processing level"
-            },
-            date_range: {
-              type: "object",
-              description: "Filter by date range",
-              properties: {
-                start: {
-                  type: "string",
-                  description: "Start date (ISO string)"
-                },
-                end: {
-                  type: "string",
-                  description: "End date (ISO string)"
+        queries: {
+          type: "array",
+          description: "One or more search queries to execute (useful for initialization or comparing perspectives)",
+          items: {
+            type: "object",
+            properties: {
+              query: {
+                type: "string",
+                description: "What you're looking for in the experiences"
+              },
+              limit: {
+                type: "number",
+                description: "Maximum number of results to return",
+                default: 10
+              },
+              includeContext: {
+                type: "boolean",
+                description: "Include metadata like experiencer, perspective, processing level, and experiential qualities in results",
+                default: false
+              },
+              includeFullContent: {
+                type: "boolean",
+                description: "Include full content instead of truncated snippets",
+                default: false
+              },
+              filters: {
+                type: "object",
+                description: "Optional filters to apply to search results",
+                properties: {
+                  experiencer: {
+                    type: "string",
+                    description: "Show only experiences from this person"
+                  },
+                  perspective: {
+                    type: "string",
+                    enum: ["I", "we", "you", "they"],
+                    description: "Filter by perspective"
+                  },
+                  processing: {
+                    type: "string",
+                    enum: ["during", "right-after", "long-after", "crafted"],
+                    description: "Filter by processing level"
+                  },
+                  date_range: {
+                    type: "object",
+                    description: "Filter by date range",
+                    properties: {
+                      start: {
+                        type: "string",
+                        description: "Start date (ISO string)"
+                      },
+                      end: {
+                        type: "string",
+                        description: "End date (ISO string)"
+                      }
+                    }
+                  }
                 }
               }
-            }
+            },
+            required: ["query"]
           }
         }
       },
-      required: ["query"]
+      required: ["queries"]
     }
   },
 
   {
-    name: "enrich",
-    description: "Update and enrich existing experiential records with new information, insights, or corrections",
+    name: "update",
+    description: "Correct or update existing experiences when mistakes were made during capture, maintaining the integrity of the experiential record",
     inputSchema: {
       type: "object",
       properties: {
-        source_id: {
-          type: "string",
-          description: "ID of the source record to enrich"
-        },
-        content: {
-          type: "string",
-          description: "Updated content text"
-        },
-        contentType: {
-          type: "string",
-          description: "Updated content type"
-        },
-        perspective: {
-          type: "string",
-          enum: ["I", "we", "you", "they"],
-          description: "Updated perspective"
-        },
-        processing: {
-          type: "string",
-          enum: ["during", "right-after", "long-after", "crafted"],
-          description: "Updated processing level"
-        },
-        occurred: {
-          type: "string",
-          description: "Updated occurred time (chrono-node compatible - e.g., 'yesterday morning', 'last week', '2024-01-15')"
-        },
-        experiencer: {
-          type: "string",
-          description: "Updated experiencer"
-        },
-        crafted: {
-          type: "boolean",
-          description: "Updated crafted flag"
-        },
-        experiential_qualities: {
-          type: "object",
-          description: "Updated experiential qualities analysis",
-          properties: {
-            qualities: {
-              type: "array",
-              items: {
+        updates: {
+          type: "array",
+          description: "One or more experience updates to apply",
+          items: {
+            type: "object",
+            properties: {
+              source_id: {
+                type: "string",
+                description: "The ID of the experience to update"
+              },
+              content: {
+                type: "string",
+                description: "Corrected content text (only if fixing errors in the original)"
+              },
+              contentType: {
+                type: "string",
+                description: "Updated content type"
+              },
+              perspective: {
+                type: "string",
+                enum: ["I", "we", "you", "they"],
+                description: "Corrected perspective (only if original was wrong)"
+              },
+              processing: {
+                type: "string",
+                enum: ["during", "right-after", "long-after", "crafted"],
+                description: "Corrected processing level"
+              },
+              occurred: {
+                type: "string",
+                description: "Corrected time when the experience actually happened"
+              },
+              experiencer: {
+                type: "string",
+                description: "Corrected experiencer (only if attribution was wrong)"
+              },
+              crafted: {
+                type: "boolean",
+                description: "Updated crafted flag"
+              },
+              experiential_qualities: {
                 type: "object",
+                description: "Corrected phenomenological analysis if original was inaccurate",
                 properties: {
-                  type: {
-                    type: "string",
-                    enum: ["embodied", "attentional", "affective", "purposive", "spatial", "temporal", "intersubjective"]
-                  },
-                  prominence: {
-                    type: "number",
-                    minimum: 0,
-                    maximum: 1
-                  },
-                  manifestation: {
-                    type: "string"
+                  qualities: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        type: {
+                          type: "string",
+                          enum: ["embodied", "attentional", "affective", "purposive", "spatial", "temporal", "intersubjective"]
+                        },
+                        prominence: {
+                          type: "number",
+                          minimum: 0,
+                          maximum: 1,
+                          description: "How strongly this quality appears (0=absent, 1=dominant)"
+                        },
+                        manifestation: {
+                          type: "string",
+                          description: "How this quality specifically shows up in their experience"
+                        }
+                      },
+                      required: ["type", "prominence", "manifestation"]
+                    }
                   }
                 },
-                required: ["type", "prominence", "manifestation"]
+                required: ["qualities"]
               }
             },
-            vector: {
-              type: "object",
-              description: "Optional quality vector to override automatic generation",
-              properties: {
-                embodied: { type: "number", minimum: 0, maximum: 1 },
-                attentional: { type: "number", minimum: 0, maximum: 1 },
-                affective: { type: "number", minimum: 0, maximum: 1 },
-                purposive: { type: "number", minimum: 0, maximum: 1 },
-                spatial: { type: "number", minimum: 0, maximum: 1 },
-                temporal: { type: "number", minimum: 0, maximum: 1 },
-                intersubjective: { type: "number", minimum: 0, maximum: 1 }
-              }
-            }
+            required: ["source_id"]
           }
-        },
-        regenerate_embeddings: {
-          type: "boolean",
-          description: "Whether to regenerate content embeddings",
-          default: false
         }
       },
-      required: ["source_id"]
+      required: ["updates"]
     }
   },
 
   {
     name: "release",
-    description: "Release experiential records back to consciousness flow (delete), acknowledging some moments need to be let go",
+    description: "Let go of experiences that no longer need to be held, returning them to the flow of memory with gratitude",
     inputSchema: {
       type: "object",
       properties: {
-        source_id: {
-          type: "string",
-          description: "ID of the source record to release"
-        },
-        reason: {
-          type: "string",
-          description: "Reason for releasing this record"
+        releases: {
+          type: "array",
+          description: "One or more experiences to release",
+          items: {
+            type: "object",
+            properties: {
+              source_id: {
+                type: "string",
+                description: "The ID of the experience to release"
+              },
+              reason: {
+                type: "string",
+                description: "Why this experience is ready to be released"
+              }
+            },
+            required: ["source_id", "reason"]
+          }
         }
       },
-      required: ["source_id", "reason"]
+      required: ["releases"]
     }
   }
 ]; 

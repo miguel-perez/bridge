@@ -40,19 +40,19 @@
   "tools": [
     {
       "name": "capture",
-      "description": "Capture experiential moments with seven-dimensional phenomenological analysis (embodied, attentional, affective, purposive, spatial, temporal, intersubjective)"
+      "description": "Preserve experiences exactly as they were shared with you, maintaining their authentic voice through seven-dimensional phenomenological analysis (embodied, attentional, affective, purposive, spatial, temporal, intersubjective)"
     },
     {
       "name": "search",
-      "description": "Search experiences using multi-modal relevance: text matching, phenomenological vector similarity, semantic meaning, and contextual filters"
+      "description": "Find and explore captured experiences through text, phenomenological patterns, meaning, and context to understand journeys and connections"
     },
     {
-      "name": "enrich",
-      "description": "Iteratively deepen experiential records through reflection, adding new insights while preserving original capture"
+      "name": "update",
+      "description": "Correct or update existing experiences when mistakes were made during capture, maintaining the integrity of the experiential record"
     },
     {
       "name": "release",
-      "description": "Release experiential records back to consciousness flow (delete), acknowledging some moments need to be let go"
+      "description": "Let go of experiences that no longer need to be held, returning them to the flow of memory with gratitude"
     }
   ],
   

@@ -46,13 +46,13 @@ describe('MCP Server Protocol Compliance', () => {
       
       // This would have failed without the initialize handler
       const tools = await client.listTools();
-      expect(tools.tools).toHaveLength(4); // capture, release, search, enrich
+      expect(tools.tools).toHaveLength(4); // capture, release, search, update
       
       const toolNames = tools.tools.map(t => t.name);
       expect(toolNames).toContain('capture');
       expect(toolNames).toContain('release');
       expect(toolNames).toContain('search');
-      expect(toolNames).toContain('enrich');
+      expect(toolNames).toContain('update');
     }, 30000);
 
     test('should execute capture tool with experiential qualities', async () => {
@@ -138,7 +138,7 @@ describe('MCP Server Protocol Compliance', () => {
       expect(Array.isArray(result.content)).toBe(true);
     }, 30000);
 
-    test('should handle enrich tool', async () => {
+    test('should handle update tool', async () => {
       const serverPath = join(__dirname, '..', '..', 'dist', 'index.js');
       
       transport = new StdioClientTransport({ 
@@ -150,7 +150,7 @@ describe('MCP Server Protocol Compliance', () => {
       await client.connect(transport);
       
       const result = await client.callTool({
-        name: 'enrich',
+        name: 'update',
         arguments: {
           id: 'test-id-123',
           enrichment_type: 'reflection'

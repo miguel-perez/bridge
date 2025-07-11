@@ -2,7 +2,7 @@
  * MCP Tool Handlers for Bridge
  * 
  * This module provides the implementation of MCP tool handlers for Bridge,
- * including capture, release, search, and enrich operations.
+ * including capture, release, search, and update operations.
  * 
  * @module mcp/handlers
  */
@@ -149,36 +149,40 @@ function formatRelevanceBreakdown(breakdown: any): string {
 /**
  * MCP Tool Handlers class
  * 
- * Provides handlers for all MCP tools including capture, release, search, and enrich.
+ * Provides handlers for all MCP tools including capture, release, search, and update.
  * Each handler formats the response in a user-friendly way for MCP clients.
  */
 export class MCPToolHandlers {
   private captureService: CaptureService;
   private releaseService: ReleaseService;
   private searchService: SearchService;
-  private enrichService: EnrichService;
+  private updateService: EnrichService; // Keeping enrich service but calling it update
 
   constructor() {
     this.captureService = new CaptureService();
     this.releaseService = new ReleaseService();
     this.searchService = new SearchService();
-    this.enrichService = new EnrichService();
+    this.updateService = new EnrichService();
   }
 
   /**
-   * Handles capture tool requests
+   * Handles capture tool requests - supports both single items and batch operations
    * 
-   * Captures a new experiential source record and returns a formatted response
+   * Captures one or more experiential source records and returns a formatted response
    * showing the captured data and any defaults that were applied.
    * 
-   * @param args - The capture arguments
+   * @param args - The capture arguments (single item or batch)
    * @returns Formatted capture result
    */
   async handleCapture(args: any) {
-    const input = args as any;
-    const result = await this.captureService.captureSource(input);
+    // Support both old single-item format and new batch format
+    const experiences = args.experiences || [args];
+    const results = [];
     
-    const content = `✓ Captured experience for ${result.source.experiencer}
+    for (const experience of experiences) {
+      const result = await this.captureService.captureSource(experience);
+      
+      const content = `✓ Captured experience for ${result.source.experiencer}
 ID: ${result.source.id}
 Occurred: ${formatDate(result.source.occurred || result.source.system_time)}
 
@@ -189,146 +193,181 @@ ${formatExperientialQualities(result.source.experiential_qualities || { qualitie
 
 ${result.defaultsUsed.length > 0 ? `Defaults used: ${result.defaultsUsed.join(', ')}` : ''}`;
 
+      results.push(content);
+    }
+
+    const summary = experiences.length > 1 ? `Captured ${experiences.length} experiences:\n\n` : '';
+    
     return {
-      content: [{ type: 'text', text: content }]
+      content: [{ type: 'text', text: summary + results.join('\n\n---\n\n') }]
     };
   }
 
   /**
-   * Handles release tool requests
+   * Handles release tool requests - supports both single items and batch operations
    * 
-   * Releases (deletes) a source record by ID and returns a confirmation message.
+   * Releases (deletes) one or more source records by ID and returns a confirmation message.
    * 
-   * @param args - The release arguments containing the record ID
+   * @param args - The release arguments containing the record IDs
    * @returns Formatted release result
    */
   async handleRelease(args: any) {
-    const input = args as any;
-    await this.releaseService.releaseSource({ id: input.source_id });
+    // Support both old single-item format and new batch format
+    const releases = args.releases || [{ source_id: args.source_id, reason: args.reason }];
+    const results = [];
     
-    const content = `✓ Released source record
-ID: ${input.source_id}
-Reason: ${input.reason || 'No reason provided'}
+    for (const release of releases) {
+      await this.releaseService.releaseSource({ id: release.source_id });
+      
+      const content = `✓ Released experience
+ID: ${release.source_id}
+Reason: ${release.reason || 'No reason provided'}`;
+      
+      results.push(content);
+    }
 
-The record has been permanently deleted from your experiential data.`;
+    const summary = releases.length > 1 ? `Released ${releases.length} experiences:\n\n` : '';
+    const footer = releases.length > 1 ? '\n\nAll records have been permanently deleted from your experiential data.' : 
+                   '\n\nThe record has been permanently deleted from your experiential data.';
     
     return {
-      content: [{ type: 'text', text: content }]
+      content: [{ type: 'text', text: summary + results.join('\n\n') + footer }]
     };
   }
 
   /**
-   * Handles search tool requests
+   * Handles search tool requests - supports both single queries and batch operations
    * 
-   * Performs a search across all records and returns formatted results with
+   * Performs one or more searches across all records and returns formatted results with
    * relevance scores and breakdowns.
    * 
    * @param args - The search arguments
    * @returns Formatted search results
    */
-  async handleSearch(args: SearchInput) {
-    const { results, stats } = await this.searchService.search(args);
+  async handleSearch(args: any) {
+    // Support both old single-query format and new batch format
+    const queries = args.queries || [args];
+    const allResults = [];
     
-    if (results.length === 0) {
-      const filters = stats?.filters ? Object.entries(stats.filters)
-        .filter(([, v]) => v !== undefined && v !== '')
-        .map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
-        .join(', ') : 'none';
+    for (let i = 0; i < queries.length; i++) {
+      const query = queries[i];
+      const { results, stats } = await this.searchService.search(query as SearchInput);
       
-      return {
-        content: [{
+      if (results.length === 0) {
+        const filters = stats?.filters ? Object.entries(stats.filters)
+          .filter(([, v]) => v !== undefined && v !== '')
+          .map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
+          .join(', ') : 'none';
+        
+        allResults.push({
           type: 'text',
-          text: `No results found for your search criteria.\n\nApplied filters: ${filters}`
-        }]
-      };
-    }
-    
-    // Create a summary of the search
-    const summary = `Found ${results.length} result(s)${stats?.total ? ` out of ${stats.total} total records` : ''}.`;
-    
-    // Format each result
-    const resultContent = results.map((result: SearchServiceResult, index: number) => {
-      const relevancePercent = (result.relevance_score * 100).toFixed(RELEVANCE_PERCENT_PRECISION);
-      const metadata = result.metadata ? formatMetadata(result.metadata as SourceRecord) : 'Unknown metadata';
+          text: `${queries.length > 1 ? `Query ${i + 1}: ` : ''}No results found for "${query.query}".\n\nApplied filters: ${filters}`
+        });
+        continue;
+      }
       
-      let resultText = `Result ${index + 1} (Relevance: ${relevancePercent}%)
+      // Create a summary of the search
+      const summary = `${queries.length > 1 ? `Query ${i + 1}: ` : ''}Found ${results.length} result(s) for "${query.query}"${stats?.total ? ` out of ${stats.total} total records` : ''}.`;
+      
+      // Format each result
+      const resultContent = results.map((result: SearchServiceResult, index: number) => {
+        const relevancePercent = (result.relevance_score * 100).toFixed(RELEVANCE_PERCENT_PRECISION);
+        const metadata = result.metadata ? formatMetadata(result.metadata as SourceRecord) : 'Unknown metadata';
+        
+        let resultText = `Result ${index + 1} (Relevance: ${relevancePercent}%)
 ID: ${result.id} | ${metadata}
 
-${formatContent(result.snippet, args.includeFullContent)}
+${formatContent(result.snippet, query.includeFullContent)}
 
 Relevance: ${formatRelevanceBreakdown(result.relevance_breakdown)}`;
 
-      // Add qualities if available and includeContext is true
-      if (args.includeContext && result.metadata?.experiential_qualities) {
-        resultText += `\n\nQualities:\n${formatExperientialQualities(result.metadata.experiential_qualities as ExperientialQualities)}`;
-      }
+        // Add qualities if available and includeContext is true
+        if (query.includeContext && result.metadata?.experiential_qualities) {
+          resultText += `\n\nQualities:\n${formatExperientialQualities(result.metadata.experiential_qualities as ExperientialQualities)}`;
+        }
 
-      return {
-        type: 'text',
-        text: resultText
-      };
-    });
-    
-    return {
-      content: [
+        return {
+          type: 'text',
+          text: resultText
+        };
+      });
+      
+      allResults.push(
         { type: 'text', text: summary },
         ...resultContent
-      ]
+      );
+      
+      // Add separator between queries if there are multiple
+      if (i < queries.length - 1) {
+        allResults.push({ type: 'text', text: '\n---\n' });
+      }
+    }
+    
+    return {
+      content: allResults
     };
   }
 
   /**
-   * Handles enrich tool requests
+   * Handles update tool requests - supports both single items and batch operations
    * 
-   * Enriches an existing source record with updated fields and returns
+   * Updates one or more existing source records with corrected fields and returns
    * a formatted response showing what was updated.
    * 
-   * @param args - The enrich arguments
-   * @returns Formatted enrich result
+   * @param args - The update arguments
+   * @returns Formatted update result
    */
-  async handleEnrich(args: any) {
-    const input = args as any;
+  async handleUpdate(args: any) {
+    // Support both old single-item format and new batch format
+    const updates = args.updates || [args];
+    const results = [];
     
-    // Map the tool input to the service input format
-    const enrichInput = {
-      id: input.source_id,
-      content: input.content,
-      contentType: input.contentType,
-      perspective: input.perspective,
-      processing: input.processing,
-      occurred: input.occurred,
-      experiencer: input.experiencer,
-      crafted: input.crafted,
-      experiential_qualities: input.experiential_qualities,
-      regenerate_embeddings: input.regenerate_embeddings
-    };
-    
-    const result = await this.enrichService.enrichSource(enrichInput);
-    
-    let content = `✓ Enriched experience ${result.source.id}`;
-    
-    if (result.updatedFields.length > 0) {
-      content += `\nUpdated fields: ${result.updatedFields.join(', ')}`;
-    } else {
-      content += '\nNo fields were updated';
+    for (const update of updates) {
+      // Map the tool input to the service input format
+      const updateInput = {
+        id: update.source_id,
+        content: update.content,
+        contentType: update.contentType,
+        perspective: update.perspective,
+        processing: update.processing,
+        occurred: update.occurred,
+        experiencer: update.experiencer,
+        crafted: update.crafted,
+        experiential_qualities: update.experiential_qualities,
+        regenerate_embeddings: update.regenerate_embeddings
+      };
+      
+      const result = await this.updateService.enrichSource(updateInput);
+      
+      let content = `✓ Updated experience ${result.source.id}`;
+      
+      if (result.updatedFields.length > 0) {
+        content += `\nCorrected fields: ${result.updatedFields.join(', ')}`;
+      } else {
+        content += '\nNo fields needed correction';
+      }
+
+      if (result.embeddingsRegenerated) {
+        content += '\nEmbeddings were regenerated';
+      }
+
+      // Show updated content if content was changed
+      if (result.updatedFields.includes('content')) {
+        content += `\n\nCorrected Content:\n${formatContent(result.source.content)}`;
+      }
+
+      // Show updated qualities if qualities were changed
+      if (result.updatedFields.includes('experiential_qualities')) {
+        content += `\n\nCorrected Experiential Analysis:\n${formatExperientialQualities(result.source.experiential_qualities || { qualities: [], vector: { embodied: 0, attentional: 0, affective: 0, purposive: 0, spatial: 0, temporal: 0, intersubjective: 0 } })}`;
+      }
+      
+      results.push(content);
     }
 
-    if (result.embeddingsRegenerated) {
-      content += '\nEmbeddings were regenerated';
-    }
-
-    // Show updated content if content was changed
-    if (result.updatedFields.includes('content')) {
-      content += `\n\nUpdated Content:\n${formatContent(result.source.content)}`;
-    }
-
-    // Show updated qualities if qualities were changed
-    if (result.updatedFields.includes('experiential_qualities')) {
-      content += `\n\nUpdated Experiential Analysis:\n${formatExperientialQualities(result.source.experiential_qualities || { qualities: [], vector: { embodied: 0, attentional: 0, affective: 0, purposive: 0, spatial: 0, temporal: 0, intersubjective: 0 } })}`;
-    }
+    const summary = updates.length > 1 ? `Updated ${updates.length} experiences:\n\n` : '';
     
     return {
-      content: [{ type: 'text', text: content }]
+      content: [{ type: 'text', text: summary + results.join('\n\n---\n\n') }]
     };
   }
 } 
