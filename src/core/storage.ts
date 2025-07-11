@@ -76,24 +76,11 @@ function getStorageDir(): string {
  */
 function getDataFile(): string {
   if (customDataFile) {
-    if (process.env.BRIDGE_DEBUG === 'true') {
-      console.log(`[Bridge Debug] Using custom data file: ${customDataFile}`);
-    }
     return customDataFile;
   }
   
   // Use configurable data file path, fallback to bridge.json in the script directory
   const configPath = process.env.BRIDGE_FILE_PATH || 'bridge.json';
-  
-  if (process.env.BRIDGE_DEBUG === 'true') {
-    console.log(`[Bridge Debug] Environment variables:`);
-    console.log(`  BRIDGE_FILE_PATH: ${process.env.BRIDGE_FILE_PATH || 'undefined'}`);
-    console.log(`  BRIDGE_DEBUG: ${process.env.BRIDGE_DEBUG || 'undefined'}`);
-    console.log(`  NODE_ENV: ${process.env.NODE_ENV || 'undefined'}`);
-    console.log(`  MCP_ENV: ${process.env.MCP_ENV || 'undefined'}`);
-    console.log(`  process.cwd(): ${process.cwd()}`);
-    console.log(`  configPath: ${configPath}`);
-  }
   
   let finalPath: string;
   if (configPath.startsWith('/') || configPath.match(FILE_PATTERNS.ABSOLUTE_PATH)) {
@@ -101,10 +88,6 @@ function getDataFile(): string {
   } else {
     // Relative path - resolve from project root
     finalPath = path.join(process.cwd(), configPath);
-  }
-  
-  if (process.env.BRIDGE_DEBUG === 'true') {
-    console.log(`[Bridge Debug] Final data file path: ${finalPath}`);
   }
   
   return finalPath;
@@ -248,7 +231,6 @@ async function readData(): Promise<StorageData> {
     
     // Validate data structure
     if (!validateStorageData(data)) {
-      console.warn('Invalid storage data structure, using empty data');
       return { sources: [] };
     }
     
@@ -259,7 +241,6 @@ async function readData(): Promise<StorageData> {
       return { sources: [] };
     }
     
-    console.warn('Failed to read storage data, using empty data:', error);
     return { sources: [] };
   }
 }

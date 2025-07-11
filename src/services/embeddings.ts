@@ -14,7 +14,7 @@ export class EmbeddingService {
   async initialize(): Promise<void> {
     // Skip initialization if embeddings are disabled
     if (EMBEDDINGS_DISABLED) {
-      console.error('[EmbeddingService] Embeddings are disabled by environment variable');
+      // Embeddings disabled by environment variable
       this.disabled = true;
       return;
     }
@@ -41,7 +41,7 @@ export class EmbeddingService {
         quantized: false
       });
     } catch (error) {
-      console.error('[EmbeddingService] Failed to initialize:', error instanceof Error ? error.message : 'Unknown error');
+      // Failed to initialize embeddings service
       this.disabled = true;
       // Don't throw - just disable embeddings
     }
@@ -151,7 +151,7 @@ export class EmbeddingService {
       
       return embedding;
     } catch (error) {
-      console.error('[EmbeddingService] Failed to generate embedding:', error instanceof Error ? error.message : 'Unknown error');
+      // Failed to generate embedding, returning dummy embedding
       // Return dummy embedding on error
       return new Array(384).fill(0);
     }
