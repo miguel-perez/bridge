@@ -1,25 +1,21 @@
-// Mock the transformers pipeline before any imports
-jest.mock('@xenova/transformers', () => ({
-  pipeline: jest.fn()
-}));
-
 import { describe, test, expect, beforeEach, afterEach, jest } from '@jest/globals';
+
+// Mock the transformers pipeline
+const mockPipeline = jest.fn() as jest.MockedFunction<any>;
+const mockEmbedder = jest.fn() as jest.MockedFunction<any>;
+
+jest.mock('@xenova/transformers', () => ({
+  pipeline: mockPipeline
+}));
 
 describe('EmbeddingService', () => {
   let service: any;
-  let mockPipeline: jest.MockedFunction<any>;
-  let mockEmbedder: jest.MockedFunction<any>;
 
   beforeEach(async () => {
     // Reset all mocks
     jest.clearAllMocks();
     
-    // Get the mocked pipeline
-    const { pipeline } = await import('@xenova/transformers');
-    mockPipeline = pipeline as jest.MockedFunction<any>;
-    
-    // Create mock embedder function
-    mockEmbedder = jest.fn() as jest.MockedFunction<any>;
+    // Set up the mock pipeline to return the mock embedder
     mockPipeline.mockResolvedValue(mockEmbedder);
     
     // Import the service after mocking
@@ -285,6 +281,8 @@ describe('EmbeddingService', () => {
       process.env.MCP = 'true';
       
       try {
+        // Clear module cache to force reload with new environment
+        jest.resetModules();
         const { EmbeddingService } = await import('./embeddings.js');
         const mcpService = new EmbeddingService();
         
@@ -295,6 +293,8 @@ describe('EmbeddingService', () => {
         expect(embedding.every(val => val === 0)).toBe(true);
       } finally {
         process.env.MCP = originalEnv;
+        // Clear module cache again to restore normal behavior
+        jest.resetModules();
       }
     });
   });

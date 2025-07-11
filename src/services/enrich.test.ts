@@ -1,8 +1,19 @@
-import { describe, test, expect, beforeEach } from '@jest/globals';
+import { describe, test, expect, beforeEach, jest } from '@jest/globals';
 import { EnrichService, enrichSchema } from './enrich.js';
 import { saveSource, setupTestStorage, clearTestStorage } from '../core/storage.js';
 import type { SourceRecord } from '../core/types.js';
 import { v4 as uuidv4 } from 'uuid';
+
+// Mock the embedding service to avoid transformers library issues
+jest.mock('./embeddings.js', () => ({
+  EmbeddingService: jest.fn().mockImplementation(() => ({
+    initialize: jest.fn().mockResolvedValue(undefined),
+    generateEmbedding: jest.fn().mockResolvedValue(new Array(384).fill(0.1)),
+    generateEmbeddings: jest.fn().mockResolvedValue([new Array(384).fill(0.1)]),
+    clearCache: jest.fn(),
+    getExpectedDimension: jest.fn().mockReturnValue(384)
+  }))
+}));
 
 // Helper to create a minimal valid source record
 function makeSource(overrides: Partial<SourceRecord> = {}): SourceRecord {
