@@ -126,7 +126,7 @@ export const tools = [
 
   {
     name: "enrich",
-    description: "Iteratively deepen experiential records through reflection, adding new insights while preserving original capture",
+    description: "Update and enrich existing experiential records with new information, insights, or corrections",
     inputSchema: {
       type: "object",
       properties: {
@@ -134,17 +134,83 @@ export const tools = [
           type: "string",
           description: "ID of the source record to enrich"
         },
-        reflection: {
+        content: {
           type: "string",
-          description: "New reflection or insight to add"
+          description: "Updated content text"
         },
-        reflection_type: {
+        contentType: {
           type: "string",
-          enum: ["insight", "connection", "pattern", "question", "memory"],
-          description: "Type of reflection being added"
+          description: "Updated content type"
+        },
+        perspective: {
+          type: "string",
+          enum: ["I", "we", "you", "they"],
+          description: "Updated perspective"
+        },
+        processing: {
+          type: "string",
+          enum: ["during", "right-after", "long-after", "crafted"],
+          description: "Updated processing level"
+        },
+        occurred: {
+          type: "string",
+          description: "Updated occurred time (chrono-node compatible - e.g., 'yesterday morning', 'last week', '2024-01-15')"
+        },
+        experiencer: {
+          type: "string",
+          description: "Updated experiencer"
+        },
+        crafted: {
+          type: "boolean",
+          description: "Updated crafted flag"
+        },
+        experiential_qualities: {
+          type: "object",
+          description: "Updated experiential qualities analysis",
+          properties: {
+            qualities: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  type: {
+                    type: "string",
+                    enum: ["embodied", "attentional", "affective", "purposive", "spatial", "temporal", "intersubjective"]
+                  },
+                  prominence: {
+                    type: "number",
+                    minimum: 0,
+                    maximum: 1
+                  },
+                  manifestation: {
+                    type: "string"
+                  }
+                },
+                required: ["type", "prominence", "manifestation"]
+              }
+            },
+            vector: {
+              type: "object",
+              description: "Optional quality vector to override automatic generation",
+              properties: {
+                embodied: { type: "number", minimum: 0, maximum: 1 },
+                attentional: { type: "number", minimum: 0, maximum: 1 },
+                affective: { type: "number", minimum: 0, maximum: 1 },
+                purposive: { type: "number", minimum: 0, maximum: 1 },
+                spatial: { type: "number", minimum: 0, maximum: 1 },
+                temporal: { type: "number", minimum: 0, maximum: 1 },
+                intersubjective: { type: "number", minimum: 0, maximum: 1 }
+              }
+            }
+          }
+        },
+        regenerate_embeddings: {
+          type: "boolean",
+          description: "Whether to regenerate content embeddings",
+          default: false
         }
       },
-      required: ["source_id", "reflection", "reflection_type"]
+      required: ["source_id"]
     }
   },
 

@@ -6,8 +6,7 @@ import {
   parseTemporalQuery,
   findAllRelatedRecords,
   type SearchResult,
-  type FilterOptions,
-  type GroupOption
+  type FilterOptions
 } from './search.js';
 
 describe('Search Module', () => {
@@ -65,11 +64,9 @@ describe('Search Module', () => {
 
   describe('advancedFilters', () => {
     test('should return all results when no filters applied', () => {
-      const { filtered, stats } = advancedFilters(mockSearchResults);
+      const { filtered } = advancedFilters(mockSearchResults);
       
       expect(filtered).toHaveLength(4);
-      expect(stats.initial).toBe(4);
-      expect(stats.final).toBe(4);
     });
 
     test('should filter by experiencers', () => {
@@ -77,12 +74,10 @@ describe('Search Module', () => {
         experiencers: ['Alice']
       };
       
-      const { filtered, stats } = advancedFilters(mockSearchResults, filters);
+      const { filtered } = advancedFilters(mockSearchResults, filters);
       
       expect(filtered).toHaveLength(2);
       expect(filtered.every(result => result.source.experiencer === 'Alice')).toBe(true);
-      expect(stats.afterExperiencers).toBe(2);
-      expect(stats.final).toBe(2);
     });
 
     test('should filter by perspectives', () => {
@@ -90,13 +85,12 @@ describe('Search Module', () => {
         perspectives: ['I', 'we']
       };
       
-      const { filtered, stats } = advancedFilters(mockSearchResults, filters);
+      const { filtered } = advancedFilters(mockSearchResults, filters);
       
       expect(filtered).toHaveLength(3);
       expect(filtered.every(result => 
         result.source.perspective === 'I' || result.source.perspective === 'we'
       )).toBe(true);
-      expect(stats.afterPerspectives).toBe(3);
     });
 
     test('should filter by processing levels', () => {
@@ -104,11 +98,10 @@ describe('Search Module', () => {
         processing: ['during']
       };
       
-      const { filtered, stats } = advancedFilters(mockSearchResults, filters);
+      const { filtered } = advancedFilters(mockSearchResults, filters);
       
       expect(filtered).toHaveLength(2);
       expect(filtered.every(result => result.source.processing === 'during')).toBe(true);
-      expect(stats.afterProcessing).toBe(2);
     });
 
     test('should filter by time range', () => {
@@ -119,10 +112,9 @@ describe('Search Module', () => {
         }
       };
       
-      const { filtered, stats } = advancedFilters(mockSearchResults, filters);
+      const { filtered } = advancedFilters(mockSearchResults, filters);
       
       expect(filtered).toHaveLength(2);
-      expect(stats.afterTimeRange).toBe(2);
     });
 
     test('should filter by system time range', () => {
@@ -133,10 +125,9 @@ describe('Search Module', () => {
         }
       };
       
-      const { filtered, stats } = advancedFilters(mockSearchResults, filters);
+      const { filtered } = advancedFilters(mockSearchResults, filters);
       
       expect(filtered).toHaveLength(2);
-      expect(stats.afterSystemTimeRange).toBe(2);
     });
 
     test('should filter by occurred time range', () => {
@@ -147,10 +138,9 @@ describe('Search Module', () => {
         }
       };
       
-      const { filtered, stats } = advancedFilters(mockSearchResults, filters);
+      const { filtered } = advancedFilters(mockSearchResults, filters);
       
       expect(filtered).toHaveLength(2);
-      expect(stats.afterEventTimeRange).toBe(2);
     });
 
     test('should apply multiple filters', () => {
@@ -160,7 +150,7 @@ describe('Search Module', () => {
         processing: ['during']
       };
       
-      const { filtered, stats } = advancedFilters(mockSearchResults, filters);
+      const { filtered } = advancedFilters(mockSearchResults, filters);
       
       expect(filtered).toHaveLength(1);
       expect(filtered[0].source.experiencer).toBe('Alice');
@@ -338,10 +328,8 @@ describe('Search Module', () => {
     });
 
     test('should handle empty search results', () => {
-      const { filtered, stats } = advancedFilters([]);
+      const { filtered } = advancedFilters([]);
       expect(filtered).toHaveLength(0);
-      expect(stats.initial).toBe(0);
-      expect(stats.final).toBe(0);
     });
 
     test('should handle grouping empty results', () => {

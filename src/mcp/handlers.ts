@@ -204,7 +204,7 @@ ${result.defaultsUsed.length > 0 ? `Defaults used: ${result.defaultsUsed.join(',
    */
   async handleRelease(args: any) {
     const input = args as any;
-    const result = await this.releaseService.releaseSource({ id: input.source_id });
+    await this.releaseService.releaseSource({ id: input.source_id });
     
     const content = `✓ Released source record
 ID: ${input.source_id}
@@ -288,10 +288,30 @@ Relevance: ${formatRelevanceBreakdown(result.relevance_breakdown)}`;
    */
   async handleEnrich(args: any) {
     const input = args as any;
-    const result = await this.enrichService.enrichSource({ ...input, id: input.source_id });
     
-    let content = `✓ Enriched experience ${result.source.id}
-Updated: ${result.updatedFields.join(', ')}`;
+    // Map the tool input to the service input format
+    const enrichInput = {
+      id: input.source_id,
+      content: input.content,
+      contentType: input.contentType,
+      perspective: input.perspective,
+      processing: input.processing,
+      occurred: input.occurred,
+      experiencer: input.experiencer,
+      crafted: input.crafted,
+      experiential_qualities: input.experiential_qualities,
+      regenerate_embeddings: input.regenerate_embeddings
+    };
+    
+    const result = await this.enrichService.enrichSource(enrichInput);
+    
+    let content = `✓ Enriched experience ${result.source.id}`;
+    
+    if (result.updatedFields.length > 0) {
+      content += `\nUpdated fields: ${result.updatedFields.join(', ')}`;
+    } else {
+      content += '\nNo fields were updated';
+    }
 
     if (result.embeddingsRegenerated) {
       content += '\nEmbeddings were regenerated';
