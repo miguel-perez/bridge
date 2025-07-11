@@ -27,7 +27,7 @@ export default {
     'src/**/*.ts',
     '!src/**/*.d.ts',
     '!src/**/*.test.ts',
-    '!src/scripts/llm-integration-test.ts'
+    '!src/scripts/llm-integration.test.ts'
   ],
   // Increase timeout for tests
   testTimeout: 30000,
