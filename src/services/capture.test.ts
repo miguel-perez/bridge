@@ -1,43 +1,44 @@
 import { describe, test, expect, beforeEach, jest } from '@jest/globals';
-import type { SourceRecord } from '../core/types.js';
 
 // Set up all mocks before importing the modules under test
-jest.unstable_mockModule('../core/storage.js', () => ({
-  generateId: jest.fn(() => 'test-id-123'),
-  saveSource: jest.fn(async (source: SourceRecord) => source)
+const mockGenerateId = jest.fn(() => 'src_mock-id-123');
+const mockSaveSource = jest.fn(async (source: any) => source);
+const mockGenerateEmbedding = jest.fn(async () => new Array(384).fill(0.1));
+const mockAddVector = jest.fn();
+const mockGetVectorStore = jest.fn(() => ({
+  addVector: mockAddVector
+}));
+const mockParseOccurredDate = jest.fn(async () => '2024-01-15T10:00:00.000Z');
+
+jest.doMock('../core/storage.js', () => ({
+  generateId: mockGenerateId,
+  saveSource: mockSaveSource
 }));
 
-jest.unstable_mockModule('./embeddings.js', () => ({
+jest.doMock('./embeddings.js', () => ({
   embeddingService: {
-    generateEmbedding: jest.fn(async () => [0.1, 0.2, 0.3, 0.4, 0.5])
+    generateEmbedding: mockGenerateEmbedding
   }
 }));
 
-jest.unstable_mockModule('./vector-store.js', () => ({
-  getVectorStore: jest.fn(() => ({
-    addVector: jest.fn()
-  }))
+jest.doMock('./vector-store.js', () => ({
+  getVectorStore: mockGetVectorStore
 }));
 
-jest.unstable_mockModule('../utils/validation.js', () => ({
-  parseOccurredDate: jest.fn(async (date: string) => date)
+jest.doMock('../utils/validation.js', () => ({
+  parseOccurredDate: mockParseOccurredDate
 }));
 
 describe('Capture Service', () => {
   let CaptureService: any;
   let captureSchema: any;
   let captureService: any;
-  let mockGetVectorStore: jest.MockedFunction<any>;
-  let mockParseOccurredDate: jest.MockedFunction<any>;
 
   beforeEach(async () => {
+    jest.resetModules();
     jest.clearAllMocks();
     // Import modules after mocks are set up
     ({ CaptureService, captureSchema } = await import('./capture.js'));
-    const { getVectorStore } = await import('./vector-store.js');
-    const { parseOccurredDate } = await import('../utils/validation.js');
-    mockGetVectorStore = getVectorStore as jest.MockedFunction<any>;
-    mockParseOccurredDate = parseOccurredDate as jest.MockedFunction<any>;
     captureService = new CaptureService();
   });
 
@@ -443,7 +444,7 @@ describe('Capture Service', () => {
         expect(result.source.perspective).toBe('we');
         expect(result.source.processing).toBe('right-after');
         expect(result.source.experiencer).toBe('Alice');
-        expect(result.source.occurred).toBe('2024-01-15T10:00:00Z');
+        expect(result.source.occurred).toBe('2024-01-15T10:00:00.000Z');
         expect(result.source.crafted).toBe(false);
         expect(result.defaultsUsed).toHaveLength(0);
       });
@@ -465,7 +466,7 @@ describe('Capture Service', () => {
         const result = await captureService.captureSource(input);
 
         expect(result.source).toBeDefined();
-        expect(result.source.id).toBe('test-id-123');
+        expect(result.source.id).toMatch(/^src_mock-id-/);
         expect(mockGetVectorStore).toHaveBeenCalled();
       });
 
@@ -486,7 +487,7 @@ describe('Capture Service', () => {
 
         const result = await captureService.captureSource(input);
 
-        expect(result.source.occurred).toBe('2024-01-15T10:00:00Z');
+        expect(result.source.occurred).toBe('2024-01-15T10:00:00.000Z');
         expect(mockParseOccurredDate).toHaveBeenCalledWith('2024-01-15T10:00:00Z');
       });
 

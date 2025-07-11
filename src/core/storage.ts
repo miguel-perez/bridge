@@ -5,8 +5,7 @@
  */
 
 import { promises as fs } from 'fs';
-import { join, dirname, resolve } from 'path';
-import { fileURLToPath } from 'url';
+import { join, resolve } from 'path';
 import { nanoid } from 'nanoid';
 import type { SourceRecord } from './types.js';
 import path from 'path';
@@ -41,8 +40,6 @@ interface StorageData {
 // ============================================================================
 
 // Get the directory of the current module
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 // Storage configuration
 const ENV = process.env.NODE_ENV || process.env.MCP_ENV || STORAGE_DEFAULTS.ENV;
@@ -70,7 +67,7 @@ export function setStorageConfig({ dataFile, storageDir }: { dataFile?: string; 
  */
 function getStorageDir(): string {
   if (customStorageDir) return customStorageDir;
-  return join(__dirname, '..', 'data', ENV);
+  return join(process.cwd(), 'data', ENV);
 }
 
 /**

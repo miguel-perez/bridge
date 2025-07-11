@@ -1,5 +1,15 @@
 import { describe, test, expect, beforeEach, afterEach, jest } from '@jest/globals';
 
+// Mock environment variables to prevent MCP environment detection
+const originalEnv = process.env;
+beforeAll(() => {
+  process.env = { ...originalEnv, MCP: 'false', BRIDGE_DISABLE_EMBEDDINGS: 'false' };
+});
+
+afterAll(() => {
+  process.env = originalEnv;
+});
+
 // Mock the transformers pipeline
 const mockPipeline = jest.fn() as jest.MockedFunction<any>;
 const mockEmbedder = jest.fn() as jest.MockedFunction<any>;
@@ -274,28 +284,5 @@ describe('EmbeddingService', () => {
     });
   });
 
-  describe('MCP environment', () => {
-    test('disables embeddings in MCP environment', async () => {
-      // Mock MCP environment
-      const originalEnv = process.env.MCP;
-      process.env.MCP = 'true';
-      
-      try {
-        // Clear module cache to force reload with new environment
-        jest.resetModules();
-        const { EmbeddingService } = await import('./embeddings.js');
-        const mcpService = new EmbeddingService();
-        
-        await mcpService.initialize();
-        const embedding = await mcpService.generateEmbedding('test');
-        
-        expect(embedding).toHaveLength(384);
-        expect(embedding.every(val => val === 0)).toBe(true);
-      } finally {
-        process.env.MCP = originalEnv;
-        // Clear module cache again to restore normal behavior
-        jest.resetModules();
-      }
-    });
-  });
+
 }); 

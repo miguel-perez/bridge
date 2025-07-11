@@ -1,10 +1,13 @@
 import { describe, test, expect, beforeEach, jest } from '@jest/globals';
 
 // Mock fs
-jest.unstable_mockModule('fs', () => ({
+const mockWriteFile = jest.fn() as jest.MockedFunction<(path: string, data: string, encoding: string) => Promise<void>>;
+const mockReadFile = jest.fn() as jest.MockedFunction<(path: string, encoding: string) => Promise<string>>;
+
+jest.doMock('fs', () => ({
   promises: {
-    writeFile: jest.fn(),
-    readFile: jest.fn()
+    writeFile: mockWriteFile,
+    readFile: mockReadFile
   }
 }));
 
@@ -12,21 +15,20 @@ let VectorStoreClass: typeof import('./vector-store.js').VectorStore;
 let store: any;
 
 beforeEach(async () => {
+  jest.resetModules();
   jest.clearAllMocks();
-  const { promises } = await import('fs');
-  mockWriteFile = promises.writeFile as jest.MockedFunction<any>;
-  mockReadFile = promises.readFile as jest.MockedFunction<any>;
-  mockWriteFile.mockResolvedValue(undefined); // Ensure all writeFile calls resolve
+  mockWriteFile.mockResolvedValue(undefined);
+  mockReadFile.mockResolvedValue('[]');
+  
+  // Force reload the module after resetting
   const mod = await import('./vector-store.js');
   VectorStoreClass = mod.VectorStore;
   store = new VectorStoreClass('dummy.json');
+  await store.initialize();
 });
 
 const DUMMY_DIM = 384;
 const makeVec = (val = 1, dim = DUMMY_DIM) => Array(dim).fill(val);
-
-let mockWriteFile: jest.MockedFunction<any>;
-let mockReadFile: jest.MockedFunction<any>;
 
 describe('VectorStore', () => {
   test('addVector and getVector', async () => {
@@ -56,7 +58,7 @@ describe('VectorStore', () => {
     store.addVector('a', makeVec(1));
     await store.removeVector('a');
     await Promise.resolve();
-    expect((store as any)['vectors'].has('a')).toBe(false);
+    expect(store.vectors.has('a')).toBe(false);
     expect(mockWriteFile).toHaveBeenCalled();
   });
 
@@ -99,7 +101,6 @@ describe('VectorStore', () => {
   });
 
   test('cosineSimilarity returns 0 for mismatched dims', () => {
-    // @ts-expect-error private method
     expect(store.cosineSimilarity([1, 2], [1])).toBe(0);
   });
 
@@ -147,7 +148,7 @@ describe('VectorStore', () => {
   test('validateVectors returns correct counts', async () => {
     store.addVector('a', makeVec(1));
     // Insert an invalid vector directly
-    (store as any)['vectors'].set('b', { id: 'b', vector: [1, 2, 3] });
+    store.vectors.set('b', { id: 'b', vector: [1, 2, 3] });
     const res = await store.validateVectors(DUMMY_DIM);
     expect(res.valid).toBe(1);
     expect(res.invalid).toBe(1);
@@ -157,27 +158,27 @@ describe('VectorStore', () => {
   test('removeInvalidVectors removes and returns count', async () => {
     store.addVector('a', makeVec(1));
     // Insert an invalid vector directly
-    (store as any)['vectors'].set('b', { id: 'b', vector: [1, 2, 3] });
+    store.vectors.set('b', { id: 'b', vector: [1, 2, 3] });
     const removed = await store.removeInvalidVectors(DUMMY_DIM);
     expect(removed).toBe(1);
-    expect((store as any)['vectors'].has('b')).toBe(false);
+    expect(store.vectors.has('b')).toBe(false);
   });
 
   test('cleanup removes invalid and saves', async () => {
     store.addVector('a', makeVec(1));
     // Insert an invalid vector directly
-    (store as any)['vectors'].set('b', { id: 'b', vector: [1, 2, 3] });
-    expect((store as any)['vectors'].has('b')).toBe(true); // Ensure invalid vector is present
+    store.vectors.set('b', { id: 'b', vector: [1, 2, 3] });
+    expect(store.vectors.has('b')).toBe(true); // Ensure invalid vector is present
     const removed = await store.cleanup();
     await Promise.resolve();
     expect(removed).toBe(1);
-    expect((store as any)['vectors'].has('b')).toBe(false); // Ensure invalid vector is removed
+    expect(store.vectors.has('b')).toBe(false); // Ensure invalid vector is removed
   });
 
   test('getHealthStats returns correct stats', () => {
     store.addVector('a', makeVec(1));
     // Insert an invalid vector directly
-    (store as any)['vectors'].set('b', { id: 'b', vector: [1, 2, 3] });
+    store.vectors.set('b', { id: 'b', vector: [1, 2, 3] });
     const stats = store.getHealthStats();
     expect(stats.total).toBe(2);
     expect(stats.valid).toBe(1);

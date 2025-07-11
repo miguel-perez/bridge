@@ -11,11 +11,7 @@ import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
 import { Client as MCPClient } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { join } from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 describe('MCP Server Protocol Compliance', () => {
   let client: MCPClient;

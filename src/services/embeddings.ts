@@ -1,8 +1,8 @@
 // Lazy loading approach for optional dependencies
 type Pipeline = any;
 
-// Check if we're in an MCP environment or if embeddings are disabled
-const IS_MCP_ENVIRONMENT = process.env.MCP === 'true' || process.env.BRIDGE_DISABLE_EMBEDDINGS === 'true';
+// Only check for BRIDGE_DISABLE_EMBEDDINGS to disable embeddings
+const EMBEDDINGS_DISABLED = process.env.BRIDGE_DISABLE_EMBEDDINGS === 'true';
 
 export class EmbeddingService {
   private pipeline: Pipeline | null = null;
@@ -12,9 +12,9 @@ export class EmbeddingService {
   private disabled = false;
   
   async initialize(): Promise<void> {
-    // Skip initialization in MCP environment
-    if (IS_MCP_ENVIRONMENT) {
-      console.error('[EmbeddingService] Running in MCP environment - embeddings disabled');
+    // Skip initialization if embeddings are disabled
+    if (EMBEDDINGS_DISABLED) {
+      console.error('[EmbeddingService] Embeddings are disabled by environment variable');
       this.disabled = true;
       return;
     }

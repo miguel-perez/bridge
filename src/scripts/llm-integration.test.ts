@@ -2,15 +2,10 @@ import { Client as MCPClient } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { Anthropic } from "@anthropic-ai/sdk";
 import { join } from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 import dotenv from 'dotenv';
 
 // Load environment variables
 dotenv.config();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 // Test scenarios for different development phases
 const TEST_SCENARIOS = {
@@ -94,7 +89,7 @@ class EnhancedLLMTester {
       console.log('🔌 Connecting to Bridge MCP server...');
       
       // Path to the built MCP server
-      const serverPath = join(__dirname, '..', '..', 'dist', 'index.js');
+      const serverPath = join(process.cwd(), 'dist', 'index.js');
       
       const transport = new StdioClientTransport({ 
         command: "node", 

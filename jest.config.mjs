@@ -12,7 +12,8 @@ export default {
     }]
   },
   moduleNameMapper: {
-    '^(\\.{1,2}/.*)\\.js$': '$1'
+    '^(\\.{1,2}/.*)\\.js$': '$1',
+    '^nanoid$': '<rootDir>/src/__mocks__/nanoid.js'
   },
   testMatch: [
     '**/?(*.)+(spec|test).ts'
@@ -20,7 +21,7 @@ export default {
   // Exclude LLM integration tests from regular test runs
   testPathIgnorePatterns: [
     '/node_modules/',
-    '/src/scripts/llm-integration-test.ts'
+    '/src/scripts/llm-integration.test.ts'
   ],
   collectCoverageFrom: [
     'src/**/*.ts',
@@ -29,5 +30,9 @@ export default {
     '!src/scripts/llm-integration-test.ts'
   ],
   // Increase timeout for tests
-  testTimeout: 30000
+  testTimeout: 30000,
+  // Transform ESM dependencies
+  transformIgnorePatterns: [
+    'node_modules/(?!(nanoid|@modelcontextprotocol)/)'
+  ]
 }; 

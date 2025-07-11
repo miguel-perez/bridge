@@ -3,9 +3,6 @@ import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
 export interface VectorRecord {
   id: string;
   vector: number[];
@@ -24,7 +21,8 @@ export class VectorStore {
   private storageFile: string;
 
   constructor(storageFile?: string) {
-    this.storageFile = storageFile || join(__dirname, '..', 'data', 'vectors.json');
+    // Only use __dirname if actually needed
+    this.storageFile = storageFile || join(process.cwd(), 'data', 'vectors.json');
   }
 
   addVector(id: string, vector: number[]): boolean {
@@ -252,6 +250,10 @@ export function initializeVectorStore(dataDir?: string): VectorStore {
     // we need to create a new instance with the correct path
     const storageFile = join(dataDir, 'vectors.json');
     vectorStoreInstance = new VectorStore(storageFile);
+  }
+  if (!vectorStoreInstance) {
+    // Create a default instance if none exists
+    vectorStoreInstance = new VectorStore();
   }
   return vectorStoreInstance;
 }
