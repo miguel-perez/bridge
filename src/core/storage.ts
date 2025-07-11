@@ -75,17 +75,39 @@ function getStorageDir(): string {
  * @returns The data file path
  */
 function getDataFile(): string {
-  if (customDataFile) return customDataFile;
+  if (customDataFile) {
+    if (process.env.BRIDGE_DEBUG === 'true') {
+      console.log(`[Bridge Debug] Using custom data file: ${customDataFile}`);
+    }
+    return customDataFile;
+  }
   
   // Use configurable data file path, fallback to bridge.json in the script directory
   const configPath = process.env.BRIDGE_FILE_PATH || 'bridge.json';
   
-  if (configPath.startsWith('/') || configPath.match(FILE_PATTERNS.ABSOLUTE_PATH)) {
-    return configPath; // Absolute path
+  if (process.env.BRIDGE_DEBUG === 'true') {
+    console.log(`[Bridge Debug] Environment variables:`);
+    console.log(`  BRIDGE_FILE_PATH: ${process.env.BRIDGE_FILE_PATH || 'undefined'}`);
+    console.log(`  BRIDGE_DEBUG: ${process.env.BRIDGE_DEBUG || 'undefined'}`);
+    console.log(`  NODE_ENV: ${process.env.NODE_ENV || 'undefined'}`);
+    console.log(`  MCP_ENV: ${process.env.MCP_ENV || 'undefined'}`);
+    console.log(`  process.cwd(): ${process.cwd()}`);
+    console.log(`  configPath: ${configPath}`);
   }
   
-  // Relative path - resolve from project root
-  return path.join(process.cwd(), configPath);
+  let finalPath: string;
+  if (configPath.startsWith('/') || configPath.match(FILE_PATTERNS.ABSOLUTE_PATH)) {
+    finalPath = configPath; // Absolute path
+  } else {
+    // Relative path - resolve from project root
+    finalPath = path.join(process.cwd(), configPath);
+  }
+  
+  if (process.env.BRIDGE_DEBUG === 'true') {
+    console.log(`[Bridge Debug] Final data file path: ${finalPath}`);
+  }
+  
+  return finalPath;
 }
 
 // ============================================================================
@@ -217,7 +239,8 @@ export function generateId(prefix: string = STORAGE_DEFAULTS.ID_PREFIX): string 
  * @throws Error if file operations fail
  */
 async function readData(): Promise<StorageData> {
-  await ensureStorageDir();
+  // Don't ensure storage dir just for reading the data file
+  // Only ensure it when we actually need to write to it
   
   try {
     const content = await fs.readFile(getDataFile(), STORAGE_DEFAULTS.FILE_ENCODING);
@@ -247,11 +270,19 @@ async function readData(): Promise<StorageData> {
  * @throws Error if file operations fail
  */
 async function writeData(data: StorageData): Promise<void> {
-  await ensureStorageDir();
+  // Ensure the data file's directory exists (not the storage dir)
+  const dataFilePath = getDataFile();
+  const dataFileDir = path.dirname(dataFilePath);
+  
+  try {
+    await fs.mkdir(dataFileDir, { recursive: true });
+  } catch (error) {
+    throw new Error(`Failed to create data file directory: ${error instanceof Error ? error.message : String(error)}`);
+  }
   
   try {
     const jsonString = JSON.stringify(data, null, STORAGE_DEFAULTS.JSON_INDENT);
-    await fs.writeFile(getDataFile(), jsonString, STORAGE_DEFAULTS.FILE_ENCODING);
+    await fs.writeFile(dataFilePath, jsonString, STORAGE_DEFAULTS.FILE_ENCODING);
   } catch (error) {
     throw new Error(`Failed to write storage data: ${error instanceof Error ? error.message : String(error)}`);
   }
