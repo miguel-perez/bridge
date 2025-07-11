@@ -63,6 +63,12 @@ const TEST_SCENARIOS = {
     Afterward, look at all the tool definitions and define a lists of tasks. Then begin to execute them. 
     First, say what you would expect to happen. Then, run the tool and observe what actually happens. 
     Create a comprehensive path through all the features in an order that is most efficient. Focus a lot on search. 
+    
+    IMPORTANT: When using the search tool, make sure to include these parameters for better results:
+    - includeContext: true (to show metadata like experiencer, perspective, processing level, and experiential qualities)
+    - includeFullContent: true (to show the full content instead of truncated snippets)
+    - limit: 10 (to get a reasonable number of results)
+    
     Finally, note misalignments between your expectation and reality, good or bad.
   `
 };

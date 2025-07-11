@@ -85,6 +85,16 @@ export const tools = [
           description: "Maximum number of results to return",
           default: 10
         },
+        includeContext: {
+          type: "boolean",
+          description: "Include metadata like experiencer, perspective, processing level, and experiential qualities in results",
+          default: false
+        },
+        includeFullContent: {
+          type: "boolean",
+          description: "Include full content instead of truncated snippets",
+          default: false
+        },
         filters: {
           type: "object",
           description: "Optional filters to apply to search results",
