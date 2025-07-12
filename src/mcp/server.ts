@@ -117,9 +117,9 @@ async function initializeConfiguration(serverInstance?: Server): Promise<void> {
     try {
       const vectorStore = initializeVectorStore(dataDir);
       await vectorStore.initialize();
-      await vectorStore.getVectorCount(); // Initialize and verify vector count
+      const vectorCount = await vectorStore.getVectorCount(); // Initialize and verify vector count
       // Vector store initialized successfully
-      mcpLog('info', 'Vector store initialized successfully', serverInstance);
+      mcpLog('info', `Vector store initialized successfully with ${vectorCount} vectors`, serverInstance);
     } catch (vectorError) {
       // Vector store initialization failed - semantic search won't work without it
       // but basic functionality will still work

@@ -1,7 +1,5 @@
 import { promises as fs } from 'fs';
-import { join } from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+import { join, dirname, resolve } from 'path';
 
 export interface VectorRecord {
   id: string;
@@ -21,8 +19,15 @@ export class VectorStore {
   private storageFile: string;
 
   constructor(storageFile?: string) {
-    // Only use __dirname if actually needed
-    this.storageFile = storageFile || join(process.cwd(), 'data', 'vectors.json');
+    // Use provided storage file or default to vectors.json in the same directory as the main data file
+    if (storageFile) {
+      this.storageFile = storageFile;
+    } else {
+      // Try to get the data file path from environment or config
+      const configPath = process.env.BRIDGE_FILE_PATH || 'bridge.json';
+      const dataFileDir = dirname(resolve(configPath));
+      this.storageFile = join(dataFileDir, 'vectors.json');
+    }
   }
 
   addVector(id: string, vector: number[]): boolean {

@@ -160,6 +160,8 @@ export class CaptureService {
       try {
         const vectorStore = getVectorStore();
         vectorStore.addVector(source.id, contentEmbedding);
+        // Save vectors to disk immediately to ensure persistence
+        await vectorStore.saveToDisk();
       } catch (error) {
         // Silently handle vector storage errors in MCP context
       }
