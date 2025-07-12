@@ -107,6 +107,17 @@ export const tools = [
                 description: "Maximum number of results to return",
                 default: 10
               },
+              offset: {
+                type: "number",
+                description: "Number of results to skip (for pagination)",
+                default: 0
+              },
+              sort: {
+                type: "string",
+                enum: ["relevance", "system_time", "occurred"],
+                description: "How to sort results (default: occurred for recency)",
+                default: "occurred"
+              },
               includeContext: {
                 type: "boolean",
                 description: "Include metadata like experiencer, perspective, processing level, and experiential qualities in results",

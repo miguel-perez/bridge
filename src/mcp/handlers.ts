@@ -191,7 +191,7 @@ export class MCPToolHandlers {
 ID: ${result.source.id}
 Occurred: ${formatDate(result.source.occurred || result.source.system_time)}
 
-${result.source.narrative ? 'Narrative: ' : 'Content: '}${formatContent(result.source.content, result.source.narrative)}
+${result.source.narrative ? 'Narrative: ' : 'Content: '}${formatContent(result.source.content, result.source.narrative, true)}
 
 Experiential Analysis:
 ${formatExperientialQualities(result.source.experiential_qualities || { qualities: [] })}
@@ -272,7 +272,11 @@ Reason: ${release.reason || 'No reason provided'}`;
       }
       
       // Create a summary of the search
-      const summary = `${queries.length > 1 ? `Query ${i + 1}: ` : ''}Found ${results.length} result(s) for "${query.query}"${stats?.total ? ` out of ${stats.total} total records` : ''}.`;
+      const totalResults = stats?.total || results.length;
+      const offset = query.offset || 0;
+      const limit = query.limit || 10;
+      const showingText = offset > 0 ? ` (showing ${offset + 1}-${Math.min(offset + limit, totalResults)} of ${totalResults})` : '';
+      const summary = `${queries.length > 1 ? `Query ${i + 1}: ` : ''}Found ${results.length} result(s) for "${query.query}"${stats?.total ? ` out of ${stats.total} total records` : ''}${showingText}.`;
       
       // Format each result
       const resultContent = results.map((result: SearchServiceResult, index: number) => {

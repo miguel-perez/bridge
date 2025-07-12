@@ -2,7 +2,6 @@ import { SourceRecord } from '../core/types.js';
 import { getAllRecords } from '../core/storage.js';
 import { embeddingService } from './embeddings.js';
 import { getVectorStore } from './vector-store.js';
-import { parseFlexibleDate, parseSingleDate } from '../utils/date-parser.js';
 
 // Debug mode configuration
 const DEBUG_MODE = process.env.BRIDGE_SEARCH_DEBUG === 'true' || process.env.BRIDGE_DEBUG === 'true';
@@ -47,6 +46,7 @@ export interface SearchInput {
   crafted?: boolean;
   sort?: 'relevance' | 'system_time' | 'occurred';
   limit?: number;
+  offset?: number;
   includeContext?: boolean;
   includeFullContent?: boolean;
   // Experiential qualities min/max
@@ -197,7 +197,7 @@ function calculateTextRelevance(record: SourceRecord, query: string): number {
 
 // Calculate filter relevance score
 function calculateFilterRelevance(record: SourceRecord, input: SearchInput): number {
-  let relevance = 1.0; // Start with full relevance
+  const relevance = 1.0; // Start with full relevance
   
   // Check if record matches all applied filters
   if (input.type && !input.type.includes(record.type)) {
@@ -562,31 +562,35 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
       addDebugLog(`Text relevance filter applied: ${beforeCount} -> ${afterCount} records`);
     }
 
-    // Apply sorting
-    if (input.sort) {
-      addDebugLog(`Applying sort: ${input.sort}`);
-      finalRecords.sort((a, b) => {
-        switch (input.sort) {
-          case 'system_time': {
-            const aTime = new Date(a.system_time).getTime();
-            const bTime = new Date(b.system_time).getTime();
-            return bTime - aTime; // Descending
-          }
-          case 'occurred': {
-            const aTime = new Date(a.occurred || a.system_time).getTime();
-            const bTime = new Date(b.occurred || b.system_time).getTime();
-            return bTime - aTime; // Descending
-          }
-          case 'relevance':
-          default: {
-            // Sort by relevance score
-            return b._relevance.score - a._relevance.score;
-          }
+    // Apply sorting (default to occurred date for recency)
+    const sortType = input.sort || 'occurred';
+    addDebugLog(`Applying sort: ${sortType}`);
+    finalRecords.sort((a, b) => {
+      switch (sortType) {
+        case 'system_time': {
+          const aTime = new Date(a.system_time).getTime();
+          const bTime = new Date(b.system_time).getTime();
+          return bTime - aTime; // Descending
         }
-      });
-    }
+        case 'occurred': {
+          const aTime = new Date(a.occurred || a.system_time).getTime();
+          const bTime = new Date(b.occurred || b.system_time).getTime();
+          return bTime - aTime; // Descending
+        }
+        case 'relevance':
+        default: {
+          // Sort by relevance score
+          return b._relevance.score - a._relevance.score;
+        }
+      }
+    });
 
-    // Apply limit
+    // Apply pagination (offset and limit)
+    if (input.offset && input.offset > 0) {
+      addDebugLog(`Applying offset: ${input.offset}`);
+      finalRecords.splice(0, input.offset);
+    }
+    
     if (input.limit) {
       addDebugLog(`Applying limit: ${input.limit}`);
       finalRecords.splice(input.limit);
@@ -674,20 +678,20 @@ function determineNoResultsReason(input: SearchInput, debugInfo: SearchServiceRe
   return 'Unknown reason - check debug information for details';
 }
 
-// Cosine similarity between two vectors (deprecated)
-function cosineSimilarity(a: Record<string, number>, b: Record<string, number>): number {
-  const keys = ['embodied', 'attentional', 'affective', 'purposive', 'spatial', 'temporal', 'intersubjective'];
-  let dot = 0, normA = 0, normB = 0;
-  for (const k of keys) {
-    const va = a[k] ?? 0;
-    const vb = b[k] ?? 0;
-    dot += va * vb;
-    normA += va * va;
-    normB += vb * vb;
-  }
-  if (normA === 0 || normB === 0) return 0;
-  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
-}
+// Cosine similarity between two vectors (deprecated - no longer used)
+// function cosineSimilarity(a: Record<string, number>, b: Record<string, number>): number {
+//   const keys = ['embodied', 'attentional', 'affective', 'purposive', 'spatial', 'temporal', 'intersubjective'];
+//   let dot = 0, normA = 0, normB = 0;
+//   for (const k of keys) {
+//     const va = a[k] ?? 0;
+//     const vb = b[k] ?? 0;
+//     dot += va * vb;
+//     normA += va * va;
+//     normB += vb * vb;
+//   }
+//   if (normA === 0 || normB === 0) return 0;
+//   return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+// }
 
 export class SearchService {
   async search(input: SearchInput): Promise<{ results: SearchServiceResult[], stats?: any }> {
