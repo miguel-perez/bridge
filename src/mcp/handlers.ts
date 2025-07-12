@@ -173,13 +173,13 @@ export class MCPToolHandlers {
   /**
    * Handles capture tool requests - supports both single items and batch operations
    * 
-   * Captures one or more experiential source records and returns a formatted response
-   * showing the captured data and any defaults that were applied.
+   * Captures one or more experiential moments and returns a formatted response
+   * showing the captured data with experiential analysis.
    * 
-   * @param args - The capture arguments (single item or batch)
+   * @param args - The capture arguments containing the experiential data
    * @returns Formatted capture result
    */
-  async handleCapture(args: any) {
+  async handleCapture(args: any): Promise<{ content: Array<{ type: string; text: string }> }> {
     // Support both old single-item format and new batch format
     const experiences = args.experiences || [args];
     const results = [];
@@ -216,7 +216,7 @@ ${result.defaultsUsed.length > 0 ? `Defaults used: ${result.defaultsUsed.join(',
    * @param args - The release arguments containing the record IDs
    * @returns Formatted release result
    */
-  async handleRelease(args: any) {
+  async handleRelease(args: any): Promise<{ content: Array<{ type: string; text: string }> }> {
     // Support both old single-item format and new batch format
     const releases = args.releases || [{ source_id: args.source_id, reason: args.reason }];
     const results = [];
@@ -249,7 +249,7 @@ Reason: ${release.reason || 'No reason provided'}`;
    * @param args - The search arguments
    * @returns Formatted search results
    */
-  async handleSearch(args: any) {
+  async handleSearch(args: any): Promise<{ content: Array<{ type: string; text: string }> }> {
     // Support both old single-query format and new batch format
     const queries = args.queries || [args];
     const allResults = [];
@@ -326,7 +326,7 @@ Relevance: ${formatRelevanceBreakdown(result.relevance_breakdown)}`;
    * @param args - The update arguments
    * @returns Formatted update result
    */
-  async handleUpdate(args: any) {
+  async handleUpdate(args: any): Promise<{ content: Array<{ type: string; text: string }> }> {
     // Support both old single-item format and new batch format
     const updates = args.updates || [args];
     const results = [];

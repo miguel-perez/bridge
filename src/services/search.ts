@@ -7,7 +7,7 @@ import { getVectorStore } from './vector-store.js';
 const DEBUG_MODE = process.env.BRIDGE_SEARCH_DEBUG === 'true' || process.env.BRIDGE_DEBUG === 'true';
 
 // Debug logging utility - silent in MCP context
-function debugLog(message: string, data?: any) {
+function debugLog(message: string, data?: any): { timestamp: string; message: string; data?: any } | null {
   // In MCP context, we don't use console.log
   // Debug information is returned in the response instead
   if (DEBUG_MODE) {
@@ -22,7 +22,7 @@ function debugLog(message: string, data?: any) {
 }
 
 // Error logging utility with MCP-compliant formatting
-function logSearchError(context: string, error: any, details?: any) {
+function logSearchError(context: string, error: any, details?: any): { error: boolean; message: string; context: string; details?: any } {
   const errorMessage = `Search error in ${context}: ${error.message || error}`;
   
   // Return MCP-compliant error structure
@@ -348,7 +348,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
     debug_logs: []
   };
   
-  const addDebugLog = (message: string, data?: any) => {
+  const addDebugLog = (message: string, data?: any): void => {
     if (DEBUG_MODE) {
       const log = debugLog(message, data);
       if (log) debugInfo.debug_logs!.push(log);

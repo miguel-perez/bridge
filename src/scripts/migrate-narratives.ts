@@ -224,7 +224,7 @@ Generate only the narrative, nothing else:`;
   }
 }
 
-async function main() {
+async function main(): Promise<void> {
   const migrator = new NarrativeMigrator();
   
   try {

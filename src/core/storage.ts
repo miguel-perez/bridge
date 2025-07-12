@@ -6,7 +6,6 @@
 
 import { promises as fs } from 'fs';
 import { join, resolve } from 'path';
-import { nanoid } from 'nanoid';
 import type { SourceRecord } from './types.js';
 import path from 'path';
 
@@ -207,7 +206,8 @@ export async function storeFile(sourcePath: string, sourceId: string): Promise<s
  * @param prefix - Optional prefix for the ID
  * @returns Unique ID string
  */
-export function generateId(prefix: string = STORAGE_DEFAULTS.ID_PREFIX): string {
+export async function generateId(prefix: string = STORAGE_DEFAULTS.ID_PREFIX): Promise<string> {
+  const { nanoid } = await import('nanoid');
   const id = nanoid();
   return `${prefix}_${id}`;
 }

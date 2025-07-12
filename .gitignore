@@ -52,3 +52,6 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp 
+
+# Ignore test results
+/test-results/ 

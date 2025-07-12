@@ -1,9 +1,8 @@
-import { describe, test, expect, beforeEach, jest } from '@jest/globals';
+// Define the mocks at the top
+const mockWriteFile = jest.fn();
+const mockReadFile = jest.fn();
 
-// Mock fs
-const mockWriteFile = jest.fn() as jest.MockedFunction<(path: string, data: string, encoding: string) => Promise<void>>;
-const mockReadFile = jest.fn() as jest.MockedFunction<(path: string, encoding: string) => Promise<string>>;
-
+// Mock fs before anything else
 jest.doMock('fs', () => ({
   promises: {
     writeFile: mockWriteFile,
@@ -11,15 +10,17 @@ jest.doMock('fs', () => ({
   }
 }));
 
-let VectorStoreClass: typeof import('./vector-store.js').VectorStore;
-let store: any;
+import { describe, test, expect, beforeEach, jest } from '@jest/globals';
 
-beforeEach(async () => {
+let VectorStoreClass;
+let store;
+
+beforeEach(async (): Promise<void> => {
   jest.resetModules();
   jest.clearAllMocks();
-  mockWriteFile.mockResolvedValue(undefined);
-  mockReadFile.mockResolvedValue('[]');
-  
+  (mockWriteFile as any).mockResolvedValue(undefined);
+  (mockReadFile as any).mockResolvedValue('[]');
+
   // Force reload the module after resetting
   const mod = await import('./vector-store.js');
   VectorStoreClass = mod.VectorStore;
@@ -116,7 +117,7 @@ describe('VectorStore', () => {
   });
 
   test('saveToDisk throws on error', async () => {
-    mockWriteFile.mockRejectedValueOnce(new Error('fail'));
+    (mockWriteFile as any).mockRejectedValueOnce(new Error('fail'));
     store.addVector('a', makeVec(1));
     await expect(store.saveToDisk()).rejects.toThrow('Failed to save vectors to disk');
   });
@@ -126,7 +127,7 @@ describe('VectorStore', () => {
       { id: 'a', vector: makeVec(1) },
       { id: 'b', vector: [1, 2, 3] } // invalid
     ]);
-    mockReadFile.mockResolvedValueOnce(data);
+    (mockReadFile as any).mockResolvedValueOnce(data);
     await store.loadFromDisk();
     expect(store.vectors.has('a')).toBe(true);
     expect(store.vectors.has('b')).toBe(false);
@@ -134,7 +135,7 @@ describe('VectorStore', () => {
 
   test('loadFromDisk clears on error', async () => {
     store.addVector('a', makeVec(1));
-    mockReadFile.mockRejectedValueOnce(new Error('fail'));
+    (mockReadFile as any).mockRejectedValueOnce(new Error('fail'));
     await store.loadFromDisk();
     expect(store.vectors.size).toBe(0);
   });

@@ -26,7 +26,7 @@ process.on('unhandledRejection', (reason) => {
 });
 
 // Start the MCP server
-(async () => {
+(async (): Promise<void> => {
   try {
     const transport = new StdioServerTransport();
     await server.connect(transport);

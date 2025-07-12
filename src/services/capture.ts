@@ -141,7 +141,7 @@ export class CaptureService {
     }
 
     const source = await saveSource({
-      id: generateId('src'),
+      id: await generateId('src'),
       content: validatedInput.content || validatedInput.narrative!,  // Ensure content exists
       narrative: validatedInput.narrative,
       contentType: validatedInput.contentType,

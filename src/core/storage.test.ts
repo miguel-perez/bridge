@@ -6,19 +6,19 @@ import {
 
 describe('Storage Layer', () => {
   describe('ID Generation', () => {
-    it('should generate unique IDs with correct prefix', () => {
-      const id1 = generateId('src');
-      const id2 = generateId('src');
+    it('should generate unique IDs with correct prefix', async () => {
+      const id1 = await generateId('src');
+      const id2 = await generateId('src');
       
       expect(id1).toMatch(/^src_[A-Za-z0-9_-]+$/);
       expect(id2).toMatch(/^src_[A-Za-z0-9_-]+$/);
       expect(id1).not.toBe(id2);
     });
 
-    it('should generate IDs with different prefixes', () => {
-      const srcId = generateId('src');
-      const momId = generateId('mom');
-      const synId = generateId('syn');
+    it('should generate IDs with different prefixes', async () => {
+      const srcId = await generateId('src');
+      const momId = await generateId('mom');
+      const synId = await generateId('syn');
 
       expect(srcId).toMatch(/^src_/);
       expect(momId).toMatch(/^mom_/);
