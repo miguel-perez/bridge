@@ -27,7 +27,8 @@
     "add-embeddings": "tsx src/scripts/add-embeddings.ts",
     "migrate-memory": "tsx src/scripts/migrate-memory.ts",
     "enrich-with-ai": "tsx src/scripts/enrich-with-ai.ts",
-    "migrate-embeddings": "tsx src/utils/migrate-embeddings.ts"
+    "migrate-embeddings": "tsx src/utils/migrate-embeddings.ts",
+    "migrate:narratives": "npm run build && node dist/scripts/migrate-narratives.js"
   },
   "keywords": [
     "mcp",

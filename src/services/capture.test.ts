@@ -208,7 +208,7 @@ describe('Capture Service', () => {
           }
         };
 
-        expect(() => captureSchema.parse(invalidCapture)).toThrow('Content must be provided');
+        expect(() => captureSchema.parse(invalidCapture)).toThrow('Either content or narrative must be provided');
       });
 
       test('should reject empty content', () => {
@@ -228,7 +228,7 @@ describe('Capture Service', () => {
           }
         };
 
-        expect(() => captureSchema.parse(invalidCapture)).toThrow('Content must be provided');
+        expect(() => captureSchema.parse(invalidCapture)).toThrow('Either content or narrative must be provided');
       });
 
       test('should reject invalid perspective', () => {
@@ -341,35 +341,6 @@ describe('Capture Service', () => {
 
         expect(() => captureSchema.parse(invalidCapture)).toThrow();
       });
-
-      test('should reject invalid vector values', () => {
-        const invalidCapture = {
-          content: "I felt excited",
-          experiencer: "Miguel",
-          perspective: "I",
-          processing: "during",
-          experiential_qualities: {
-            qualities: [
-              {
-                type: "affective",
-                prominence: 0.8,
-                manifestation: "feeling of excitement"
-              }
-            ],
-            vector: {
-              embodied: 1.5, // Should be between 0 and 1
-              attentional: 0.0,
-              affective: 0.8,
-              purposive: 0.0,
-              spatial: 0.0,
-              temporal: 0.0,
-              intersubjective: 0.0
-            }
-          }
-        };
-
-        expect(() => captureSchema.parse(invalidCapture)).toThrow();
-      });
     });
   });
 
@@ -423,16 +394,7 @@ describe('Capture Service', () => {
                 prominence: 0.8,
                 manifestation: 'clear goal direction'
               }
-            ],
-            vector: {
-              embodied: 0.1,
-              attentional: 0.3,
-              affective: 0.6,
-              purposive: 0.8,
-              spatial: 0.2,
-              temporal: 0.4,
-              intersubjective: 0.0
-            }
+            ]
           }
         };
 
@@ -515,35 +477,6 @@ describe('Capture Service', () => {
         expect(result.source.experiential_qualities.qualities).toHaveLength(2);
         expect(result.source.experiential_qualities.qualities[0].type).toBe('affective');
         expect(result.source.experiential_qualities.qualities[1].type).toBe('attentional');
-      });
-
-      test('should handle vector in experiential qualities', async () => {
-        const input = {
-          content: 'I felt excited about the project',
-          experiential_qualities: {
-            qualities: [
-              {
-                type: 'affective',
-                prominence: 0.8,
-                manifestation: 'feeling of excitement'
-              }
-            ],
-            vector: {
-              embodied: 0.1,
-              attentional: 0.2,
-              affective: 0.8,
-              purposive: 0.3,
-              spatial: 0.0,
-              temporal: 0.1,
-              intersubjective: 0.0
-            }
-          }
-        };
-
-        const result = await captureService.captureSource(input);
-
-        expect(result.source.experiential_qualities.vector).toBeDefined();
-        expect(result.source.experiential_qualities.vector.affective).toBe(0.8);
       });
     });
 

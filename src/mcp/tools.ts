@@ -2,7 +2,7 @@
 export const tools = [
   {
     name: "capture",
-    description: "Preserve experiences exactly as they were shared with you, maintaining their authentic voice through seven-dimensional phenomenological analysis (embodied, attentional, affective, purposive, spatial, temporal, intersubjective)",
+    description: "Preserve experiences exactly as they were shared with you, maintaining their authentic voice through seven-dimensional phenomenological analysis (embodied, attentional, affective, purposive, spatial, temporal, intersubjective) and narrative generation that weaves content with weighted quality manifestations for better searchability",
     inputSchema: {
       type: "object",
       properties: {
@@ -15,6 +15,10 @@ export const tools = [
               content: { 
                 type: "string", 
                 description: "The exact words or experience as directly shared with you, preserving their original expression" 
+              },
+              narrative: { 
+                type: "string", 
+                description: "Narrative that integrates content with weighted quality manifestations for better searchability. Should preserve key phrases while weaving in quality manifestations proportionally based on prominence scores." 
               },
               experiencer: { 
                 type: "string", 
@@ -74,7 +78,7 @@ export const tools = [
                 description: "Whether this was crafted for sharing (true) or raw/spontaneous expression (false)" 
               }
             },
-            required: ["content", "experiencer", "perspective", "processing", "experiential_qualities"]
+            required: ["content", "experiencer", "perspective", "processing", "experiential_qualities", "narrative"]
           }
         }
       },
@@ -176,6 +180,10 @@ export const tools = [
                 type: "string",
                 description: "Corrected content text (only if fixing errors in the original)"
               },
+              narrative: {
+                type: "string",
+                description: "Corrected narrative text (only if fixing errors in the generated narrative)"
+              },
               contentType: {
                 type: "string",
                 description: "Updated content type"
@@ -231,6 +239,11 @@ export const tools = [
                   }
                 },
                 required: ["qualities"]
+              },
+              regenerate_embeddings: {
+                type: "boolean",
+                description: "Whether to regenerate embeddings (useful when narrative or content is updated)",
+                default: false
               }
             },
             required: ["source_id"]

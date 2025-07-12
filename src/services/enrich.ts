@@ -1,11 +1,11 @@
 /**
  * Enrich service for Bridge experiential data.
- * Handles partial updates, vector regeneration, and embedding updates for experiential sources.
+ * Handles partial updates, narrative updates, and embedding regeneration for experiential sources.
  */
 
 import { z } from 'zod';
 import { getSource, saveSource, deleteSource } from '../core/storage.js';
-import type { SourceRecord, ProcessingLevel, QualityVector } from '../core/types.js';
+import type { SourceRecord, ProcessingLevel } from '../core/types.js';
 import { parseOccurredDate } from '../utils/validation.js';
 import { embeddingService } from './embeddings.js';
 import { getVectorStore } from './vector-store.js';
@@ -39,6 +39,7 @@ export const QUALITY_TYPES = [
 export const enrichSchema = z.object({
   id: z.string().describe('The ID of the source to enrich'),
   content: z.string().optional().describe('Updated content text'),
+  narrative: z.string().optional().describe('Updated narrative text'),
   contentType: z.string().optional().describe('Updated content type'),
   perspective: z.enum(['I', 'we', 'you', 'they']).optional().describe('Updated perspective'),
   processing: z.enum(['during', 'right-after', 'long-after', 'crafted']).optional().describe('Updated processing level'),
@@ -51,15 +52,6 @@ export const enrichSchema = z.object({
       prominence: z.number().min(0).max(1),
       manifestation: z.string(),
     })),
-    vector: z.object({
-      embodied: z.number().min(0).max(1),
-      attentional: z.number().min(0).max(1),
-      affective: z.number().min(0).max(1),
-      purposive: z.number().min(0).max(1),
-      spatial: z.number().min(0).max(1),
-      temporal: z.number().min(0).max(1),
-      intersubjective: z.number().min(0).max(1),
-    }).optional(),
   }).optional().describe('Updated experiential qualities'),
   regenerate_embeddings: z.boolean().optional().default(false).describe('Whether to regenerate content embeddings'),
 });
@@ -70,6 +62,7 @@ export const enrichSchema = z.object({
 export interface EnrichInput {
   id: string;
   content?: string;
+  narrative?: string;
   contentType?: string;
   perspective?: 'I' | 'we' | 'you' | 'they';
   processing?: 'during' | 'right-after' | 'long-after' | 'crafted';
@@ -82,7 +75,6 @@ export interface EnrichInput {
       prominence: number;
       manifestation: string;
     }>;
-    vector?: QualityVector;
   };
   regenerate_embeddings?: boolean;
 }
@@ -94,35 +86,6 @@ export interface EnrichResult {
   source: SourceRecord;
   updatedFields: string[];
   embeddingsRegenerated: boolean;
-}
-
-// ============================================================================
-// QUALITY VECTOR GENERATION
-// ============================================================================
-
-/**
- * Generates a quality vector from an array of qualities.
- * @param qualities - Array of quality evidence
- * @param providedVector - Optional base vector to override
- * @returns Quality vector with all dimensions
- */
-function generateQualityVector(
-  qualities: Array<{ type: typeof QUALITY_TYPES[number]; prominence: number }>,
-  providedVector?: QualityVector
-): QualityVector {
-  const vector: QualityVector = providedVector ? { ...providedVector } : {
-    embodied: 0,
-    attentional: 0,
-    affective: 0,
-    purposive: 0,
-    spatial: 0,
-    temporal: 0,
-    intersubjective: 0,
-  };
-  for (const quality of qualities) {
-    vector[quality.type] = quality.prominence;
-  }
-  return vector;
 }
 
 // ============================================================================
@@ -156,30 +119,26 @@ export class EnrichService {
       }
     }
 
-    // Process experiential qualities - generate vector if not provided
+    // Process experiential qualities - no vector generation needed
     let processedExperientialQualities: import('../core/types.js').ExperientialQualities | undefined = undefined;
     if (input.experiential_qualities?.qualities) {
-      const generatedVector = generateQualityVector(input.experiential_qualities.qualities, input.experiential_qualities.vector);
       processedExperientialQualities = {
         qualities: input.experiential_qualities.qualities,
-        vector: generatedVector,
-      };
-    } else if (input.experiential_qualities?.vector) {
-      processedExperientialQualities = {
-        qualities: [],
-        vector: input.experiential_qualities.vector,
       };
     }
 
     // Determine if we need to regenerate embeddings
     const shouldRegenerateEmbeddings = input.regenerate_embeddings || 
-      (input.content && input.content !== existingSource.content);
+      (input.content && input.content !== existingSource.content) ||
+      (input.narrative && input.narrative !== existingSource.narrative);
 
     // Generate new embedding if needed
     let contentEmbedding: number[] | undefined = existingSource.content_embedding;
-    if (shouldRegenerateEmbeddings && input.content) {
+    if (shouldRegenerateEmbeddings) {
+      const textToEmbed = input.narrative || existingSource.narrative || 
+                         input.content || existingSource.content;
       try {
-        contentEmbedding = await embeddingService.generateEmbedding(input.content);
+        contentEmbedding = await embeddingService.generateEmbedding(textToEmbed);
       } catch (error) {
         // Silently handle embedding generation errors in MCP context
       }
@@ -189,6 +148,7 @@ export class EnrichService {
     const updatedSource: Omit<SourceRecord, 'type'> = {
       ...existingSource,
       content: input.content ?? existingSource.content,
+      narrative: input.narrative ?? existingSource.narrative,
       contentType: input.contentType ?? existingSource.contentType,
       perspective: input.perspective ?? existingSource.perspective,
       experiencer: input.experiencer ?? existingSource.experiencer,
@@ -232,6 +192,7 @@ export class EnrichService {
   private getUpdatedFields(original: SourceRecord, updated: Omit<SourceRecord, 'type'>): string[] {
     const fields: string[] = [];
     if (original.content !== updated.content) fields.push('content');
+    if (original.narrative !== updated.narrative) fields.push('narrative');
     if (original.contentType !== updated.contentType) fields.push('contentType');
     if (original.perspective !== updated.perspective) fields.push('perspective');
     if (original.experiencer !== updated.experiencer) fields.push('experiencer');

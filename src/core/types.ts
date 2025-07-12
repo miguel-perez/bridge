@@ -1,7 +1,7 @@
 /**
  * Core types for the Bridge experiential data capture system.
  * Defines the data structures for capturing and analyzing human experience
- * through phenomenological dimensions and vector representations.
+ * through phenomenological dimensions and narrative generation.
  */
 
 // ============================================================================
@@ -31,7 +31,6 @@ export const DEFAULTS = {
   CONTENT_TYPE: 'text' as const,
   CRAFTED: false,
   QUALITY_PROMINENCE: 0.5,
-  VECTOR_DIMENSION: 0.0
 } as const;
 
 // ============================================================================
@@ -64,28 +63,12 @@ export interface QualityEvidence {
 }
 
 /**
- * Vector representation of experiential qualities across all dimensions.
- * Each dimension is scored from 0.0 (absent) to 1.0 (dominant).
- */
-export interface QualityVector {
-  embodied: number;
-  attentional: number;
-  affective: number;
-  purposive: number;
-  spatial: number;
-  temporal: number;
-  intersubjective: number;
-}
-
-/**
  * Complete experiential analysis of captured data.
- * Combines specific quality evidence with vector representation.
+ * Contains specific quality evidence for narrative generation.
  */
 export interface ExperientialQualities {
   /** Specific evidence of experiential qualities */
   qualities: QualityEvidence[];
-  /** Vector representation across all dimensions */
-  vector: QualityVector;
 }
 
 /**
@@ -97,6 +80,8 @@ export interface Source {
   id: string;
   /** The captured content (text, audio transcript, etc.) */
   content: string;
+  /** Generated narrative that weaves content with experiential qualities */
+  narrative?: string;
   /** Type of content being captured */
   contentType?: ContentType;
   /** System timestamp when captured (ISO format) */
@@ -117,7 +102,7 @@ export interface Source {
   // Analysis fields
   /** Experiential analysis results */
   experiential_qualities?: ExperientialQualities;
-  /** Vector embedding for semantic search */
+  /** Vector embedding for semantic search (generated from narrative) */
   content_embedding?: number[];
 }
 
@@ -183,20 +168,6 @@ export function isValidProcessingLevel(value: string): value is ProcessingLevel 
 }
 
 /**
- * Validates a quality vector object.
- * @param vector - The vector to validate
- * @returns True if all dimensions are valid quality scores
- */
-export function isValidQualityVector(vector: unknown): vector is QualityVector {
-  if (!vector || typeof vector !== 'object') return false;
-  
-  const v = vector as QualityVector;
-  return QUALITY_TYPES.every(type => 
-    isValidQualityScore(v[type as keyof QualityVector] as number)
-  );
-}
-
-/**
  * Validates a source object.
  * @param source - The source to validate
  * @returns True if the source has required fields and valid values
@@ -209,6 +180,7 @@ export function isValidSource(source: unknown): source is Source {
     typeof s.id === 'string' && s.id.length > 0 &&
     typeof s.content === 'string' && s.content.length > 0 &&
     typeof s.system_time === 'string' &&
+    (s.narrative === undefined || typeof s.narrative === 'string') &&
     (s.contentType === undefined || typeof s.contentType === 'string') &&
     (s.occurred === undefined || typeof s.occurred === 'string') &&
     (s.perspective === undefined || isValidPerspective(s.perspective)) &&
@@ -222,22 +194,6 @@ export function isValidSource(source: unknown): source is Source {
 // ============================================================================
 // FACTORY FUNCTIONS
 // ============================================================================
-
-/**
- * Creates a new quality vector with default values.
- * @returns A quality vector with all dimensions set to 0.0
- */
-export function createQualityVector(): QualityVector {
-  return {
-    embodied: DEFAULTS.VECTOR_DIMENSION,
-    attentional: DEFAULTS.VECTOR_DIMENSION,
-    affective: DEFAULTS.VECTOR_DIMENSION,
-    purposive: DEFAULTS.VECTOR_DIMENSION,
-    spatial: DEFAULTS.VECTOR_DIMENSION,
-    temporal: DEFAULTS.VECTOR_DIMENSION,
-    intersubjective: DEFAULTS.VECTOR_DIMENSION
-  };
-}
 
 /**
  * Creates a new source with default values.

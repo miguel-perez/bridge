@@ -5,13 +5,21 @@ import type {
   ContentType,
   QualityType,
   QualityEvidence,
-  QualityVector,
   ExperientialQualities,
   Source,
   RecordType,
   BaseRecord,
   SourceRecord,
   StorageRecord
+} from './types.js';
+import {
+  isValidQualityScore,
+  isValidQualityType,
+  isValidPerspective,
+  isValidProcessingLevel,
+  isValidSource,
+  createSource,
+  createSourceRecord
 } from './types.js';
 
 describe('Core Types', () => {
@@ -79,58 +87,6 @@ describe('Core Types', () => {
     });
   });
 
-  describe('QualityVector interface', () => {
-    test('should accept valid QualityVector object', () => {
-      const vector: QualityVector = {
-        embodied: 0.1,
-        attentional: 0.2,
-        affective: 0.3,
-        purposive: 0.4,
-        spatial: 0.5,
-        temporal: 0.6,
-        intersubjective: 0.7
-      };
-      
-      expect(vector.embodied).toBe(0.1);
-      expect(vector.attentional).toBe(0.2);
-      expect(vector.affective).toBe(0.3);
-      expect(vector.purposive).toBe(0.4);
-      expect(vector.spatial).toBe(0.5);
-      expect(vector.temporal).toBe(0.6);
-      expect(vector.intersubjective).toBe(0.7);
-    });
-
-    test('should accept zero values', () => {
-      const zeroVector: QualityVector = {
-        embodied: 0.0,
-        attentional: 0.0,
-        affective: 0.0,
-        purposive: 0.0,
-        spatial: 0.0,
-        temporal: 0.0,
-        intersubjective: 0.0
-      };
-      
-      expect(zeroVector.embodied).toBe(0.0);
-      expect(zeroVector.intersubjective).toBe(0.0);
-    });
-
-    test('should accept maximum values', () => {
-      const maxVector: QualityVector = {
-        embodied: 1.0,
-        attentional: 1.0,
-        affective: 1.0,
-        purposive: 1.0,
-        spatial: 1.0,
-        temporal: 1.0,
-        intersubjective: 1.0
-      };
-      
-      expect(maxVector.embodied).toBe(1.0);
-      expect(maxVector.intersubjective).toBe(1.0);
-    });
-  });
-
   describe('ExperientialQualities interface', () => {
     test('should accept valid ExperientialQualities object', () => {
       const qualities: ExperientialQualities = {
@@ -145,35 +101,17 @@ describe('Core Types', () => {
             prominence: 0.6,
             manifestation: 'clear goal direction'
           }
-        ],
-        vector: {
-          embodied: 0.1,
-          attentional: 0.2,
-          affective: 0.8,
-          purposive: 0.6,
-          spatial: 0.0,
-          temporal: 0.0,
-          intersubjective: 0.0
-        }
+        ]
       };
       
       expect(qualities.qualities).toHaveLength(2);
-      expect(qualities.vector.affective).toBe(0.8);
-      expect(qualities.vector.purposive).toBe(0.6);
+      expect(qualities.qualities[0].type).toBe('affective');
+      expect(qualities.qualities[1].type).toBe('purposive');
     });
 
     test('should accept empty qualities array', () => {
       const qualities: ExperientialQualities = {
-        qualities: [],
-        vector: {
-          embodied: 0.0,
-          attentional: 0.0,
-          affective: 0.0,
-          purposive: 0.0,
-          spatial: 0.0,
-          temporal: 0.0,
-          intersubjective: 0.0
-        }
+        qualities: []
       };
       
       expect(qualities.qualities).toHaveLength(0);
@@ -197,11 +135,12 @@ describe('Core Types', () => {
       const source: Source = {
         id: 'complete-id',
         content: 'Complete test content',
+        narrative: 'Generated narrative that weaves content with qualities',
         contentType: 'text',
         system_time: '2024-01-15T10:30:00Z',
-        occurred: '2024-01-15T10:30:00Z',
+        occurred: '2024-01-15T10:00:00Z',
         perspective: 'I',
-        experiencer: 'TestUser',
+        experiencer: 'self',
         processing: 'during',
         crafted: false,
         experiential_qualities: {
@@ -209,34 +148,39 @@ describe('Core Types', () => {
             {
               type: 'affective',
               prominence: 0.8,
-              manifestation: 'feeling of excitement'
+              manifestation: 'feeling of joy'
             }
-          ],
-          vector: {
-            embodied: 0.0,
-            attentional: 0.0,
-            affective: 0.8,
-            purposive: 0.0,
-            spatial: 0.0,
-            temporal: 0.0,
-            intersubjective: 0.0
-          }
+          ]
         },
-        content_embedding: [0.1, 0.2, 0.3, 0.4, 0.5]
+        content_embedding: [0.1, 0.2, 0.3]
       };
       
       expect(source.id).toBe('complete-id');
+      expect(source.content).toBe('Complete test content');
+      expect(source.narrative).toBe('Generated narrative that weaves content with qualities');
       expect(source.contentType).toBe('text');
       expect(source.perspective).toBe('I');
-      expect(source.experiencer).toBe('TestUser');
+      expect(source.experiencer).toBe('self');
       expect(source.processing).toBe('during');
       expect(source.crafted).toBe(false);
-      expect(source.experiential_qualities).toBeDefined();
-      expect(source.content_embedding).toHaveLength(5);
+      expect(source.experiential_qualities?.qualities).toHaveLength(1);
+      expect(source.content_embedding).toHaveLength(3);
+    });
+
+    test('should accept Source with narrative only', () => {
+      const source: Source = {
+        id: 'narrative-only-id',
+        content: 'Fallback content',
+        narrative: 'Primary narrative content',
+        system_time: '2024-01-15T10:30:00Z'
+      };
+      
+      expect(source.narrative).toBe('Primary narrative content');
+      expect(source.content).toBe('Fallback content');
     });
   });
 
-  describe('Record types', () => {
+  describe('Storage types', () => {
     test('should define valid RecordType', () => {
       const recordType: RecordType = 'source';
       expect(recordType).toBe('source');
@@ -265,7 +209,7 @@ describe('Core Types', () => {
       expect(sourceRecord.content).toBe('Test content');
     });
 
-    test('should accept StorageRecord as SourceRecord', () => {
+    test('should accept StorageRecord union type', () => {
       const storageRecord: StorageRecord = {
         type: 'source',
         id: 'test-id',
@@ -278,45 +222,82 @@ describe('Core Types', () => {
     });
   });
 
-  describe('Type compatibility', () => {
-    test('should allow Source to be used as SourceRecord', () => {
-      const source: Source = {
+  describe('Validation functions', () => {
+    test('should validate quality scores', () => {
+      expect(isValidQualityScore(0.0)).toBe(true);
+      expect(isValidQualityScore(0.5)).toBe(true);
+      expect(isValidQualityScore(1.0)).toBe(true);
+      expect(isValidQualityScore(-0.1)).toBe(false);
+      expect(isValidQualityScore(1.1)).toBe(false);
+      expect(isValidQualityScore('0.5' as any)).toBe(false);
+    });
+
+    test('should validate quality types', () => {
+      expect(isValidQualityType('embodied')).toBe(true);
+      expect(isValidQualityType('attentional')).toBe(true);
+      expect(isValidQualityType('affective')).toBe(true);
+      expect(isValidQualityType('purposive')).toBe(true);
+      expect(isValidQualityType('spatial')).toBe(true);
+      expect(isValidQualityType('temporal')).toBe(true);
+      expect(isValidQualityType('intersubjective')).toBe(true);
+      expect(isValidQualityType('invalid')).toBe(false);
+    });
+
+    test('should validate perspectives', () => {
+      expect(isValidPerspective('I')).toBe(true);
+      expect(isValidPerspective('we')).toBe(true);
+      expect(isValidPerspective('you')).toBe(true);
+      expect(isValidPerspective('they')).toBe(true);
+      expect(isValidPerspective('custom')).toBe(true);
+    });
+
+    test('should validate processing levels', () => {
+      expect(isValidProcessingLevel('during')).toBe(true);
+      expect(isValidProcessingLevel('right-after')).toBe(true);
+      expect(isValidProcessingLevel('long-after')).toBe(true);
+      expect(isValidProcessingLevel('crafted')).toBe(true);
+      expect(isValidProcessingLevel('invalid')).toBe(false);
+    });
+
+    test('should validate source objects', () => {
+      const validSource = {
         id: 'test-id',
         content: 'Test content',
         system_time: '2024-01-15T10:30:00Z'
       };
       
-      const sourceRecord: SourceRecord = {
-        ...source,
-        type: 'source'
+      const invalidSource = {
+        id: '',
+        content: 'Test content',
+        system_time: '2024-01-15T10:30:00Z'
       };
       
-      expect(sourceRecord.type).toBe('source');
-      expect(sourceRecord.content).toBe('Test content');
+      expect(isValidSource(validSource)).toBe(true);
+      expect(isValidSource(invalidSource)).toBe(false);
+      expect(isValidSource(null)).toBe(false);
+      expect(isValidSource(undefined)).toBe(false);
+    });
+  });
+
+  describe('Factory functions', () => {
+    test('should create source with defaults', () => {
+      const source = createSource('Test content', 'test-id');
+      
+      expect(source.id).toBe('test-id');
+      expect(source.content).toBe('Test content');
+      expect(source.contentType).toBe('text');
+      expect(source.perspective).toBe('I');
+      expect(source.experiencer).toBe('self');
+      expect(source.processing).toBe('during');
+      expect(source.crafted).toBe(false);
     });
 
-    test('should allow QualityEvidence in ExperientialQualities', () => {
-      const evidence: QualityEvidence = {
-        type: 'affective',
-        prominence: 0.8,
-        manifestation: 'feeling of joy'
-      };
+    test('should create source record', () => {
+      const record = createSourceRecord('Test content', 'test-id');
       
-      const qualities: ExperientialQualities = {
-        qualities: [evidence],
-        vector: {
-          embodied: 0.0,
-          attentional: 0.0,
-          affective: 0.8,
-          purposive: 0.0,
-          spatial: 0.0,
-          temporal: 0.0,
-          intersubjective: 0.0
-        }
-      };
-      
-      expect(qualities.qualities[0]).toBe(evidence);
-      expect(qualities.qualities[0].type).toBe('affective');
+      expect(record.type).toBe('source');
+      expect(record.id).toBe('test-id');
+      expect(record.content).toBe('Test content');
     });
   });
 }); 

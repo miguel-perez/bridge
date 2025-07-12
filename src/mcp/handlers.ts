@@ -101,19 +101,24 @@ function formatMetadata(source: SourceRecord): string {
 
 /**
  * Formats content snippet (first 200 chars or full if short)
+ * Prefers narrative for display if available
  * 
  * @param content - The content to format
+ * @param narrative - Optional narrative to prefer over content
  * @param includeFullContent - Whether to include full content
  * @returns Formatted content string
  */
-function formatContent(content: string, includeFullContent?: boolean): string {
-  if (!content) return 'No content';
+function formatContent(content: string, narrative?: string, includeFullContent?: boolean): string {
+  // Prefer narrative for display if available
+  const displayText = narrative || content;
   
-  if (includeFullContent || content.length <= CONTENT_SNIPPET_LENGTH) {
-    return content;
+  if (!displayText) return 'No content';
+  
+  if (includeFullContent || displayText.length <= CONTENT_SNIPPET_LENGTH) {
+    return displayText;
   }
   
-  return content.substring(0, CONTENT_SNIPPET_LENGTH) + '...';
+  return displayText.substring(0, CONTENT_SNIPPET_LENGTH) + '...';
 }
 
 /**
@@ -186,10 +191,10 @@ export class MCPToolHandlers {
 ID: ${result.source.id}
 Occurred: ${formatDate(result.source.occurred || result.source.system_time)}
 
-Content: ${formatContent(result.source.content)}
+${result.source.narrative ? 'Narrative: ' : 'Content: '}${formatContent(result.source.content, result.source.narrative)}
 
 Experiential Analysis:
-${formatExperientialQualities(result.source.experiential_qualities || { qualities: [], vector: { embodied: 0, attentional: 0, affective: 0, purposive: 0, spatial: 0, temporal: 0, intersubjective: 0 } })}
+${formatExperientialQualities(result.source.experiential_qualities || { qualities: [] })}
 
 ${result.defaultsUsed.length > 0 ? `Defaults used: ${result.defaultsUsed.join(', ')}` : ''}`;
 
@@ -277,7 +282,7 @@ Reason: ${release.reason || 'No reason provided'}`;
         let resultText = `Result ${index + 1} (Relevance: ${relevancePercent}%)
 ID: ${result.id} | ${metadata}
 
-${formatContent(result.snippet, query.includeFullContent)}
+${formatContent(result.snippet, result.metadata?.narrative, query.includeFullContent)}
 
 Relevance: ${formatRelevanceBreakdown(result.relevance_breakdown)}`;
 
@@ -327,6 +332,7 @@ Relevance: ${formatRelevanceBreakdown(result.relevance_breakdown)}`;
       const updateInput = {
         id: update.source_id,
         content: update.content,
+        narrative: update.narrative,
         contentType: update.contentType,
         perspective: update.perspective,
         processing: update.processing,
@@ -356,9 +362,14 @@ Relevance: ${formatRelevanceBreakdown(result.relevance_breakdown)}`;
         content += `\n\nCorrected Content:\n${formatContent(result.source.content)}`;
       }
 
+      // Show updated narrative if narrative was changed
+      if (result.updatedFields.includes('narrative')) {
+        content += `\n\nCorrected Narrative:\n${formatContent(result.source.content, result.source.narrative)}`;
+      }
+
       // Show updated qualities if qualities were changed
       if (result.updatedFields.includes('experiential_qualities')) {
-        content += `\n\nCorrected Experiential Analysis:\n${formatExperientialQualities(result.source.experiential_qualities || { qualities: [], vector: { embodied: 0, attentional: 0, affective: 0, purposive: 0, spatial: 0, temporal: 0, intersubjective: 0 } })}`;
+        content += `\n\nCorrected Experiential Analysis:\n${formatExperientialQualities(result.source.experiential_qualities || { qualities: [] })}`;
       }
       
       results.push(content);

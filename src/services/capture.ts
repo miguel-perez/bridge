@@ -1,11 +1,11 @@
 /**
  * Capture service for Bridge experiential data.
- * Handles validation, vector generation, embedding, and storage of experiential sources.
+ * Handles validation, narrative embedding, and storage of experiential sources.
  */
 
 import { z } from 'zod';
 import { generateId, saveSource } from '../core/storage.js';
-import type { SourceRecord, ProcessingLevel, QualityVector } from '../core/types.js';
+import type { SourceRecord, ProcessingLevel } from '../core/types.js';
 import { parseOccurredDate } from '../utils/validation.js';
 import { embeddingService } from './embeddings.js';
 import { getVectorStore } from './vector-store.js';
@@ -34,10 +34,11 @@ export const QUALITY_TYPES = [
 
 /**
  * Zod schema for validating capture input.
- * Vector is optional since it can be generated from qualities.
+ * Narrative is optional but preferred for better searchability.
  */
 export const captureSchema = z.object({
   content: z.string().optional(),
+  narrative: z.string().optional(),
   contentType: z.string().optional().default(CAPTURE_DEFAULTS.CONTENT_TYPE),
   perspective: z.enum(['I', 'we', 'you', 'they']).optional().default(CAPTURE_DEFAULTS.PERSPECTIVE as 'I' | 'we' | 'you' | 'they'),
   processing: z.enum(['during', 'right-after', 'long-after', 'crafted']).optional().default(CAPTURE_DEFAULTS.PROCESSING as 'during' | 'right-after' | 'long-after' | 'crafted'),
@@ -50,23 +51,14 @@ export const captureSchema = z.object({
       prominence: z.number().min(0).max(1),
       manifestation: z.string(),
     })),
-    vector: z.object({
-      embodied: z.number().min(0).max(1),
-      attentional: z.number().min(0).max(1),
-      affective: z.number().min(0).max(1),
-      purposive: z.number().min(0).max(1),
-      spatial: z.number().min(0).max(1),
-      temporal: z.number().min(0).max(1),
-      intersubjective: z.number().min(0).max(1),
-    }).optional(),
   }),
 }).refine((data) => {
-  if (!data.content) {
-    throw new Error('Content must be provided');
+  if (!data.content && !data.narrative) {
+    throw new Error('Either content or narrative must be provided');
   }
   return true;
 }, {
-  message: 'Content must be provided',
+  message: 'Either content or narrative must be provided',
 });
 
 /**
@@ -74,6 +66,7 @@ export const captureSchema = z.object({
  */
 export interface CaptureInput {
   content?: string;
+  narrative?: string;
   contentType?: string;
   perspective?: 'I' | 'we' | 'you' | 'they';
   processing?: 'during' | 'right-after' | 'long-after' | 'crafted';
@@ -86,7 +79,6 @@ export interface CaptureInput {
       prominence: number;
       manifestation: string;
     }>;
-    vector?: QualityVector;
   };
 }
 
@@ -96,35 +88,6 @@ export interface CaptureInput {
 export interface CaptureResult {
   source: SourceRecord;
   defaultsUsed: string[];
-}
-
-// ============================================================================
-// QUALITY VECTOR GENERATION
-// ============================================================================
-
-/**
- * Generates a quality vector from an array of qualities.
- * @param qualities - Array of quality evidence
- * @param providedVector - Optional base vector to override
- * @returns Quality vector with all dimensions
- */
-function generateQualityVector(
-  qualities: Array<{ type: typeof QUALITY_TYPES[number]; prominence: number }>,
-  providedVector?: QualityVector
-): QualityVector {
-  const vector: QualityVector = providedVector ? { ...providedVector } : {
-    embodied: 0,
-    attentional: 0,
-    affective: 0,
-    purposive: 0,
-    spatial: 0,
-    temporal: 0,
-    intersubjective: 0,
-  };
-  for (const quality of qualities) {
-    vector[quality.type] = quality.prominence;
-  }
-  return vector;
 }
 
 // ============================================================================
@@ -163,34 +126,24 @@ export class CaptureService {
     const processing = validatedInput.processing;
     const experiencer = validatedInput.experiencer;
 
-    // Process experiential qualities - generate vector if not provided
-    let processedExperientialQualities: import('../core/types.js').ExperientialQualities;
-    if (validatedInput.experiential_qualities.qualities) {
-      const generatedVector = generateQualityVector(validatedInput.experiential_qualities.qualities, validatedInput.experiential_qualities.vector);
-      processedExperientialQualities = {
-        qualities: validatedInput.experiential_qualities.qualities,
-        vector: generatedVector,
-      };
-    } else if (validatedInput.experiential_qualities.vector) {
-      processedExperientialQualities = {
-        qualities: [],
-        vector: validatedInput.experiential_qualities.vector,
-      };
-    } else {
-      throw new Error('Experiential qualities analysis is required. The AI assistant must analyze the content and provide quality scores. Example: { experiential_qualities: { qualities: [ { type: "embodied", prominence: 0.7, manifestation: "tense shoulders" }, ... ] } }');
-    }
+    // Process experiential qualities - no vector generation needed
+    const processedExperientialQualities: import('../core/types.js').ExperientialQualities = {
+      qualities: validatedInput.experiential_qualities.qualities,
+    };
 
-    // Generate embedding for content
+    // Generate embedding from narrative (preferred) or content
     let contentEmbedding: number[] | undefined;
     try {
-      contentEmbedding = await embeddingService.generateEmbedding(validatedInput.content!);
+      const textToEmbed = validatedInput.narrative || validatedInput.content!;
+      contentEmbedding = await embeddingService.generateEmbedding(textToEmbed);
     } catch (error) {
       // Silently handle embedding generation errors in MCP context
     }
 
     const source = await saveSource({
       id: generateId('src'),
-      content: validatedInput.content!,
+      content: validatedInput.content || validatedInput.narrative!,  // Ensure content exists
+      narrative: validatedInput.narrative,
       contentType: validatedInput.contentType,
       system_time: new Date().toISOString(),
       occurred: occurredDate || new Date().toISOString(),

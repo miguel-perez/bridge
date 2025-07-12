@@ -83,8 +83,8 @@ describe('EnrichService', () => {
       }
     });
     expect(result.source.experiential_qualities?.qualities.length).toBe(2);
-    expect(result.source.experiential_qualities?.vector.spatial).toBe(0.8);
-    expect(result.source.experiential_qualities?.vector.affective).toBe(0.2);
+    expect(result.source.experiential_qualities?.qualities[0].type).toBe('spatial');
+    expect(result.source.experiential_qualities?.qualities[1].type).toBe('affective');
     expect(result.updatedFields).toContain('experiential_qualities');
   });
 
@@ -141,7 +141,6 @@ describe('EnrichService', () => {
         }
       }
     });
-    expect(result.source.experiential_qualities?.vector.affective).toBe(0.3);
     expect(result.source.experiential_qualities?.qualities.length).toBe(0);
   });
 
