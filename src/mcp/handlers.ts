@@ -303,17 +303,17 @@ Reason: ${release.reason || 'No reason provided'}`;
         const relevancePercent = (result.relevance_score * 100).toFixed(RELEVANCE_PERCENT_PRECISION);
         const metadata = result.metadata ? formatMetadata(result.metadata as SourceRecord) : 'Unknown metadata';
         
-        let resultText = `Result ${index + 1} (Relevance: ${relevancePercent}%)
+        // Get emoji and narrative
+        const emoji = result.metadata?.experience?.emoji || '';
+        const narrative = result.metadata?.experience?.narrative || '';
+        const emojiAndNarrative = emoji ? `${emoji} ${narrative}` : narrative;
+        
+        const resultText = `Result ${index + 1} (Relevance: ${relevancePercent}%)
+${emojiAndNarrative ? emojiAndNarrative + '\n' : ''}
+${formatContent(result.snippet, undefined, query.includeFullContent)}
+
 ID: ${result.id} | ${metadata}
-
-${formatContent(result.snippet, result.metadata?.experience?.narrative, query.includeFullContent)}
-
 Relevance: ${formatRelevanceBreakdown(result.relevance_breakdown)}`;
-
-        // Add qualities if available and includeContext is true
-        if (query.includeContext && result.metadata?.experience) {
-          resultText += `\n\nQualities:\n${formatExperience(result.metadata.experience)}`;
-        }
 
         return {
           type: 'text',
