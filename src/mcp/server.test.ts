@@ -11,6 +11,8 @@ import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
 import { join } from 'path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { tmpdir } from 'os';
+import { mkdtempSync, rmSync } from 'fs';
 
 // Use process.cwd() to get the project root and build relative paths
 const projectRoot = process.cwd();
@@ -20,8 +22,12 @@ const distPath = join(projectRoot, 'dist', 'index.js');
 describe('MCP Server Protocol Compliance', () => {
   let client: Client;
   let transport: StdioClientTransport;
+  let tempDir: string;
 
   beforeEach(async () => {
+    // Create a temporary directory for test data
+    tempDir = mkdtempSync(join(tmpdir(), 'bridge-test-'));
+    
     client = new Client({ 
       name: "bridge-mcp-test", 
       version: "1.0.0" 
@@ -34,6 +40,13 @@ describe('MCP Server Protocol Compliance', () => {
     } catch (error) {
       // Ignore cleanup errors
     }
+    
+    // Clean up temporary directory
+    try {
+      rmSync(tempDir, { recursive: true, force: true });
+    } catch (error) {
+      // Ignore cleanup errors
+    }
   }, 10000);
 
   describe('End-to-End Connection Tests', () => {
@@ -42,7 +55,11 @@ describe('MCP Server Protocol Compliance', () => {
       transport = new StdioClientTransport({ 
         command: "node", 
         args: [distPath],
-        env: { ...process.env, NODE_ENV: 'test' }
+        env: { 
+          ...process.env, 
+          NODE_ENV: 'test',
+          BRIDGE_FILE_PATH: join(tempDir, 'bridge.json')
+        }
       });
       
       await client.connect(transport);
@@ -63,7 +80,11 @@ describe('MCP Server Protocol Compliance', () => {
       transport = new StdioClientTransport({ 
         command: "node", 
         args: [distPath],
-        env: { ...process.env, NODE_ENV: 'test' }
+        env: { 
+          ...process.env, 
+          NODE_ENV: 'test',
+          BRIDGE_FILE_PATH: join(tempDir, 'bridge.json')
+        }
       });
       
       await client.connect(transport);
@@ -95,7 +116,11 @@ describe('MCP Server Protocol Compliance', () => {
       transport = new StdioClientTransport({ 
         command: "node", 
         args: [distPath],
-        env: { ...process.env, NODE_ENV: 'test' }
+        env: { 
+          ...process.env, 
+          NODE_ENV: 'test',
+          BRIDGE_FILE_PATH: join(tempDir, 'bridge.json')
+        }
       });
       
       await client.connect(transport);
@@ -113,7 +138,11 @@ describe('MCP Server Protocol Compliance', () => {
       transport = new StdioClientTransport({ 
         command: "node", 
         args: [distPath],
-        env: { ...process.env, NODE_ENV: 'test' }
+        env: { 
+          ...process.env, 
+          NODE_ENV: 'test',
+          BRIDGE_FILE_PATH: join(tempDir, 'bridge.json')
+        }
       });
       
       await client.connect(transport);
@@ -133,7 +162,11 @@ describe('MCP Server Protocol Compliance', () => {
       transport = new StdioClientTransport({ 
         command: "node", 
         args: [distPath],
-        env: { ...process.env, NODE_ENV: 'test' }
+        env: { 
+          ...process.env, 
+          NODE_ENV: 'test',
+          BRIDGE_FILE_PATH: join(tempDir, 'bridge.json')
+        }
       });
       
       await client.connect(transport);
@@ -156,7 +189,11 @@ describe('MCP Server Protocol Compliance', () => {
       transport = new StdioClientTransport({ 
         command: "node", 
         args: [distPath],
-        env: { ...process.env, NODE_ENV: 'test' }
+        env: { 
+          ...process.env, 
+          NODE_ENV: 'test',
+          BRIDGE_FILE_PATH: join(tempDir, 'bridge.json')
+        }
       });
       
       await client.connect(transport);
@@ -185,7 +222,11 @@ describe('MCP Server Protocol Compliance', () => {
       transport = new StdioClientTransport({ 
         command: "node", 
         args: [distPath],
-        env: { ...process.env, NODE_ENV: 'test' }
+        env: { 
+          ...process.env, 
+          NODE_ENV: 'test',
+          BRIDGE_FILE_PATH: join(tempDir, 'bridge.json')
+        }
       });
       
       await client.connect(transport);
@@ -219,7 +260,11 @@ describe('MCP Server Protocol Compliance', () => {
       transport = new StdioClientTransport({ 
         command: "node", 
         args: [distPath],
-        env: { ...process.env, NODE_ENV: 'test' }
+        env: { 
+          ...process.env, 
+          NODE_ENV: 'test',
+          BRIDGE_FILE_PATH: join(tempDir, 'bridge.json')
+        }
       });
       
       await client.connect(transport);
@@ -240,7 +285,11 @@ describe('MCP Server Protocol Compliance', () => {
       transport = new StdioClientTransport({ 
         command: "node", 
         args: [distPath],
-        env: { ...process.env, NODE_ENV: 'test' }
+        env: { 
+          ...process.env, 
+          NODE_ENV: 'test',
+          BRIDGE_FILE_PATH: join(tempDir, 'bridge.json')
+        }
       });
       
       // This test specifically checks that the initialize handler works
@@ -254,7 +303,11 @@ describe('MCP Server Protocol Compliance', () => {
       transport = new StdioClientTransport({ 
         command: "node", 
         args: [distPath],
-        env: { ...process.env, NODE_ENV: 'test' }
+        env: { 
+          ...process.env, 
+          NODE_ENV: 'test',
+          BRIDGE_FILE_PATH: join(tempDir, 'bridge.json')
+        }
       });
       
       await client.connect(transport);

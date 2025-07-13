@@ -40,19 +40,19 @@
   "tools": [
     {
       "name": "capture",
-      "description": "Preserve experiences exactly as they were shared with you, maintaining their authentic voice through seven-dimensional phenomenological analysis (embodied, attentional, affective, purposive, spatial, temporal, intersubjective). The 'narrative' field is REQUIRED and must be a concise experiential summary (max 200 chars) written in the experiencer's voice using present tense and active language."
+      "description": "Preserve one or more experiences exactly as they were shared with you, maintaining their authentic voice through seven-dimensional phenomenological analysis (embodied, attentional, affective, purposive, spatial, temporal, intersubjective). Each experience requires a narrative field (max 200 chars) written in the experiencer's voice using present tense and active language, plus an emoji for visual summary."
     },
     {
       "name": "search",
-      "description": "Find and explore captured experiences through text, phenomenological patterns, meaning, and context to understand journeys and connections"
+      "description": "Find and explore captured experiences through text, phenomenological patterns, meaning, and context. Supports multiple queries with filtering by experiencer, perspective, processing level, and date ranges. Results can be sorted by relevance, system time, or occurrence time."
     },
     {
       "name": "update",
-      "description": "Correct or update existing experiences when mistakes were made during capture, maintaining the integrity of the experiential record"
+      "description": "Correct or update existing experiences when mistakes were made during capture, maintaining the integrity of the experiential record. Supports partial updates to any field including content, experience analysis, metadata, and can regenerate embeddings when needed."
     },
     {
       "name": "release",
-      "description": "Let go of experiences that no longer need to be held, returning them to the flow of memory with gratitude"
+      "description": "Let go of experiences that no longer need to be held, returning them to the flow of memory with gratitude. Supports releasing multiple experiences at once with reasons for each release."
     }
   ],
   

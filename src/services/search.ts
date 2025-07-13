@@ -151,7 +151,7 @@ function calculateTextRelevance(record: SourceRecord, query: string): number {
   
   const queryLower = query.toLowerCase();
   const contentLower = record.content.toLowerCase();
-  const narrativeLower = record.narrative?.toLowerCase() || '';
+  const narrativeLower = record.experience?.narrative?.toLowerCase() || '';
   
   // Check for exact phrase match in content or narrative (highest score)
   if (contentLower.includes(queryLower) || narrativeLower.includes(queryLower)) {
@@ -315,11 +315,11 @@ async function applyTemporalFilter(records: SourceRecord[], filter: string | { s
   if (typeof filter === 'string') {
     // Single date filter - find records on or after this date
     const filterDate = toUTCDateString(filter);
-    return records.filter(record => {
+      return records.filter(record => {
       const recordDate = field === 'occurred' ? (record.occurred || record.system_time) : record.system_time;
       return recordDate >= filterDate;
-    });
-  } else {
+      });
+    } else {
     // Date range filter
     const startDate = filter.start ? toUTCDateString(filter.start) : null;
     const endDate = filter.end ? toUTCDateString(filter.end) : null;
@@ -330,8 +330,8 @@ async function applyTemporalFilter(records: SourceRecord[], filter: string | { s
       if (startDate && recordDate < startDate) return false;
       if (endDate && recordDate > endDate) return false;
       
-      return true;
-    });
+        return true;
+      });
   }
 }
 
@@ -347,7 +347,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
     errors: [],
     debug_logs: []
   };
-  
+
   const addDebugLog = (message: string, data?: any): void => {
     if (DEBUG_MODE) {
       const log = debugLog(message, data);
@@ -363,11 +363,11 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
     
     // Start with all records
     let filteredRecords = allRecords;
-    
+  
     // Apply basic filters
     if (input.type && input.type.length > 0) {
       const beforeCount = filteredRecords.length;
-      filteredRecords = filteredRecords.filter(record => input.type!.includes(record.type));
+        filteredRecords = filteredRecords.filter(record => input.type!.includes(record.type));
       const afterCount = filteredRecords.length;
       debugInfo.filter_breakdown!.type_filter = beforeCount - afterCount;
       addDebugLog(`Type filter applied: ${beforeCount} -> ${afterCount} records`);
@@ -375,7 +375,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
     
     if (input.experiencer) {
       const beforeCount = filteredRecords.length;
-      filteredRecords = filteredRecords.filter(record => record.experiencer === input.experiencer);
+        filteredRecords = filteredRecords.filter(record => record.experiencer === input.experiencer);
       const afterCount = filteredRecords.length;
       debugInfo.filter_breakdown!.experiencer_filter = beforeCount - afterCount;
       addDebugLog(`Experiencer filter applied: ${beforeCount} -> ${afterCount} records`);
@@ -383,7 +383,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
     
     if (input.perspective) {
       const beforeCount = filteredRecords.length;
-      filteredRecords = filteredRecords.filter(record => record.perspective === input.perspective);
+        filteredRecords = filteredRecords.filter(record => record.perspective === input.perspective);
       const afterCount = filteredRecords.length;
       debugInfo.filter_breakdown!.perspective_filter = beforeCount - afterCount;
       addDebugLog(`Perspective filter applied: ${beforeCount} -> ${afterCount} records`);
@@ -391,7 +391,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
     
     if (input.processing) {
       const beforeCount = filteredRecords.length;
-      filteredRecords = filteredRecords.filter(record => record.processing === input.processing);
+        filteredRecords = filteredRecords.filter(record => record.processing === input.processing);
       const afterCount = filteredRecords.length;
       debugInfo.filter_breakdown!.processing_filter = beforeCount - afterCount;
       addDebugLog(`Processing filter applied: ${beforeCount} -> ${afterCount} records`);
@@ -399,7 +399,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
     
     if (input.contentType) {
       const beforeCount = filteredRecords.length;
-      filteredRecords = filteredRecords.filter(record => record.contentType === input.contentType);
+        filteredRecords = filteredRecords.filter(record => record.contentType === input.contentType);
       const afterCount = filteredRecords.length;
       debugInfo.filter_breakdown!.contentType_filter = beforeCount - afterCount;
       addDebugLog(`Content type filter applied: ${beforeCount} -> ${afterCount} records`);
@@ -407,7 +407,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
     
     if (input.crafted !== undefined) {
       const beforeCount = filteredRecords.length;
-      filteredRecords = filteredRecords.filter(record => record.crafted === input.crafted);
+        filteredRecords = filteredRecords.filter(record => record.crafted === input.crafted);
       const afterCount = filteredRecords.length;
       debugInfo.filter_breakdown!.crafted_filter = beforeCount - afterCount;
       addDebugLog(`Crafted filter applied: ${beforeCount} -> ${afterCount} records`);
@@ -424,7 +424,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
     
     if (input.occurred) {
       const beforeCount = filteredRecords.length;
-      filteredRecords = await applyTemporalFilter(filteredRecords, input.occurred, 'occurred');
+          filteredRecords = await applyTemporalFilter(filteredRecords, input.occurred, 'occurred');
       const afterCount = filteredRecords.length;
       debugInfo.filter_breakdown!.temporal_filter = (debugInfo.filter_breakdown!.temporal_filter || 0) + (beforeCount - afterCount);
       addDebugLog(`Occurred filter applied: ${beforeCount} -> ${afterCount} records`);
@@ -565,32 +565,32 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
     // Apply sorting (default to occurred date for recency)
     const sortType = input.sort || 'occurred';
     addDebugLog(`Applying sort: ${sortType}`);
-    finalRecords.sort((a, b) => {
+      finalRecords.sort((a, b) => {
       switch (sortType) {
-        case 'system_time': {
-          const aTime = new Date(a.system_time).getTime();
-          const bTime = new Date(b.system_time).getTime();
-          return bTime - aTime; // Descending
+          case 'system_time': {
+            const aTime = new Date(a.system_time).getTime();
+            const bTime = new Date(b.system_time).getTime();
+            return bTime - aTime; // Descending
+          }
+          case 'occurred': {
+            const aTime = new Date(a.occurred || a.system_time).getTime();
+            const bTime = new Date(b.occurred || b.system_time).getTime();
+            return bTime - aTime; // Descending
+          }
+          case 'relevance':
+          default: {
+            // Sort by relevance score
+            return b._relevance.score - a._relevance.score;
+          }
         }
-        case 'occurred': {
-          const aTime = new Date(a.occurred || a.system_time).getTime();
-          const bTime = new Date(b.occurred || b.system_time).getTime();
-          return bTime - aTime; // Descending
-        }
-        case 'relevance':
-        default: {
-          // Sort by relevance score
-          return b._relevance.score - a._relevance.score;
-        }
-      }
-    });
+      });
 
     // Apply pagination (offset and limit)
     if (input.offset && input.offset > 0) {
       addDebugLog(`Applying offset: ${input.offset}`);
       finalRecords.splice(0, input.offset);
     }
-    
+
     if (input.limit) {
       addDebugLog(`Applying limit: ${input.limit}`);
       finalRecords.splice(input.limit);
@@ -609,7 +609,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
     const results: SearchServiceResult[] = finalRecords.map(record => ({
       id: record.id,
       type: record.type,
-      snippet: input.includeFullContent ? (record.narrative || record.content) : (record.narrative || record.content).substring(0, 200) + ((record.narrative || record.content).length > 200 ? '...' : ''),
+      snippet: input.includeFullContent ? (record.experience?.narrative || record.content) : (record.experience?.narrative || record.content).substring(0, 200) + ((record.experience?.narrative || record.content).length > 200 ? '...' : ''),
       metadata: input.includeContext ? {
         contentType: record.contentType,
         perspective: record.perspective,
@@ -618,8 +618,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
         crafted: record.crafted,
         system_time: record.system_time,
         occurred: record.occurred,
-        experience: record.experience,
-        narrative: record.narrative
+        experience: record.experience
       } : undefined,
       relevance_score: record._relevance.score,
       relevance_breakdown: record._relevance.breakdown

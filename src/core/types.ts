@@ -63,14 +63,16 @@ export interface QualityEvidence {
 }
 
 /**
- * Complete experiential analysis of captured data, plus emoji.
- * Contains specific quality evidence for narrative generation and an emoji summary.
+ * Complete experiential analysis of captured data, plus emoji and narrative.
+ * Contains specific quality evidence, emoji summary, and narrative description.
  */
 export interface Experience {
   /** Specific evidence of experiential qualities */
   qualities: QualityEvidence[];
   /** Emoji representing the experience (required) */
   emoji: string;
+  /** Concise experiential summary in the experiencer's voice (required) */
+  narrative: string;
 }
 
 /**
@@ -82,8 +84,6 @@ export interface Source {
   id: string;
   /** The captured content (text, audio transcript, etc.) */
   content: string;
-  /** Concise experiential summary in the experiencer's voice */
-  narrative: string;
   /** Type of content being captured */
   contentType?: ContentType;
   /** System timestamp when captured (ISO format) */
@@ -102,7 +102,7 @@ export interface Source {
   crafted?: boolean;
   
   // Analysis fields
-  /** Experience analysis results (qualities + emoji) */
+  /** Experience analysis results (qualities + emoji + narrative) */
   experience?: Experience;
   /** Vector embedding for semantic search (generated from narrative) */
   narrative_embedding?: number[];
@@ -182,7 +182,9 @@ export function isValidSource(source: unknown): source is Source {
     typeof s.id === 'string' && s.id.length > 0 &&
     typeof s.content === 'string' && s.content.length > 0 &&
     typeof s.system_time === 'string' &&
-    typeof s.narrative === 'string' && s.narrative.length > 0 && s.narrative.length <= 200 &&
+    (s.experience === undefined || (
+      typeof s.experience.narrative === 'string' && s.experience.narrative.length > 0 && s.experience.narrative.length <= 200
+    )) &&
     (s.contentType === undefined || typeof s.contentType === 'string') &&
     (s.occurred === undefined || typeof s.occurred === 'string') &&
     (s.perspective === undefined || isValidPerspective(s.perspective)) &&
@@ -213,7 +215,11 @@ export function createSource(content: string, id?: string): Source {
     experiencer: DEFAULTS.EXPERIENCER,
     processing: DEFAULTS.PROCESSING,
     crafted: DEFAULTS.CRAFTED,
-    narrative: '' // Initialize narrative with an empty string
+    experience: {
+      qualities: [],
+      emoji: '',
+      narrative: ''
+    }
   };
 }
 

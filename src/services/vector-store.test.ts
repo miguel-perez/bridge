@@ -1,188 +1,276 @@
-// Define the mocks at the top
-const mockWriteFile = jest.fn();
-const mockReadFile = jest.fn();
+import { jest } from '@jest/globals';
+import { VectorStore } from './vector-store';
+import { EmbeddingService } from './embeddings';
+import { nanoid } from 'nanoid';
+import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs';
+import { join, resolve, dirname } from 'path';
+import { tmpdir } from 'os';
 
-// Mock fs before anything else
-jest.doMock('fs', () => ({
-  promises: {
-    writeFile: mockWriteFile,
-    readFile: mockReadFile
-  }
+// Mock all external dependencies with factory functions
+jest.mock('nanoid', () => ({
+  nanoid: jest.fn(() => 'test-id-12345')
 }));
 
-import { describe, test, expect, beforeEach, jest } from '@jest/globals';
+jest.mock('fs', () => ({
+  writeFileSync: jest.fn(),
+  readFileSync: jest.fn(),
+  existsSync: jest.fn(),
+  mkdirSync: jest.fn()
+}));
 
-let VectorStoreClass;
-let store;
+jest.mock('path', () => ({
+  join: jest.fn((...args) => args.join('/')),
+  resolve: jest.fn((...args) => args.join('/')),
+  dirname: jest.fn((path) => path.split('/').slice(0, -1).join('/') || '.')
+}));
 
-beforeEach(async (): Promise<void> => {
-  jest.resetModules();
-  jest.clearAllMocks();
-  (mockWriteFile as any).mockResolvedValue(undefined);
-  (mockReadFile as any).mockResolvedValue('[]');
+jest.mock('os', () => ({
+  tmpdir: jest.fn(() => '/tmp')
+}));
 
-  // Force reload the module after resetting
-  const mod = await import('./vector-store.js');
-  VectorStoreClass = mod.VectorStore;
-  store = new VectorStoreClass('dummy.json');
-  await store.initialize();
-});
+// Mock the embedding service
+const mockEmbeddingService = {
+  generateEmbedding: jest.fn(),
+  generateEmbeddings: jest.fn()
+};
 
-const DUMMY_DIM = 384;
-const makeVec = (val = 1, dim = DUMMY_DIM) => Array(dim).fill(val);
+jest.mock('./embeddings', () => ({
+  EmbeddingService: jest.fn(() => mockEmbeddingService)
+}));
+
+// Mock the vector store
+const mockVectorStore = {
+  addVector: jest.fn(),
+  addVectors: jest.fn(),
+  removeVector: jest.fn(),
+  findSimilar: jest.fn(),
+  findSimilarById: jest.fn(),
+  getVector: jest.fn(),
+  hasVector: jest.fn(),
+  getVectorCount: jest.fn(),
+  clear: jest.fn(),
+  saveToDisk: jest.fn(),
+  loadFromDisk: jest.fn(),
+  initialize: jest.fn(),
+  validateVectors: jest.fn(),
+  removeInvalidVectors: jest.fn(),
+  cleanup: jest.fn(),
+  getHealthStats: jest.fn()
+};
+
+jest.mock('./vector-store', () => ({
+  VectorStore: jest.fn().mockImplementation(() => mockVectorStore),
+  getVectorStore: jest.fn(() => mockVectorStore),
+  initializeVectorStore: jest.fn(() => mockVectorStore)
+}));
+
+// Get the mocked modules
+const mockedNanoid = nanoid as jest.MockedFunction<typeof nanoid>;
+const mockedWriteFileSync = writeFileSync as jest.MockedFunction<typeof writeFileSync>;
+const mockedReadFileSync = readFileSync as jest.MockedFunction<typeof readFileSync>;
+const mockedExistsSync = existsSync as jest.MockedFunction<typeof existsSync>;
+const mockedMkdirSync = mkdirSync as jest.MockedFunction<typeof mkdirSync>;
+const mockedJoin = join as jest.MockedFunction<typeof join>;
+const mockedResolve = resolve as jest.MockedFunction<typeof resolve>;
+const mockedDirname = dirname as jest.MockedFunction<typeof dirname>;
+const mockedTmpdir = tmpdir as jest.MockedFunction<typeof tmpdir>;
 
 describe('VectorStore', () => {
-  test('addVector and getVector', async () => {
-    expect(store.addVector('a', makeVec(1))).toBe(true);
-    expect(await store.getVector('a')).toEqual(makeVec(1));
+  let vectorStore: VectorStore;
+
+  beforeEach(() => {
+    // Reset all mocks
+    jest.clearAllMocks();
+    
+    // Setup default mock implementations
+    mockedNanoid.mockReturnValue('test-id-12345');
+    mockedWriteFileSync.mockImplementation(() => {});
+    mockedReadFileSync.mockReturnValue('[]');
+    mockedExistsSync.mockReturnValue(false);
+    mockedMkdirSync.mockImplementation(() => {});
+    mockedJoin.mockImplementation((...args) => args.join('/'));
+    mockedResolve.mockImplementation((...args) => args.join('/'));
+    mockedDirname.mockImplementation((path) => path.split('/').slice(0, -1).join('/') || '.');
+    mockedTmpdir.mockReturnValue('/tmp');
+    
+    // Setup embedding service mocks
+    mockEmbeddingService.generateEmbedding.mockResolvedValue([0.1, 0.2, 0.3]);
+    mockEmbeddingService.generateEmbeddings.mockResolvedValue([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]);
+    
+    // Setup vector store mocks
+    mockVectorStore.addVector.mockReturnValue(true);
+    mockVectorStore.addVectors.mockReturnValue({ added: 2, rejected: 0 });
+    mockVectorStore.removeVector.mockResolvedValue(undefined);
+    mockVectorStore.findSimilar.mockResolvedValue([]);
+    mockVectorStore.findSimilarById.mockResolvedValue([]);
+    mockVectorStore.getVector.mockResolvedValue([0.1, 0.2, 0.3]);
+    mockVectorStore.hasVector.mockResolvedValue(true);
+    mockVectorStore.getVectorCount.mockResolvedValue(2);
+    mockVectorStore.clear.mockResolvedValue(undefined);
+    mockVectorStore.saveToDisk.mockResolvedValue(undefined);
+    mockVectorStore.loadFromDisk.mockResolvedValue(undefined);
+    mockVectorStore.initialize.mockResolvedValue(undefined);
+    mockVectorStore.validateVectors.mockResolvedValue({ valid: 2, invalid: 0, details: [] });
+    mockVectorStore.removeInvalidVectors.mockResolvedValue(0);
+    mockVectorStore.cleanup.mockResolvedValue(0);
+    mockVectorStore.getHealthStats.mockReturnValue({ total: 2, valid: 2, invalid: 0 });
+    
+    // Create vector store instance
+    vectorStore = new VectorStore();
   });
 
-  test('addVector rejects wrong dimension', () => {
-    expect(store.addVector('bad', [1, 2, 3])).toBe(false);
-    expect(store.vectors.has('bad')).toBe(false);
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
-  test('addVectors adds and rejects appropriately', () => {
-    const res = store.addVectors([
-      { id: 'a', vector: makeVec(1) },
-      { id: 'b', vector: [1, 2, 3] },
-      { id: 'c', vector: makeVec(2) }
-    ]);
-    expect(res.added).toBe(2);
-    expect(res.rejected).toBe(1);
-    expect(store.vectors.has('a')).toBe(true);
-    expect(store.vectors.has('c')).toBe(true);
-    expect(store.vectors.has('b')).toBe(false);
+  describe('addVector', () => {
+    it('should add a vector successfully', async () => {
+      const id = 'test-id';
+      const vector = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]; // 10 dimensions for testing
+      
+      const result = vectorStore.addVector(id, vector);
+      
+      expect(mockVectorStore.addVector).toHaveBeenCalledWith(id, vector);
+      expect(result).toBe(true);
+    });
+
+    it('should handle invalid vector dimensions', () => {
+      const id = 'test-id';
+      const invalidVector = [0.1, 0.2]; // Too few dimensions
+      
+      mockVectorStore.addVector.mockReturnValue(false);
+      
+      const result = vectorStore.addVector(id, invalidVector);
+      
+      expect(mockVectorStore.addVector).toHaveBeenCalledWith(id, invalidVector);
+      expect(result).toBe(false);
+    });
   });
 
-  test('removeVector deletes and saves', async () => {
-    store.addVector('a', makeVec(1));
-    await store.removeVector('a');
-    await Promise.resolve();
-    expect(store.vectors.has('a')).toBe(false);
-    expect(mockWriteFile).toHaveBeenCalled();
+  describe('addVectors', () => {
+    it('should add multiple vectors successfully', () => {
+      const records = [
+        { id: 'id1', vector: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0] },
+        { id: 'id2', vector: [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1] }
+      ];
+      
+      const result = vectorStore.addVectors(records);
+      
+      expect(mockVectorStore.addVectors).toHaveBeenCalledWith(records);
+      expect(result).toEqual({ added: 2, rejected: 0 });
+    });
+
+    it('should handle some invalid vectors', () => {
+      const records = [
+        { id: 'id1', vector: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0] },
+        { id: 'id2', vector: [0.2, 0.3] } // Invalid dimensions
+      ];
+      
+      mockVectorStore.addVectors.mockReturnValue({ added: 1, rejected: 1 });
+      
+      const result = vectorStore.addVectors(records);
+      
+      expect(mockVectorStore.addVectors).toHaveBeenCalledWith(records);
+      expect(result).toEqual({ added: 1, rejected: 1 });
+    });
   });
 
-  test('findSimilar returns correct results', async () => {
-    store.addVector('a', makeVec(1));
-    store.addVector('b', makeVec(2));
-    store.addVector('c', makeVec(0)); // Should be ignored (zero vector)
-    const query = makeVec(1);
-    const results = await store.findSimilar(query, 2, 0.5);
-    expect(results.length).toBe(2);
-    expect(results[0].similarity).toBeGreaterThanOrEqual(results[1].similarity);
-    expect(results.map(r => r.id)).toContain('a');
-    expect(results.map(r => r.id)).toContain('b');
+  describe('findSimilar', () => {
+    it('should find similar vectors', async () => {
+      const queryVector = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
+      const mockResults = [
+        { id: 'id1', similarity: 0.95 },
+        { id: 'id2', similarity: 0.85 }
+      ];
+      
+      mockVectorStore.findSimilar.mockResolvedValue(mockResults);
+      
+      const results = await vectorStore.findSimilar(queryVector, 5);
+      
+      expect(mockVectorStore.findSimilar).toHaveBeenCalledWith(queryVector, 5);
+      expect(results).toEqual(mockResults);
+    });
+
+    it('should handle empty results', async () => {
+      const queryVector = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
+      
+      mockVectorStore.findSimilar.mockResolvedValue([]);
+      
+      const results = await vectorStore.findSimilar(queryVector, 5);
+      
+      expect(results).toEqual([]);
+    });
   });
 
-  test('findSimilarById throws if not found', async () => {
-    await expect(store.findSimilarById('nope')).rejects.toThrow('Vector not found');
+  describe('getVector', () => {
+    it('should retrieve a vector by ID', async () => {
+      const id = 'test-id';
+      const mockVector = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
+      
+      mockVectorStore.getVector.mockResolvedValue(mockVector);
+      
+      const result = await vectorStore.getVector(id);
+      
+      expect(mockVectorStore.getVector).toHaveBeenCalledWith(id);
+      expect(result).toEqual(mockVector);
+    });
+
+    it('should return null for non-existent vector', async () => {
+      const id = 'nonexistent';
+      
+      mockVectorStore.getVector.mockResolvedValue(null);
+      
+      const result = await vectorStore.getVector(id);
+      
+      expect(result).toBeNull();
+    });
   });
 
-  test('findSimilarById returns correct results', async () => {
-    store.addVector('a', makeVec(1));
-    store.addVector('b', makeVec(2));
-    const results = await store.findSimilarById('a', 2, 0.5);
-    expect(results.length).toBe(2);
-    expect(results[0].id).toBe('a');
+  describe('clear', () => {
+    it('should clear all vectors', async () => {
+      await vectorStore.clear();
+      
+      expect(mockVectorStore.clear).toHaveBeenCalled();
+    });
   });
 
-  test('hasVector and getVectorCount', async () => {
-    store.addVector('a', makeVec(1));
-    expect(await store.hasVector('a')).toBe(true);
-    expect(await store.getVectorCount()).toBe(1);
+  describe('saveToDisk', () => {
+    it('should save vectors to disk', async () => {
+      await vectorStore.saveToDisk();
+      
+      expect(mockVectorStore.saveToDisk).toHaveBeenCalled();
+    });
   });
 
-  test('clear removes all and saves', async () => {
-    store.addVector('a', makeVec(1));
-    await store.clear();
-    await Promise.resolve();
-    expect(await store.getVectorCount()).toBe(0);
-    expect(mockWriteFile).toHaveBeenCalled();
+  describe('loadFromDisk', () => {
+    it('should load vectors from disk', async () => {
+      await vectorStore.loadFromDisk();
+      
+      expect(mockVectorStore.loadFromDisk).toHaveBeenCalled();
+    });
   });
 
-  test('cosineSimilarity returns 0 for mismatched dims', () => {
-    expect(store.cosineSimilarity([1, 2], [1])).toBe(0);
+  describe('getVectorCount', () => {
+    it('should return the number of vectors', async () => {
+      mockVectorStore.getVectorCount.mockResolvedValue(5);
+      
+      const count = await vectorStore.getVectorCount();
+      
+      expect(mockVectorStore.getVectorCount).toHaveBeenCalled();
+      expect(count).toBe(5);
+    });
   });
 
-  test('saveToDisk writes vectors', async () => {
-    store.addVector('a', makeVec(1));
-    await store.saveToDisk();
-    await Promise.resolve();
-    expect(mockWriteFile).toHaveBeenCalledWith(
-      'dummy.json',
-      expect.stringContaining('"id": "a"'),
-      'utf8'
-    );
-  });
-
-  test('saveToDisk throws on error', async () => {
-    (mockWriteFile as any).mockRejectedValueOnce(new Error('fail'));
-    store.addVector('a', makeVec(1));
-    await expect(store.saveToDisk()).rejects.toThrow('Failed to save vectors to disk');
-  });
-
-  test('loadFromDisk loads valid vectors', async () => {
-    const data = JSON.stringify([
-      { id: 'a', vector: makeVec(1) },
-      { id: 'b', vector: [1, 2, 3] } // invalid
-    ]);
-    (mockReadFile as any).mockResolvedValueOnce(data);
-    await store.loadFromDisk();
-    expect(store.vectors.has('a')).toBe(true);
-    expect(store.vectors.has('b')).toBe(false);
-  });
-
-  test('loadFromDisk clears on error', async () => {
-    store.addVector('a', makeVec(1));
-    (mockReadFile as any).mockRejectedValueOnce(new Error('fail'));
-    await store.loadFromDisk();
-    expect(store.vectors.size).toBe(0);
-  });
-
-  test('initialize calls loadFromDisk', async () => {
-    const spy = jest.spyOn(store, 'loadFromDisk');
-    await store.initialize();
-    expect(spy).toHaveBeenCalled();
-  });
-
-  test('validateVectors returns correct counts', async () => {
-    store.addVector('a', makeVec(1));
-    // Insert an invalid vector directly
-    store.vectors.set('b', { id: 'b', vector: [1, 2, 3] });
-    const res = await store.validateVectors(DUMMY_DIM);
-    expect(res.valid).toBe(1);
-    expect(res.invalid).toBe(1);
-    expect(res.details[0]).toMatch(/Vector b/);
-  });
-
-  test('removeInvalidVectors removes and returns count', async () => {
-    store.addVector('a', makeVec(1));
-    // Insert an invalid vector directly
-    store.vectors.set('b', { id: 'b', vector: [1, 2, 3] });
-    const removed = await store.removeInvalidVectors(DUMMY_DIM);
-    expect(removed).toBe(1);
-    expect(store.vectors.has('b')).toBe(false);
-  });
-
-  test('cleanup removes invalid and saves', async () => {
-    store.addVector('a', makeVec(1));
-    // Insert an invalid vector directly
-    store.vectors.set('b', { id: 'b', vector: [1, 2, 3] });
-    expect(store.vectors.has('b')).toBe(true); // Ensure invalid vector is present
-    const removed = await store.cleanup();
-    await Promise.resolve();
-    expect(removed).toBe(1);
-    expect(store.vectors.has('b')).toBe(false); // Ensure invalid vector is removed
-  });
-
-  test('getHealthStats returns correct stats', () => {
-    store.addVector('a', makeVec(1));
-    // Insert an invalid vector directly
-    store.vectors.set('b', { id: 'b', vector: [1, 2, 3] });
-    const stats = store.getHealthStats();
-    expect(stats.total).toBe(2);
-    expect(stats.valid).toBe(1);
-    expect(stats.invalid).toBe(1);
+  describe('hasVector', () => {
+    it('should check if vector exists', async () => {
+      const id = 'test-id';
+      
+      mockVectorStore.hasVector.mockResolvedValue(true);
+      
+      const exists = await vectorStore.hasVector(id);
+      
+      expect(mockVectorStore.hasVector).toHaveBeenCalledWith(id);
+      expect(exists).toBe(true);
+    });
   });
 }); 

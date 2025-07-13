@@ -37,11 +37,13 @@ function filterSourcesByExperiencer(sources: any[], experiencerName: string): an
 
 function needsMigration(source: any): boolean {
   return (
-    !source.narrative || source.narrative.length === 0 || // Missing or empty narrative
+    !source.experience?.narrative || source.experience?.narrative.length === 0 || // Missing or empty narrative in experience
     source.vector || // Has old vector format
-    !source.experiential_qualities || // Missing experiential qualities
+    !source.experiential_qualities || // Missing experiential qualities (old schema)
     source.content_embedding || // Has old embedding field name
-    !source.narrative_embedding // Missing new embedding field
+    !source.narrative_embedding || // Missing new embedding field
+    !source.experience || // Missing new experience field (new schema)
+    !source.experience?.emoji // Missing emoji in experience
   );
 }
 
@@ -55,6 +57,7 @@ function createMigrationBatch(sources: any[], batchSize: number = 5): any[][] {
 
 function formatSourceForMigration(source: any): string {
   return `
+ORIGINAL SOURCE (for reference - create NEW source based on this):
 Source ID: ${source.id}
 Content: ${source.content || 'No content'}
 Experiencer: ${source.experiencer || 'Not specified'}
@@ -64,8 +67,12 @@ Occurred: ${source.occurred || 'Not specified'}
 Crafted: ${source.crafted || false}
 Experiential Qualities: ${JSON.stringify(source.experiential_qualities || {}, null, 2)}
 System Time: ${source.system_time || 'Not specified'}
+
+TASK: Create a NEW source with proper narrative and experience fields based on this original.
 `;
 }
+
+
 
 // Test scenarios for different development phases
 const TEST_SCENARIOS = {
@@ -335,14 +342,25 @@ const TEST_SCENARIOS = {
     You are helping migrate a database of experiential captures to a new schema. 
     The sources provided need proper narrative fields generated from their content.
     
-    TASK: Process each source systematically using the capture tool.
+    TASK: Create NEW sources with the updated schema using the capture tool.
+    
+    CRITICAL: You are creating NEW sources, NOT editing existing ones. Each original source will remain unchanged.
+    
+    SCHEMA STRUCTURE:
+    The new schema requires:
+    - 'experience': An object containing:
+      - 'narrative': A concise experiential summary (max 200 chars) - REQUIRED field inside experience
+      - 'emoji': A single emoji representing the experience (REQUIRED - goes INSIDE experience object)
+      - 'qualities': Array of experiential qualities with type, prominence, and manifestation
     
     For each source:
-    1. Analyze the content and any existing experiential qualities
+    1. Analyze the content and any existing experiential qualities from the original source
     2. Generate a concise experiential narrative summary in the experiencer's voice
-    3. Use the capture tool to create a new source with the updated schema
-    4. Ensure all required fields are properly filled (narrative is now required)
-    5. Preserve all original experiential qualities and metadata
+    3. Choose an appropriate emoji for the experience
+    4. Use the capture tool to create a COMPLETELY NEW source with the updated schema
+    5. Ensure all required fields are properly filled (narrative is now required)
+    6. Preserve all original experiential qualities and metadata in the new source
+    7. The new source will have a different ID and system_time than the original
     
     NARRATIVE GUIDELINES:
     - The 'narrative' field is REQUIRED and must be a concise experiential summary (max 200 chars)
@@ -353,16 +371,44 @@ const TEST_SCENARIOS = {
     - Feel like a thought, sensation, or action arising in the moment, not a label or report
     - Examples: "Step through puddles as rain drums", "Fidget with pen, heart thuds hard", "Stir sauce, laughter spills from kitchen"
     
+    EXPERIENCE STRUCTURE:
+    - 'experience' should be an object with:
+      - 'emoji': A single emoji (e.g., "✨", "🚗", "💭", "🎯") - REQUIRED field inside experience
+      - 'qualities': Array of the original experiential qualities with their exact prominence and manifestation values
+    
+    CORRECT STRUCTURE EXAMPLE:
+    {
+      "content": "Original content here",
+      "experiencer": "Miguel",
+      "perspective": "I",
+      "processing": "during",
+      "experience": {
+        "narrative": "Heart races as possibilities unfold",  // INSIDE experience object
+        "emoji": "✨",  // INSIDE experience object
+        "qualities": [
+          {
+            "type": "affective",
+            "prominence": 0.9,
+            "manifestation": "Strong excitement and anticipation"
+          }
+        ]
+      }
+    }
+    
     IMPORTANT GUIDELINES:
+    - You are creating NEW sources, not modifying existing ones
     - Preserve the original perspective, experiencer, processing level, and other metadata
     - Keep the original experiential qualities exactly as they are
     - If content is missing, use the narrative as the content
     - Process sources one at a time and report your progress
+    - Each new source will have a unique ID and current timestamp
+    - The 'narrative' field goes INSIDE the experience object
+    - The 'emoji' field goes INSIDE the experience object
     
     Sources to migrate:
     [Sources will be provided here]
     
-    Please process each source systematically and report your progress after each capture.
+    Please process each source systematically and report your progress after each NEW capture.
   `
 };
 
@@ -1618,6 +1664,8 @@ class EnhancedLLMTester {
     }
   }
 
+
+
   private printTestSummary(testResult: any): void {
     const duration = testResult.endTime.getTime() - testResult.startTime.getTime();
     const successCount = testResult.toolCalls.filter((tc: any) => tc.success).length;
@@ -1752,6 +1800,7 @@ Input Schema: \`\`\`json\n${schemaStr}\n\`\`\`
 
   async runBatchMigration(experiencerName: string, batchSize: number = 5): Promise<void> {
     console.log(`🔄 Starting batch migration for experiencer: ${experiencerName}`);
+    console.log('📝 NOTE: This will create NEW sources with the updated schema, preserving original sources');
     
     try {
       // Read and filter sources
@@ -1762,7 +1811,7 @@ Input Schema: \`\`\`json\n${schemaStr}\n\`\`\`
       console.log(`👤 Found ${experiencerSources.length} sources for experiencer: ${experiencerName}`);
       
       const sourcesNeedingMigration = experiencerSources.filter(needsMigration);
-      console.log(`🔄 ${sourcesNeedingMigration.length} sources need migration`);
+      console.log(`🔄 ${sourcesNeedingMigration.length} sources need migration (will create ${sourcesNeedingMigration.length} new sources)`);
       
       if (sourcesNeedingMigration.length === 0) {
         console.log('✅ No sources need migration for this experiencer');
@@ -1788,11 +1837,24 @@ Input Schema: \`\`\`json\n${schemaStr}\n\`\`\`
           sourcesText
         );
         
-        // Run the migration for this batch
-        await this.runSpecificTestWithPrompt(`batch-migration-${batchIndex + 1}`, migrationPrompt);
+        // Run the migration for this batch (without saving test results)
+        const batchResult = await this.runMigrationBatch(`batch-migration-${batchIndex + 1}`, migrationPrompt);
+        
+        // Extract new sources from successful tool calls
+        const successfulCaptures = batchResult.toolCalls.filter((call: any) => 
+          call.tool === 'capture' && call.success && call.result
+        );
+        
+        // For now, we'll count successful captures but not extract the actual source data
+        // The capture tool creates new sources in the database, so we can read them back later
+        console.log(`📝 Created ${successfulCaptures.length} new sources in this batch`);
+        
+        // Add a small delay to ensure the database is updated
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
         totalProcessed += batch.length;
         console.log(`✅ Completed batch ${batchIndex + 1}. Total processed: ${totalProcessed}/${sourcesNeedingMigration.length}`);
+        console.log(`📝 Created ${successfulCaptures.length} new sources in this batch`);
         
         // Small delay between batches
         if (batchIndex < batches.length - 1) {
@@ -1801,7 +1863,32 @@ Input Schema: \`\`\`json\n${schemaStr}\n\`\`\`
         }
       }
       
-      console.log(`\n🎉 Batch migration completed! Processed ${totalProcessed} sources for ${experiencerName}`);
+      console.log(`\n🎉 Batch migration completed!`);
+      console.log('📋 Original sources remain unchanged in the database');
+      
+      // Read the updated database to get all sources (including newly created ones)
+      try {
+        const updatedDatabase = readBridgeDatabase();
+        console.log(`📊 Updated database now contains ${updatedDatabase.length} total sources`);
+        
+        // Save the complete updated database
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const outputFilename = `bridge-${experiencerName}-migrated-${timestamp}.json`;
+        const outputPath = join(process.cwd(), outputFilename);
+        
+        const completeDatabase = {
+          sources: updatedDatabase
+        };
+        
+        writeFileSync(outputPath, JSON.stringify(completeDatabase, null, 2));
+        console.log(`💾 Complete migrated bridge database saved to: ${outputFilename}`);
+        console.log(`📊 Database contains ${updatedDatabase.length} total sources (original + migrated)`);
+        console.log(`📋 You can replace your existing bridge.json with this file to use the migrated data`);
+        
+      } catch (error) {
+        console.error(`❌ Failed to save complete database: ${error}`);
+        throw error;
+      }
       
     } catch (error) {
       console.error('❌ Batch migration failed:', error);
@@ -1809,7 +1896,70 @@ Input Schema: \`\`\`json\n${schemaStr}\n\`\`\`
     }
   }
 
-  async runSpecificTestWithPrompt(scenarioName: string, customPrompt: string): Promise<void> {
+  async runMigrationBatch(scenarioName: string, customPrompt: string): Promise<any> {
+    console.log(`🧠 Running migration batch: ${scenarioName}`);
+    console.log('📝 Sending migration prompt to Claude...\n');
+
+    const messages = [{ role: 'user' as const, content: customPrompt }];
+    const testResult: {
+      scenario: string;
+      startTime: Date;
+      endTime?: Date;
+      toolCalls: Array<{
+        tool: string;
+        arguments: any;
+        success: boolean;
+        result: any;
+        error: string | null;
+      }>;
+      errors: string[];
+      success: boolean;
+    } = {
+      scenario: scenarioName,
+      startTime: new Date(),
+      toolCalls: [],
+      errors: [],
+      success: true
+    };
+
+    try {
+      const anthropicTools = await this.getAnthropicTools();
+      const response = await this.anthropic.messages.create({
+        model: "claude-3-5-sonnet-20241022",
+        max_tokens: 4000,
+        messages: messages,
+        tools: anthropicTools,
+      });
+
+      await this.processResponse(response, messages, anthropicTools, testResult);
+      
+    } catch (error) {
+      console.error(`❌ Failed to run migration batch ${scenarioName}:`, error);
+      testResult.success = false;
+      testResult.errors.push(error instanceof Error ? error.message : String(error));
+    }
+
+    testResult.endTime = new Date();
+    
+    // Print summary without saving any files
+    const duration = testResult.endTime.getTime() - testResult.startTime.getTime();
+    const successCount = testResult.toolCalls.filter((tc: any) => tc.success).length;
+    const totalCalls = testResult.toolCalls.length;
+    
+    console.log(`\n📊 Migration Batch Summary for ${testResult.scenario}:`);
+    console.log(`⏱️  Duration: ${duration}ms`);
+    console.log(`🔧 Tool calls: ${successCount}/${totalCalls} successful`);
+    console.log(`❌ Errors: ${testResult.errors.length}`);
+    
+    if (testResult.errors.length > 0) {
+      console.log('🚨 Error details:');
+      testResult.errors.forEach((error: string) => console.log(`  - ${error}`));
+    }
+    
+    return testResult; // Return the test result
+  }
+
+  async runSpecificTestWithPrompt(scenarioName: string, customPrompt: string): Promise<any> {
     console.log(`🧠 Running test scenario: ${scenarioName}`);
     console.log('📝 Sending custom prompt to Claude...\n');
 
@@ -1855,6 +2005,8 @@ Input Schema: \`\`\`json\n${schemaStr}\n\`\`\`
     testResult.endTime = new Date();
     this.testResults.push(testResult);
     this.printTestSummary(testResult);
+    
+    return testResult; // Return the test result
   }
 }
 

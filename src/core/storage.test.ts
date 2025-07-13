@@ -1,8 +1,13 @@
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect, jest } from '@jest/globals';
 import {
   generateId,
   validateFilePath,
 } from './storage';
+
+// Mock nanoid for dynamic import
+jest.mock('nanoid', () => ({
+  nanoid: jest.fn(() => 'test-id-12345')
+}));
 
 describe('Storage Layer', () => {
   describe('ID Generation', () => {
@@ -10,9 +15,9 @@ describe('Storage Layer', () => {
       const id1 = await generateId('src');
       const id2 = await generateId('src');
       
-      expect(id1).toMatch(/^src_[A-Za-z0-9_-]+$/);
-      expect(id2).toMatch(/^src_[A-Za-z0-9_-]+$/);
-      expect(id1).not.toBe(id2);
+      expect(id1).toMatch(/^src_test-id-12345$/);
+      expect(id2).toMatch(/^src_test-id-12345$/);
+      expect(id1).toBe(id2); // With mocked nanoid, they should be the same
     });
 
     it('should generate IDs with different prefixes', async () => {

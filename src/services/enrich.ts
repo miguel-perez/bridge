@@ -39,7 +39,6 @@ export const QUALITY_TYPES = [
 export const enrichSchema = z.object({
   id: z.string().describe('The ID of the source to enrich'),
   content: z.string().optional().describe('Updated content text'),
-  narrative: z.string().optional().describe('Updated narrative text'),
   contentType: z.string().optional().describe('Updated content type'),
   perspective: z.enum(['I', 'we', 'you', 'they']).optional().describe('Updated perspective'),
   processing: z.enum(['during', 'right-after', 'long-after', 'crafted']).optional().describe('Updated processing level'),
@@ -53,7 +52,8 @@ export const enrichSchema = z.object({
       manifestation: z.string(),
     })).optional(),
     emoji: z.string().optional(),
-  }).partial().optional().describe('Updated experience (qualities + emoji)'),
+    narrative: z.string().optional().describe('Updated narrative text'),
+  }).partial().optional().describe('Updated experience (qualities + emoji + narrative)'),
   regenerate_embeddings: z.boolean().optional().default(false).describe('Whether to regenerate content embeddings'),
 });
 
@@ -63,7 +63,6 @@ export const enrichSchema = z.object({
 export interface EnrichInput {
   id: string;
   content?: string;
-  narrative?: string;
   contentType?: string;
   perspective?: 'I' | 'we' | 'you' | 'they';
   processing?: 'during' | 'right-after' | 'long-after' | 'crafted';
@@ -77,6 +76,7 @@ export interface EnrichInput {
       manifestation: string;
     }>;
     emoji?: string;
+    narrative?: string;
   };
   regenerate_embeddings?: boolean;
 }
@@ -124,10 +124,11 @@ export class EnrichService {
     // Process experience - merge with existing if present
     let processedExperience: import('../core/types.js').Experience | undefined = undefined;
     if (input.experience) {
-      const prev = existingSource.experience || { qualities: [], emoji: '' };
+      const prev = existingSource.experience || { qualities: [], emoji: '', narrative: '' };
       processedExperience = {
         qualities: input.experience.qualities ?? prev.qualities,
         emoji: input.experience.emoji ?? prev.emoji,
+        narrative: input.experience.narrative ?? prev.narrative,
       };
     } else if (existingSource.experience) {
       processedExperience = existingSource.experience;
@@ -136,12 +137,12 @@ export class EnrichService {
     // Determine if we need to regenerate embeddings
     const shouldRegenerateEmbeddings = input.regenerate_embeddings || 
       (input.content && input.content !== existingSource.content) ||
-      (input.narrative && input.narrative !== existingSource.narrative);
+      (input.experience?.narrative && input.experience.narrative !== existingSource.experience?.narrative);
 
     // Generate new embedding if needed
     let narrativeEmbedding: number[] | undefined = existingSource.narrative_embedding;
     if (shouldRegenerateEmbeddings) {
-      const textToEmbed = input.narrative || existingSource.narrative || 
+      const textToEmbed = input.experience?.narrative || existingSource.experience?.narrative || 
                          input.content || existingSource.content;
       try {
         narrativeEmbedding = await embeddingService.generateEmbedding(textToEmbed);
@@ -154,7 +155,6 @@ export class EnrichService {
     const updatedSource = {
       ...existingSource,
       content: input.content ?? existingSource.content,
-      narrative: input.narrative ?? existingSource.narrative,
       contentType: input.contentType ?? existingSource.contentType,
       perspective: input.perspective ?? existingSource.perspective,
       processing: input.processing ?? existingSource.processing,
@@ -198,7 +198,6 @@ export class EnrichService {
   private getUpdatedFields(original: SourceRecord, updated: Omit<SourceRecord, 'type'>): string[] {
     const fields: string[] = [];
     if (original.content !== updated.content) fields.push('content');
-    if (original.narrative !== updated.narrative) fields.push('narrative');
     if (original.contentType !== updated.contentType) fields.push('contentType');
     if (original.perspective !== updated.perspective) fields.push('perspective');
     if (original.experiencer !== updated.experiencer) fields.push('experiencer');

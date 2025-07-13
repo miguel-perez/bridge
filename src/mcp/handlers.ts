@@ -189,7 +189,7 @@ export class MCPToolHandlers {
 ID: ${result.source.id}
 Occurred: ${formatDate(result.source.occurred || result.source.system_time)}
 
-${result.source.narrative ? 'Narrative: ' : 'Content: '}${formatContent(result.source.content, result.source.narrative, true)}
+${result.source.experience?.narrative ? 'Narrative: ' : 'Content: '}${formatContent(result.source.content, result.source.experience?.narrative, true)}
 
 Experience:\n${formatExperience(result.source.experience)}
 
@@ -280,7 +280,7 @@ Reason: ${release.reason || 'No reason provided'}`;
         let resultText = `Result ${index + 1} (Relevance: ${relevancePercent}%)
 ID: ${result.id} | ${metadata}
 
-${formatContent(result.snippet, result.metadata?.narrative, query.includeFullContent)}
+${formatContent(result.snippet, result.metadata?.experience?.narrative, query.includeFullContent)}
 
 Relevance: ${formatRelevanceBreakdown(result.relevance_breakdown)}`;
 
@@ -330,7 +330,6 @@ Relevance: ${formatRelevanceBreakdown(result.relevance_breakdown)}`;
       const updateInput = {
         id: update.source_id,
         content: update.content,
-        narrative: update.narrative,
         contentType: update.contentType,
         perspective: update.perspective,
         processing: update.processing,
@@ -361,8 +360,8 @@ Relevance: ${formatRelevanceBreakdown(result.relevance_breakdown)}`;
       }
 
       // Show updated narrative if narrative was changed
-      if (result.updatedFields.includes('narrative')) {
-        content += `\n\nCorrected Narrative:\n${formatContent(result.source.content, result.source.narrative)}`;
+      if (result.updatedFields.includes('experience') && result.source.experience?.narrative) {
+        content += `\n\nCorrected Narrative:\n${formatContent(result.source.content, result.source.experience.narrative)}`;
       }
 
       // Show updated qualities if qualities were changed

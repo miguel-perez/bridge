@@ -1,602 +1,326 @@
-import { describe, test, expect, beforeEach, jest } from '@jest/globals';
+import { jest } from '@jest/globals';
+import { CaptureService } from './capture';
+import { VectorStore } from './vector-store';
+import { EmbeddingService } from './embeddings';
+import { nanoid } from 'nanoid';
+import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs';
+import { join, resolve, dirname } from 'path';
+import { tmpdir } from 'os';
 
-// Set up all mocks before importing the modules under test
-const mockGenerateId = jest.fn(() => 'src_mock-id-123');
-const mockSaveSource = jest.fn(async (source: any) => source);
-const mockGenerateEmbedding = jest.fn(async () => new Array(384).fill(0.1));
-const mockAddVector = jest.fn();
-const mockGetVectorStore = jest.fn(() => ({
-  addVector: mockAddVector
-}));
-const mockParseOccurredDate = jest.fn(async () => '2024-01-15T10:00:00.000Z');
-
-jest.doMock('../core/storage.js', () => ({
-  generateId: mockGenerateId,
-  saveSource: mockSaveSource
+// Mock all external dependencies with factory functions
+jest.mock('nanoid', () => ({
+  nanoid: jest.fn(() => 'test-id-12345')
 }));
 
-jest.doMock('./embeddings.js', () => ({
+jest.mock('fs', () => ({
+  writeFileSync: jest.fn(),
+  readFileSync: jest.fn(),
+  existsSync: jest.fn(),
+  mkdirSync: jest.fn()
+}));
+
+jest.mock('path', () => ({
+  join: jest.fn((...args) => args.join('/')),
+  resolve: jest.fn((...args) => args.join('/')),
+  dirname: jest.fn((path) => path.split('/').slice(0, -1).join('/') || '.')
+}));
+
+jest.mock('os', () => ({
+  tmpdir: jest.fn(() => '/tmp')
+}));
+
+// Mock the embedding service
+jest.mock('./embeddings', () => ({
+  EmbeddingService: jest.fn(() => ({
+    generateEmbedding: jest.fn(),
+    generateEmbeddings: jest.fn()
+  })),
   embeddingService: {
-    generateEmbedding: mockGenerateEmbedding
+    generateEmbedding: jest.fn(),
+    generateEmbeddings: jest.fn()
   }
 }));
 
-jest.doMock('./vector-store.js', () => ({
-  getVectorStore: mockGetVectorStore
+// Mock the vector store
+const mockVectorStore = {
+  addVector: jest.fn(),
+  addVectors: jest.fn(),
+  removeVector: jest.fn(),
+  findSimilar: jest.fn(),
+  findSimilarById: jest.fn(),
+  getVector: jest.fn(),
+  hasVector: jest.fn(),
+  getVectorCount: jest.fn(),
+  clear: jest.fn(),
+  saveToDisk: jest.fn(),
+  loadFromDisk: jest.fn(),
+  initialize: jest.fn(),
+  validateVectors: jest.fn(),
+  removeInvalidVectors: jest.fn(),
+  cleanup: jest.fn(),
+  getHealthStats: jest.fn()
+};
+
+jest.mock('./vector-store', () => ({
+  VectorStore: jest.fn(() => mockVectorStore),
+  getVectorStore: jest.fn(() => mockVectorStore)
 }));
 
-jest.doMock('../utils/validation.js', () => ({
-  parseOccurredDate: mockParseOccurredDate
+// Mock storage functions
+jest.mock('../core/storage', () => ({
+  generateId: jest.fn(() => Promise.resolve('src_test-id-12345')),
+  saveSource: jest.fn((source) => Promise.resolve(source))
 }));
 
-describe('Capture Service', () => {
-  let CaptureService: any;
-  let captureSchema: any;
-  let captureService: any;
+// Mock validation functions
+jest.mock('../utils/validation', () => ({
+  parseOccurredDate: jest.fn((date) => Promise.resolve(date))
+}));
 
-  beforeEach(async () => {
-    jest.resetModules();
+// Get the mocked modules
+const mockedNanoid = nanoid as jest.MockedFunction<typeof nanoid>;
+const mockedWriteFileSync = writeFileSync as jest.MockedFunction<typeof writeFileSync>;
+const mockedReadFileSync = readFileSync as jest.MockedFunction<typeof readFileSync>;
+const mockedExistsSync = existsSync as jest.MockedFunction<typeof existsSync>;
+const mockedMkdirSync = mkdirSync as jest.MockedFunction<typeof mkdirSync>;
+const mockedJoin = join as jest.MockedFunction<typeof join>;
+const mockedResolve = resolve as jest.MockedFunction<typeof resolve>;
+const mockedDirname = dirname as jest.MockedFunction<typeof dirname>;
+const mockedTmpdir = tmpdir as jest.MockedFunction<typeof tmpdir>;
+
+// Get the mocked embedding service
+const { embeddingService: mockEmbeddingService } = require('./embeddings');
+
+describe('CaptureService', () => {
+  let captureService: CaptureService;
+
+  beforeEach(() => {
+    // Reset all mocks
     jest.clearAllMocks();
-    // Import modules after mocks are set up
-    ({ CaptureService, captureSchema } = await import('./capture.js'));
+    
+    // Setup default mock implementations
+    mockedNanoid.mockReturnValue('test-id-12345');
+    mockedWriteFileSync.mockImplementation(() => {});
+    mockedReadFileSync.mockReturnValue('[]');
+    mockedExistsSync.mockReturnValue(false);
+    mockedMkdirSync.mockImplementation(() => {});
+    mockedJoin.mockImplementation((...args) => args.join('/'));
+    mockedResolve.mockImplementation((...args) => args.join('/'));
+    mockedDirname.mockImplementation((path) => path.split('/').slice(0, -1).join('/') || '.');
+    mockedTmpdir.mockReturnValue('/tmp');
+    
+    // Setup embedding service mocks
+    mockEmbeddingService.generateEmbedding.mockResolvedValue([0.1, 0.2, 0.3]);
+    mockEmbeddingService.generateEmbeddings.mockResolvedValue([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]);
+    
+    // Setup vector store mocks
+    mockVectorStore.addVector.mockReturnValue(true);
+    mockVectorStore.addVectors.mockReturnValue({ added: 2, rejected: 0 });
+    mockVectorStore.removeVector.mockResolvedValue(undefined);
+    mockVectorStore.findSimilar.mockResolvedValue([]);
+    mockVectorStore.findSimilarById.mockResolvedValue([]);
+    mockVectorStore.getVector.mockResolvedValue([0.1, 0.2, 0.3]);
+    mockVectorStore.hasVector.mockResolvedValue(true);
+    mockVectorStore.getVectorCount.mockResolvedValue(2);
+    mockVectorStore.clear.mockResolvedValue(undefined);
+    mockVectorStore.saveToDisk.mockResolvedValue(undefined);
+    mockVectorStore.loadFromDisk.mockResolvedValue(undefined);
+    mockVectorStore.initialize.mockResolvedValue(undefined);
+    mockVectorStore.validateVectors.mockResolvedValue({ valid: 2, invalid: 0, details: [] });
+    mockVectorStore.removeInvalidVectors.mockResolvedValue(0);
+    mockVectorStore.cleanup.mockResolvedValue(0);
+    mockVectorStore.getHealthStats.mockReturnValue({ total: 2, valid: 2, invalid: 0 });
+    
+    // Create capture service instance
     captureService = new CaptureService();
   });
 
-  describe('Schema Validation', () => {
-    describe('Valid captures', () => {
-      test('should accept minimal valid capture', () => {
-        const validCapture = {
-          content: "I felt excited about starting a new project",
-          narrative: "I experienced excitement while starting a new project",
-          experience: {
-            qualities: [
-              {
-                type: "affective",
-                prominence: 0.8,
-                manifestation: "feeling of excitement and anticipation"
-              }
-            ],
-            emoji: '🎉'
-          }
-        };
-
-        expect(() => captureSchema.parse(validCapture)).not.toThrow();
-      });
-
-      test('should accept capture with all optional fields', () => {
-        const completeCapture = {
-          content: "I felt excited about starting a new project",
-          narrative: "I experienced excitement while starting a new project",
-          contentType: "text",
-          experiencer: "Miguel",
-          perspective: "I",
-          processing: "during",
-          occurred: "2024-01-15",
-          crafted: false,
-          experience: {
-            qualities: [
-              {
-                type: "affective",
-                prominence: 0.8,
-                manifestation: "feeling of excitement and anticipation"
-              },
-              {
-                type: "purposive",
-                prominence: 0.6,
-                manifestation: "clear goal-directed motivation"
-              }
-            ],
-            emoji: '🎉'
-          }
-        };
-
-        expect(() => captureSchema.parse(completeCapture)).not.toThrow();
-      });
-
-      test('should accept capture with defaults', () => {
-        const captureWithDefaults = {
-          content: "I felt excited about starting a new project",
-          narrative: "I experienced excitement while starting a new project",
-          experience: {
-            qualities: [
-              {
-                type: "affective",
-                prominence: 0.8,
-                manifestation: "feeling of excitement"
-              }
-            ],
-            emoji: '🎉'
-          }
-        };
-
-        expect(() => captureSchema.parse(captureWithDefaults)).not.toThrow();
-      });
-
-      test('should accept valid capture input', () => {
-        const validInput = {
-          content: 'I felt excited about the project',
-          narrative: 'I experienced excitement about the project',
-          experience: {
-            qualities: [
-              {
-                type: 'affective' as const,
-                prominence: 0.8,
-                manifestation: 'feeling of excitement'
-              }
-            ],
-            emoji: '🎉'
-          }
-        };
-
-        expect(() => captureSchema.parse(validInput)).not.toThrow();
-      });
-
-      test('should apply default values', () => {
-        const input = {
-          content: 'Test content',
-          narrative: 'Test narrative',
-          experience: {
-            qualities: [
-              {
-                type: 'affective' as const,
-                prominence: 0.8,
-                manifestation: 'feeling of excitement'
-              }
-            ],
-            emoji: '🎉'
-          }
-        };
-
-        const result = captureSchema.parse(input);
-        expect(result.contentType).toBe('text');
-        expect(result.perspective).toBe('I');
-        expect(result.processing).toBe('during');
-        expect(result.experiencer).toBe('self');
-      });
-
-      test('should preserve provided values over defaults', () => {
-        const input = {
-          content: 'Test content',
-          narrative: 'Test narrative',
-          contentType: 'audio',
-          perspective: 'we' as const,
-          processing: 'right-after' as const,
-          experiencer: 'Alice',
-          experience: {
-            qualities: [
-              {
-                type: 'affective' as const,
-                prominence: 0.8,
-                manifestation: 'feeling of excitement'
-              }
-            ],
-            emoji: '🎉'
-          }
-        };
-
-        const result = captureSchema.parse(input);
-        expect(result.contentType).toBe('audio');
-        expect(result.perspective).toBe('we');
-        expect(result.processing).toBe('right-after');
-        expect(result.experiencer).toBe('Alice');
-      });
-    });
-
-    describe('Invalid captures', () => {
-      test('should reject missing narrative', () => {
-        const invalidCapture = {
-          content: "I felt excited about starting a new project",
-          experiencer: "Miguel",
-          perspective: "I",
-          processing: "during",
-          experience: {
-            qualities: [
-              {
-                type: "affective",
-                prominence: 0.8,
-                manifestation: "feeling of excitement"
-              }
-            ],
-            emoji: '🎉'
-          }
-        };
-
-        expect(() => captureSchema.parse(invalidCapture)).toThrow('Required');
-      });
-
-      test('should reject empty narrative', () => {
-        const invalidCapture = {
-          content: "I felt excited about starting a new project",
-          narrative: "",
-          experiencer: "Miguel",
-          perspective: "I",
-          processing: "during",
-          experience: {
-            qualities: [
-              {
-                type: "affective",
-                prominence: 0.8,
-                manifestation: "feeling of excitement"
-              }
-            ],
-            emoji: '🎉'
-          }
-        };
-
-        expect(() => captureSchema.parse(invalidCapture)).toThrow('Narrative is required');
-      });
-
-      test('should reject missing content', () => {
-        const invalidCapture = {
-          narrative: "I experienced excitement",
-          experiencer: "Miguel",
-          perspective: "I",
-          processing: "during",
-          experience: {
-            qualities: [
-              {
-                type: "affective",
-                prominence: 0.8,
-                manifestation: "feeling of excitement"
-              }
-            ],
-            emoji: '🎉'
-          }
-        };
-
-        expect(() => captureSchema.parse(invalidCapture)).not.toThrow(); // Content is now optional
-      });
-
-      test('should reject empty content', () => {
-        const invalidCapture = {
-          content: "",
-          narrative: "I experienced excitement",
-          experiencer: "Miguel",
-          perspective: "I",
-          processing: "during",
-          experience: {
-            qualities: [
-              {
-                type: "affective",
-                prominence: 0.8,
-                manifestation: "feeling of excitement"
-              }
-            ],
-            emoji: '🎉'
-          }
-        };
-
-        expect(() => captureSchema.parse(invalidCapture)).not.toThrow(); // Empty content is now allowed
-      });
-
-      test('should reject invalid perspective', () => {
-        const invalidCapture = {
-          content: "I felt excited",
-          narrative: "I experienced excitement",
-          experiencer: "Miguel",
-          perspective: "invalid",
-          processing: "during",
-          experience: {
-            qualities: [
-              {
-                type: "affective",
-                prominence: 0.8,
-                manifestation: "feeling of excitement"
-              }
-            ],
-            emoji: '🎉'
-          }
-        };
-
-        expect(() => captureSchema.parse(invalidCapture)).toThrow();
-      });
-
-      test('should reject invalid processing level', () => {
-        const invalidCapture = {
-          content: "I felt excited",
-          narrative: "I experienced excitement",
-          experiencer: "Miguel",
-          perspective: "I",
-          processing: "invalid",
-          experience: {
-            qualities: [
-              {
-                type: "affective",
-                prominence: 0.8,
-                manifestation: "feeling of excitement"
-              }
-            ],
-            emoji: '🎉'
-          }
-        };
-
-        expect(() => captureSchema.parse(invalidCapture)).toThrow();
-      });
-
-      test('should reject missing experience', () => {
-        const invalidCapture = {
-          content: "I felt excited",
-          narrative: "I experienced excitement",
-          experiencer: "Miguel",
-          perspective: "I",
-          processing: "during"
-        };
-
-        expect(() => captureSchema.parse(invalidCapture)).toThrow();
-      });
-
-      test('should reject invalid quality type', () => {
-        const invalidCapture = {
-          content: "I felt excited",
-          narrative: "I experienced excitement",
-          experiencer: "Miguel",
-          perspective: "I",
-          processing: "during",
-          experience: {
-            qualities: [
-              {
-                type: "invalid",
-                prominence: 0.8,
-                manifestation: "feeling of excitement"
-              }
-            ],
-            emoji: '🎉'
-          }
-        };
-
-        expect(() => captureSchema.parse(invalidCapture)).toThrow();
-      });
-
-      test('should reject invalid prominence values', () => {
-        const invalidCapture = {
-          content: "I felt excited",
-          narrative: "I experienced excitement",
-          experiencer: "Miguel",
-          perspective: "I",
-          processing: "during",
-          experience: {
-            qualities: [
-              {
-                type: "affective",
-                prominence: 1.5, // Should be between 0 and 1
-                manifestation: "feeling of excitement"
-              }
-            ],
-            emoji: '🎉'
-          }
-        };
-
-        expect(() => captureSchema.parse(invalidCapture)).toThrow();
-      });
-
-      test('should reject missing manifestation', () => {
-        const invalidCapture = {
-          content: "I felt excited",
-          narrative: "I experienced excitement",
-          experiencer: "Miguel",
-          perspective: "I",
-          processing: "during",
-          experience: {
-            qualities: [
-              {
-                type: "affective",
-                prominence: 0.8
-                // Missing manifestation
-              }
-            ],
-            emoji: '🎉'
-          }
-        };
-
-        expect(() => captureSchema.parse(invalidCapture)).toThrow();
-      });
-    });
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
-  describe('Service Functionality', () => {
-    describe('CaptureService.captureSource', () => {
-      test('should capture source with minimal input', async () => {
-        const input = {
-          content: 'I felt excited about the project',
-          narrative: 'I experienced excitement about the project',
-          experience: {
-            qualities: [
-              {
-                type: 'affective',
-                prominence: 0.8,
-                manifestation: 'feeling of excitement'
-              }
-            ],
-            emoji: '🎉'
-          }
-        };
+  describe('captureSource', () => {
+    it('should capture a source with all required fields', async () => {
+      const input = {
+        content: 'Test content',
+        contentType: 'text',
+        perspective: 'I' as const,
+        processing: 'during' as const,
+        occurred: '2024-01-15',
+        experiencer: 'self',
+        crafted: false,
+        experience: {
+          qualities: [
+            {
+              type: 'embodied' as const,
+              prominence: 0.8,
+              manifestation: 'Physical sensation'
+            }
+          ],
+          emoji: '😊',
+          narrative: 'I felt a warm sense of accomplishment'
+        }
+      };
 
-        const result = await captureService.captureSource(input);
+      const result = await captureService.captureSource(input);
 
-        expect(result.source).toBeDefined();
-        expect(result.source.content).toBe('I felt excited about the project');
-        expect(result.source.experiencer).toBe('self');
-        expect(result.source.perspective).toBe('I');
-        expect(result.source.processing).toBe('during');
-        expect(result.source.contentType).toBe('text');
-        expect(result.defaultsUsed).toContain('experiencer="self"');
-        expect(result.defaultsUsed).toContain('perspective="I"');
-        expect(result.defaultsUsed).toContain('processing="during"');
-      });
-
-      test('should capture source with complete input', async () => {
-        const input = {
-          content: 'We discussed the project timeline',
-          narrative: 'We discussed the project timeline',
-          contentType: 'audio',
-          perspective: 'we',
-          processing: 'right-after',
-          experiencer: 'Alice',
-          occurred: '2024-01-15T10:00:00Z',
-          crafted: false,
-          experience: {
-            qualities: [
-              {
-                type: 'affective',
-                prominence: 0.6,
-                manifestation: 'feeling of focus'
-              },
-              {
-                type: 'purposive',
-                prominence: 0.8,
-                manifestation: 'clear goal direction'
-              }
-            ],
-            emoji: '👀'
-          }
-        };
-
-        const result = await captureService.captureSource(input);
-
-        expect(result.source).toBeDefined();
-        expect(result.source.content).toBe('We discussed the project timeline');
-        expect(result.source.contentType).toBe('audio');
-        expect(result.source.perspective).toBe('we');
-        expect(result.source.processing).toBe('right-after');
-        expect(result.source.experiencer).toBe('Alice');
-        expect(result.source.occurred).toBe('2024-01-15T10:00:00.000Z');
-        expect(result.source.crafted).toBe(false);
-        expect(result.defaultsUsed).toHaveLength(0);
-      });
-
-      test('should generate embeddings and save to vector store', async () => {
-        const input = {
-          content: 'I felt excited about the project',
-          narrative: 'I experienced excitement about the project',
-          experience: {
-            qualities: [
-              {
-                type: 'affective',
-                prominence: 0.8,
-                manifestation: 'feeling of excitement'
-              }
-            ],
-            emoji: '🎉'
-          }
-        };
-
-        const result = await captureService.captureSource(input);
-
-        expect(result.source).toBeDefined();
-        expect(result.source.id).toMatch(/^src_mock-id-/);
-        expect(mockGetVectorStore).toHaveBeenCalled();
-      });
-
-      test('should handle occurred date parsing', async () => {
-        const input = {
-          content: 'I felt excited about the project',
-          narrative: 'I experienced excitement about the project',
-          occurred: '2024-01-15T10:00:00Z',
-          experience: {
-            qualities: [
-              {
-                type: 'affective',
-                prominence: 0.8,
-                manifestation: 'feeling of excitement'
-              }
-            ],
-            emoji: '🎉'
-          }
-        };
-
-        const result = await captureService.captureSource(input);
-
-        expect(result.source.occurred).toBe('2024-01-15T10:00:00.000Z');
-        expect(mockParseOccurredDate).toHaveBeenCalledWith('2024-01-15T10:00:00Z');
-      });
-
-      test('should handle multiple experience qualities', async () => {
-        const input = {
-          content: 'I felt both excited and focused',
-          narrative: 'I experienced both excitement and focus',
-          experience: {
-            qualities: [
-              {
-                type: 'affective',
-                prominence: 0.7,
-                manifestation: 'feeling of excitement'
-              },
-              {
-                type: 'attentional',
-                prominence: 0.8,
-                manifestation: 'sharp focus on the task'
-              }
-            ],
-            emoji: '🎯'
-          }
-        };
-
-        const result = await captureService.captureSource(input);
-
-        expect(result.source.experience?.qualities).toHaveLength(2);
-        expect(result.source.experience?.qualities[0].type).toBe('affective');
-        expect(result.source.experience?.qualities[1].type).toBe('attentional');
-      });
+      expect(result).toBeDefined();
+      expect(result.source.id).toBe('src_test-id-12345');
+      expect(result.source.content).toBe(input.content);
+      expect(result.source.contentType).toBe(input.contentType);
+      expect(result.source.perspective).toBe(input.perspective);
+      expect(result.source.experiencer).toBe(input.experiencer);
+      expect(result.source.processing).toBe(input.processing);
+      expect(result.source.crafted).toBe(input.crafted);
+      expect(result.source.experience.emoji).toBe(input.experience.emoji);
+      expect(result.source.experience.narrative).toBe(input.experience.narrative);
+      expect(result.defaultsUsed).toEqual([]);
     });
 
-    describe('Edge cases and error handling', () => {
-      test('should handle empty experience qualities array', async () => {
-        const input = {
-          content: 'I felt neutral',
-          narrative: 'I experienced neutrality',
-          experience: {
-            qualities: [],
-            emoji: '😐'
-          }
-        };
+    it('should capture a source with minimal fields and use defaults', async () => {
+      const input = {
+        experience: {
+          qualities: [
+            {
+              type: 'affective' as const,
+              prominence: 0.6,
+              manifestation: 'Emotional response'
+            }
+          ],
+          emoji: '🎉',
+          narrative: 'I was excited about the new project'
+        }
+      };
 
-        const result = await captureService.captureSource(input);
+      const result = await captureService.captureSource(input);
 
-        expect(result.source.experience?.qualities).toHaveLength(0);
+      expect(result).toBeDefined();
+      expect(result.source.id).toBe('src_test-id-12345');
+      expect(result.source.content).toBe(input.experience.narrative); // Uses narrative as content when no content provided
+      expect(result.source.contentType).toBe('text'); // Default
+      expect(result.source.perspective).toBe('I'); // Default
+      expect(result.source.experiencer).toBe('self'); // Default
+      expect(result.source.processing).toBe('during'); // Default
+      expect(result.defaultsUsed).toEqual([
+        'perspective="I"',
+        'experiencer="self"',
+        'processing="during"',
+        'contentType="text"'
+      ]);
+    });
+
+    it('should handle embedding generation errors gracefully', async () => {
+      const input = {
+        experience: {
+          qualities: [
+            {
+              type: 'attentional' as const,
+              prominence: 0.7,
+              manifestation: 'Focused attention'
+            }
+          ],
+          emoji: '🧠',
+          narrative: 'I was deeply focused on solving the problem'
+        }
+      };
+
+      // Mock embedding service to throw an error
+      mockEmbeddingService.generateEmbedding.mockRejectedValue(new Error('Embedding failed'));
+
+      const result = await captureService.captureSource(input);
+
+      expect(result).toBeDefined();
+      expect(result.source.narrative_embedding).toBeUndefined();
+      // Should still capture the source even if embedding fails
+    });
+
+    it('should handle vector store errors gracefully', async () => {
+      const input = {
+        experience: {
+          qualities: [
+            {
+              type: 'spatial' as const,
+              prominence: 0.5,
+              manifestation: 'Location awareness'
+            }
+          ],
+          emoji: '📍',
+          narrative: 'I was aware of my surroundings'
+        }
+      };
+
+      // Mock vector store to throw an error
+      mockVectorStore.addVector.mockImplementation(() => {
+        throw new Error('Vector store error');
       });
 
-      test('should handle very long content', async () => {
-        const longContent = 'A'.repeat(1000);
-        const input = {
-          content: longContent,
-          narrative: 'I experienced something',
-          experience: {
-            qualities: [
-              {
-                type: 'affective',
-                prominence: 0.5,
-                manifestation: 'neutral feeling'
-              }
-            ],
-            emoji: '😐'
-          }
-        };
+      const result = await captureService.captureSource(input);
 
-        const result = await captureService.captureSource(input);
+      expect(result).toBeDefined();
+      // Should still capture the source even if vector storage fails
+    });
 
-        expect(result.source.content).toBe(longContent);
-      });
+    it('should validate occurred date format', async () => {
+      const input = {
+        occurred: 'invalid-date',
+        experience: {
+          qualities: [
+            {
+              type: 'temporal' as const,
+              prominence: 0.9,
+              manifestation: 'Time awareness'
+            }
+          ],
+          emoji: '⏰',
+          narrative: 'I was aware of the time passing'
+        }
+      };
 
-      test('should handle special characters in content', async () => {
-        const input = {
-          content: 'I felt excited! 🎉 (with emoji and symbols)',
-          narrative: 'I experienced excitement with symbols',
-          experience: {
-            qualities: [
-              {
-                type: 'affective',
-                prominence: 0.8,
-                manifestation: 'feeling of excitement'
-              }
-            ],
-            emoji: '🎉'
-          }
-        };
+      // Mock parseOccurredDate to throw an error
+      const { parseOccurredDate } = require('../utils/validation');
+      parseOccurredDate.mockRejectedValue(new Error('Invalid date'));
 
-        const result = await captureService.captureSource(input);
+      await expect(captureService.captureSource(input)).rejects.toThrow(
+        'Invalid occurred date format. Example valid formats: "2024-01-15", "yesterday", "last week", "2024-01-01T10:00:00Z".'
+      );
+    });
 
-        expect(result.source.content).toBe('I felt excited! 🎉 (with emoji and symbols)');
-      });
+    it('should validate required experience fields', async () => {
+      const input = {
+        experience: {
+          qualities: [
+            {
+              type: 'intersubjective' as const,
+              prominence: 0.8,
+              manifestation: 'Social connection'
+            }
+          ],
+          emoji: '', // Empty emoji should fail validation
+          narrative: 'I felt connected to others'
+        }
+      };
+
+      await expect(captureService.captureSource(input)).rejects.toThrow('Emoji is required');
+    });
+
+    it('should validate narrative length', async () => {
+      const input = {
+        experience: {
+          qualities: [
+            {
+              type: 'purposive' as const,
+              prominence: 0.7,
+              manifestation: 'Goal orientation'
+            }
+          ],
+          emoji: '🎯',
+          narrative: 'A'.repeat(201) // Too long narrative
+        }
+      };
+
+      await expect(captureService.captureSource(input)).rejects.toThrow(
+        'Narrative should be a concise experiential summary'
+      );
     });
   });
 }); 

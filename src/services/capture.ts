@@ -38,7 +38,6 @@ export const QUALITY_TYPES = [
  */
 export const captureSchema = z.object({
   content: z.string().optional(),
-  narrative: z.string().min(1, 'Narrative is required').max(200, 'Narrative should be a concise experiential summary'),
   contentType: z.string().optional().default(CAPTURE_DEFAULTS.CONTENT_TYPE),
   perspective: z.enum(['I', 'we', 'you', 'they']).optional().default(CAPTURE_DEFAULTS.PERSPECTIVE as 'I' | 'we' | 'you' | 'they'),
   processing: z.enum(['during', 'right-after', 'long-after', 'crafted']).optional().default(CAPTURE_DEFAULTS.PROCESSING as 'during' | 'right-after' | 'long-after' | 'crafted'),
@@ -52,6 +51,7 @@ export const captureSchema = z.object({
       manifestation: z.string(),
     })),
     emoji: z.string().min(1, 'Emoji is required'),
+    narrative: z.string().min(1, 'Narrative is required').max(200, 'Narrative should be a concise experiential summary'),
   }),
 });
 
@@ -60,7 +60,6 @@ export const captureSchema = z.object({
  */
 export interface CaptureInput {
   content?: string;
-  narrative: string; // Required - concise experiential summary in experiencer's voice
   contentType?: string;
   perspective?: 'I' | 'we' | 'you' | 'they';
   processing?: 'during' | 'right-after' | 'long-after' | 'crafted';
@@ -74,6 +73,7 @@ export interface CaptureInput {
       manifestation: string;
     }>;
     emoji: string;
+    narrative: string; // Required - concise experiential summary in experiencer's voice
   };
 }
 
@@ -125,20 +125,20 @@ export class CaptureService {
     const processedExperience: import('../core/types.js').Experience = {
       qualities: validatedInput.experience.qualities,
       emoji: validatedInput.experience.emoji,
+      narrative: validatedInput.experience.narrative,
     };
 
     // Generate embedding from narrative (now required)
     let narrativeEmbedding: number[] | undefined;
     try {
-      narrativeEmbedding = await embeddingService.generateEmbedding(validatedInput.narrative);
+      narrativeEmbedding = await embeddingService.generateEmbedding(validatedInput.experience.narrative);
     } catch (error) {
       // Silently handle embedding generation errors in MCP context
     }
 
     const source = await saveSource({
       id: await generateId('src'),
-      content: validatedInput.content || validatedInput.narrative,  // Use content if provided, otherwise use narrative
-      narrative: validatedInput.narrative,
+      content: validatedInput.content || validatedInput.experience.narrative,  // Use content if provided, otherwise use narrative
       contentType: validatedInput.contentType,
       system_time: new Date().toISOString(),
       occurred: occurredDate || new Date().toISOString(),

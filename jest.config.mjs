@@ -12,8 +12,7 @@ export default {
     }]
   },
   moduleNameMapper: {
-    '^(\\.{1,2}/.*)\\.js$': '$1',
-    '^nanoid$': '<rootDir>/src/__mocks__/nanoid.js'
+    '^(\\.{1,2}/.*)\\.js$': '$1'
   },
   testMatch: [
     '**/?(*.)+(spec|test).ts'
