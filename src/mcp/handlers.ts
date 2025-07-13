@@ -308,9 +308,12 @@ Reason: ${release.reason || 'No reason provided'}`;
         const narrative = result.metadata?.experience?.narrative || '';
         const emojiAndNarrative = emoji ? `${emoji} ${narrative}` : narrative;
         
+        // Use full content if available, otherwise use snippet
+        const displayContent = result.content || result.snippet;
+        
         const resultText = `Result ${index + 1} (Relevance: ${relevancePercent}%)
 ${emojiAndNarrative ? emojiAndNarrative + '\n' : ''}
-${formatContent(result.snippet, undefined, query.includeFullContent)}
+${formatContent(displayContent, undefined, query.includeFullContent)}
 
 ID: ${result.id} | ${metadata}
 Relevance: ${formatRelevanceBreakdown(result.relevance_breakdown)}`;

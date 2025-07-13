@@ -86,6 +86,7 @@ export interface SearchServiceResult {
   id: string;
   type: string;
   snippet: string;
+  content?: string; // Full original content when includeFullContent is true
   metadata?: Record<string, any>;
   relevance_score: number; // Always present, 0-1 scale
   relevance_breakdown?: {
@@ -632,7 +633,8 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
     const results: SearchServiceResult[] = finalRecords.map(record => ({
       id: record.id,
       type: record.type,
-      snippet: input.includeFullContent ? (record.experience?.narrative || record.content) : (record.experience?.narrative || record.content).substring(0, 200) + ((record.experience?.narrative || record.content).length > 200 ? '...' : ''),
+      snippet: (input.includeFullContent ?? true) ? (record.experience?.narrative || record.content) : (record.experience?.narrative || record.content).substring(0, 200) + ((record.experience?.narrative || record.content).length > 200 ? '...' : ''),
+      content: (input.includeFullContent ?? true) ? record.content : undefined,
       metadata: input.includeContext ? {
         contentType: record.contentType,
         perspective: record.perspective,

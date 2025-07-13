@@ -130,7 +130,7 @@ export const tools = [
               includeFullContent: {
                 type: "boolean",
                 description: "Include full content instead of truncated snippets",
-                default: false
+                default: true
               },
               filters: {
                 type: "object",
