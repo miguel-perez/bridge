@@ -16,6 +16,32 @@ export interface BridgeConfig {
 }
 
 /**
+ * Expands common path variables like ~ and ${HOME}
+ * @param path Path that may contain variables
+ * @returns Expanded path
+ */
+function expandPath(path: string): string {
+  if (!path) return path;
+  
+  // Replace ~ at the start of the path
+  if (path.startsWith('~')) {
+    path = path.replace(/^~/, homedir());
+  }
+  
+  // Replace ${HOME} anywhere in the path
+  if (path.includes('${HOME}')) {
+    path = path.replace(/\$\{HOME\}/g, homedir());
+  }
+  
+  // Replace $HOME anywhere in the path
+  if (path.includes('$HOME')) {
+    path = path.replace(/\$HOME/g, homedir());
+  }
+  
+  return path;
+}
+
+/**
  * Get the default data file path for Bridge experiential data.
  * Priority order:
  *   1. User config from DXT (BRIDGE_FILE_PATH env var)
@@ -26,7 +52,7 @@ export interface BridgeConfig {
 function getDefaultDataFilePath(): string {
   const userConfigPath = process.env.BRIDGE_FILE_PATH;
   if (typeof userConfigPath === 'string' && userConfigPath.trim().length > 0) {
-    return userConfigPath;
+    return expandPath(userConfigPath);
   }
   // Default to home directory
   return join(homedir(), 'bridge.json');
@@ -69,7 +95,7 @@ export function setDataFilePath(path: string): void {
   if (typeof path !== 'string' || path.trim().length === 0) {
     throw new Error('Data file path must be a non-empty string.');
   }
-  currentConfig.dataFilePath = path;
+  currentConfig.dataFilePath = expandPath(path);
 }
 
 /**

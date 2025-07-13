@@ -12,6 +12,7 @@ import { ReleaseService } from '../services/release.js';
 import { SearchService, type SearchInput, type SearchServiceResult } from '../services/search.js';
 import { EnrichService } from '../services/enrich.js';
 import type { SourceRecord, Experience } from '../core/types.js';
+import { withTimeout, DEFAULT_TIMEOUTS, TimeoutError } from '../utils/timeout.js';
 
 // ============================================================================
 // CONSTANTS
@@ -184,8 +185,13 @@ export class MCPToolHandlers {
     const results = [];
     
     for (const experience of experiences) {
-      const result = await this.captureService.captureSource(experience);
-      const content = `✓ Captured experience for ${result.source.experiencer}
+      try {
+        const result = await withTimeout(
+          this.captureService.captureSource(experience),
+          DEFAULT_TIMEOUTS.CAPTURE,
+          'Capture operation'
+        );
+        const content = `✓ Captured experience for ${result.source.experiencer}
 ID: ${result.source.id}
 Occurred: ${formatDate(result.source.occurred || result.source.system_time)}
 
@@ -194,7 +200,13 @@ ${result.source.experience?.narrative ? 'Narrative: ' : 'Content: '}${formatCont
 Experience:\n${formatExperience(result.source.experience)}
 
 ${result.defaultsUsed.length > 0 ? `Defaults used: ${result.defaultsUsed.join(', ')}` : ''}`;
-      results.push(content);
+        results.push(content);
+      } catch (error) {
+        if (error instanceof TimeoutError) {
+          throw error; // Re-throw timeout errors to be handled by MCP
+        }
+        throw error; // Re-throw other errors
+      }
     }
     const summary = experiences.length > 1 ? `Captured ${experiences.length} experiences:\n\n` : '';
     return {
@@ -244,13 +256,27 @@ Reason: ${release.reason || 'No reason provided'}`;
    * @returns Formatted search results
    */
   async handleSearch(args: any): Promise<{ content: Array<{ type: string; text: string }> }> {
+    // Handle null/undefined args for empty search
+    if (!args || Object.keys(args).length === 0) {
+      args = { queries: [{ query: '' }] };
+    }
+    
     // Support both old single-query format and new batch format
     const queries = args.queries || [args];
     const allResults = [];
     
     for (let i = 0; i < queries.length; i++) {
       const query = queries[i];
-      const { results, stats } = await this.searchService.search(query as SearchInput);
+      // Ensure query property exists (set to empty string if not provided)
+      if (query && typeof query === 'object' && !('query' in query)) {
+        query.query = '';
+      }
+      
+      const { results, stats } = await withTimeout(
+        this.searchService.search(query as SearchInput),
+        DEFAULT_TIMEOUTS.SEARCH,
+        'Search operation'
+      );
       
       if (results.length === 0) {
         const filters = stats?.filters ? Object.entries(stats.filters)
@@ -260,7 +286,7 @@ Reason: ${release.reason || 'No reason provided'}`;
         
         allResults.push({
           type: 'text',
-          text: `${queries.length > 1 ? `Query ${i + 1}: ` : ''}No results found for "${query.query}".\n\nApplied filters: ${filters}`
+          text: `${queries.length > 1 ? `Query ${i + 1}: ` : ''}No results found for "${query.query || ''}".\n\nApplied filters: ${filters}`
         });
         continue;
       }
@@ -270,7 +296,7 @@ Reason: ${release.reason || 'No reason provided'}`;
       const offset = query.offset || 0;
       const limit = query.limit || 10;
       const showingText = offset > 0 ? ` (showing ${offset + 1}-${Math.min(offset + limit, totalResults)} of ${totalResults})` : '';
-      const summary = `${queries.length > 1 ? `Query ${i + 1}: ` : ''}Found ${results.length} result(s) for "${query.query}"${stats?.total ? ` out of ${stats.total} total records` : ''}${showingText}.`;
+      const summary = `${queries.length > 1 ? `Query ${i + 1}: ` : ''}Found ${results.length} result(s) for "${query.query || ''}"${stats?.total ? ` out of ${stats.total} total records` : ''}${showingText}.`;
       
       // Format each result
       const resultContent = results.map((result: SearchServiceResult, index: number) => {
@@ -340,7 +366,11 @@ Relevance: ${formatRelevanceBreakdown(result.relevance_breakdown)}`;
         regenerate_embeddings: update.regenerate_embeddings
       };
       
-      const result = await this.updateService.enrichSource(updateInput);
+      const result = await withTimeout(
+        this.updateService.enrichSource(updateInput),
+        DEFAULT_TIMEOUTS.UPDATE,
+        'Update operation'
+      );
       
       let content = `✓ Updated experience ${result.source.id}`;
       

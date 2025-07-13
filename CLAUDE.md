@@ -29,6 +29,8 @@ Bridge is a phenomenological data capture system for distributed cognition betwe
 
 ### DXT Packaging
 - `./build-dxt.sh` (macOS/Linux) or `./build-dxt.ps1` (Windows) - Package as Claude Desktop Extension
+- Creates a flat-structure DXT without subdirectories (workaround for Claude Desktop bug)
+- Bundles all code into a single `index.js` file (~118KB total package size)
 
 ### Utilities
 - `npm run clean` - Remove dist directory

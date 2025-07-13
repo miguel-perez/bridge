@@ -1,3 +1,26 @@
+# Build script for creating Bridge DXT package on Windows
+
+Write-Host "Building Bridge Desktop Extension (DXT)..." -ForegroundColor Cyan
+
+# Clean previous builds
+Write-Host "Cleaning previous builds..." -ForegroundColor Yellow
+Remove-Item -Path "dxt-build" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "bridge.dxt" -Force -ErrorAction SilentlyContinue
+
+# Create build directory
+New-Item -ItemType Directory -Path "dxt-build" -Force | Out-Null
+
+# Build and bundle the project
+Write-Host "Building and bundling TypeScript..." -ForegroundColor Yellow
+npm run build:all
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Build failed!" -ForegroundColor Red
+    exit 1
+}
+
+# Create manifest with flat structure
+Write-Host "Creating manifest..." -ForegroundColor Yellow
+@'
 {
   "dxt_version": "0.1",
   "name": "bridge-experiential-data",
@@ -25,14 +48,13 @@
   
   "server": {
     "type": "node",
-    "entry_point": "server/index.js",
+    "entry_point": "index.js",
     "mcp_config": {
       "command": "node",
-      "args": ["${__dirname}/server/index.js"],
+      "args": ["${__dirname}/index.js"],
       "env": {
         "BRIDGE_FILE_PATH": "${user_config.data_file_path}",
-        "BRIDGE_DEBUG": "${user_config.debug_mode}",
-        "MCP": "true"
+        "BRIDGE_DEBUG": "${user_config.debug_mode}"
       }
     }
   },
@@ -94,4 +116,44 @@
       "required": false
     }
   }
-} 
+}
+'@ | Out-File -FilePath "dxt-build\manifest.json" -Encoding UTF8
+
+# Copy bundled output as index.js (flat structure)
+Copy-Item -Path "dist\bundle.js" -Destination "dxt-build\index.js"
+
+# Copy other files
+Copy-Item -Path "LICENSE" -Destination "dxt-build\"
+Copy-Item -Path "README.md" -Destination "dxt-build\"
+
+# Copy icon if exists
+if (Test-Path "icon.png") {
+    Copy-Item -Path "icon.png" -Destination "dxt-build\"
+} else {
+    Write-Host "Warning: icon.png not found" -ForegroundColor Yellow
+}
+
+# Create the DXT package
+Write-Host "Creating DXT package..." -ForegroundColor Yellow
+Compress-Archive -Path "dxt-build\*" -DestinationPath "bridge.dxt" -Force
+
+# Clean up build directory
+Remove-Item -Path "dxt-build" -Recurse -Force
+
+# Report results
+if (Test-Path "bridge.dxt") {
+    $size = (Get-Item "bridge.dxt").Length
+    $sizeInKB = [math]::Round($size / 1KB, 0)
+    
+    Write-Host ""
+    Write-Host "✅ Bridge DXT package created successfully!" -ForegroundColor Green
+    Write-Host "📦 Package: bridge.dxt ($sizeInKB KB)" -ForegroundColor Green
+    Write-Host ""
+    Write-Host "To install in Claude Desktop:" -ForegroundColor Cyan
+    Write-Host "1. Open Claude Desktop" -ForegroundColor White
+    Write-Host "2. Go to Settings > Extensions" -ForegroundColor White
+    Write-Host "3. Click 'Load from file...' and select bridge.dxt" -ForegroundColor White
+} else {
+    Write-Host "❌ Failed to create DXT package" -ForegroundColor Red
+    exit 1
+}

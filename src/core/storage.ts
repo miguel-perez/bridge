@@ -225,22 +225,32 @@ async function readData(): Promise<StorageData> {
   // Don't ensure storage dir just for reading the data file
   // Only ensure it when we actually need to write to it
   
+  const dataFile = getDataFile();
+  // Debug:('[DEBUG] readData: Attempting to read from:', dataFile);
+  
   try {
-    const content = await fs.readFile(getDataFile(), STORAGE_DEFAULTS.FILE_ENCODING);
+    const content = await fs.readFile(dataFile, STORAGE_DEFAULTS.FILE_ENCODING);
+    // Debug:('[DEBUG] readData: File read successfully, content length:', content.length);
+    
     const data = JSON.parse(content);
+    // Debug:('[DEBUG] readData: JSON parsed successfully, sources count:', data.sources?.length || 0);
     
     // Validate data structure
     if (!validateStorageData(data)) {
+      // Debug:('[DEBUG] readData: Invalid data structure, returning empty');
       return { sources: [] };
     }
     
     return data;
   } catch (error) {
     // If file doesn't exist or is invalid, return empty structure
+    // Debug:('[DEBUG] readData: Error reading file:', error);
     if (error instanceof Error && error.message.includes('ENOENT')) {
+      // Debug:('[DEBUG] readData: File does not exist, returning empty');
       return { sources: [] };
     }
     
+    // Debug:('[DEBUG] readData: Other error, returning empty');
     return { sources: [] };
   }
 }
@@ -329,7 +339,9 @@ export async function deleteSource(id: string): Promise<void> {
  * @throws Error if storage operations fail
  */
 export async function getAllRecords(): Promise<SourceRecord[]> {
+  // Debug:('[DEBUG] getAllRecords: Called');
   const data = await readData();
+  // Debug:('[DEBUG] getAllRecords: Returning', data.sources.length, 'records');
   return data.sources;
 }
 

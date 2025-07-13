@@ -146,8 +146,12 @@ export interface SearchServiceResponse {
 }
 
 // Calculate text relevance score based on query matching
-function calculateTextRelevance(record: SourceRecord, query: string): number {
-  if (!query || !query.trim()) return 0;
+function calculateTextRelevance(record: SourceRecord, query: string | undefined): number {
+  // For empty/undefined queries, return 1 to allow all records to be found
+  if (!query || !query.trim()) {
+    // Empty query - return 1 to show all results
+    return 1;
+  }
   
   const queryLower = query.toLowerCase();
   const contentLower = record.content.toLowerCase();
@@ -275,6 +279,10 @@ function calculateRelevanceScore(
   // Text matching is primary
   if (input.query && input.query.trim()) {
     finalScore += textMatch * 0.6;
+  } else {
+    // For empty queries, give a base score to all records
+    finalScore += 0.5;
+    // Empty query - add base score
   }
   
   // Filter relevance affects overall score
@@ -360,6 +368,15 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
     const allRecords = await getAllRecords();
     debugInfo.total_records = allRecords.length;
     addDebugLog(`Retrieved ${allRecords.length} total records`);
+    
+    // Log the input for debugging
+    addDebugLog('Search input', {
+      query: input.query,
+      hasQuery: !!input.query,
+      queryLength: input.query?.length,
+      queryTrimmed: input.query?.trim(),
+      filters: Object.entries(input).filter(([k, v]) => k !== 'query' && v !== undefined).map(([k, v]) => ({ [k]: v }))
+    });
     
     // Start with all records
     let filteredRecords = allRecords;
@@ -560,6 +577,12 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
       finalRecords = finalRecords.filter(r => r._relevance.breakdown.text_match > 0);
       const afterCount = finalRecords.length;
       addDebugLog(`Text relevance filter applied: ${beforeCount} -> ${afterCount} records`);
+    } else {
+      addDebugLog('No text query provided, skipping text relevance filter', {
+        queryValue: input.query,
+        queryTrimmed: input.query?.trim(),
+        recordCount: finalRecords.length
+      });
     }
 
     // Apply sorting (default to occurred date for recency)
@@ -703,7 +726,8 @@ export class SearchService {
       stats: { 
         total: searchResponse.total,
         query: searchResponse.query,
-        filters: searchResponse.filters
+        filters: searchResponse.filters,
+        debug: searchResponse.debug
       }
     };
   }
