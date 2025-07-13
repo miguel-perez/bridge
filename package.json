@@ -59,6 +59,7 @@
   "devDependencies": {
     "@types/jest": "^29.5.12",
     "@types/node": "^20.11.24",
+    "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^7.1.0",
     "@typescript-eslint/parser": "^7.1.0",
     "esbuild": "^0.17.19",
@@ -71,6 +72,7 @@
     "ts-node": "^10.9.2",
     "tsc-watch": "^6.0.4",
     "tsx": "^4.20.3",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "uuid": "^11.1.0"
   }
 }
