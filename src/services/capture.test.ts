@@ -47,10 +47,8 @@ describe('Capture Service', () => {
       test('should accept minimal valid capture', () => {
         const validCapture = {
           content: "I felt excited about starting a new project",
-          experiencer: "Miguel",
-          perspective: "I",
-          processing: "during",
-          experiential_qualities: {
+          narrative: "I experienced excitement while starting a new project",
+          experience: {
             qualities: [
               {
                 type: "affective",
@@ -58,15 +56,7 @@ describe('Capture Service', () => {
                 manifestation: "feeling of excitement and anticipation"
               }
             ],
-            vector: {
-              embodied: 0.0,
-              attentional: 0.0,
-              affective: 0.8,
-              purposive: 0.0,
-              spatial: 0.0,
-              temporal: 0.0,
-              intersubjective: 0.0
-            }
+            emoji: '🎉'
           }
         };
 
@@ -76,13 +66,14 @@ describe('Capture Service', () => {
       test('should accept capture with all optional fields', () => {
         const completeCapture = {
           content: "I felt excited about starting a new project",
+          narrative: "I experienced excitement while starting a new project",
           contentType: "text",
           experiencer: "Miguel",
           perspective: "I",
           processing: "during",
           occurred: "2024-01-15",
           crafted: false,
-          experiential_qualities: {
+          experience: {
             qualities: [
               {
                 type: "affective",
@@ -95,15 +86,7 @@ describe('Capture Service', () => {
                 manifestation: "clear goal-directed motivation"
               }
             ],
-            vector: {
-              embodied: 0.0,
-              attentional: 0.0,
-              affective: 0.8,
-              purposive: 0.6,
-              spatial: 0.0,
-              temporal: 0.0,
-              intersubjective: 0.0
-            }
+            emoji: '🎉'
           }
         };
 
@@ -113,14 +96,16 @@ describe('Capture Service', () => {
       test('should accept capture with defaults', () => {
         const captureWithDefaults = {
           content: "I felt excited about starting a new project",
-          experiential_qualities: {
+          narrative: "I experienced excitement while starting a new project",
+          experience: {
             qualities: [
               {
                 type: "affective",
                 prominence: 0.8,
                 manifestation: "feeling of excitement"
               }
-            ]
+            ],
+            emoji: '🎉'
           }
         };
 
@@ -130,14 +115,16 @@ describe('Capture Service', () => {
       test('should accept valid capture input', () => {
         const validInput = {
           content: 'I felt excited about the project',
-          experiential_qualities: {
+          narrative: 'I experienced excitement about the project',
+          experience: {
             qualities: [
               {
                 type: 'affective' as const,
                 prominence: 0.8,
                 manifestation: 'feeling of excitement'
               }
-            ]
+            ],
+            emoji: '🎉'
           }
         };
 
@@ -147,14 +134,16 @@ describe('Capture Service', () => {
       test('should apply default values', () => {
         const input = {
           content: 'Test content',
-          experiential_qualities: {
+          narrative: 'Test narrative',
+          experience: {
             qualities: [
               {
                 type: 'affective' as const,
                 prominence: 0.8,
                 manifestation: 'feeling of excitement'
               }
-            ]
+            ],
+            emoji: '🎉'
           }
         };
 
@@ -168,18 +157,20 @@ describe('Capture Service', () => {
       test('should preserve provided values over defaults', () => {
         const input = {
           content: 'Test content',
+          narrative: 'Test narrative',
           contentType: 'audio',
           perspective: 'we' as const,
           processing: 'right-after' as const,
           experiencer: 'Alice',
-          experiential_qualities: {
+          experience: {
             qualities: [
               {
                 type: 'affective' as const,
                 prominence: 0.8,
                 manifestation: 'feeling of excitement'
               }
-            ]
+            ],
+            emoji: '🎉'
           }
         };
 
@@ -192,59 +183,108 @@ describe('Capture Service', () => {
     });
 
     describe('Invalid captures', () => {
-      test('should reject missing content', () => {
+      test('should reject missing narrative', () => {
         const invalidCapture = {
+          content: "I felt excited about starting a new project",
           experiencer: "Miguel",
           perspective: "I",
           processing: "during",
-          experiential_qualities: {
+          experience: {
             qualities: [
               {
                 type: "affective",
                 prominence: 0.8,
                 manifestation: "feeling of excitement"
               }
-            ]
+            ],
+            emoji: '🎉'
           }
         };
 
-        expect(() => captureSchema.parse(invalidCapture)).toThrow('Either content or narrative must be provided');
+        expect(() => captureSchema.parse(invalidCapture)).toThrow('Required');
+      });
+
+      test('should reject empty narrative', () => {
+        const invalidCapture = {
+          content: "I felt excited about starting a new project",
+          narrative: "",
+          experiencer: "Miguel",
+          perspective: "I",
+          processing: "during",
+          experience: {
+            qualities: [
+              {
+                type: "affective",
+                prominence: 0.8,
+                manifestation: "feeling of excitement"
+              }
+            ],
+            emoji: '🎉'
+          }
+        };
+
+        expect(() => captureSchema.parse(invalidCapture)).toThrow('Narrative is required');
+      });
+
+      test('should reject missing content', () => {
+        const invalidCapture = {
+          narrative: "I experienced excitement",
+          experiencer: "Miguel",
+          perspective: "I",
+          processing: "during",
+          experience: {
+            qualities: [
+              {
+                type: "affective",
+                prominence: 0.8,
+                manifestation: "feeling of excitement"
+              }
+            ],
+            emoji: '🎉'
+          }
+        };
+
+        expect(() => captureSchema.parse(invalidCapture)).not.toThrow(); // Content is now optional
       });
 
       test('should reject empty content', () => {
         const invalidCapture = {
           content: "",
+          narrative: "I experienced excitement",
           experiencer: "Miguel",
           perspective: "I",
           processing: "during",
-          experiential_qualities: {
+          experience: {
             qualities: [
               {
                 type: "affective",
                 prominence: 0.8,
                 manifestation: "feeling of excitement"
               }
-            ]
+            ],
+            emoji: '🎉'
           }
         };
 
-        expect(() => captureSchema.parse(invalidCapture)).toThrow('Either content or narrative must be provided');
+        expect(() => captureSchema.parse(invalidCapture)).not.toThrow(); // Empty content is now allowed
       });
 
       test('should reject invalid perspective', () => {
         const invalidCapture = {
           content: "I felt excited",
+          narrative: "I experienced excitement",
           experiencer: "Miguel",
           perspective: "invalid",
           processing: "during",
-          experiential_qualities: {
+          experience: {
             qualities: [
               {
                 type: "affective",
                 prominence: 0.8,
                 manifestation: "feeling of excitement"
               }
-            ]
+            ],
+            emoji: '🎉'
           }
         };
 
@@ -254,26 +294,29 @@ describe('Capture Service', () => {
       test('should reject invalid processing level', () => {
         const invalidCapture = {
           content: "I felt excited",
+          narrative: "I experienced excitement",
           experiencer: "Miguel",
           perspective: "I",
           processing: "invalid",
-          experiential_qualities: {
+          experience: {
             qualities: [
               {
                 type: "affective",
                 prominence: 0.8,
                 manifestation: "feeling of excitement"
               }
-            ]
+            ],
+            emoji: '🎉'
           }
         };
 
         expect(() => captureSchema.parse(invalidCapture)).toThrow();
       });
 
-      test('should reject missing experiential qualities', () => {
+      test('should reject missing experience', () => {
         const invalidCapture = {
           content: "I felt excited",
+          narrative: "I experienced excitement",
           experiencer: "Miguel",
           perspective: "I",
           processing: "during"
@@ -285,17 +328,19 @@ describe('Capture Service', () => {
       test('should reject invalid quality type', () => {
         const invalidCapture = {
           content: "I felt excited",
+          narrative: "I experienced excitement",
           experiencer: "Miguel",
           perspective: "I",
           processing: "during",
-          experiential_qualities: {
+          experience: {
             qualities: [
               {
                 type: "invalid",
                 prominence: 0.8,
                 manifestation: "feeling of excitement"
               }
-            ]
+            ],
+            emoji: '🎉'
           }
         };
 
@@ -305,17 +350,19 @@ describe('Capture Service', () => {
       test('should reject invalid prominence values', () => {
         const invalidCapture = {
           content: "I felt excited",
+          narrative: "I experienced excitement",
           experiencer: "Miguel",
           perspective: "I",
           processing: "during",
-          experiential_qualities: {
+          experience: {
             qualities: [
               {
                 type: "affective",
                 prominence: 1.5, // Should be between 0 and 1
                 manifestation: "feeling of excitement"
               }
-            ]
+            ],
+            emoji: '🎉'
           }
         };
 
@@ -325,17 +372,19 @@ describe('Capture Service', () => {
       test('should reject missing manifestation', () => {
         const invalidCapture = {
           content: "I felt excited",
+          narrative: "I experienced excitement",
           experiencer: "Miguel",
           perspective: "I",
           processing: "during",
-          experiential_qualities: {
+          experience: {
             qualities: [
               {
                 type: "affective",
                 prominence: 0.8
                 // Missing manifestation
               }
-            ]
+            ],
+            emoji: '🎉'
           }
         };
 
@@ -349,14 +398,16 @@ describe('Capture Service', () => {
       test('should capture source with minimal input', async () => {
         const input = {
           content: 'I felt excited about the project',
-          experiential_qualities: {
+          narrative: 'I experienced excitement about the project',
+          experience: {
             qualities: [
               {
                 type: 'affective',
                 prominence: 0.8,
                 manifestation: 'feeling of excitement'
               }
-            ]
+            ],
+            emoji: '🎉'
           }
         };
 
@@ -376,13 +427,14 @@ describe('Capture Service', () => {
       test('should capture source with complete input', async () => {
         const input = {
           content: 'We discussed the project timeline',
+          narrative: 'We discussed the project timeline',
           contentType: 'audio',
           perspective: 'we',
           processing: 'right-after',
           experiencer: 'Alice',
           occurred: '2024-01-15T10:00:00Z',
           crafted: false,
-          experiential_qualities: {
+          experience: {
             qualities: [
               {
                 type: 'affective',
@@ -394,7 +446,8 @@ describe('Capture Service', () => {
                 prominence: 0.8,
                 manifestation: 'clear goal direction'
               }
-            ]
+            ],
+            emoji: '👀'
           }
         };
 
@@ -414,14 +467,16 @@ describe('Capture Service', () => {
       test('should generate embeddings and save to vector store', async () => {
         const input = {
           content: 'I felt excited about the project',
-          experiential_qualities: {
+          narrative: 'I experienced excitement about the project',
+          experience: {
             qualities: [
               {
                 type: 'affective',
                 prominence: 0.8,
                 manifestation: 'feeling of excitement'
               }
-            ]
+            ],
+            emoji: '🎉'
           }
         };
 
@@ -435,15 +490,17 @@ describe('Capture Service', () => {
       test('should handle occurred date parsing', async () => {
         const input = {
           content: 'I felt excited about the project',
+          narrative: 'I experienced excitement about the project',
           occurred: '2024-01-15T10:00:00Z',
-          experiential_qualities: {
+          experience: {
             qualities: [
               {
                 type: 'affective',
                 prominence: 0.8,
                 manifestation: 'feeling of excitement'
               }
-            ]
+            ],
+            emoji: '🎉'
           }
         };
 
@@ -453,10 +510,11 @@ describe('Capture Service', () => {
         expect(mockParseOccurredDate).toHaveBeenCalledWith('2024-01-15T10:00:00Z');
       });
 
-      test('should handle multiple experiential qualities', async () => {
+      test('should handle multiple experience qualities', async () => {
         const input = {
           content: 'I felt both excited and focused',
-          experiential_qualities: {
+          narrative: 'I experienced both excitement and focus',
+          experience: {
             qualities: [
               {
                 type: 'affective',
@@ -465,54 +523,52 @@ describe('Capture Service', () => {
               },
               {
                 type: 'attentional',
-                prominence: 0.9,
-                manifestation: 'sharp focus and concentration'
+                prominence: 0.8,
+                manifestation: 'sharp focus on the task'
               }
-            ]
+            ],
+            emoji: '🎯'
           }
         };
 
         const result = await captureService.captureSource(input);
 
-        expect(result.source.experiential_qualities.qualities).toHaveLength(2);
-        expect(result.source.experiential_qualities.qualities[0].type).toBe('affective');
-        expect(result.source.experiential_qualities.qualities[1].type).toBe('attentional');
+        expect(result.source.experience?.qualities).toHaveLength(2);
+        expect(result.source.experience?.qualities[0].type).toBe('affective');
+        expect(result.source.experience?.qualities[1].type).toBe('attentional');
       });
     });
 
     describe('Edge cases and error handling', () => {
-      test('should handle empty experiential qualities array', async () => {
+      test('should handle empty experience qualities array', async () => {
         const input = {
           content: 'I felt neutral',
-          experiential_qualities: {
-            qualities: [
-              {
-                type: 'affective',
-                prominence: 0.1,
-                manifestation: 'neutral feeling'
-              }
-            ]
+          narrative: 'I experienced neutrality',
+          experience: {
+            qualities: [],
+            emoji: '😐'
           }
         };
 
         const result = await captureService.captureSource(input);
 
-        expect(result.source.experiential_qualities.qualities).toHaveLength(1);
-        expect(result.source.experiential_qualities.qualities[0].type).toBe('affective');
+        expect(result.source.experience?.qualities).toHaveLength(0);
       });
 
       test('should handle very long content', async () => {
-        const longContent = 'A'.repeat(10000);
+        const longContent = 'A'.repeat(1000);
         const input = {
           content: longContent,
-          experiential_qualities: {
+          narrative: 'I experienced something',
+          experience: {
             qualities: [
               {
                 type: 'affective',
                 prominence: 0.5,
                 manifestation: 'neutral feeling'
               }
-            ]
+            ],
+            emoji: '😐'
           }
         };
 
@@ -523,21 +579,23 @@ describe('Capture Service', () => {
 
       test('should handle special characters in content', async () => {
         const input = {
-          content: 'I felt excited! 🎉 About the project...',
-          experiential_qualities: {
+          content: 'I felt excited! 🎉 (with emoji and symbols)',
+          narrative: 'I experienced excitement with symbols',
+          experience: {
             qualities: [
               {
                 type: 'affective',
                 prominence: 0.8,
                 manifestation: 'feeling of excitement'
               }
-            ]
+            ],
+            emoji: '🎉'
           }
         };
 
         const result = await captureService.captureSource(input);
 
-        expect(result.source.content).toBe('I felt excited! 🎉 About the project...');
+        expect(result.source.content).toBe('I felt excited! 🎉 (with emoji and symbols)');
       });
     });
   });

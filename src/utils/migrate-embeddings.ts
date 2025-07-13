@@ -72,7 +72,7 @@ export async function migrateExistingRecords(): Promise<MigrationStats> {
     for (const source of sources) {
       try {
         // Skip if already has embedding
-        if (source.content_embedding) {
+        if (source.narrative_embedding) {
           stats.skipped++;
           continue;
         }
@@ -97,7 +97,7 @@ export async function migrateExistingRecords(): Promise<MigrationStats> {
         // Update source with embedding
         const updatedSource: SourceRecord = {
           ...source,
-          content_embedding: embedding
+          narrative_embedding: embedding
         };
 
         // Save updated source

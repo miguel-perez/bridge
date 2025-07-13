@@ -225,8 +225,8 @@ function calculateFilterRelevance(record: SourceRecord, input: SearchInput): num
   }
   
   // Check experiential qualities filters
-  if (record.experiential_qualities?.qualities) {
-    const qualities = record.experiential_qualities.qualities;
+  if (record.experience?.qualities) {
+    const qualities = record.experience.qualities;
     
     // Check min/max filters for each quality type
     const qualityChecks = [
@@ -240,7 +240,7 @@ function calculateFilterRelevance(record: SourceRecord, input: SearchInput): num
     ];
     
     for (const check of qualityChecks) {
-      const quality = qualities.find(q => q.type === check.type);
+      const quality = qualities.find((q: any) => q.type === check.type);
       if (quality) {
         if (check.min !== undefined && quality.prominence < check.min) {
           return 0;
@@ -618,7 +618,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
         crafted: record.crafted,
         system_time: record.system_time,
         occurred: record.occurred,
-        experiential_qualities: record.experiential_qualities,
+        experience: record.experience,
         narrative: record.narrative
       } : undefined,
       relevance_score: record._relevance.score,

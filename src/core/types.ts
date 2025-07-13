@@ -63,12 +63,14 @@ export interface QualityEvidence {
 }
 
 /**
- * Complete experiential analysis of captured data.
- * Contains specific quality evidence for narrative generation.
+ * Complete experiential analysis of captured data, plus emoji.
+ * Contains specific quality evidence for narrative generation and an emoji summary.
  */
-export interface ExperientialQualities {
+export interface Experience {
   /** Specific evidence of experiential qualities */
   qualities: QualityEvidence[];
+  /** Emoji representing the experience (required) */
+  emoji: string;
 }
 
 /**
@@ -80,8 +82,8 @@ export interface Source {
   id: string;
   /** The captured content (text, audio transcript, etc.) */
   content: string;
-  /** Generated narrative that weaves content with experiential qualities */
-  narrative?: string;
+  /** Concise experiential summary in the experiencer's voice */
+  narrative: string;
   /** Type of content being captured */
   contentType?: ContentType;
   /** System timestamp when captured (ISO format) */
@@ -100,10 +102,10 @@ export interface Source {
   crafted?: boolean;
   
   // Analysis fields
-  /** Experiential analysis results */
-  experiential_qualities?: ExperientialQualities;
+  /** Experience analysis results (qualities + emoji) */
+  experience?: Experience;
   /** Vector embedding for semantic search (generated from narrative) */
-  content_embedding?: number[];
+  narrative_embedding?: number[];
 }
 
 // ============================================================================
@@ -180,14 +182,14 @@ export function isValidSource(source: unknown): source is Source {
     typeof s.id === 'string' && s.id.length > 0 &&
     typeof s.content === 'string' && s.content.length > 0 &&
     typeof s.system_time === 'string' &&
-    (s.narrative === undefined || typeof s.narrative === 'string') &&
+    typeof s.narrative === 'string' && s.narrative.length > 0 && s.narrative.length <= 200 &&
     (s.contentType === undefined || typeof s.contentType === 'string') &&
     (s.occurred === undefined || typeof s.occurred === 'string') &&
     (s.perspective === undefined || isValidPerspective(s.perspective)) &&
     (s.experiencer === undefined || typeof s.experiencer === 'string') &&
     (s.processing === undefined || isValidProcessingLevel(s.processing)) &&
     (s.crafted === undefined || typeof s.crafted === 'boolean') &&
-    (s.content_embedding === undefined || Array.isArray(s.content_embedding))
+    (s.narrative_embedding === undefined || Array.isArray(s.narrative_embedding))
   );
 }
 
@@ -210,7 +212,8 @@ export function createSource(content: string, id?: string): Source {
     perspective: DEFAULTS.PERSPECTIVE,
     experiencer: DEFAULTS.EXPERIENCER,
     processing: DEFAULTS.PROCESSING,
-    crafted: DEFAULTS.CRAFTED
+    crafted: DEFAULTS.CRAFTED,
+    narrative: '' // Initialize narrative with an empty string
   };
 }
 

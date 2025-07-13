@@ -5,7 +5,7 @@ import type {
   ContentType,
   QualityType,
   QualityEvidence,
-  ExperientialQualities,
+  Experience,
   Source,
   RecordType,
   BaseRecord,
@@ -87,9 +87,9 @@ describe('Core Types', () => {
     });
   });
 
-  describe('ExperientialQualities interface', () => {
-    test('should accept valid ExperientialQualities object', () => {
-      const qualities: ExperientialQualities = {
+  describe('Experience interface', () => {
+    test('should accept valid Experience object', () => {
+      const experience: Experience = {
         qualities: [
           {
             type: 'affective',
@@ -101,20 +101,24 @@ describe('Core Types', () => {
             prominence: 0.6,
             manifestation: 'clear goal direction'
           }
-        ]
+        ],
+        emoji: '🌧️'
       };
       
-      expect(qualities.qualities).toHaveLength(2);
-      expect(qualities.qualities[0].type).toBe('affective');
-      expect(qualities.qualities[1].type).toBe('purposive');
+      expect(experience.qualities).toHaveLength(2);
+      expect(experience.qualities[0].type).toBe('affective');
+      expect(experience.qualities[1].type).toBe('purposive');
+      expect(experience.emoji).toBe('🌧️');
     });
 
     test('should accept empty qualities array', () => {
-      const qualities: ExperientialQualities = {
-        qualities: []
+      const experience: Experience = {
+        qualities: [],
+        emoji: '🌧️'
       };
       
-      expect(qualities.qualities).toHaveLength(0);
+      expect(experience.qualities).toHaveLength(0);
+      expect(experience.emoji).toBe('🌧️');
     });
   });
 
@@ -123,11 +127,13 @@ describe('Core Types', () => {
       const source: Source = {
         id: 'test-id',
         content: 'Test content',
+        narrative: 'Test narrative',
         system_time: '2024-01-15T10:30:00Z'
       };
       
       expect(source.id).toBe('test-id');
       expect(source.content).toBe('Test content');
+      expect(source.narrative).toBe('Test narrative');
       expect(source.system_time).toBe('2024-01-15T10:30:00Z');
     });
 
@@ -143,16 +149,17 @@ describe('Core Types', () => {
         experiencer: 'self',
         processing: 'during',
         crafted: false,
-        experiential_qualities: {
+        experience: {
           qualities: [
             {
               type: 'affective',
               prominence: 0.8,
               manifestation: 'feeling of joy'
             }
-          ]
+          ],
+          emoji: '🌧️'
         },
-        content_embedding: [0.1, 0.2, 0.3]
+        narrative_embedding: [0.1, 0.2, 0.3]
       };
       
       expect(source.id).toBe('complete-id');
@@ -163,8 +170,9 @@ describe('Core Types', () => {
       expect(source.experiencer).toBe('self');
       expect(source.processing).toBe('during');
       expect(source.crafted).toBe(false);
-      expect(source.experiential_qualities?.qualities).toHaveLength(1);
-      expect(source.content_embedding).toHaveLength(3);
+      expect(source.experience?.qualities).toHaveLength(1);
+      expect(source.experience?.emoji).toBe('🌧️');
+      expect(source.narrative_embedding).toHaveLength(3);
     });
 
     test('should accept Source with narrative only', () => {
@@ -201,12 +209,14 @@ describe('Core Types', () => {
         type: 'source',
         id: 'test-id',
         content: 'Test content',
+        narrative: 'Test narrative',
         system_time: '2024-01-15T10:30:00Z'
       };
       
       expect(sourceRecord.type).toBe('source');
       expect(sourceRecord.id).toBe('test-id');
       expect(sourceRecord.content).toBe('Test content');
+      expect(sourceRecord.narrative).toBe('Test narrative');
     });
 
     test('should accept StorageRecord union type', () => {
@@ -214,11 +224,13 @@ describe('Core Types', () => {
         type: 'source',
         id: 'test-id',
         content: 'Test content',
+        narrative: 'Test narrative',
         system_time: '2024-01-15T10:30:00Z'
       };
       
       expect(storageRecord.type).toBe('source');
       expect(storageRecord.id).toBe('test-id');
+      expect(storageRecord.narrative).toBe('Test narrative');
     });
   });
 
@@ -263,12 +275,14 @@ describe('Core Types', () => {
       const validSource = {
         id: 'test-id',
         content: 'Test content',
+        narrative: 'Test narrative',
         system_time: '2024-01-15T10:30:00Z'
       };
       
       const invalidSource = {
         id: '',
         content: 'Test content',
+        narrative: 'Test narrative',
         system_time: '2024-01-15T10:30:00Z'
       };
       

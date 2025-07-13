@@ -2,7 +2,7 @@
 export const tools = [
   {
     name: "capture",
-    description: "Preserve experiences exactly as they were shared with you, maintaining their authentic voice through seven-dimensional phenomenological analysis (embodied, attentional, affective, purposive, spatial, temporal, intersubjective) and narrative generation that weaves content with weighted quality manifestations for better searchability",
+    description: "Preserve experiences exactly as they were shared with you, maintaining their authentic voice through seven-dimensional phenomenological analysis (embodied, attentional, affective, purposive, spatial, temporal, intersubjective). The 'narrative' field is REQUIRED and must be a concise experiential summary (max 200 chars) written in the experiencer's voice using present tense and active language. The 'emoji' field is REQUIRED and should visually summarize the moment—together, emoji + narrative form a storyboard frame. Examples: '🌧️ Step through puddles as rain drums', '🖊️ Fidget with pen, heart thuds hard', '🍝 Stir sauce, laughter spills from kitchen'.",
     inputSchema: {
       type: "object",
       properties: {
@@ -18,25 +18,11 @@ export const tools = [
               },
               narrative: { 
                 type: "string", 
-                description: "Narrative that integrates content with weighted quality manifestations for better searchability. Should preserve key phrases while weaving in quality manifestations proportionally based on prominence scores." 
+                description: "REQUIRED: Concise experiential summary (max 200 chars) in experiencer's voice. Write as if they're narrating their moment in present tense with active language. Use their own words, slang, or phrasing. Start with a verb when possible. Must be paired with an emoji as a visual summary. Examples: '🌧️ Step through puddles as rain drums', '🖊️ Fidget with pen, heart thuds hard', '🍝 Stir sauce, laughter spills from kitchen'." 
               },
-              experiencer: { 
-                type: "string", 
-                description: "The person whose experience this is (e.g., 'Miguel', 'Alicia', 'Claude-Captain')" 
-              },
-              perspective: { 
-                type: "string", 
-                enum: ["I", "we", "you", "they"], 
-                description: "The grammatical perspective from which the experience was shared" 
-              },
-              processing: { 
-                type: "string", 
-                enum: ["during", "right-after", "long-after", "crafted"], 
-                description: "When this was shared relative to when it happened" 
-              },
-              experiential_qualities: { 
-                type: "object", 
-                description: "Your phenomenological analysis of the qualities present in their experience",
+              experience: {
+                type: "object",
+                description: "Phenomenological analysis of the experience, including qualities and a required emoji. Emoji + narrative = storyboard frame.",
                 properties: {
                   qualities: {
                     type: "array",
@@ -60,9 +46,27 @@ export const tools = [
                       },
                       required: ["type", "prominence", "manifestation"]
                     }
+                  },
+                  emoji: {
+                    type: "string",
+                    description: "REQUIRED: Emoji visually summarizing the experience. Must be paired with the narrative as a storyboard frame."
                   }
                 },
-                required: ["qualities"]
+                required: ["qualities", "emoji"]
+              },
+              experiencer: { 
+                type: "string", 
+                description: "The person whose experience this is (e.g., 'Miguel', 'Alicia', 'Claude-Captain')" 
+              },
+              perspective: { 
+                type: "string", 
+                enum: ["I", "we", "you", "they"], 
+                description: "The grammatical perspective from which the experience was shared" 
+              },
+              processing: { 
+                type: "string", 
+                enum: ["during", "right-after", "long-after", "crafted"], 
+                description: "When this was shared relative to when it happened" 
               },
               contentType: { 
                 type: "string", 
@@ -78,7 +82,7 @@ export const tools = [
                 description: "Whether this was crafted for sharing (true) or raw/spontaneous expression (false)" 
               }
             },
-            required: ["content", "experiencer", "perspective", "processing", "experiential_qualities", "narrative"]
+            required: ["content", "experiencer", "perspective", "processing", "experience", "narrative"]
           }
         }
       },
@@ -173,7 +177,7 @@ export const tools = [
 
   {
     name: "update",
-    description: "Correct or update existing experiences when mistakes were made during capture, maintaining the integrity of the experiential record",
+    description: "Correct or update existing experiences when mistakes were made during capture, maintaining the integrity of the experiential record. The 'emoji' field is REQUIRED in the experience object.",
     inputSchema: {
       type: "object",
       properties: {
@@ -193,7 +197,41 @@ export const tools = [
               },
               narrative: {
                 type: "string",
-                description: "Corrected narrative text (only if fixing errors in the generated narrative)"
+                description: "Corrected narrative text (max 200 chars) - concise experiential summary in experiencer's voice using present tense and active language. Must be paired with an emoji as a storyboard frame."
+              },
+              experience: {
+                type: "object",
+                description: "Corrected phenomenological analysis, including qualities and a required emoji. Emoji + narrative = storyboard frame.",
+                properties: {
+                  qualities: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        type: {
+                          type: "string",
+                          enum: ["embodied", "attentional", "affective", "purposive", "spatial", "temporal", "intersubjective"]
+                        },
+                        prominence: {
+                          type: "number",
+                          minimum: 0,
+                          maximum: 1,
+                          description: "How strongly this quality appears (0=absent, 1=dominant)"
+                        },
+                        manifestation: {
+                          type: "string",
+                          description: "How this quality specifically shows up in their experience"
+                        }
+                      },
+                      required: ["type", "prominence", "manifestation"]
+                    }
+                  },
+                  emoji: {
+                    type: "string",
+                    description: "REQUIRED: Emoji visually summarizing the experience. Must be paired with the narrative as a storyboard frame."
+                  }
+                },
+                required: ["qualities", "emoji"]
               },
               contentType: {
                 type: "string",
@@ -220,36 +258,6 @@ export const tools = [
               crafted: {
                 type: "boolean",
                 description: "Updated crafted flag"
-              },
-              experiential_qualities: {
-                type: "object",
-                description: "Corrected phenomenological analysis if original was inaccurate",
-                properties: {
-                  qualities: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        type: {
-                          type: "string",
-                          enum: ["embodied", "attentional", "affective", "purposive", "spatial", "temporal", "intersubjective"]
-                        },
-                        prominence: {
-                          type: "number",
-                          minimum: 0,
-                          maximum: 1,
-                          description: "How strongly this quality appears (0=absent, 1=dominant)"
-                        },
-                        manifestation: {
-                          type: "string",
-                          description: "How this quality specifically shows up in their experience"
-                        }
-                      },
-                      required: ["type", "prominence", "manifestation"]
-                    }
-                  }
-                },
-                required: ["qualities"]
               },
               regenerate_embeddings: {
                 type: "boolean",

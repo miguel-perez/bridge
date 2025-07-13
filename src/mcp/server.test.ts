@@ -177,8 +177,8 @@ describe('MCP Server Protocol Compliance', () => {
       
       expect(result.content).toBeDefined();
       expect(Array.isArray(result.content)).toBe(true);
-      // Should return an error response - content validation happens first
-      expect((result.content as any[])[0].text).toContain('Either content or narrative must be provided');
+      // Should return an error response - narrative is now required
+      expect((result.content as any[])[0].text).toContain('Required');
     }, 30000);
 
     test('should handle invalid perspective values', async () => {

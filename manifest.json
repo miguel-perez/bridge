@@ -40,7 +40,7 @@
   "tools": [
     {
       "name": "capture",
-      "description": "Preserve experiences exactly as they were shared with you, maintaining their authentic voice through seven-dimensional phenomenological analysis (embodied, attentional, affective, purposive, spatial, temporal, intersubjective)"
+      "description": "Preserve experiences exactly as they were shared with you, maintaining their authentic voice through seven-dimensional phenomenological analysis (embodied, attentional, affective, purposive, spatial, temporal, intersubjective). The 'narrative' field is REQUIRED and must be a concise experiential summary (max 200 chars) written in the experiencer's voice using present tense and active language."
     },
     {
       "name": "search",

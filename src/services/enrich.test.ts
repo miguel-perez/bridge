@@ -6,13 +6,13 @@ import { v4 as uuidv4 } from 'uuid';
 
 // Mock the embedding service to avoid transformers library issues
 jest.mock('./embeddings.js', () => ({
-  EmbeddingService: jest.fn().mockImplementation(() => ({
+  embeddingService: {
     initialize: jest.fn().mockResolvedValue(undefined),
     generateEmbedding: jest.fn().mockResolvedValue(new Array(384).fill(0.1)),
     generateEmbeddings: jest.fn().mockResolvedValue([new Array(384).fill(0.1)]),
     clearCache: jest.fn(),
     getExpectedDimension: jest.fn().mockReturnValue(384)
-  }))
+  }
 }));
 
 // Helper to create a minimal valid source record
@@ -20,6 +20,7 @@ function makeSource(overrides: Partial<SourceRecord> = {}): SourceRecord {
   return {
     id: overrides.id || uuidv4(),
     content: overrides.content || 'Original content',
+    narrative: overrides.narrative || 'Original narrative',
     contentType: overrides.contentType || 'text',
     system_time: overrides.system_time || new Date().toISOString(),
     perspective: overrides.perspective || 'I',
@@ -27,15 +28,12 @@ function makeSource(overrides: Partial<SourceRecord> = {}): SourceRecord {
     processing: overrides.processing || 'during',
     occurred: overrides.occurred || '2024-01-01T00:00:00Z',
     crafted: overrides.crafted ?? false,
-    experiential_qualities: overrides.experiential_qualities || {
+    experience: {
       qualities: [
         { type: 'affective', prominence: 0.5, manifestation: 'neutral' }
       ],
-      vector: {
-        embodied: 0, attentional: 0, affective: 0.5, purposive: 0, spatial: 0, temporal: 0, intersubjective: 0
-      }
+      emoji: '🌧️',
     },
-    content_embedding: overrides.content_embedding || [0.1, 0.2, 0.3, 0.4, 0.5, ...Array(379).fill(0)],
     type: 'source',
     ...overrides
   };
@@ -72,20 +70,21 @@ describe('EnrichService', () => {
     expect(result.source.content).toBe(baseSource.content);
   });
 
-  test('updates experiential qualities and generates vector', async () => {
+  test('updates experience and generates vector', async () => {
     const result = await enrichService.enrichSource({
       id: baseSource.id,
-      experiential_qualities: {
+      experience: {
         qualities: [
           { type: 'spatial', prominence: 0.8, manifestation: 'open space' },
           { type: 'affective', prominence: 0.2, manifestation: 'calm' }
-        ]
+        ],
+        emoji: '🌧️'
       }
     });
-    expect(result.source.experiential_qualities?.qualities.length).toBe(2);
-    expect(result.source.experiential_qualities?.qualities[0].type).toBe('spatial');
-    expect(result.source.experiential_qualities?.qualities[1].type).toBe('affective');
-    expect(result.updatedFields).toContain('experiential_qualities');
+    expect(result.source.experience?.qualities.length).toBe(2);
+    expect(result.source.experience?.qualities[0].type).toBe('spatial');
+    expect(result.source.experience?.qualities[1].type).toBe('affective');
+    expect(result.updatedFields).toContain('experience');
   });
 
   test('regenerates embedding if requested', async () => {
@@ -95,8 +94,8 @@ describe('EnrichService', () => {
       regenerate_embeddings: true
     });
     expect(result.embeddingsRegenerated).toBe(true);
-    expect(result.source.content_embedding).toBeDefined();
-    expect(Array.isArray(result.source.content_embedding)).toBe(true);
+    expect(result.source.narrative_embedding).toBeDefined();
+    expect(Array.isArray(result.source.narrative_embedding)).toBe(true);
   });
 
   test('throws if record does not exist', async () => {
@@ -114,10 +113,11 @@ describe('EnrichService', () => {
   test('throws on out-of-range prominence', async () => {
     const badInput = {
       ...baseSource,
-      experiential_qualities: {
+      experience: {
         qualities: [
           { type: 'affective', prominence: 1.5, manifestation: 'too high' }
-        ]
+        ],
+        emoji: '🌧️'
       }
     };
     expect(() => enrichSchema.parse(badInput)).toThrow();
@@ -134,14 +134,12 @@ describe('EnrichService', () => {
   test('enrich with only a vector, no qualities', async () => {
     const result = await enrichService.enrichSource({
       id: baseSource.id,
-      experiential_qualities: {
+      experience: {
         qualities: [],
-        vector: {
-          embodied: 0.1, attentional: 0.2, affective: 0.3, purposive: 0.4, spatial: 0.5, temporal: 0.6, intersubjective: 0.7
-        }
+        emoji: '🌧️'
       }
     });
-    expect(result.source.experiential_qualities?.qualities.length).toBe(0);
+    expect(result.source.experience?.qualities.length).toBe(0);
   });
 
   test('enrich with no changes does not update fields', async () => {

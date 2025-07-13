@@ -34,31 +34,25 @@ export const QUALITY_TYPES = [
 
 /**
  * Zod schema for validating capture input.
- * Narrative is optional but preferred for better searchability.
+ * Narrative is required - a concise experiential summary in the experiencer's voice.
  */
 export const captureSchema = z.object({
   content: z.string().optional(),
-  narrative: z.string().optional(),
+  narrative: z.string().min(1, 'Narrative is required').max(200, 'Narrative should be a concise experiential summary'),
   contentType: z.string().optional().default(CAPTURE_DEFAULTS.CONTENT_TYPE),
   perspective: z.enum(['I', 'we', 'you', 'they']).optional().default(CAPTURE_DEFAULTS.PERSPECTIVE as 'I' | 'we' | 'you' | 'they'),
   processing: z.enum(['during', 'right-after', 'long-after', 'crafted']).optional().default(CAPTURE_DEFAULTS.PROCESSING as 'during' | 'right-after' | 'long-after' | 'crafted'),
   occurred: z.string().optional(),
   experiencer: z.string().optional().default(CAPTURE_DEFAULTS.EXPERIENCER),
   crafted: z.boolean().optional(),
-  experiential_qualities: z.object({
+  experience: z.object({
     qualities: z.array(z.object({
       type: z.enum(QUALITY_TYPES),
       prominence: z.number().min(0).max(1),
       manifestation: z.string(),
     })),
+    emoji: z.string().min(1, 'Emoji is required'),
   }),
-}).refine((data) => {
-  if (!data.content && !data.narrative) {
-    throw new Error('Either content or narrative must be provided');
-  }
-  return true;
-}, {
-  message: 'Either content or narrative must be provided',
 });
 
 /**
@@ -66,19 +60,20 @@ export const captureSchema = z.object({
  */
 export interface CaptureInput {
   content?: string;
-  narrative?: string;
+  narrative: string; // Required - concise experiential summary in experiencer's voice
   contentType?: string;
   perspective?: 'I' | 'we' | 'you' | 'they';
   processing?: 'during' | 'right-after' | 'long-after' | 'crafted';
   occurred?: string;
   experiencer?: string;
   crafted?: boolean;
-  experiential_qualities: {
+  experience: {
     qualities: Array<{
       type: typeof QUALITY_TYPES[number];
       prominence: number;
       manifestation: string;
     }>;
+    emoji: string;
   };
 }
 
@@ -126,23 +121,23 @@ export class CaptureService {
     const processing = validatedInput.processing;
     const experiencer = validatedInput.experiencer;
 
-    // Process experiential qualities - no vector generation needed
-    const processedExperientialQualities: import('../core/types.js').ExperientialQualities = {
-      qualities: validatedInput.experiential_qualities.qualities,
+    // Process experience - no vector generation needed
+    const processedExperience: import('../core/types.js').Experience = {
+      qualities: validatedInput.experience.qualities,
+      emoji: validatedInput.experience.emoji,
     };
 
-    // Generate embedding from narrative (preferred) or content
-    let contentEmbedding: number[] | undefined;
+    // Generate embedding from narrative (now required)
+    let narrativeEmbedding: number[] | undefined;
     try {
-      const textToEmbed = validatedInput.narrative || validatedInput.content!;
-      contentEmbedding = await embeddingService.generateEmbedding(textToEmbed);
+      narrativeEmbedding = await embeddingService.generateEmbedding(validatedInput.narrative);
     } catch (error) {
       // Silently handle embedding generation errors in MCP context
     }
 
     const source = await saveSource({
       id: await generateId('src'),
-      content: validatedInput.content || validatedInput.narrative!,  // Ensure content exists
+      content: validatedInput.content || validatedInput.narrative,  // Use content if provided, otherwise use narrative
       narrative: validatedInput.narrative,
       contentType: validatedInput.contentType,
       system_time: new Date().toISOString(),
@@ -151,15 +146,15 @@ export class CaptureService {
       experiencer,
       processing: processing as ProcessingLevel,
       crafted: validatedInput.crafted,
-      experiential_qualities: processedExperientialQualities,
-      content_embedding: contentEmbedding,
+      experience: processedExperience,
+      narrative_embedding: narrativeEmbedding,
     });
 
     // Store vector in vector store if embedding was generated
-    if (contentEmbedding) {
+    if (narrativeEmbedding) {
       try {
         const vectorStore = getVectorStore();
-        vectorStore.addVector(source.id, contentEmbedding);
+        vectorStore.addVector(source.id, narrativeEmbedding);
         // Save vectors to disk immediately to ensure persistence
         await vectorStore.saveToDisk();
       } catch (error) {

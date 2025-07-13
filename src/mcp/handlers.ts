@@ -11,7 +11,7 @@ import { CaptureService } from '../services/capture.js';
 import { ReleaseService } from '../services/release.js';
 import { SearchService, type SearchInput, type SearchServiceResult } from '../services/search.js';
 import { EnrichService } from '../services/enrich.js';
-import type { SourceRecord, ExperientialQualities } from '../core/types.js';
+import type { SourceRecord, Experience } from '../core/types.js';
 
 // ============================================================================
 // CONSTANTS
@@ -25,22 +25,21 @@ const RELEVANCE_PERCENT_PRECISION = 0;
 // ============================================================================
 
 /**
- * Formats experiential qualities as a readable bulleted list
- * 
- * @param qualities - The experiential qualities to format
- * @returns Formatted string representation of the qualities
+ * Formats experience (qualities + emoji) as a readable bulleted list
+ *
+ * @param experience - The experience object to format
+ * @returns Formatted string representation of the experience
  */
-function formatExperientialQualities(qualities: ExperientialQualities): string {
-  if (!qualities.qualities || qualities.qualities.length === 0) {
+function formatExperience(experience: Experience | undefined): string {
+  if (!experience || !experience.qualities || experience.qualities.length === 0) {
     return 'No experiential qualities analyzed';
   }
-  
-  const qualityLines = qualities.qualities.map(q => {
+  const emoji = experience.emoji ? `${experience.emoji} ` : '';
+  const qualityLines = experience.qualities.map(q => {
     const score = (q.prominence * 100).toFixed(RELEVANCE_PERCENT_PRECISION);
     return `• ${q.type} (${score}%): ${q.manifestation}`;
   });
-  
-  return qualityLines.join('\n');
+  return `${emoji}\n${qualityLines.join('\n')}`;
 }
 
 /**
@@ -186,23 +185,18 @@ export class MCPToolHandlers {
     
     for (const experience of experiences) {
       const result = await this.captureService.captureSource(experience);
-      
       const content = `✓ Captured experience for ${result.source.experiencer}
 ID: ${result.source.id}
 Occurred: ${formatDate(result.source.occurred || result.source.system_time)}
 
 ${result.source.narrative ? 'Narrative: ' : 'Content: '}${formatContent(result.source.content, result.source.narrative, true)}
 
-Experiential Analysis:
-${formatExperientialQualities(result.source.experiential_qualities || { qualities: [] })}
+Experience:\n${formatExperience(result.source.experience)}
 
 ${result.defaultsUsed.length > 0 ? `Defaults used: ${result.defaultsUsed.join(', ')}` : ''}`;
-
       results.push(content);
     }
-
     const summary = experiences.length > 1 ? `Captured ${experiences.length} experiences:\n\n` : '';
-    
     return {
       content: [{ type: 'text', text: summary + results.join('\n\n---\n\n') }]
     };
@@ -291,8 +285,8 @@ ${formatContent(result.snippet, result.metadata?.narrative, query.includeFullCon
 Relevance: ${formatRelevanceBreakdown(result.relevance_breakdown)}`;
 
         // Add qualities if available and includeContext is true
-        if (query.includeContext && result.metadata?.experiential_qualities) {
-          resultText += `\n\nQualities:\n${formatExperientialQualities(result.metadata.experiential_qualities as ExperientialQualities)}`;
+        if (query.includeContext && result.metadata?.experience) {
+          resultText += `\n\nQualities:\n${formatExperience(result.metadata.experience)}`;
         }
 
         return {
@@ -343,7 +337,7 @@ Relevance: ${formatRelevanceBreakdown(result.relevance_breakdown)}`;
         occurred: update.occurred,
         experiencer: update.experiencer,
         crafted: update.crafted,
-        experiential_qualities: update.experiential_qualities,
+        experience: update.experience,
         regenerate_embeddings: update.regenerate_embeddings
       };
       
@@ -372,8 +366,8 @@ Relevance: ${formatRelevanceBreakdown(result.relevance_breakdown)}`;
       }
 
       // Show updated qualities if qualities were changed
-      if (result.updatedFields.includes('experiential_qualities')) {
-        content += `\n\nCorrected Experiential Analysis:\n${formatExperientialQualities(result.source.experiential_qualities || { qualities: [] })}`;
+      if (result.updatedFields.includes('experience')) {
+        content += `\n\nCorrected Experience:\n${formatExperience(result.source.experience)}`;
       }
       
       results.push(content);

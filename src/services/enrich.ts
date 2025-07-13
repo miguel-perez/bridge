@@ -5,7 +5,7 @@
 
 import { z } from 'zod';
 import { getSource, saveSource, deleteSource } from '../core/storage.js';
-import type { SourceRecord, ProcessingLevel } from '../core/types.js';
+import type { SourceRecord } from '../core/types.js';
 import { parseOccurredDate } from '../utils/validation.js';
 import { embeddingService } from './embeddings.js';
 import { getVectorStore } from './vector-store.js';
@@ -46,13 +46,14 @@ export const enrichSchema = z.object({
   occurred: z.string().optional().describe('Updated occurred time (chrono-node compatible)'),
   experiencer: z.string().optional().describe('Updated experiencer'),
   crafted: z.boolean().optional().describe('Updated crafted flag'),
-  experiential_qualities: z.object({
+  experience: z.object({
     qualities: z.array(z.object({
       type: z.enum(QUALITY_TYPES),
       prominence: z.number().min(0).max(1),
       manifestation: z.string(),
-    })),
-  }).optional().describe('Updated experiential qualities'),
+    })).optional(),
+    emoji: z.string().optional(),
+  }).partial().optional().describe('Updated experience (qualities + emoji)'),
   regenerate_embeddings: z.boolean().optional().default(false).describe('Whether to regenerate content embeddings'),
 });
 
@@ -69,12 +70,13 @@ export interface EnrichInput {
   occurred?: string;
   experiencer?: string;
   crafted?: boolean;
-  experiential_qualities?: {
-    qualities: Array<{
+  experience?: {
+    qualities?: Array<{
       type: typeof QUALITY_TYPES[number];
       prominence: number;
       manifestation: string;
     }>;
+    emoji?: string;
   };
   regenerate_embeddings?: boolean;
 }
@@ -119,12 +121,16 @@ export class EnrichService {
       }
     }
 
-    // Process experiential qualities - no vector generation needed
-    let processedExperientialQualities: import('../core/types.js').ExperientialQualities | undefined = undefined;
-    if (input.experiential_qualities?.qualities) {
-      processedExperientialQualities = {
-        qualities: input.experiential_qualities.qualities,
+    // Process experience - merge with existing if present
+    let processedExperience: import('../core/types.js').Experience | undefined = undefined;
+    if (input.experience) {
+      const prev = existingSource.experience || { qualities: [], emoji: '' };
+      processedExperience = {
+        qualities: input.experience.qualities ?? prev.qualities,
+        emoji: input.experience.emoji ?? prev.emoji,
       };
+    } else if (existingSource.experience) {
+      processedExperience = existingSource.experience;
     }
 
     // Determine if we need to regenerate embeddings
@@ -133,30 +139,30 @@ export class EnrichService {
       (input.narrative && input.narrative !== existingSource.narrative);
 
     // Generate new embedding if needed
-    let contentEmbedding: number[] | undefined = existingSource.content_embedding;
+    let narrativeEmbedding: number[] | undefined = existingSource.narrative_embedding;
     if (shouldRegenerateEmbeddings) {
       const textToEmbed = input.narrative || existingSource.narrative || 
                          input.content || existingSource.content;
       try {
-        contentEmbedding = await embeddingService.generateEmbedding(textToEmbed);
+        narrativeEmbedding = await embeddingService.generateEmbedding(textToEmbed);
       } catch (error) {
         // Silently handle embedding generation errors in MCP context
       }
     }
 
-    // Create updated source record
-    const updatedSource: Omit<SourceRecord, 'type'> = {
+    // When saving, use 'experience' instead of 'experiential_qualities'
+    const updatedSource = {
       ...existingSource,
       content: input.content ?? existingSource.content,
       narrative: input.narrative ?? existingSource.narrative,
       contentType: input.contentType ?? existingSource.contentType,
       perspective: input.perspective ?? existingSource.perspective,
-      experiencer: input.experiencer ?? existingSource.experiencer,
-      processing: (input.processing ?? existingSource.processing) as ProcessingLevel,
+      processing: input.processing ?? existingSource.processing,
       occurred: occurredDate ?? existingSource.occurred,
+      experiencer: input.experiencer ?? existingSource.experiencer,
       crafted: input.crafted ?? existingSource.crafted,
-      experiential_qualities: processedExperientialQualities ?? existingSource.experiential_qualities,
-      content_embedding: contentEmbedding,
+      experience: processedExperience,
+      narrative_embedding: narrativeEmbedding,
     };
 
     // Delete the old record and save the new one
@@ -164,10 +170,10 @@ export class EnrichService {
     const source = await saveSource(updatedSource);
 
     // Update vector store if embeddings were regenerated
-    if (shouldRegenerateEmbeddings && contentEmbedding) {
+    if (shouldRegenerateEmbeddings && narrativeEmbedding) {
       try {
         await getVectorStore().removeVector(input.id);
-        await getVectorStore().addVector(source.id, contentEmbedding);
+        await getVectorStore().addVector(source.id, narrativeEmbedding);
       } catch (error) {
         // Silently handle vector store update errors in MCP context
       }
@@ -199,11 +205,11 @@ export class EnrichService {
     if (original.processing !== updated.processing) fields.push('processing');
     if (original.occurred !== updated.occurred) fields.push('occurred');
     if (original.crafted !== updated.crafted) fields.push('crafted');
-    if (JSON.stringify(original.experiential_qualities) !== JSON.stringify(updated.experiential_qualities)) {
-      fields.push('experiential_qualities');
+    if (JSON.stringify(original.experience) !== JSON.stringify(updated.experience)) {
+      fields.push('experience');
     }
-    if (JSON.stringify(original.content_embedding) !== JSON.stringify(updated.content_embedding)) {
-      fields.push('content_embedding');
+    if (JSON.stringify(original.narrative_embedding) !== JSON.stringify(updated.narrative_embedding)) {
+      fields.push('narrative_embedding');
     }
     return fields;
   }

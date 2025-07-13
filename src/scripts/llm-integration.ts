@@ -3,10 +3,69 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { Anthropic } from "@anthropic-ai/sdk";
 import { join } from 'path';
 import dotenv from 'dotenv';
-import { writeFileSync, mkdirSync, existsSync } from 'fs';
+import { writeFileSync, mkdirSync, existsSync, readFileSync } from 'fs';
 
 // Load environment variables
 dotenv.config();
+
+// Helper functions for batch migration
+function readBridgeDatabase(): any[] {
+  const databasePath = join(process.cwd(), 'bridge.json');
+  if (!existsSync(databasePath)) {
+    throw new Error('bridge.json not found');
+  }
+  
+  const databaseContent = readFileSync(databasePath, 'utf-8');
+  const database = JSON.parse(databaseContent);
+  
+  // Handle different database structures
+  if (Array.isArray(database)) {
+    return database;
+  } else if (database.sources && Array.isArray(database.sources)) {
+    return database.sources;
+  } else {
+    throw new Error('Invalid database structure');
+  }
+}
+
+function filterSourcesByExperiencer(sources: any[], experiencerName: string): any[] {
+  return sources.filter(source => 
+    source.experiencer && 
+    source.experiencer.toLowerCase() === experiencerName.toLowerCase()
+  );
+}
+
+function needsMigration(source: any): boolean {
+  return (
+    !source.narrative || source.narrative.length === 0 || // Missing or empty narrative
+    source.vector || // Has old vector format
+    !source.experiential_qualities || // Missing experiential qualities
+    source.content_embedding || // Has old embedding field name
+    !source.narrative_embedding // Missing new embedding field
+  );
+}
+
+function createMigrationBatch(sources: any[], batchSize: number = 5): any[][] {
+  const batches: any[][] = [];
+  for (let i = 0; i < sources.length; i += batchSize) {
+    batches.push(sources.slice(i, i + batchSize));
+  }
+  return batches;
+}
+
+function formatSourceForMigration(source: any): string {
+  return `
+Source ID: ${source.id}
+Content: ${source.content || 'No content'}
+Experiencer: ${source.experiencer || 'Not specified'}
+Perspective: ${source.perspective || 'Not specified'}
+Processing: ${source.processing || 'Not specified'}
+Occurred: ${source.occurred || 'Not specified'}
+Crafted: ${source.crafted || false}
+Experiential Qualities: ${JSON.stringify(source.experiential_qualities || {}, null, 2)}
+System Time: ${source.system_time || 'Not specified'}
+`;
+}
 
 // Test scenarios for different development phases
 const TEST_SCENARIOS = {
@@ -20,6 +79,10 @@ const TEST_SCENARIOS = {
   'basic-capture': `
     Create a simple experiential capture about feeling excited about a new project.
     Use the capture tool with minimal required fields.
+    
+    IMPORTANT: The narrative field must be a concise experiential summary (max 200 characters) 
+    written in the experiencer's voice, using present tense and active language.
+    Example: "Heart races as possibilities unfold" or "Fingers itch to dive into new project"
   `,
   
   // Search functionality
@@ -265,6 +328,41 @@ const TEST_SCENARIOS = {
     - limit: 10 (to get a reasonable number of results)
     
     Finally, note misalignments between your expectation and reality, good or bad.
+  `,
+
+  // Batch migration scenario
+  'batch-migration': `
+    You are helping migrate a database of experiential captures to a new schema. 
+    The sources provided need proper narrative fields generated from their content.
+    
+    TASK: Process each source systematically using the capture tool.
+    
+    For each source:
+    1. Analyze the content and any existing experiential qualities
+    2. Generate a concise experiential narrative summary in the experiencer's voice
+    3. Use the capture tool to create a new source with the updated schema
+    4. Ensure all required fields are properly filled (narrative is now required)
+    5. Preserve all original experiential qualities and metadata
+    
+    NARRATIVE GUIDELINES:
+    - The 'narrative' field is REQUIRED and must be a concise experiential summary (max 200 chars)
+    - Write as if the experiencer is narrating their moment in present tense with active language
+    - Use the experiencer's own words, slang, or phrasing whenever possible
+    - Start with a verb or action when possible—let the moment move
+    - Match the tone and emotional register of the source
+    - Feel like a thought, sensation, or action arising in the moment, not a label or report
+    - Examples: "Step through puddles as rain drums", "Fidget with pen, heart thuds hard", "Stir sauce, laughter spills from kitchen"
+    
+    IMPORTANT GUIDELINES:
+    - Preserve the original perspective, experiencer, processing level, and other metadata
+    - Keep the original experiential qualities exactly as they are
+    - If content is missing, use the narrative as the content
+    - Process sources one at a time and report your progress
+    
+    Sources to migrate:
+    [Sources will be provided here]
+    
+    Please process each source systematically and report your progress after each capture.
   `
 };
 
@@ -1651,6 +1749,113 @@ Input Schema: \`\`\`json\n${schemaStr}\n\`\`\`
       console.error('⚠️ Cleanup warning:', error);
     }
   }
+
+  async runBatchMigration(experiencerName: string, batchSize: number = 5): Promise<void> {
+    console.log(`🔄 Starting batch migration for experiencer: ${experiencerName}`);
+    
+    try {
+      // Read and filter sources
+      const allSources = readBridgeDatabase();
+      console.log(`📊 Found ${allSources.length} total sources in database`);
+      
+      const experiencerSources = filterSourcesByExperiencer(allSources, experiencerName);
+      console.log(`👤 Found ${experiencerSources.length} sources for experiencer: ${experiencerName}`);
+      
+      const sourcesNeedingMigration = experiencerSources.filter(needsMigration);
+      console.log(`🔄 ${sourcesNeedingMigration.length} sources need migration`);
+      
+      if (sourcesNeedingMigration.length === 0) {
+        console.log('✅ No sources need migration for this experiencer');
+        return;
+      }
+      
+      // Create batches
+      const batches = createMigrationBatch(sourcesNeedingMigration, batchSize);
+      console.log(`📦 Created ${batches.length} batches of ${batchSize} sources each`);
+      
+      let totalProcessed = 0;
+      
+      for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+        const batch = batches[batchIndex];
+        console.log(`\n📦 Processing batch ${batchIndex + 1}/${batches.length} (${batch.length} sources)`);
+        
+        // Format sources for the prompt
+        const sourcesText = batch.map(formatSourceForMigration).join('\n---\n');
+        
+        // Create migration prompt with this batch
+        const migrationPrompt = TEST_SCENARIOS['batch-migration'].replace(
+          '[Sources will be provided here]',
+          sourcesText
+        );
+        
+        // Run the migration for this batch
+        await this.runSpecificTestWithPrompt(`batch-migration-${batchIndex + 1}`, migrationPrompt);
+        
+        totalProcessed += batch.length;
+        console.log(`✅ Completed batch ${batchIndex + 1}. Total processed: ${totalProcessed}/${sourcesNeedingMigration.length}`);
+        
+        // Small delay between batches
+        if (batchIndex < batches.length - 1) {
+          console.log('⏳ Waiting 2 seconds before next batch...');
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      }
+      
+      console.log(`\n🎉 Batch migration completed! Processed ${totalProcessed} sources for ${experiencerName}`);
+      
+    } catch (error) {
+      console.error('❌ Batch migration failed:', error);
+      throw error;
+    }
+  }
+
+  async runSpecificTestWithPrompt(scenarioName: string, customPrompt: string): Promise<void> {
+    console.log(`🧠 Running test scenario: ${scenarioName}`);
+    console.log('📝 Sending custom prompt to Claude...\n');
+
+    const messages = [{ role: 'user' as const, content: customPrompt }];
+    const testResult: {
+      scenario: string;
+      startTime: Date;
+      endTime?: Date;
+      toolCalls: Array<{
+        tool: string;
+        arguments: any;
+        success: boolean;
+        result: any;
+        error: string | null;
+      }>;
+      errors: string[];
+      success: boolean;
+    } = {
+      scenario: scenarioName,
+      startTime: new Date(),
+      toolCalls: [],
+      errors: [],
+      success: true
+    };
+
+    try {
+      const anthropicTools = await this.getAnthropicTools();
+      const response = await this.anthropic.messages.create({
+        model: "claude-3-5-sonnet-20241022",
+        max_tokens: 4000,
+        messages: messages,
+        tools: anthropicTools,
+      });
+
+      await this.processResponse(response, messages, anthropicTools, testResult);
+      
+    } catch (error) {
+      console.error(`❌ Failed to run test scenario ${scenarioName}:`, error);
+      testResult.success = false;
+      testResult.errors.push(error instanceof Error ? error.message : String(error));
+    }
+
+    testResult.endTime = new Date();
+    this.testResults.push(testResult);
+    this.printTestSummary(testResult);
+  }
 }
 
 async function main(): Promise<void> {
@@ -1661,6 +1866,8 @@ async function main(): Promise<void> {
     
     // Check command line arguments for specific test
     const scenario = process.argv[2];
+    const experiencerName = process.argv[3]; // For migration
+    const batchSize = parseInt(process.argv[4]) || 5; // For migration
     const saveToFile = process.argv.includes('--save') || process.argv.includes('-s');
     const analyzeOnly = process.argv.includes('--analyze') || process.argv.includes('-a');
     const markdownOnly = process.argv.includes('--markdown') || process.argv.includes('-m');
@@ -1672,12 +1879,21 @@ async function main(): Promise<void> {
         // Load existing results and analyze only
         console.log('📊 Running analysis on existing test results...');
         tester.printOverallSummary();
+      } else if (scenario === 'migrate') {
+        // Run batch migration
+        if (!experiencerName) {
+          console.log('Usage: npm run llm-integration migrate <experiencer-name> [batch-size]');
+          console.log('Example: npm run llm-integration migrate Miguel 5');
+          return;
+        }
+        await tester.runBatchMigration(experiencerName, batchSize);
       } else if (TEST_SCENARIOS[scenario as keyof typeof TEST_SCENARIOS]) {
         await tester.runSpecificTest(scenario);
       } else {
         console.log('Available test scenarios:');
         console.log('  all - Run all scenarios');
         console.log('  analyze - Analyze existing results only');
+        console.log('  migrate <experiencer> [batch-size] - Run batch migration for specific experiencer');
         Object.keys(TEST_SCENARIOS).forEach(name => console.log(`  ${name}`));
         console.log('\nOptions:');
         console.log('  --save, -s - Save results to files');
