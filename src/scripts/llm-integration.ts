@@ -41,7 +41,7 @@ function needsMigration(source: any): boolean {
     source.vector || // Has old vector format
     !source.experiential_qualities || // Missing experiential qualities (old schema)
     source.content_embedding || // Has old embedding field name
-    !source.narrative_embedding || // Missing new embedding field
+    !source.embedding || // Missing new embedding field
     !source.experience || // Missing new experience field (new schema)
     !source.experience?.emoji // Missing emoji in experience
   );

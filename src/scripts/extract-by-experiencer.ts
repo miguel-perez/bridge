@@ -110,7 +110,7 @@ function createExperiencerSummary(sources: SourceRecord[]): any {
     qualityStats,
     hasExperientialAnalysis: sources.some(s => (s.experience?.qualities?.length || 0) > 0),
     hasNarratives: sources.some(s => s.experience?.narrative),
-    hasEmbeddings: sources.some(s => s.narrative_embedding)
+    hasEmbeddings: sources.some(s => s.embedding)
   };
 }
 
@@ -181,7 +181,7 @@ function extractSourcesByExperiencer(): any {
           processing: source.processing,
           crafted: source.crafted,
           experience: source.experience,
-          narrative_embedding: source.narrative_embedding ? 'present' : undefined // Don't include full embedding arrays
+          embedding: source.embedding ? 'present' : undefined // Don't include full embedding arrays
         }))
       };
     });

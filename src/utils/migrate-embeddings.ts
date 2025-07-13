@@ -72,22 +72,33 @@ export async function migrateExistingRecords(): Promise<MigrationStats> {
     for (const source of sources) {
       try {
         // Skip if already has embedding
-        if (source.narrative_embedding) {
+        if (source.embedding) {
           stats.skipped++;
           continue;
         }
 
-        // Skip if no content
+        // Skip if no content or experience
         if (!source.content || source.content.trim().length === 0) {
           stats.skipped++;
           console.log(`Skipping source ${source.id}: no content`);
           continue;
         }
 
+        if (!source.experience || !source.experience.narrative) {
+          stats.skipped++;
+          console.log(`Skipping source ${source.id}: no experience narrative`);
+          continue;
+        }
+
         console.log(`Processing source ${source.id}...`);
 
-        // Generate embedding
-        const embedding = await embeddingService.generateEmbedding(source.content);
+        // Generate embedding using new format: [emoji] + [narrative] "[content]" {qualities[array]}
+        const qualitiesText = source.experience.qualities.length > 0 
+          ? `{${source.experience.qualities.map(q => q.type).join(', ')}}`
+          : '{}';
+        
+        const embeddingText = `${source.experience.emoji} ${source.experience.narrative} "${source.content}" ${qualitiesText}`;
+        const embedding = await embeddingService.generateEmbedding(embeddingText);
         
         // Validate embedding
         if (!embedding || embedding.length === 0) {
@@ -97,7 +108,7 @@ export async function migrateExistingRecords(): Promise<MigrationStats> {
         // Update source with embedding
         const updatedSource: SourceRecord = {
           ...source,
-          narrative_embedding: embedding
+          embedding: embedding // Renamed from narrative_embedding
         };
 
         // Save updated source

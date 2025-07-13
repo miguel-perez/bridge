@@ -104,8 +104,8 @@ export interface Source {
   // Analysis fields
   /** Experience analysis results (qualities + emoji + narrative) */
   experience?: Experience;
-  /** Vector embedding for semantic search (generated from narrative) */
-  narrative_embedding?: number[];
+  /** Vector embedding for semantic search (generated from combined format) */
+  embedding?: number[];
 }
 
 // ============================================================================
@@ -191,7 +191,7 @@ export function isValidSource(source: unknown): source is Source {
     (s.experiencer === undefined || typeof s.experiencer === 'string') &&
     (s.processing === undefined || isValidProcessingLevel(s.processing)) &&
     (s.crafted === undefined || typeof s.crafted === 'boolean') &&
-    (s.narrative_embedding === undefined || Array.isArray(s.narrative_embedding))
+    (s.embedding === undefined || Array.isArray(s.embedding))
   );
 }
 

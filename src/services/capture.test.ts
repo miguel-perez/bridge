@@ -230,7 +230,7 @@ describe('CaptureService', () => {
       const result = await captureService.captureSource(input);
 
       expect(result).toBeDefined();
-      expect(result.source.narrative_embedding).toBeUndefined();
+      expect(result.source.embedding).toBeUndefined();
       // Should still capture the source even if embedding fails
     });
 

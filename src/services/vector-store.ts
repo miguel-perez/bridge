@@ -19,14 +19,16 @@ export class VectorStore {
   private storageFile: string;
 
   constructor(storageFile?: string) {
-    // Use provided storage file or default to vectors.json in the same directory as the main data file
+    // Use provided storage file or default to vectors file based on main data file name
     if (storageFile) {
       this.storageFile = storageFile;
     } else {
       // Try to get the data file path from environment or config
       const configPath = process.env.BRIDGE_FILE_PATH || 'bridge.json';
       const dataFileDir = dirname(resolve(configPath));
-      this.storageFile = join(dataFileDir, 'vectors.json');
+      const dataFileName = configPath.split('/').pop()?.split('\\').pop() || 'bridge.json';
+      const baseName = dataFileName.replace('.json', '');
+      this.storageFile = join(dataFileDir, `${baseName}.vectors.json`);
     }
   }
 

@@ -36,6 +36,7 @@ extracted-strings/
 
 # Personal data and logs
 bridge.json
+bridge.vectors.json
 *.log
 
 # IDE configs with personal paths

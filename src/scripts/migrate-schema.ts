@@ -139,19 +139,23 @@ class SchemaMigrationService {
             delete source.vector;
           }
           
-          // Rename content_embedding to narrative_embedding if it exists
-          if (source.content_embedding && !source.narrative_embedding) {
-            console.log(`    🔄 Renaming content_embedding to narrative_embedding for source ${sourceId}...`);
-            source.narrative_embedding = source.content_embedding;
+          // Rename content_embedding to embedding if it exists
+          if (source.content_embedding && !source.embedding) {
+            console.log(`    🔄 Renaming content_embedding to embedding for source ${sourceId}...`);
+            source.embedding = source.content_embedding;
             delete source.content_embedding;
           }
           
-          // Generate new embeddings from narrative (preferred) or content
-          if (source.narrative || source.content) {
+          // Generate new embeddings using the new format: [emoji] + [narrative] "[content]" {qualities[array]}
+          if (source.experience && source.experience.narrative && source.content) {
             console.log(`    🧠 Generating new embeddings for source ${sourceId}...`);
-            const textToEmbed = source.narrative || source.content;
-            const embedding = await embeddingService.generateEmbedding(textToEmbed);
-            source.narrative_embedding = embedding;
+            const qualitiesText = source.experience.qualities.length > 0 
+              ? `{${source.experience.qualities.map((q: any) => q.type).join(', ')}}`
+              : '{}';
+            
+            const embeddingText = `${source.experience.emoji} ${source.experience.narrative} "${source.content}" ${qualitiesText}`;
+            const embedding = await embeddingService.generateEmbedding(embeddingText);
+            source.embedding = embedding;
           }
           
           console.log(`    ✅ Successfully migrated source ${sourceId}`);
@@ -232,7 +236,7 @@ class SchemaMigrationService {
       source.vector || // Has old vector format
       !source.experiential_qualities || // Missing experiential qualities
       source.content_embedding || // Has old embedding field name
-      !source.narrative_embedding // Missing new embedding field
+      !source.embedding // Missing new embedding field
     );
   }
 

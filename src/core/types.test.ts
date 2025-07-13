@@ -152,14 +152,20 @@ describe('Core Types', () => {
         experience: {
           qualities: [
             {
-              type: 'affective',
+              type: 'affective' as const,
               prominence: 0.8,
-              manifestation: 'feeling of joy'
+              manifestation: 'Feeling overwhelmed'
+            },
+            {
+              type: 'purposive' as const,
+              prominence: 0.6,
+              manifestation: 'Wanting to escape'
             }
           ],
-          emoji: '🌧️'
+          emoji: '🌧️',
+          narrative: 'I felt overwhelmed and wanted to escape the situation'
         },
-        narrative_embedding: [0.1, 0.2, 0.3]
+        embedding: [0.1, 0.2, 0.3]
       };
       
       expect(source.id).toBe('complete-id');
@@ -170,9 +176,10 @@ describe('Core Types', () => {
       expect(source.experiencer).toBe('self');
       expect(source.processing).toBe('during');
       expect(source.crafted).toBe(false);
-      expect(source.experience?.qualities).toHaveLength(1);
+      expect(source.experience?.qualities).toHaveLength(2);
       expect(source.experience?.emoji).toBe('🌧️');
-      expect(source.narrative_embedding).toHaveLength(3);
+      expect(source.experience?.narrative).toBe('I felt overwhelmed and wanted to escape the situation');
+      expect(source.embedding).toHaveLength(3);
     });
 
     test('should accept Source with narrative only', () => {

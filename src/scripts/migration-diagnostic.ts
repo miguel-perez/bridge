@@ -42,7 +42,7 @@ function needsMigration(source: any): boolean {
     source.vector || // Has old vector format
     !source.experiential_qualities || // Missing experiential qualities
     source.content_embedding || // Has old embedding field name
-    !source.narrative_embedding // Missing new embedding field
+    !source.embedding // Missing new embedding field
   );
 }
 
@@ -65,7 +65,7 @@ function analyzeSource(source: any): any {
     issues.push('Has old content_embedding field');
   }
   
-  if (!source.narrative_embedding) {
+  if (!source.embedding) {
     issues.push('Missing narrative_embedding field');
   }
   

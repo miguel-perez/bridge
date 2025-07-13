@@ -140,14 +140,24 @@ export class EnrichService {
       (input.experience?.narrative && input.experience.narrative !== existingSource.experience?.narrative);
 
     // Generate new embedding if needed
-    let narrativeEmbedding: number[] | undefined = existingSource.narrative_embedding;
+    let embedding: number[] | undefined = existingSource.embedding;
     if (shouldRegenerateEmbeddings) {
-      const textToEmbed = input.experience?.narrative || existingSource.experience?.narrative || 
-                         input.content || existingSource.content;
-      try {
-        narrativeEmbedding = await embeddingService.generateEmbedding(textToEmbed);
-      } catch (error) {
-        // Silently handle embedding generation errors in MCP context
+      // Create the new embedding text format: [emoji] + [narrative] "[content]" {qualities[array]}
+      const experience = processedExperience || existingSource.experience;
+      const content = input.content || existingSource.content;
+      
+      if (experience) {
+        const qualitiesText = experience.qualities.length > 0 
+          ? `{${experience.qualities.map(q => q.type).join(', ')}}`
+          : '{}';
+        
+        const embeddingText = `${experience.emoji} ${experience.narrative} "${content}" ${qualitiesText}`;
+        
+        try {
+          embedding = await embeddingService.generateEmbedding(embeddingText);
+        } catch (error) {
+          // Silently handle embedding generation errors in MCP context
+        }
       }
     }
 
@@ -162,7 +172,7 @@ export class EnrichService {
       experiencer: input.experiencer ?? existingSource.experiencer,
       crafted: input.crafted ?? existingSource.crafted,
       experience: processedExperience,
-      narrative_embedding: narrativeEmbedding,
+      embedding: embedding, // Renamed from narrative_embedding
     };
 
     // Delete the old record and save the new one
@@ -170,10 +180,10 @@ export class EnrichService {
     const source = await saveSource(updatedSource);
 
     // Update vector store if embeddings were regenerated
-    if (shouldRegenerateEmbeddings && narrativeEmbedding) {
+    if (shouldRegenerateEmbeddings && embedding) {
       try {
         await getVectorStore().removeVector(input.id);
-        await getVectorStore().addVector(source.id, narrativeEmbedding);
+        await getVectorStore().addVector(source.id, embedding);
       } catch (error) {
         // Silently handle vector store update errors in MCP context
       }
@@ -207,8 +217,8 @@ export class EnrichService {
     if (JSON.stringify(original.experience) !== JSON.stringify(updated.experience)) {
       fields.push('experience');
     }
-    if (JSON.stringify(original.narrative_embedding) !== JSON.stringify(updated.narrative_embedding)) {
-      fields.push('narrative_embedding');
+    if (JSON.stringify(original.embedding) !== JSON.stringify(updated.embedding)) {
+      fields.push('embedding');
     }
     return fields;
   }

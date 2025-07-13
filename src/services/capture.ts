@@ -205,10 +205,17 @@ export class CaptureService {
       narrative: validatedInput.experience.narrative,
     };
 
-    // Generate embedding from narrative (now required)
-    let narrativeEmbedding: number[] | undefined;
+    // Generate embedding from the new combined format
+    let embedding: number[] | undefined;
     try {
-      narrativeEmbedding = await embeddingService.generateEmbedding(validatedInput.experience.narrative);
+      // Create the new embedding text format: [emoji] + [narrative] "[content]" {qualities[array]}
+      const qualitiesText = validatedInput.experience.qualities.length > 0 
+        ? `{${validatedInput.experience.qualities.map(q => q.type).join(', ')}}`
+        : '{}';
+      
+      const embeddingText = `${validatedInput.experience.emoji} ${validatedInput.experience.narrative} "${validatedInput.content || validatedInput.experience.narrative}" ${qualitiesText}`;
+      
+      embedding = await embeddingService.generateEmbedding(embeddingText);
     } catch (error) {
       // Silently handle embedding generation errors in MCP context
     }
@@ -224,14 +231,14 @@ export class CaptureService {
       processing: processing as ProcessingLevel,
       crafted: validatedInput.crafted,
       experience: processedExperience,
-      narrative_embedding: narrativeEmbedding,
+      embedding: embedding, // Renamed from narrative_embedding
     });
 
     // Store vector in vector store if embedding was generated
-    if (narrativeEmbedding) {
+    if (embedding) {
       try {
         const vectorStore = getVectorStore();
-        vectorStore.addVector(source.id, narrativeEmbedding);
+        vectorStore.addVector(source.id, embedding);
         // Save vectors to disk immediately to ensure persistence
         await vectorStore.saveToDisk();
       } catch (error) {

@@ -94,8 +94,8 @@ describe('EnrichService', () => {
       regenerate_embeddings: true
     });
     expect(result.embeddingsRegenerated).toBe(true);
-    expect(result.source.narrative_embedding).toBeDefined();
-    expect(Array.isArray(result.source.narrative_embedding)).toBe(true);
+    expect(result.source.embedding).toBeDefined();
+    expect(Array.isArray(result.source.embedding)).toBe(true);
   });
 
   test('throws if record does not exist', async () => {
