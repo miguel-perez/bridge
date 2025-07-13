@@ -29,6 +29,78 @@ export const QUALITY_TYPES = [
 ] as const;
 
 // ============================================================================
+// VALIDATION FUNCTIONS
+// ============================================================================
+
+/**
+ * Validates and normalizes quality types to ensure they match the enum
+ * Provides helpful error messages for invalid types
+ */
+function validateQualityTypes(qualities: Array<{ type: string; prominence: number; manifestation: string }>): Array<{ type: typeof QUALITY_TYPES[number]; prominence: number; manifestation: string }> {
+  const validTypes = QUALITY_TYPES as readonly string[];
+  
+  return qualities.map((quality, index) => {
+    if (validTypes.includes(quality.type)) {
+      return quality as { type: typeof QUALITY_TYPES[number]; prominence: number; manifestation: string };
+    }
+    
+    // Map common invalid types to valid ones with helpful error message
+    const typeMapping: Record<string, typeof QUALITY_TYPES[number]> = {
+      'insight': 'attentional',
+      'recognition': 'attentional', 
+      'synthesis': 'attentional',
+      'wisdom': 'attentional',
+      'growth': 'purposive',
+      'acceptance': 'affective',
+      'connection': 'intersubjective',
+      'collaboration': 'intersubjective',
+      'validation': 'affective',
+      'transformation': 'purposive',
+      'integration': 'attentional',
+      'emotional_resonance': 'affective',
+      'vulnerability': 'affective',
+      'gratitude': 'affective',
+      'mentorship': 'intersubjective',
+      'belonging': 'intersubjective',
+      'empowerment': 'purposive',
+      'reflection': 'attentional',
+      'identity_realization': 'attentional',
+      'self_reference': 'attentional',
+      'temporal_awareness': 'temporal',
+      'collective_consciousness': 'intersubjective',
+      'innovation': 'purposive',
+      'cultural_inclusion': 'intersubjective',
+      'transparency': 'attentional',
+      'pioneering': 'purposive',
+      'care': 'affective',
+      'adaptation': 'purposive',
+      'adaptability': 'purposive',
+      'problem-solving': 'purposive',
+      'growth_mindset': 'attentional',
+      'technical_achievement': 'purposive',
+      'discovery': 'attentional'
+    };
+    
+    const mappedType = typeMapping[quality.type];
+    if (mappedType) {
+      console.warn(`Quality type "${quality.type}" at index ${index} was mapped to "${mappedType}". Valid types are: ${validTypes.join(', ')}`);
+      return {
+        type: mappedType,
+        prominence: quality.prominence,
+        manifestation: quality.manifestation
+      };
+    }
+    
+    // If no mapping exists, throw a helpful error
+    throw new Error(
+      `Invalid quality type "${quality.type}" at index ${index}. ` +
+      `Valid types are: ${validTypes.join(', ')}. ` +
+      `Common mappings: insight→attentional, growth→purposive, connection→intersubjective, etc.`
+    );
+  });
+}
+
+// ============================================================================
 // SCHEMA & TYPES
 // ============================================================================
 
@@ -100,6 +172,11 @@ export class CaptureService {
    * @throws Error if validation fails or required fields are missing
    */
   async captureSource(input: CaptureInput): Promise<CaptureResult> {
+    // Pre-validate and normalize quality types before Zod validation
+    if (input.experience?.qualities) {
+      input.experience.qualities = validateQualityTypes(input.experience.qualities);
+    }
+    
     // Validate input using Zod schema first
     const validatedInput = captureSchema.parse(input);
 

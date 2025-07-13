@@ -31,6 +31,8 @@ coverage/
 # Project specific
 data/
 *.jsonl
+processed-sources/
+extracted-strings/
 
 # Personal data and logs
 bridge.json
