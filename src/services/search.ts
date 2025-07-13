@@ -643,7 +643,11 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
         crafted: record.crafted,
         system_time: record.system_time,
         occurred: record.occurred,
-        experience: record.experience
+        experience: record.experience ? {
+          emoji: record.experience.emoji,
+          narrative: record.experience.narrative
+          // Intentionally excluding qualities to reduce synthetic data overload
+        } : undefined
       } : undefined,
       relevance_score: record._relevance.score,
       relevance_breakdown: record._relevance.breakdown

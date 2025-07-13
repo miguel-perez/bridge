@@ -1,7 +1,5 @@
 import { jest } from '@jest/globals';
 import { CaptureService } from './capture';
-import { VectorStore } from './vector-store';
-import { EmbeddingService } from './embeddings';
 import { nanoid } from 'nanoid';
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs';
 import { join, resolve, dirname } from 'path';
@@ -89,6 +87,7 @@ const mockedDirname = dirname as jest.MockedFunction<typeof dirname>;
 const mockedTmpdir = tmpdir as jest.MockedFunction<typeof tmpdir>;
 
 // Get the mocked embedding service
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const { embeddingService: mockEmbeddingService } = require('./embeddings');
 
 describe('CaptureService', () => {
@@ -277,6 +276,7 @@ describe('CaptureService', () => {
       };
 
       // Mock parseOccurredDate to throw an error
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const { parseOccurredDate } = require('../utils/validation');
       parseOccurredDate.mockRejectedValue(new Error('Invalid date'));
 

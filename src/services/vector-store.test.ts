@@ -1,6 +1,5 @@
 import { jest } from '@jest/globals';
 import { VectorStore } from './vector-store';
-import { EmbeddingService } from './embeddings';
 import { nanoid } from 'nanoid';
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs';
 import { join, resolve, dirname } from 'path';
