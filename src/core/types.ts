@@ -106,6 +106,14 @@ export interface Source {
   experience?: Experience;
   /** Vector embedding for semantic search (generated from combined format) */
   embedding?: number[];
+  
+  // Pattern fields
+  /** Pattern tags auto-generated from pattern discovery */
+  pattern_tags?: string[];
+  /** Pattern IDs this experience belongs to */
+  pattern_ids?: string[];
+  /** Highest confidence score from patterns this belongs to */
+  pattern_confidence?: number;
 }
 
 // ============================================================================

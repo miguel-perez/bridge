@@ -19,6 +19,7 @@ bridge-dxt/
 *.swp
 *.swo
 *.code-workspace
+:memory:
 
 # Environment
 .env
@@ -37,6 +38,7 @@ extracted-strings/
 # Personal data and logs
 bridge.json
 bridge.vectors.json
+pattern-cache.json
 *.log
 
 # IDE configs with personal paths

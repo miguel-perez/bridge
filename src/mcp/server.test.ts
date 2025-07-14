@@ -66,13 +66,14 @@ describe('MCP Server Protocol Compliance', () => {
       
       // This would have failed without the initialize handler
       const tools = await client.listTools();
-      expect(tools.tools).toHaveLength(4); // capture, release, search, update
+      expect(tools.tools).toHaveLength(5); // capture, release, search, update, discover
       
       const toolNames = tools.tools.map(t => t.name);
       expect(toolNames).toContain('capture');
       expect(toolNames).toContain('release');
       expect(toolNames).toContain('search');
       expect(toolNames).toContain('update');
+      expect(toolNames).toContain('discover');
     }, 30000);
 
     test('should execute capture tool with experiential qualities', async () => {

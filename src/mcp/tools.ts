@@ -6,7 +6,7 @@ export const tools = [
     inputSchema: {
       type: "object",
       properties: {
-        experiences: {
+        captures: {
           type: "array",
           description: "One or more experiences to capture (can be from different experiencers in the same moment)",
           items: {
@@ -86,19 +86,79 @@ export const tools = [
           }
         }
       },
-      required: ["experiences"]
+      required: ["captures"]
+    }
+  },
+
+  {
+    name: "discover",
+    description: "Discover and navigate experiential patterns. Patterns are automatically discovered from your experiences and organized into hierarchical groups with emoji signatures. Use to: browse patterns, navigate into specific patterns, refresh discovery, or view statistics. SUPPORTS BATCH: Run multiple discoveries in one call. Everything is at most 3 clicks away.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        discoveries: {
+          type: "array",
+          description: "One or more discovery operations to execute (useful for overview + stats + specific patterns in one call)",
+          items: {
+            type: "object",
+            properties: {
+              pattern: {
+                type: "string",
+                description: "Pattern ID to explore (e.g., 'L1-1'). If not provided, shows experiential landscape overview."
+              },
+              dimension: {
+                type: "string",
+                description: "Quality dimension to explore: 'embodied', 'attentional', 'affective', 'purposive', 'spatial', 'temporal', or 'intersubjective'",
+                enum: ["embodied", "attentional", "affective", "purposive", "spatial", "temporal", "intersubjective"]
+              },
+              dimensions: {
+                type: "boolean",
+                description: "Show all quality dimensions with descriptions (default: false)"
+              },
+              stats: {
+                type: "boolean",
+                description: "Show pattern statistics and ecosystem health (default: false)"
+              },
+              refresh: {
+                type: "boolean",
+                description: "Force refresh pattern discovery (default: false)"
+              },
+              insights: {
+                type: "boolean",
+                description: "Show pattern evolution insights when viewing specific pattern (default: false)"
+              },
+              depth: {
+                type: "number",
+                description: "Navigation depth for pattern hierarchy (default: 1, max: 3)",
+                minimum: 1,
+                maximum: 3,
+                default: 1
+              },
+              when: {
+                type: "string",
+                description: "Temporal filter: 'this_week', 'morning', 'evolution'"
+              },
+              recent: {
+                type: "boolean",
+                description: "Show recently active patterns (default: false)"
+              }
+            }
+          }
+        }
+      },
+      required: ["discoveries"]
     }
   },
 
   {
     name: "search",
-    description: "Finds previously captured experiences using text search, filters, or patterns. Use this to: recall past conversations, find similar experiences across time, track patterns in user feedback, or explore phenomenological themes. Returns results with emoji+narrative summaries and full content. Supports filtering by: who (experiencer), when (date ranges), how (perspective: I/we/you/they), and processing level (during/after). SUPPORTS BATCH: Run multiple searches in one call. IMPORTANT: Boolean operators (AND/OR/NOT) are not supported. To find experiences matching multiple criteria, use filters or run separate queries. For example, instead of 'anxiety OR stress', run two queries: one for 'anxiety' and one for 'stress'. Leave query empty to see all recent experiences.",
+    description: "Finds previously captured experiences using text search, filters, or patterns. Use this to: recall past conversations, find similar experiences across time, track patterns in user feedback, or explore phenomenological themes. Returns results with emoji+narrative summaries and full content. Supports filtering by: who (experiencer), when (date ranges), how (perspective: I/we/you/they), and processing level (during/after). SUPPORTS BATCH: Run multiple searches in one call. IMPORTANT: Boolean operators (AND/OR/NOT) are not supported. To find experiences matching multiple criteria, use filters or run separate searches. For example, instead of 'anxiety OR stress', run two searches: one for 'anxiety' and one for 'stress'. Leave query empty to see all recent experiences.",
     inputSchema: {
       type: "object",
       properties: {
-        queries: {
+        searches: {
           type: "array",
-          description: "One or more search queries to execute (useful for initialization or comparing perspectives)",
+          description: "One or more searches to execute (useful for initialization or comparing perspectives)",
           items: {
             type: "object",
             properties: {
@@ -171,7 +231,7 @@ export const tools = [
           }
         }
       },
-      required: ["queries"]
+      required: ["searches"]
     }
   },
 
@@ -301,4 +361,4 @@ export const tools = [
       required: ["releases"]
     }
   }
-]; 
+];

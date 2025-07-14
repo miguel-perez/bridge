@@ -7,8 +7,10 @@ import { z } from 'zod';
 import { generateId, saveSource } from '../core/storage.js';
 import type { SourceRecord, ProcessingLevel } from '../core/types.js';
 import { parseOccurredDate } from '../utils/validation.js';
-import { embeddingService } from './embeddings.js';
+// import { embeddingService } from './embeddings.js';
+import { EnhancedEmbeddingService } from './enhanced-embedding.js';
 import { getVectorStore } from './vector-store.js';
+import { patternManager } from './pattern-manager.js';
 
 // ============================================================================
 // CONSTANTS
@@ -165,6 +167,11 @@ export interface CaptureResult {
  * Service for capturing and storing experiential sources.
  */
 export class CaptureService {
+  private enhancedEmbeddingService: EnhancedEmbeddingService;
+
+  constructor() {
+    this.enhancedEmbeddingService = new EnhancedEmbeddingService();
+  }
   /**
    * Captures a new experiential source, validates input, generates embeddings, and stores it.
    * @param input - Capture input data
@@ -205,17 +212,19 @@ export class CaptureService {
       narrative: validatedInput.experience.narrative,
     };
 
-    // Generate embedding from the new combined format
+    // Generate enhanced embedding with temporal context and richer formatting
     let embedding: number[] | undefined;
     try {
-      // Create the new embedding text format: [emoji] + [narrative] "[content]" {qualities[array]}
-      const qualitiesText = validatedInput.experience.qualities.length > 0 
-        ? `{${validatedInput.experience.qualities.map(q => q.type).join(', ')}}`
-        : '{}';
-      
-      const embeddingText = `${validatedInput.experience.emoji} ${validatedInput.experience.narrative} "${validatedInput.content || validatedInput.experience.narrative}" ${qualitiesText}`;
-      
-      embedding = await embeddingService.generateEmbedding(embeddingText);
+      embedding = await this.enhancedEmbeddingService.generateEnhancedEmbedding(
+        validatedInput.experience.emoji,
+        validatedInput.experience.narrative,
+        validatedInput.content || validatedInput.experience.narrative,
+        validatedInput.experience.qualities,
+        occurredDate || new Date().toISOString(),
+        perspective,
+        experiencer,
+        processing
+      );
     } catch (error) {
       // Silently handle embedding generation errors in MCP context
     }
@@ -244,6 +253,14 @@ export class CaptureService {
       } catch (error) {
         // Silently handle vector storage errors in MCP context
       }
+    }
+
+    // Trigger pattern discovery update
+    try {
+      await patternManager.onCapture(source.id);
+    } catch (error) {
+      // Don't fail capture if pattern update fails
+      console.warn('Pattern update failed:', error);
     }
 
     const defaultsUsed = this.getDefaultsUsed(input);

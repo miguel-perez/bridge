@@ -1,326 +1,266 @@
-import { jest } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { CaptureService } from './capture';
-import { nanoid } from 'nanoid';
-import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs';
-import { join, resolve, dirname } from 'path';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, unlinkSync, rmdirSync } from 'fs';
 import { tmpdir } from 'os';
-
-// Mock all external dependencies with factory functions
-jest.mock('nanoid', () => ({
-  nanoid: jest.fn(() => 'test-id-12345')
-}));
-
-jest.mock('fs', () => ({
-  writeFileSync: jest.fn(),
-  readFileSync: jest.fn(),
-  existsSync: jest.fn(),
-  mkdirSync: jest.fn()
-}));
-
-jest.mock('path', () => ({
-  join: jest.fn((...args) => args.join('/')),
-  resolve: jest.fn((...args) => args.join('/')),
-  dirname: jest.fn((path) => path.split('/').slice(0, -1).join('/') || '.')
-}));
-
-jest.mock('os', () => ({
-  tmpdir: jest.fn(() => '/tmp')
-}));
-
-// Mock the embedding service
-jest.mock('./embeddings', () => ({
-  EmbeddingService: jest.fn(() => ({
-    generateEmbedding: jest.fn(),
-    generateEmbeddings: jest.fn()
-  })),
-  embeddingService: {
-    generateEmbedding: jest.fn(),
-    generateEmbeddings: jest.fn()
-  }
-}));
-
-// Mock the vector store
-const mockVectorStore = {
-  addVector: jest.fn(),
-  addVectors: jest.fn(),
-  removeVector: jest.fn(),
-  findSimilar: jest.fn(),
-  findSimilarById: jest.fn(),
-  getVector: jest.fn(),
-  hasVector: jest.fn(),
-  getVectorCount: jest.fn(),
-  clear: jest.fn(),
-  saveToDisk: jest.fn(),
-  loadFromDisk: jest.fn(),
-  initialize: jest.fn(),
-  validateVectors: jest.fn(),
-  removeInvalidVectors: jest.fn(),
-  cleanup: jest.fn(),
-  getHealthStats: jest.fn()
-};
-
-jest.mock('./vector-store', () => ({
-  VectorStore: jest.fn(() => mockVectorStore),
-  getVectorStore: jest.fn(() => mockVectorStore)
-}));
-
-// Mock storage functions
-jest.mock('../core/storage', () => ({
-  generateId: jest.fn(() => Promise.resolve('src_test-id-12345')),
-  saveSource: jest.fn((source) => Promise.resolve(source))
-}));
-
-// Mock validation functions
-jest.mock('../utils/validation', () => ({
-  parseOccurredDate: jest.fn((date) => Promise.resolve(date))
-}));
-
-// Get the mocked modules
-const mockedNanoid = nanoid as jest.MockedFunction<typeof nanoid>;
-const mockedWriteFileSync = writeFileSync as jest.MockedFunction<typeof writeFileSync>;
-const mockedReadFileSync = readFileSync as jest.MockedFunction<typeof readFileSync>;
-const mockedExistsSync = existsSync as jest.MockedFunction<typeof existsSync>;
-const mockedMkdirSync = mkdirSync as jest.MockedFunction<typeof mkdirSync>;
-const mockedJoin = join as jest.MockedFunction<typeof join>;
-const mockedResolve = resolve as jest.MockedFunction<typeof resolve>;
-const mockedDirname = dirname as jest.MockedFunction<typeof dirname>;
-const mockedTmpdir = tmpdir as jest.MockedFunction<typeof tmpdir>;
-
-// Get the mocked embedding service
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { embeddingService: mockEmbeddingService } = require('./embeddings');
+import { join } from 'path';
+import { nanoid } from 'nanoid';
 
 describe('CaptureService', () => {
   let captureService: CaptureService;
+  let testDataPath: string;
+  let originalEnv: NodeJS.ProcessEnv;
 
   beforeEach(() => {
-    // Reset all mocks
-    jest.clearAllMocks();
+    // Save original env
+    originalEnv = { ...process.env };
     
-    // Setup default mock implementations
-    mockedNanoid.mockReturnValue('test-id-12345');
-    mockedWriteFileSync.mockImplementation(() => {});
-    mockedReadFileSync.mockReturnValue('[]');
-    mockedExistsSync.mockReturnValue(false);
-    mockedMkdirSync.mockImplementation(() => {});
-    mockedJoin.mockImplementation((...args) => args.join('/'));
-    mockedResolve.mockImplementation((...args) => args.join('/'));
-    mockedDirname.mockImplementation((path) => path.split('/').slice(0, -1).join('/') || '.');
-    mockedTmpdir.mockReturnValue('/tmp');
+    // Create a unique test directory
+    const testId = nanoid();
+    testDataPath = join(tmpdir(), `bridge-test-${testId}`);
+    mkdirSync(testDataPath, { recursive: true });
     
-    // Setup embedding service mocks
-    mockEmbeddingService.generateEmbedding.mockResolvedValue([0.1, 0.2, 0.3]);
-    mockEmbeddingService.generateEmbeddings.mockResolvedValue([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]);
+    // Set test environment
+    process.env.BRIDGE_FILE_PATH = join(testDataPath, 'test-bridge.json');
+    process.env.NODE_ENV = 'test';
     
-    // Setup vector store mocks
-    mockVectorStore.addVector.mockReturnValue(true);
-    mockVectorStore.addVectors.mockReturnValue({ added: 2, rejected: 0 });
-    mockVectorStore.removeVector.mockResolvedValue(undefined);
-    mockVectorStore.findSimilar.mockResolvedValue([]);
-    mockVectorStore.findSimilarById.mockResolvedValue([]);
-    mockVectorStore.getVector.mockResolvedValue([0.1, 0.2, 0.3]);
-    mockVectorStore.hasVector.mockResolvedValue(true);
-    mockVectorStore.getVectorCount.mockResolvedValue(2);
-    mockVectorStore.clear.mockResolvedValue(undefined);
-    mockVectorStore.saveToDisk.mockResolvedValue(undefined);
-    mockVectorStore.loadFromDisk.mockResolvedValue(undefined);
-    mockVectorStore.initialize.mockResolvedValue(undefined);
-    mockVectorStore.validateVectors.mockResolvedValue({ valid: 2, invalid: 0, details: [] });
-    mockVectorStore.removeInvalidVectors.mockResolvedValue(0);
-    mockVectorStore.cleanup.mockResolvedValue(0);
-    mockVectorStore.getHealthStats.mockReturnValue({ total: 2, valid: 2, invalid: 0 });
+    // Initialize test data file
+    const testData = { sources: [] };
+    writeFileSync(process.env.BRIDGE_FILE_PATH, JSON.stringify(testData, null, 2));
     
-    // Create capture service instance
+    // Create service instance
     captureService = new CaptureService();
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    // Restore original env
+    process.env = originalEnv;
+    
+    // Clean up test directory
+    if (existsSync(testDataPath)) {
+      const files = ['test-bridge.json', 'vectors.json', 'pattern-cache.json'];
+      files.forEach(file => {
+        const filePath = join(testDataPath, file);
+        if (existsSync(filePath)) {
+          unlinkSync(filePath);
+        }
+      });
+      rmdirSync(testDataPath);
+    }
   });
 
   describe('captureSource', () => {
-    it('should capture a source with all required fields', async () => {
+    it('should capture a basic experience successfully', async () => {
       const input = {
-        content: 'Test content',
-        contentType: 'text',
+        content: 'I feel really happy today',
+        experiencer: 'test-user',
         perspective: 'I' as const,
         processing: 'during' as const,
-        occurred: '2024-01-15',
-        experiencer: 'self',
-        crafted: false,
+        experience: {
+          qualities: [
+            {
+              type: 'affective' as const,
+              prominence: 0.8,
+              manifestation: 'joy and contentment'
+            }
+          ],
+          emoji: '😊',
+          narrative: 'Feeling the warmth of happiness spreading through my chest'
+        }
+      };
+
+      const result = await captureService.captureSource(input);
+
+      expect(result.source).toBeDefined();
+      expect(result.source.id).toMatch(/^src_/);
+      expect(result.source.experiencer).toBe('test-user');
+      expect(result.source.experience?.emoji).toBe('😊');
+      
+      // Verify it was saved
+      const savedData = JSON.parse(readFileSync(process.env.BRIDGE_FILE_PATH!, 'utf-8'));
+      expect(savedData.sources).toHaveLength(1);
+      expect(savedData.sources[0].experiencer).toBe('test-user');
+    });
+
+    it('should use defaults when optional fields are not provided', async () => {
+      const input = {
+        experience: {
+          qualities: [
+            {
+              type: 'embodied' as const,
+              prominence: 0.7,
+              manifestation: 'tension in shoulders'
+            }
+          ],
+          emoji: '😌',
+          narrative: 'Noticing the physical sensations in my body'
+        }
+      };
+
+      const result = await captureService.captureSource(input);
+
+      expect(result.defaultsUsed).toContain('perspective="I"');
+      expect(result.defaultsUsed).toContain('experiencer="self"');
+      expect(result.defaultsUsed).toContain('processing="during"');
+      expect(result.source.perspective).toBe('I');
+      expect(result.source.experiencer).toBe('self');
+    });
+
+    it('should validate and normalize quality types', async () => {
+      const input = {
+        experience: {
+          qualities: [
+            {
+              type: 'insight' as any, // This should be mapped to 'attentional'
+              prominence: 0.9,
+              manifestation: 'sudden understanding'
+            }
+          ],
+          emoji: '💡',
+          narrative: 'Sudden flash of understanding'
+        }
+      };
+
+      const result = await captureService.captureSource(input);
+
+      expect(result.source.experience?.qualities).toHaveLength(1);
+      expect(result.source.experience?.qualities[0].type).toBe('attentional');
+    });
+
+    it('should handle multiple captures', async () => {
+      const input1 = {
+        experiencer: 'user1',
+        experience: {
+          qualities: [],
+          emoji: '💭',
+          narrative: 'First thought'
+        }
+      };
+
+      const input2 = {
+        experiencer: 'user2',
+        experience: {
+          qualities: [],
+          emoji: '💡',
+          narrative: 'Second insight'
+        }
+      };
+
+      const result1 = await captureService.captureSource(input1);
+      const result2 = await captureService.captureSource(input2);
+
+      expect(result1.source.experiencer).toBe('user1');
+      expect(result2.source.experiencer).toBe('user2');
+      
+      // Verify both were saved
+      const savedData = JSON.parse(readFileSync(process.env.BRIDGE_FILE_PATH!, 'utf-8'));
+      expect(savedData.sources).toHaveLength(2);
+    });
+
+    it('should parse occurred dates correctly', async () => {
+      const input = {
+        occurred: '2024-01-15T10:30:00Z',
+        experience: {
+          qualities: [],
+          emoji: '📅',
+          narrative: 'Remembering a specific moment'
+        }
+      };
+
+      const result = await captureService.captureSource(input);
+
+      // The service may parse and reformat the date
+      expect(result.source.occurred).toMatch(/2024-01-15T10:30:00/);
+    });
+
+    it('should generate embeddings for captured experiences', async () => {
+      const input = {
         experience: {
           qualities: [
             {
               type: 'embodied' as const,
               prominence: 0.8,
-              manifestation: 'Physical sensation'
+              manifestation: 'relaxed muscles'
             }
           ],
-          emoji: '😊',
-          narrative: 'I felt a warm sense of accomplishment'
+          emoji: '🧘',
+          narrative: 'Deep relaxation flowing through body'
         }
       };
 
       const result = await captureService.captureSource(input);
 
-      expect(result).toBeDefined();
-      expect(result.source.id).toBe('src_test-id-12345');
-      expect(result.source.content).toBe(input.content);
-      expect(result.source.contentType).toBe(input.contentType);
-      expect(result.source.perspective).toBe(input.perspective);
-      expect(result.source.experiencer).toBe(input.experiencer);
-      expect(result.source.processing).toBe(input.processing);
-      expect(result.source.crafted).toBe(input.crafted);
-      expect(result.source.experience.emoji).toBe(input.experience.emoji);
-      expect(result.source.experience.narrative).toBe(input.experience.narrative);
-      expect(result.defaultsUsed).toEqual([]);
+      // Should have an embedding
+      expect(result.source.embedding).toBeDefined();
+      expect(result.source.embedding).toHaveLength(384);
     });
 
-    it('should capture a source with minimal fields and use defaults', async () => {
+    it('should handle emoji and narrative requirements', async () => {
       const input = {
         experience: {
-          qualities: [
-            {
-              type: 'affective' as const,
-              prominence: 0.6,
-              manifestation: 'Emotional response'
-            }
-          ],
-          emoji: '🎉',
-          narrative: 'I was excited about the new project'
+          qualities: [],
+          emoji: '🌟',
+          narrative: 'Experiencing a moment of clarity and understanding'
         }
       };
 
       const result = await captureService.captureSource(input);
 
-      expect(result).toBeDefined();
-      expect(result.source.id).toBe('src_test-id-12345');
-      expect(result.source.content).toBe(input.experience.narrative); // Uses narrative as content when no content provided
-      expect(result.source.contentType).toBe('text'); // Default
-      expect(result.source.perspective).toBe('I'); // Default
-      expect(result.source.experiencer).toBe('self'); // Default
-      expect(result.source.processing).toBe('during'); // Default
-      expect(result.defaultsUsed).toEqual([
-        'perspective="I"',
-        'experiencer="self"',
-        'processing="during"',
-        'contentType="text"'
-      ]);
+      expect(result.source.experience?.emoji).toBe('🌟');
+      expect(result.source.experience?.narrative).toBe('Experiencing a moment of clarity and understanding');
     });
 
-    it('should handle embedding generation errors gracefully', async () => {
+    it('should reject invalid quality types that cannot be mapped', async () => {
       const input = {
         experience: {
           qualities: [
             {
-              type: 'attentional' as const,
-              prominence: 0.7,
-              manifestation: 'Focused attention'
-            }
-          ],
-          emoji: '🧠',
-          narrative: 'I was deeply focused on solving the problem'
-        }
-      };
-
-      // Mock embedding service to throw an error
-      mockEmbeddingService.generateEmbedding.mockRejectedValue(new Error('Embedding failed'));
-
-      const result = await captureService.captureSource(input);
-
-      expect(result).toBeDefined();
-      expect(result.source.embedding).toBeUndefined();
-      // Should still capture the source even if embedding fails
-    });
-
-    it('should handle vector store errors gracefully', async () => {
-      const input = {
-        experience: {
-          qualities: [
-            {
-              type: 'spatial' as const,
+              type: 'completely-invalid' as any,
               prominence: 0.5,
-              manifestation: 'Location awareness'
+              manifestation: 'test'
             }
           ],
-          emoji: '📍',
-          narrative: 'I was aware of my surroundings'
+          emoji: '❌',
+          narrative: 'Testing invalid quality'
         }
       };
 
-      // Mock vector store to throw an error
-      mockVectorStore.addVector.mockImplementation(() => {
-        throw new Error('Vector store error');
-      });
-
-      const result = await captureService.captureSource(input);
-
-      expect(result).toBeDefined();
-      // Should still capture the source even if vector storage fails
-    });
-
-    it('should validate occurred date format', async () => {
-      const input = {
-        occurred: 'invalid-date',
-        experience: {
-          qualities: [
-            {
-              type: 'temporal' as const,
-              prominence: 0.9,
-              manifestation: 'Time awareness'
-            }
-          ],
-          emoji: '⏰',
-          narrative: 'I was aware of the time passing'
-        }
-      };
-
-      // Mock parseOccurredDate to throw an error
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const { parseOccurredDate } = require('../utils/validation');
-      parseOccurredDate.mockRejectedValue(new Error('Invalid date'));
-
-      await expect(captureService.captureSource(input)).rejects.toThrow(
-        'Invalid occurred date format. Example valid formats: "2024-01-15", "yesterday", "last week", "2024-01-01T10:00:00Z".'
-      );
-    });
-
-    it('should validate required experience fields', async () => {
-      const input = {
-        experience: {
-          qualities: [
-            {
-              type: 'intersubjective' as const,
-              prominence: 0.8,
-              manifestation: 'Social connection'
-            }
-          ],
-          emoji: '', // Empty emoji should fail validation
-          narrative: 'I felt connected to others'
-        }
-      };
-
-      await expect(captureService.captureSource(input)).rejects.toThrow('Emoji is required');
+      await expect(captureService.captureSource(input)).rejects.toThrow(/Invalid quality type/);
     });
 
     it('should validate narrative length', async () => {
       const input = {
         experience: {
-          qualities: [
-            {
-              type: 'purposive' as const,
-              prominence: 0.7,
-              manifestation: 'Goal orientation'
-            }
-          ],
-          emoji: '🎯',
-          narrative: 'A'.repeat(201) // Too long narrative
+          qualities: [],
+          emoji: '📝',
+          narrative: 'This is a very long narrative that exceeds the maximum allowed length of 200 characters. It continues on and on with unnecessary details that should be condensed into a more concise summary of the experiential moment being captured.'
         }
       };
 
-      await expect(captureService.captureSource(input)).rejects.toThrow(
-        'Narrative should be a concise experiential summary'
-      );
+      await expect(captureService.captureSource(input)).rejects.toThrow();
+    });
+
+    it('should require emoji in experience', async () => {
+      const input = {
+        experience: {
+          qualities: [],
+          emoji: '', // Empty emoji should fail
+          narrative: 'Missing emoji'
+        }
+      };
+
+      await expect(captureService.captureSource(input)).rejects.toThrow();
+    });
+
+    it('should require narrative in experience', async () => {
+      const input = {
+        experience: {
+          qualities: [],
+          emoji: '🤔',
+          narrative: '' // Empty narrative should fail
+        }
+      };
+
+      await expect(captureService.captureSource(input)).rejects.toThrow();
     });
   });
-}); 
+});

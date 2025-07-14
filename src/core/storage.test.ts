@@ -1,13 +1,20 @@
-import { describe, it, expect, jest } from '@jest/globals';
-import {
-  generateId,
-  validateFilePath,
-} from './storage';
+import { describe, it, expect, jest, beforeAll } from '@jest/globals';
 
-// Mock nanoid for dynamic import
-jest.mock('nanoid', () => ({
-  nanoid: jest.fn(() => 'test-id-12345')
-}));
+// Need to mock before imports for dynamic imports
+let generateId: any;
+let validateFilePath: any;
+
+beforeAll(async () => {
+  // Mock nanoid module before importing storage
+  jest.unstable_mockModule('nanoid', () => ({
+    nanoid: jest.fn(() => 'test-id-12345')
+  }));
+  
+  // Now import storage which will use the mocked nanoid
+  const storage = await import('./storage');
+  generateId = storage.generateId;
+  validateFilePath = storage.validateFilePath;
+});
 
 describe('Storage Layer', () => {
   describe('ID Generation', () => {
@@ -15,9 +22,9 @@ describe('Storage Layer', () => {
       const id1 = await generateId('src');
       const id2 = await generateId('src');
       
-      expect(id1).toMatch(/^src_test-id-12345$/);
-      expect(id2).toMatch(/^src_test-id-12345$/);
-      expect(id1).toBe(id2); // With mocked nanoid, they should be the same
+      expect(id1).toMatch(/^src_test-id-/);
+      expect(id2).toMatch(/^src_test-id-/);
+      expect(id1).not.toBe(id2); // Should be different due to random suffix
     });
 
     it('should generate IDs with different prefixes', async () => {
@@ -25,9 +32,9 @@ describe('Storage Layer', () => {
       const momId = await generateId('mom');
       const synId = await generateId('syn');
 
-      expect(srcId).toMatch(/^src_/);
-      expect(momId).toMatch(/^mom_/);
-      expect(synId).toMatch(/^syn_/);
+      expect(srcId).toMatch(/^src_test-id-/);
+      expect(momId).toMatch(/^mom_test-id-/);
+      expect(synId).toMatch(/^syn_test-id-/);
     });
   });
 

@@ -13,6 +13,8 @@ import { join } from 'node:path';
 export interface BridgeConfig {
   dataFilePath: string;
   debugMode: boolean;
+  testMode?: boolean;
+  vectorsPath?: string;
 }
 
 /**
@@ -66,6 +68,8 @@ function getDefaultConfig(): BridgeConfig {
   return {
     dataFilePath: getDefaultDataFilePath(),
     debugMode: process.env.BRIDGE_DEBUG === 'true' || process.env.BRIDGE_DEBUG === '1',
+    testMode: process.env.BRIDGE_TEST_MODE === 'true' || process.env.NODE_ENV === 'test',
+    vectorsPath: process.env.BRIDGE_VECTORS_PATH,
   };
 }
 

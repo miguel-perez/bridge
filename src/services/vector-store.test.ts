@@ -1,121 +1,12 @@
-import { jest } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import { VectorStore } from './vector-store';
-import { nanoid } from 'nanoid';
-import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs';
-import { join, resolve, dirname } from 'path';
-import { tmpdir } from 'os';
-
-// Mock all external dependencies with factory functions
-jest.mock('nanoid', () => ({
-  nanoid: jest.fn(() => 'test-id-12345')
-}));
-
-jest.mock('fs', () => ({
-  writeFileSync: jest.fn(),
-  readFileSync: jest.fn(),
-  existsSync: jest.fn(),
-  mkdirSync: jest.fn()
-}));
-
-jest.mock('path', () => ({
-  join: jest.fn((...args) => args.join('/')),
-  resolve: jest.fn((...args) => args.join('/')),
-  dirname: jest.fn((path) => path.split('/').slice(0, -1).join('/') || '.')
-}));
-
-jest.mock('os', () => ({
-  tmpdir: jest.fn(() => '/tmp')
-}));
-
-// Mock the embedding service
-const mockEmbeddingService = {
-  generateEmbedding: jest.fn(),
-  generateEmbeddings: jest.fn()
-};
-
-jest.mock('./embeddings', () => ({
-  EmbeddingService: jest.fn(() => mockEmbeddingService)
-}));
-
-// Mock the vector store
-const mockVectorStore = {
-  addVector: jest.fn(),
-  addVectors: jest.fn(),
-  removeVector: jest.fn(),
-  findSimilar: jest.fn(),
-  findSimilarById: jest.fn(),
-  getVector: jest.fn(),
-  hasVector: jest.fn(),
-  getVectorCount: jest.fn(),
-  clear: jest.fn(),
-  saveToDisk: jest.fn(),
-  loadFromDisk: jest.fn(),
-  initialize: jest.fn(),
-  validateVectors: jest.fn(),
-  removeInvalidVectors: jest.fn(),
-  cleanup: jest.fn(),
-  getHealthStats: jest.fn()
-};
-
-jest.mock('./vector-store', () => ({
-  VectorStore: jest.fn().mockImplementation(() => mockVectorStore),
-  getVectorStore: jest.fn(() => mockVectorStore),
-  initializeVectorStore: jest.fn(() => mockVectorStore)
-}));
-
-// Get the mocked modules
-const mockedNanoid = nanoid as jest.MockedFunction<typeof nanoid>;
-const mockedWriteFileSync = writeFileSync as jest.MockedFunction<typeof writeFileSync>;
-const mockedReadFileSync = readFileSync as jest.MockedFunction<typeof readFileSync>;
-const mockedExistsSync = existsSync as jest.MockedFunction<typeof existsSync>;
-const mockedMkdirSync = mkdirSync as jest.MockedFunction<typeof mkdirSync>;
-const mockedJoin = join as jest.MockedFunction<typeof join>;
-const mockedResolve = resolve as jest.MockedFunction<typeof resolve>;
-const mockedDirname = dirname as jest.MockedFunction<typeof dirname>;
-const mockedTmpdir = tmpdir as jest.MockedFunction<typeof tmpdir>;
 
 describe('VectorStore', () => {
   let vectorStore: VectorStore;
 
   beforeEach(() => {
-    // Reset all mocks
-    jest.clearAllMocks();
-    
-    // Setup default mock implementations
-    mockedNanoid.mockReturnValue('test-id-12345');
-    mockedWriteFileSync.mockImplementation(() => {});
-    mockedReadFileSync.mockReturnValue('[]');
-    mockedExistsSync.mockReturnValue(false);
-    mockedMkdirSync.mockImplementation(() => {});
-    mockedJoin.mockImplementation((...args) => args.join('/'));
-    mockedResolve.mockImplementation((...args) => args.join('/'));
-    mockedDirname.mockImplementation((path) => path.split('/').slice(0, -1).join('/') || '.');
-    mockedTmpdir.mockReturnValue('/tmp');
-    
-    // Setup embedding service mocks
-    mockEmbeddingService.generateEmbedding.mockResolvedValue([0.1, 0.2, 0.3]);
-    mockEmbeddingService.generateEmbeddings.mockResolvedValue([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]);
-    
-    // Setup vector store mocks
-    mockVectorStore.addVector.mockReturnValue(true);
-    mockVectorStore.addVectors.mockReturnValue({ added: 2, rejected: 0 });
-    mockVectorStore.removeVector.mockResolvedValue(undefined);
-    mockVectorStore.findSimilar.mockResolvedValue([]);
-    mockVectorStore.findSimilarById.mockResolvedValue([]);
-    mockVectorStore.getVector.mockResolvedValue([0.1, 0.2, 0.3]);
-    mockVectorStore.hasVector.mockResolvedValue(true);
-    mockVectorStore.getVectorCount.mockResolvedValue(2);
-    mockVectorStore.clear.mockResolvedValue(undefined);
-    mockVectorStore.saveToDisk.mockResolvedValue(undefined);
-    mockVectorStore.loadFromDisk.mockResolvedValue(undefined);
-    mockVectorStore.initialize.mockResolvedValue(undefined);
-    mockVectorStore.validateVectors.mockResolvedValue({ valid: 2, invalid: 0, details: [] });
-    mockVectorStore.removeInvalidVectors.mockResolvedValue(0);
-    mockVectorStore.cleanup.mockResolvedValue(0);
-    mockVectorStore.getHealthStats.mockReturnValue({ total: 2, valid: 2, invalid: 0 });
-    
-    // Create vector store instance
-    vectorStore = new VectorStore();
+    // Create vector store with in-memory storage for tests
+    vectorStore = new VectorStore(':memory:');
   });
 
   afterEach(() => {
@@ -125,151 +16,190 @@ describe('VectorStore', () => {
   describe('addVector', () => {
     it('should add a vector successfully', async () => {
       const id = 'test-id';
-      const vector = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]; // 10 dimensions for testing
+      const vector = new Array(384).fill(0.1);
       
       const result = vectorStore.addVector(id, vector);
       
-      expect(mockVectorStore.addVector).toHaveBeenCalledWith(id, vector);
       expect(result).toBe(true);
+      expect(await vectorStore.hasVector(id)).toBe(true);
+      expect(await vectorStore.getVectorCount()).toBe(1);
     });
 
-    it('should handle invalid vector dimensions', () => {
+    it('should handle invalid vector dimensions', async () => {
       const id = 'test-id';
       const invalidVector = [0.1, 0.2]; // Too few dimensions
       
-      mockVectorStore.addVector.mockReturnValue(false);
-      
       const result = vectorStore.addVector(id, invalidVector);
       
-      expect(mockVectorStore.addVector).toHaveBeenCalledWith(id, invalidVector);
       expect(result).toBe(false);
+      expect(await vectorStore.hasVector(id)).toBe(false);
+    });
+
+    it('should update existing vector', async () => {
+      const id = 'test-id';
+      const vector1 = new Array(384).fill(0.1);
+      const vector2 = new Array(384).fill(0.2);
+      
+      vectorStore.addVector(id, vector1);
+      const result = vectorStore.addVector(id, vector2);
+      
+      expect(result).toBe(true);
+      expect(await vectorStore.getVectorCount()).toBe(1);
+      
+      const retrieved = await vectorStore.getVector(id);
+      expect(retrieved?.[0]).toBe(0.2);
     });
   });
 
   describe('addVectors', () => {
-    it('should add multiple vectors successfully', () => {
-      const records = [
-        { id: 'id1', vector: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0] },
-        { id: 'id2', vector: [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1] }
+    it('should add multiple vectors successfully', async () => {
+      const vectors = [
+        { id: 'test-1', vector: new Array(384).fill(0.1) },
+        { id: 'test-2', vector: new Array(384).fill(0.2) }
       ];
       
-      const result = vectorStore.addVectors(records);
+      const result = vectorStore.addVectors(vectors);
       
-      expect(mockVectorStore.addVectors).toHaveBeenCalledWith(records);
-      expect(result).toEqual({ added: 2, rejected: 0 });
+      expect(result.added).toBe(2);
+      expect(result.rejected).toBe(0);
+      expect(await vectorStore.getVectorCount()).toBe(2);
     });
 
-    it('should handle some invalid vectors', () => {
-      const records = [
-        { id: 'id1', vector: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0] },
-        { id: 'id2', vector: [0.2, 0.3] } // Invalid dimensions
+    it('should handle some invalid vectors', async () => {
+      const vectors = [
+        { id: 'test-1', vector: new Array(384).fill(0.1) },
+        { id: 'test-2', vector: [0.1, 0.2] }, // Invalid
+        { id: 'test-3', vector: new Array(384).fill(0.3) }
       ];
       
-      mockVectorStore.addVectors.mockReturnValue({ added: 1, rejected: 1 });
+      const result = vectorStore.addVectors(vectors);
       
-      const result = vectorStore.addVectors(records);
-      
-      expect(mockVectorStore.addVectors).toHaveBeenCalledWith(records);
-      expect(result).toEqual({ added: 1, rejected: 1 });
+      expect(result.added).toBe(2);
+      expect(result.rejected).toBe(1);
+      expect(await vectorStore.getVectorCount()).toBe(2);
     });
   });
 
   describe('findSimilar', () => {
     it('should find similar vectors', async () => {
-      const queryVector = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
-      const mockResults = [
-        { id: 'id1', similarity: 0.95 },
-        { id: 'id2', similarity: 0.85 }
-      ];
+      // Create more realistic test vectors with varying patterns
+      const vector1 = new Array(384).fill(0);
+      const vector2 = new Array(384).fill(0);
+      const vector3 = new Array(384).fill(0);
       
-      mockVectorStore.findSimilar.mockResolvedValue(mockResults);
+      // Set different values for first few dimensions to create distinct patterns
+      vector1[0] = 1; vector1[1] = 0; vector1[2] = 0; // Pattern A
+      vector2[0] = 1; vector2[1] = 0.1; vector2[2] = 0; // Similar to A
+      vector3[0] = 0; vector3[1] = 0; vector3[2] = 1; // Pattern B (different)
       
-      const results = await vectorStore.findSimilar(queryVector, 5);
+      vectorStore.addVector('test-1', vector1);
+      vectorStore.addVector('test-2', vector2);
+      vectorStore.addVector('test-3', vector3);
       
-      expect(mockVectorStore.findSimilar).toHaveBeenCalledWith(queryVector, 5);
-      expect(results).toEqual(mockResults);
+      // Query vector similar to vector1 and vector2
+      const queryVector = new Array(384).fill(0);
+      queryVector[0] = 1; queryVector[1] = 0.05; queryVector[2] = 0;
+      
+      const results = await vectorStore.findSimilar(queryVector, 2, 0.0);
+      
+      expect(results).toHaveLength(2);
+      expect(results[0].similarity).toBeGreaterThan(0.5);
+      
+      // Should return the two most similar vectors
+      const ids = results.map(r => r.id);
+      expect(ids).toContain('test-1');
+      expect(ids).toContain('test-2');
     });
 
-    it('should handle empty results', async () => {
-      const queryVector = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
-      
-      mockVectorStore.findSimilar.mockResolvedValue([]);
-      
+    it('should handle empty vector store', async () => {
+      const queryVector = new Array(384).fill(0.5);
       const results = await vectorStore.findSimilar(queryVector, 5);
       
       expect(results).toEqual([]);
     });
+
+    it('should respect limit parameter', async () => {
+      // Add 5 vectors
+      for (let i = 0; i < 5; i++) {
+        vectorStore.addVector(`test-${i}`, new Array(384).fill(0.1 + i * 0.1));
+      }
+      
+      const queryVector = new Array(384).fill(0.3);
+      const results = await vectorStore.findSimilar(queryVector, 3);
+      
+      expect(results).toHaveLength(3);
+    });
   });
 
-  describe('getVector', () => {
-    it('should retrieve a vector by ID', async () => {
+  describe('removeVector', () => {
+    it('should remove vector successfully', async () => {
       const id = 'test-id';
-      const mockVector = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
+      vectorStore.addVector(id, new Array(384).fill(0.1));
       
-      mockVectorStore.getVector.mockResolvedValue(mockVector);
+      expect(await vectorStore.hasVector(id)).toBe(true);
       
-      const result = await vectorStore.getVector(id);
+      await vectorStore.removeVector(id);
       
-      expect(mockVectorStore.getVector).toHaveBeenCalledWith(id);
-      expect(result).toEqual(mockVector);
+      expect(await vectorStore.hasVector(id)).toBe(false);
+      expect(await vectorStore.getVectorCount()).toBe(0);
     });
 
-    it('should return null for non-existent vector', async () => {
-      const id = 'nonexistent';
+    it('should handle removing non-existent vector', async () => {
+      await expect(vectorStore.removeVector('non-existent')).resolves.not.toThrow();
+    });
+  });
+
+  describe('validation', () => {
+    it('should validate vectors', async () => {
+      vectorStore.addVector('test-1', new Array(384).fill(0.1));
+      vectorStore.addVector('test-2', new Array(384).fill(0.2));
       
-      mockVectorStore.getVector.mockResolvedValue(null);
+      const result = await vectorStore.validateVectors();
       
-      const result = await vectorStore.getVector(id);
+      expect(result.valid).toBe(2);
+      expect(result.invalid).toBe(0);
+      expect(result.details).toHaveLength(0);
+    });
+
+    it('should get health stats', () => {
+      vectorStore.addVector('test-1', new Array(384).fill(0.1));
+      vectorStore.addVector('test-2', new Array(384).fill(0.2));
       
-      expect(result).toBeNull();
+      const stats = vectorStore.getHealthStats();
+      
+      expect(stats.total).toBe(2);
+      expect(stats.valid).toBe(2);
+      expect(stats.invalid).toBe(0);
     });
   });
 
   describe('clear', () => {
     it('should clear all vectors', async () => {
+      vectorStore.addVector('test-1', new Array(384).fill(0.1));
+      vectorStore.addVector('test-2', new Array(384).fill(0.2));
+      
+      expect(await vectorStore.getVectorCount()).toBe(2);
+      
       await vectorStore.clear();
       
-      expect(mockVectorStore.clear).toHaveBeenCalled();
+      expect(await vectorStore.getVectorCount()).toBe(0);
     });
   });
 
-  describe('saveToDisk', () => {
-    it('should save vectors to disk', async () => {
-      await vectorStore.saveToDisk();
+  describe('persistence', () => {
+    it('should handle in-memory storage', async () => {
+      // For in-memory storage, save/load should work but not persist
+      vectorStore.addVector('test-1', new Array(384).fill(0.1));
       
-      expect(mockVectorStore.saveToDisk).toHaveBeenCalled();
-    });
-  });
-
-  describe('loadFromDisk', () => {
-    it('should load vectors from disk', async () => {
+      await expect(vectorStore.saveToDisk()).resolves.not.toThrow();
+      
+      // Clear and reload
+      await vectorStore.clear();
+      expect(await vectorStore.getVectorCount()).toBe(0);
+      
+      // In-memory storage doesn't persist
       await vectorStore.loadFromDisk();
-      
-      expect(mockVectorStore.loadFromDisk).toHaveBeenCalled();
+      expect(await vectorStore.getVectorCount()).toBe(0);
     });
   });
-
-  describe('getVectorCount', () => {
-    it('should return the number of vectors', async () => {
-      mockVectorStore.getVectorCount.mockResolvedValue(5);
-      
-      const count = await vectorStore.getVectorCount();
-      
-      expect(mockVectorStore.getVectorCount).toHaveBeenCalled();
-      expect(count).toBe(5);
-    });
-  });
-
-  describe('hasVector', () => {
-    it('should check if vector exists', async () => {
-      const id = 'test-id';
-      
-      mockVectorStore.hasVector.mockResolvedValue(true);
-      
-      const exists = await vectorStore.hasVector(id);
-      
-      expect(mockVectorStore.hasVector).toHaveBeenCalledWith(id);
-      expect(exists).toBe(true);
-    });
-  });
-}); 
+});

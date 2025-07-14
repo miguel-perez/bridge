@@ -13,6 +13,8 @@ import { z } from 'zod';
 import { validateConfiguration, getDataFilePath } from '../core/config.js';
 import { setStorageConfig } from '../core/storage.js';
 import { initializeVectorStore } from '../services/vector-store.js';
+import { embeddingService } from '../services/embeddings.js';
+import { patternManager } from '../services/pattern-manager.js';
 import { mkdirSync } from 'fs';
 import { dirname, join } from 'path';
 import { MCPToolHandlers } from './handlers.js';
@@ -113,6 +115,15 @@ async function initializeConfiguration(serverInstance?: Server): Promise<void> {
     // Set storage configuration
     setStorageConfig({ dataFile: dataFilePath });
     
+    // Initialize embedding service first (needed by vector store)
+    try {
+      await embeddingService.initialize();
+      mcpLog('info', 'Embedding service initialized successfully', serverInstance);
+    } catch (embeddingError) {
+      // Embedding service initialization failed - captures will have zero embeddings
+      mcpLog('warn', `Embedding service initialization failed: ${embeddingError instanceof Error ? embeddingError.message : embeddingError}`, serverInstance);
+    }
+    
     // Initialize vector store with the same data directory
     try {
       const vectorStore = initializeVectorStore(dataDir);
@@ -124,6 +135,15 @@ async function initializeConfiguration(serverInstance?: Server): Promise<void> {
       // Vector store initialization failed - semantic search won't work without it
       // but basic functionality will still work
       mcpLog('warn', `Vector store initialization failed: ${vectorError instanceof Error ? vectorError.message : vectorError}`, serverInstance);
+    }
+    
+    // Initialize pattern manager for automatic pattern discovery
+    try {
+      await patternManager.initialize();
+      mcpLog('info', 'Pattern manager initialized successfully', serverInstance);
+    } catch (patternError) {
+      // Pattern discovery won't work but basic functionality will
+      mcpLog('warn', `Pattern manager initialization failed: ${patternError instanceof Error ? patternError.message : patternError}`, serverInstance);
     }
     
     // Bridge DXT initialized successfully
@@ -232,6 +252,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     switch (name) {
       case 'capture':
         return await toolHandlers.handleCapture(parsedArgs);
+
+      case 'discover':
+        return await toolHandlers.handleDiscover(parsedArgs);
 
       case 'release':
         return await toolHandlers.handleRelease(parsedArgs);

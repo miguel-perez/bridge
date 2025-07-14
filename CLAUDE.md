@@ -17,9 +17,33 @@ Bridge is a phenomenological data capture system for distributed cognition betwe
 ### Testing
 - `npm test` - Run all unit tests (excludes LLM integration)
 - `npm run test:unit` - Unit tests only
-- `npm run test:integration` - LLM integration tests (requires API key)
+- `npm run test:bridge` - Interactive Bridge test scenarios (requires API key)
+- `npm run test:integration` - Run all Bridge scenarios (requires API key)
+- `npm run test:fixtures` - Generate synthetic test fixture file
 - `npm run test:watch` - Run tests in watch mode
 - `npm run test:coverage` - Generate coverage report
+
+#### Bridge Test Scenarios
+User-outcome focused test scenarios that validate real Bridge use cases:
+- `stress-pattern-evolution` - Work stress pattern evolution over time
+- `memory-exploration` - Personal experience discovery  
+- `creative-capture` - Creative breakthrough documentation
+- `relationship-insights` - Social connection pattern discovery
+- `first-time-exploration` - New user Bridge discovery
+- `error-recovery` - Graceful error handling
+
+**Test Data Options:**
+- Uses synthetic test fixtures by default (36 diverse experiences across 6 months)
+- `--fixtures` - Use synthetic test data (default)
+- `--use-existing` - Use your actual bridge.json data (be careful!)
+
+**Results Tracking:**
+- All results automatically saved to `/test-results/` directory
+- `latest-run.json` - Most recent test run
+- `trend-data.json` - Historical pass rates and performance metrics
+- Individual scenario results with full conversation logs
+
+Example: `npm run test:bridge relationship-insights`
 
 ### Code Quality
 - `npm run lint` - Check for linting errors

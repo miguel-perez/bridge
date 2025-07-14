@@ -43,8 +43,12 @@
       "description": "Preserve one or more experiences exactly as they were shared with you, maintaining their authentic voice through seven-dimensional phenomenological analysis (embodied, attentional, affective, purposive, spatial, temporal, intersubjective). Each experience requires a narrative field (max 200 chars) written in the experiencer's voice using present tense and active language, plus an emoji for visual summary."
     },
     {
+      "name": "discover",
+      "description": "Discover and navigate experiential patterns. Patterns are automatically discovered from your experiences and organized into hierarchical groups with emoji signatures. Use to: browse patterns, navigate into specific patterns, refresh discovery, or view statistics. Everything is at most 3 clicks away."
+    },
+    {
       "name": "search",
-      "description": "Find and explore captured experiences through text, phenomenological patterns, meaning, and context. Supports multiple queries with filtering by experiencer, perspective, processing level, and date ranges. Results can be sorted by relevance, system time, or occurrence time."
+      "description": "Find and explore captured experiences through text search, filters, and pattern tags. Supports multiple queries with filtering by experiencer, perspective, processing level, and date ranges. Pattern tags are automatically searchable."
     },
     {
       "name": "update",

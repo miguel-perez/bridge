@@ -298,6 +298,27 @@ export async function saveSource(source: Omit<SourceRecord, 'type'>): Promise<So
 }
 
 /**
+ * Updates an existing source record in storage.
+ * @param source - The source data to update (must include id)
+ * @returns The updated source record
+ * @throws Error if source not found or storage operations fail
+ */
+export async function updateSource(source: SourceRecord): Promise<SourceRecord> {
+  const data = await readData();
+  const index = data.sources.findIndex(s => s.id === source.id);
+  
+  if (index === -1) {
+    throw new Error(`Source not found: ${source.id}`);
+  }
+  
+  // Update the source while preserving the type field
+  data.sources[index] = { ...source, type: 'source' };
+  await writeData(data);
+  
+  return data.sources[index];
+}
+
+/**
  * Retrieves all source records from storage.
  * @returns Array of source records
  * @throws Error if storage operations fail
