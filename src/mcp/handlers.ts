@@ -44,7 +44,7 @@ function formatExperience(experience: Experience | undefined): string {
 }
 
 /**
- * Formats ISO date as human-readable date
+ * Formats ISO date as human-readable date with time information for recent events
  * 
  * @param isoDate - ISO date string to format
  * @returns Human-readable date string
@@ -56,16 +56,47 @@ function formatDate(isoDate: string): string {
     const date = new Date(isoDate);
     if (isNaN(date.getTime())) return 'Invalid date';
     
-    // Check if it's today, yesterday, or a specific date
     const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    // For very recent times, show relative time
+    if (diffMinutes < 1) {
+      return 'Just now';
+    } else if (diffMinutes < 60) {
+      return `${diffMinutes} minute${diffMinutes === 1 ? '' : 's'} ago`;
+    } else if (diffHours < 24) {
+      return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+    }
+    
+    // For dates within a week, show day name
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
     const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
     
     if (dateOnly.getTime() === today.getTime()) {
-      return 'Today';
+      const timeStr = date.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+      });
+      return `Today at ${timeStr}`;
     } else if (dateOnly.getTime() === yesterday.getTime()) {
-      return 'Yesterday';
+      const timeStr = date.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+      });
+      return `Yesterday at ${timeStr}`;
+    } else if (diffDays < 7) {
+      return date.toLocaleDateString('en-US', { 
+        weekday: 'long',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
     } else {
       return date.toLocaleDateString('en-US', { 
         weekday: 'long', 

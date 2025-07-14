@@ -2,7 +2,7 @@
 export const tools = [
   {
     name: "capture",
-    description: "Preserve one or more experiences exactly as they were shared with you, maintaining their authentic voice through seven-dimensional phenomenological analysis (embodied, attentional, affective, purposive, spatial, temporal, intersubjective). Each experience requires a narrative field (max 200 chars) written in the experiencer's voice using present tense and active language, plus an emoji for visual summary.",
+    description: "Records meaningful moments and experiences with rich phenomenological analysis. Use this to preserve conversations, insights, breakthroughs, or any significant human experience. Each capture includes: (1) the original content/words, (2) who experienced it and when, (3) an emoji + narrative summary, and (4) analysis across 7 experiential dimensions. SUPPORTS BATCH: Capture multiple experiences in one call. Example uses: documenting therapy breakthroughs, recording user feedback, preserving learning moments, capturing creative insights.",
     inputSchema: {
       type: "object",
       properties: {
@@ -14,7 +14,7 @@ export const tools = [
             properties: {
               content: { 
                 type: "string", 
-                description: "The exact words or experience as directly shared with you, preserving their original expression" 
+                description: "The exact words or experience as directly shared with you, preserving their original expression. Examples: 'I finally understood why I've been avoiding that conversation', 'The code suddenly clicked and I saw the pattern everywhere', 'We realized we were solving the wrong problem all along'" 
               },
               experience: {
                 type: "object",
@@ -37,7 +37,7 @@ export const tools = [
                         },
                         manifestation: {
                           type: "string",
-                          description: "How this quality specifically shows up in their experience"
+                          description: "How this quality specifically shows up in their experience. Examples: 'tension releasing from shoulders' (embodied), 'sudden clarity about the pattern' (attentional), 'overwhelming gratitude' (affective)"
                         }
                       },
                       required: ["type", "prominence", "manifestation"]
@@ -56,7 +56,7 @@ export const tools = [
               },
               experiencer: { 
                 type: "string", 
-                description: "The person whose experience this is (e.g., 'Miguel', 'Alicia', 'Claude-Captain')" 
+                description: "The person whose experience this is. Examples: 'Miguel', 'Sarah Chen', 'Anonymous User', 'Team Alpha', 'Claude-3'" 
               },
               perspective: { 
                 type: "string", 
@@ -75,7 +75,7 @@ export const tools = [
               },
               occurred: { 
                 type: "string", 
-                description: "When the experience actually happened (e.g., 'yesterday morning', 'last week', '2024-01-15', 'just now')" 
+                description: "When the experience actually happened. Examples: 'just now', '5 minutes ago', 'yesterday at 3pm', 'last Tuesday', 'January 15, 2024', '2024-01-15T14:30:00Z'" 
               },
               crafted: { 
                 type: "boolean", 
@@ -92,7 +92,7 @@ export const tools = [
 
   {
     name: "search",
-    description: "Find and explore captured experiences through text, phenomenological patterns, meaning, and context. Supports multiple queries with filtering by experiencer, perspective, processing level, and date ranges. Results can be sorted by relevance, system time, or occurrence time.",
+    description: "Finds previously captured experiences using text search, filters, or patterns. Use this to: recall past conversations, find similar experiences across time, track patterns in user feedback, or explore phenomenological themes. Returns results with emoji+narrative summaries and full content. Supports filtering by: who (experiencer), when (date ranges), how (perspective: I/we/you/they), and processing level (during/after). SUPPORTS BATCH: Run multiple searches in one call. IMPORTANT: Boolean operators (AND/OR/NOT) are not supported. To find experiences matching multiple criteria, use filters or run separate queries. For example, instead of 'anxiety OR stress', run two queries: one for 'anxiety' and one for 'stress'. Leave query empty to see all recent experiences.",
     inputSchema: {
       type: "object",
       properties: {
@@ -104,7 +104,7 @@ export const tools = [
             properties: {
               query: {
                 type: "string",
-                description: "What you're looking for in the experiences"
+                description: "What you're looking for in the experiences. Examples: 'breakthrough moment', 'frustration with API', 'team collaboration', 'aha realization', '' (empty to see all recent). Note: Boolean operators (AND/OR/NOT) are not supported - use filters or separate queries instead"
               },
               limit: {
                 type: "number",
@@ -138,7 +138,7 @@ export const tools = [
                 properties: {
                   experiencer: {
                     type: "string",
-                    description: "Show only experiences from this person"
+                    description: "Show only experiences from this person. Examples: 'Miguel', 'Sarah', 'Team Alpha', 'self'"
                   },
                   perspective: {
                     type: "string",
@@ -156,11 +156,11 @@ export const tools = [
                     properties: {
                       start: {
                         type: "string",
-                        description: "Start date (ISO string)"
+                        description: "Start date. Examples: '2024-01-01', 'last week', 'January 1st', '7 days ago'"
                       },
                       end: {
                         type: "string",
-                        description: "End date (ISO string)"
+                        description: "End date. Examples: '2024-12-31', 'today', 'now', 'yesterday at 5pm'"
                       }
                     }
                   }
@@ -177,7 +177,7 @@ export const tools = [
 
   {
     name: "update",
-    description: "Correct or update existing experiences when mistakes were made during capture, maintaining the integrity of the experiential record. Supports partial updates to any field including content, experience analysis, metadata, and can regenerate embeddings when needed.",
+    description: "Modifies existing captured experiences to fix errors or enhance analysis. Use this to: correct typos or attribution errors, add missing phenomenological dimensions, improve narrative clarity, or update metadata. Requires the experience ID from search results. SUPPORTS BATCH: Update multiple experiences in one call. Common uses: fixing autocorrect errors, attributing to correct person, enriching analysis after reflection, updating timestamps.",
     inputSchema: {
       type: "object",
       properties: {
@@ -216,7 +216,7 @@ export const tools = [
                         },
                         manifestation: {
                           type: "string",
-                          description: "How this quality specifically shows up in their experience"
+                          description: "How this quality specifically shows up in their experience. Examples: 'tension releasing from shoulders' (embodied), 'sudden clarity about the pattern' (attentional), 'overwhelming gratitude' (affective)"
                         }
                       },
                       required: ["type", "prominence", "manifestation"]
@@ -275,7 +275,7 @@ export const tools = [
 
   {
     name: "release",
-    description: "Let go of experiences that no longer need to be held, returning them to the flow of memory with gratitude. Supports releasing multiple experiences at once with reasons for each release.",
+    description: "Permanently removes captured experiences from Bridge storage. Use this to: delete test data, remove duplicates, clear sensitive information, or honor someone's request to forget. Requires both the experience ID and a reason for deletion. This action cannot be undone. SUPPORTS BATCH: Release multiple experiences in one call. Common uses: removing practice captures, deleting outdated entries, managing storage, respecting privacy requests.",
     inputSchema: {
       type: "object",
       properties: {
@@ -287,11 +287,11 @@ export const tools = [
             properties: {
               source_id: {
                 type: "string",
-                description: "The ID of the experience to release"
+                description: "The ID of the experience to release. Example: 'src_2024_01_15_abc123xyz'"
               },
               reason: {
                 type: "string",
-                description: "Why this experience is ready to be released"
+                description: "Why this experience is ready to be released. Examples: 'Test data', 'Duplicate entry', 'User requested deletion', 'Contains sensitive information'"
               }
             },
             required: ["source_id", "reason"]
