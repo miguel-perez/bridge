@@ -57,9 +57,10 @@ Example: `npm run test:bridge relationship-insights`
 - Bundles all code into a single `index.js` file (~118KB total package size)
 
 ### Utilities
-- `npm run clean` - Remove dist directory
-- `npm run process` - Process raw captures to embeddings
-- `npm run verify` - Verify data file integrity
+- `npm run clean` - Remove dist directory (removes dist directory)
+- `npm run migrate-schema` - Migrate data schema to latest version
+- `npm run migrate-embeddings` - Migrate embeddings to new format
+- `npm run validate:manifest` - Validate DXT manifest file structure
 
 ## Architecture
 
@@ -67,27 +68,38 @@ Example: `npm run test:bridge relationship-insights`
 
 1. **MCP Server** (`/src/mcp/`)
    - `server.ts` - Main MCP server implementation
-   - `handlers.ts` - Tool request handlers for capture, search, update, release
+   - `handlers.ts` - Tool request handlers for capture, search, update, release, discover
    - `tools.ts` - Tool definitions and schemas
+   - Individual handlers: `capture-handler.ts`, `search-handler.ts`, `update-handler.ts`, `release-handler.ts`, `discover-handler.ts`
 
 2. **Services** (`/src/services/`)
    - `capture.ts` - Creates and persists experiential captures
    - `search.ts` - Multi-modal search (text, vector, semantic)
    - `embeddings.ts` - Generates and manages embeddings
-   - `enrichService.ts` - LLM-based enrichment of captures
-   - `vectorStore.ts` - In-memory vector store for similarity search
+   - `enrich.ts` - LLM-based enrichment of captures
+   - `vector-store.ts` - In-memory vector store for similarity search
+   - `release.ts` - Handles releasing/deleting experiential data
+   - `comprehensive-pattern-discovery.ts` - Pattern discovery algorithms
 
 3. **Core Domain** (`/src/core/`)
    - `types.ts` - TypeScript interfaces for all data models
    - `storage.ts` - JSON file persistence layer
    - `config.ts` - Configuration management
+   - `search.ts` - Core search functionality
+
+4. **Scripts** (`/src/scripts/`)
+   - `bridge-test.ts` - User-outcome focused integration test scenarios
+   - `test-fixtures.ts` - Generate synthetic test data
+   - `migrate-schema.ts` - Data schema migration utilities
+   - `migrate-embeddings.ts` - Embedding migration utilities
 
 ### Data Flow
 1. User captures experience via MCP tool → 
-2. System creates ExperienceCapture with phenomenological ratings → 
+2. System creates ExperienceCapture with phenomenological ratings and narrative → 
 3. Background processing generates embeddings → 
 4. Data stored in local JSON file → 
-5. Search queries use multi-modal scoring across text, vectors, and semantics
+5. Pattern discovery algorithms analyze experiences for emerging themes →
+6. Search queries use multi-modal scoring across text, vectors, and semantics
 
 ### Search Scoring Weights
 - Text matching: 40%
@@ -138,9 +150,25 @@ Example: `npm run test:bridge relationship-insights`
 - Return structured responses with clear error messages
 - Handle partial matches and fuzzy search
 - Support both specific IDs and natural language queries
+- All tools support both individual and batch operations where applicable
+
+### Five Core MCP Tools
+1. **capture** - Create new experiential records with phenomenological analysis
+2. **search** - Find experiences through multi-modal search
+3. **discover** - Navigate automatically discovered experience patterns
+4. **update** - Modify existing experiences while preserving integrity
+5. **release** - Remove experiences with gratitude and reasoning
 
 ### Development Tips
 - Run `npm run dev` for live reloading during development
 - Check `manifest.json` for tool configurations
 - Use debug mode in Claude Desktop for troubleshooting
 - Test MCP tools via Claude Desktop after packaging with build-dxt script
+- Use `npm run test:bridge <scenario>` to test specific Bridge scenarios
+- Run `npm run test:fixtures` to generate fresh synthetic test data
+
+# important-instruction-reminders
+Do what has been asked; nothing more, nothing less.
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
