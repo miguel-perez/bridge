@@ -58,7 +58,9 @@ export class FixedPatternDiscovery {
       max_clusters = 10
     } = options;
     
-    console.log(`🔧 Fixed clustering: threshold=${similarity_threshold}, min_size=${min_cluster_size}`);
+    if (!process.env.BRIDGE_TEST_MODE) {
+      console.log(`🔧 Fixed clustering: threshold=${similarity_threshold}, min_size=${min_cluster_size}`);
+    }
     
     // Filter experiences with valid embeddings
     const validExperiences = experiences.filter(exp => 
@@ -129,7 +131,9 @@ export class FixedPatternDiscovery {
     const clusters: SourceRecord[][] = [];
     const assigned = new Set<string>();
     
-    console.log(`📊 Hard clustering ${experiences.length} experiences with threshold ${threshold}`);
+    if (!process.env.BRIDGE_TEST_MODE) {
+      console.log(`📊 Hard clustering ${experiences.length} experiences with threshold ${threshold}`);
+    }
     
     // Sort experiences by some criteria to get consistent clustering
     const sortedExperiences = [...experiences].sort((a, b) => 
@@ -169,14 +173,18 @@ export class FixedPatternDiscovery {
       // Only keep cluster if it has enough members
       if (cluster.length >= minSize) {
         clusters.push(cluster);
-        console.log(`✅ Created cluster ${clusters.length} with ${cluster.length} experiences (min similarity: ${threshold})`);
+        if (!process.env.BRIDGE_TEST_MODE) {
+          console.log(`✅ Created cluster ${clusters.length} with ${cluster.length} experiences (min similarity: ${threshold})`);
+        }
       } else {
         // Remove assignments for rejected cluster
         cluster.forEach(exp => assigned.delete(exp.id));
       }
     }
     
-    console.log(`🎯 Final result: ${clusters.length} clusters, ${assigned.size} assigned experiences`);
+    if (!process.env.BRIDGE_TEST_MODE) {
+      console.log(`🎯 Final result: ${clusters.length} clusters, ${assigned.size} assigned experiences`);
+    }
     
     return clusters;
   }
@@ -307,39 +315,49 @@ export class FixedPatternDiscovery {
    * Print detailed results
    */
   printResults(result: ClusteringResult): void {
-    console.log('\n🎯 FIXED PATTERN DISCOVERY RESULTS\n');
-    
-    console.log('📊 STATISTICS:');
-    console.log(`Total experiences: ${result.statistics.total_experiences}`);
-    console.log(`Patterns found: ${result.statistics.patterns_found}`);
-    console.log(`Outliers: ${result.statistics.outliers_count}`);
-    console.log(`Average pattern size: ${result.statistics.average_pattern_size.toFixed(1)}`);
-    console.log(`Average coherence: ${result.statistics.average_coherence.toFixed(3)}`);
-    console.log(`Clustering time: ${result.statistics.clustering_time}ms\n`);
+    if (!process.env.BRIDGE_TEST_MODE) {
+      console.log('\n🎯 FIXED PATTERN DISCOVERY RESULTS\n');
+      
+      console.log('📊 STATISTICS:');
+      console.log(`Total experiences: ${result.statistics.total_experiences}`);
+      console.log(`Patterns found: ${result.statistics.patterns_found}`);
+      console.log(`Outliers: ${result.statistics.outliers_count}`);
+      console.log(`Average pattern size: ${result.statistics.average_pattern_size.toFixed(1)}`);
+      console.log(`Average coherence: ${result.statistics.average_coherence.toFixed(3)}`);
+      console.log(`Clustering time: ${result.statistics.clustering_time}ms\n`);
+    }
     
     if (result.patterns.length > 0) {
-      console.log('🔍 DISCOVERED PATTERNS:');
+      if (!process.env.BRIDGE_TEST_MODE) {
+        console.log('🔍 DISCOVERED PATTERNS:');
+      }
       result.patterns.forEach((pattern, i) => {
-        console.log(`${i + 1}. ${pattern.name}`);
-        console.log(`   ID: ${pattern.id}`);
-        console.log(`   Size: ${pattern.experiences.length} experiences`);
-        console.log(`   Coherence: ${pattern.coherence.toFixed(3)}`);
-        console.log(`   Keywords: ${pattern.keywords.join(', ')}`);
-        console.log(`   Sample: "${pattern.experiences[0].experience?.narrative || pattern.experiences[0].content?.slice(0, 80) || 'No content'}"`);
-        console.log();
+        if (!process.env.BRIDGE_TEST_MODE) {
+          console.log(`${i + 1}. ${pattern.name}`);
+          console.log(`   ID: ${pattern.id}`);
+          console.log(`   Size: ${pattern.experiences.length} experiences`);
+          console.log(`   Coherence: ${pattern.coherence.toFixed(3)}`);
+          console.log(`   Keywords: ${pattern.keywords.join(', ')}`);
+          console.log(`   Sample: "${pattern.experiences[0].experience?.narrative || pattern.experiences[0].content?.slice(0, 80) || 'No content'}"`);
+          console.log();
+        }
       });
     }
     
     if (result.outliers.length > 0) {
-      console.log(`🔍 OUTLIERS (${result.outliers.length} experiences):`);
-      console.log('   Experiences that didn\'t cluster with others');
-      console.log(`   Sample: "${result.outliers[0].experience?.narrative || result.outliers[0].content?.slice(0, 80) || 'No content'}"`);
-      console.log();
+      if (!process.env.BRIDGE_TEST_MODE) {
+        console.log(`🔍 OUTLIERS (${result.outliers.length} experiences):`);
+        console.log('   Experiences that didn\'t cluster with others');
+        console.log(`   Sample: "${result.outliers[0].experience?.narrative || result.outliers[0].content?.slice(0, 80) || 'No content'}"`);
+        console.log();
+      }
     }
     
-    console.log('✅ KEY IMPROVEMENT:');
-    console.log('   Each experience belongs to AT MOST one pattern (hard clustering)');
-    console.log('   No more "every experience in 5 clusters" issue');
-    console.log('   Clear pattern boundaries and meaningful groupings');
+    if (!process.env.BRIDGE_TEST_MODE) {
+      console.log('✅ KEY IMPROVEMENT:');
+      console.log('   Each experience belongs to AT MOST one pattern (hard clustering)');
+      console.log('   No more "every experience in 5 clusters" issue');
+      console.log('   Clear pattern boundaries and meaningful groupings');
+    }
   }
 }

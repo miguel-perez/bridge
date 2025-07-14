@@ -92,13 +92,13 @@ export const tools = [
 
   {
     name: "discover",
-    description: "Discover and navigate experiential patterns. Patterns are automatically discovered from your experiences and organized into hierarchical groups with emoji signatures. Use to: browse patterns, navigate into specific patterns, refresh discovery, or view statistics. SUPPORTS BATCH: Run multiple discoveries in one call. Everything is at most 3 clicks away.",
+    description: "Discover and navigate experiential patterns across your captured experiences. SUPPORTS BATCH: Run multiple pattern discoveries in one call for comprehensive exploration. Patterns are automatically discovered and organized into hierarchical groups with emoji signatures. Use to: browse pattern landscape, navigate specific patterns, refresh discovery, view statistics, or explore quality dimensions. Everything is at most 3 clicks away. Example batch usage: get overview + stats + specific pattern details in one call.",
     inputSchema: {
       type: "object",
       properties: {
         discoveries: {
           type: "array",
-          description: "One or more discovery operations to execute (useful for overview + stats + specific patterns in one call)",
+          description: "One or more pattern discovery operations to execute in batch. Common patterns: [{},] for overview, [{stats: true},] for statistics, [{pattern: 'L1-1'},] for specific pattern, or [{}, {stats: true}, {pattern: 'L1-1'}] for comprehensive exploration.",
           items: {
             type: "object",
             properties: {

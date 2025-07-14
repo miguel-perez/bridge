@@ -73,13 +73,15 @@ export class DiscoverHandler {
       // Initialize if needed
       await patternManager.initialize();
       
-      // Support batch operations
-      if (args.discoveries && args.discoveries.length > 0) {
-        return this.handleBatchDiscoveries(args.discoveries);
+      // Support both new batch format and legacy single discovery format
+      const discoveries = args.discoveries || [args];
+      
+      if (discoveries.length > 1) {
+        return this.handleBatchDiscoveries(discoveries);
       }
       
-      // Single discovery (backward compatibility)
-      return this.handleSingleDiscovery(args);
+      // Single discovery
+      return this.handleSingleDiscovery(discoveries[0]);
       
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';

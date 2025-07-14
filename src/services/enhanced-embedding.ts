@@ -68,7 +68,9 @@ export class EnhancedEmbeddingService {
       emoji, narrative, content, qualities, occurred, perspective, experiencer, processing
     );
     
-    console.log(`🔤 Enhanced embedding text: ${embeddingText.slice(0, 200)}...`);
+    if (!process.env.BRIDGE_TEST_MODE) {
+      console.log(`🔤 Enhanced embedding text: ${embeddingText.slice(0, 200)}...`);
+    }
     
     await this.embeddingService.initialize();
     return await this.embeddingService.generateEmbedding(embeddingText);
@@ -129,7 +131,9 @@ export class EnhancedEmbeddingService {
         }
         
       } catch (error) {
-        console.warn(`Failed to generate embedding for ${source.id}:`, error);
+        if (!process.env.BRIDGE_TEST_MODE) {
+          console.warn(`Failed to generate embedding for ${source.id}:`, error);
+        }
       }
     }
     

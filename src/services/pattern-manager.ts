@@ -295,7 +295,9 @@ export class PatternManager {
       
       if (withEmbeddings.length === 0) return;
       
-      console.log(`Performing incremental pattern update for ${withEmbeddings.length} experiences...`);
+      if (!process.env.BRIDGE_TEST_MODE) {
+        console.log(`Performing incremental pattern update for ${withEmbeddings.length} experiences...`);
+      }
       
       // Use incremental update service
       const updateResult = await this.incrementalService.updatePatterns(
@@ -311,7 +313,9 @@ export class PatternManager {
       );
       
       if (structuralChanges.length > 0) {
-        console.log(`Structural changes detected (${structuralChanges.length}). Performing full rediscovery...`);
+        if (!process.env.BRIDGE_TEST_MODE) {
+          console.log(`Structural changes detected (${structuralChanges.length}). Performing full rediscovery...`);
+        }
         await this.fullPatternDiscovery();
         return;
       }
@@ -336,7 +340,9 @@ export class PatternManager {
       // Add pattern tags to updated records
       await this.updateSourceTags(updatedRecords);
       
-      console.log(`Incremental update completed: ${updateResult.stats.patternsAffected} patterns affected in ${updateResult.stats.timeMs}ms`);
+      if (!process.env.BRIDGE_TEST_MODE) {
+        console.log(`Incremental update completed: ${updateResult.stats.patternsAffected} patterns affected in ${updateResult.stats.timeMs}ms`);
+      }
       
     } catch (error) {
       console.error('Error in incremental pattern update:', error);

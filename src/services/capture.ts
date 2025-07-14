@@ -85,7 +85,9 @@ function validateQualityTypes(qualities: Array<{ type: string; prominence: numbe
     
     const mappedType = typeMapping[quality.type];
     if (mappedType) {
-      console.warn(`Quality type "${quality.type}" at index ${index} was mapped to "${mappedType}". Valid types are: ${validTypes.join(', ')}`);
+      if (!process.env.BRIDGE_TEST_MODE) {
+        console.warn(`Quality type "${quality.type}" at index ${index} was mapped to "${mappedType}". Valid types are: ${validTypes.join(', ')}`);
+      }
       return {
         type: mappedType,
         prominence: quality.prominence,
@@ -260,7 +262,9 @@ export class CaptureService {
       await patternManager.onCapture(source.id);
     } catch (error) {
       // Don't fail capture if pattern update fails
-      console.warn('Pattern update failed:', error);
+      if (!process.env.BRIDGE_TEST_MODE) {
+        console.warn('Pattern update failed:', error);
+      }
     }
 
     const defaultsUsed = this.getDefaultsUsed(input);

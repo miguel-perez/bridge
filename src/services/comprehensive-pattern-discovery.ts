@@ -86,10 +86,14 @@ export class ComprehensivePatternDiscovery {
       quality_analysis = true
     } = options;
     
-    console.log('🌳 Starting comprehensive pattern discovery...\n');
+    if (!process.env.BRIDGE_TEST_MODE) {
+      console.log('🌳 Starting comprehensive pattern discovery...\n');
+    }
     
     // 1. Build hierarchical patterns using fixed clustering
-    console.log('📊 Building hierarchical patterns...');
+    if (!process.env.BRIDGE_TEST_MODE) {
+      console.log('📊 Building hierarchical patterns...');
+    }
     const hierarchicalPatterns = await this.buildHierarchicalPatterns(
       experiences,
       hierarchical_threshold,
@@ -100,7 +104,9 @@ export class ComprehensivePatternDiscovery {
     // 2. Perform single-dimensional quality analysis
     let qualityClusters: QualityCluster[] = [];
     if (quality_analysis) {
-      console.log('🎯 Analyzing quality dimensions...');
+      if (!process.env.BRIDGE_TEST_MODE) {
+        console.log('🎯 Analyzing quality dimensions...');
+      }
       qualityClusters = await this.analyzeQualityDimensions(experiences, min_cluster_size);
     }
     
@@ -149,7 +155,9 @@ export class ComprehensivePatternDiscovery {
       return [];
     }
     
-    console.log(`  Level ${currentLevel + 1}: Processing ${experiences.length} experiences`);
+    if (!process.env.BRIDGE_TEST_MODE) {
+      console.log(`  Level ${currentLevel + 1}: Processing ${experiences.length} experiences`);
+    }
     
     // Use fixed clustering to get clean patterns at this level
     const clusterResult = await this.fixedDiscovery.discoverPatterns(experiences, {
@@ -195,7 +203,9 @@ export class ComprehensivePatternDiscovery {
       patterns.push(pattern);
     }
     
-    console.log(`  Level ${currentLevel + 1}: Found ${patterns.length} patterns`);
+    if (!process.env.BRIDGE_TEST_MODE) {
+      console.log(`  Level ${currentLevel + 1}: Found ${patterns.length} patterns`);
+    }
     
     return patterns;
   }
@@ -211,7 +221,9 @@ export class ComprehensivePatternDiscovery {
     const qualityClusters: QualityCluster[] = [];
     
     for (const dimension of dimensions) {
-      console.log(`  Analyzing ${dimension} dimension...`);
+      if (!process.env.BRIDGE_TEST_MODE) {
+        console.log(`  Analyzing ${dimension} dimension...`);
+      }
       
       // Filter experiences with this quality prominently featured
       const relevantExperiences = experiences.filter(exp => {
@@ -220,7 +232,9 @@ export class ComprehensivePatternDiscovery {
       });
       
       if (relevantExperiences.length < minSize) {
-        console.log(`    ${dimension}: Only ${relevantExperiences.length} experiences, skipping`);
+        if (!process.env.BRIDGE_TEST_MODE) {
+          console.log(`    ${dimension}: Only ${relevantExperiences.length} experiences, skipping`);
+        }
         continue;
       }
       
@@ -254,7 +268,9 @@ export class ComprehensivePatternDiscovery {
         });
       });
       
-      console.log(`    ${dimension}: Found ${clusterResult.patterns.length} clusters`);
+      if (!process.env.BRIDGE_TEST_MODE) {
+        console.log(`    ${dimension}: Found ${clusterResult.patterns.length} clusters`);
+      }
     }
     
     return qualityClusters;
@@ -381,44 +397,50 @@ export class ComprehensivePatternDiscovery {
    * Print comprehensive results
    */
   printResults(result: ComprehensiveResult): void {
-    console.log('\n🌟 COMPREHENSIVE PATTERN DISCOVERY RESULTS\n');
-    
-    // Statistics
-    console.log('📊 OVERVIEW:');
-    console.log(`Total experiences: ${result.statistics.total_experiences}`);
-    console.log(`Hierarchical patterns: ${result.statistics.hierarchical_patterns_found}`);
-    console.log(`Quality clusters: ${result.statistics.quality_clusters_found}`);
-    console.log(`Outliers: ${result.statistics.outliers_count}`);
-    console.log(`Max hierarchy depth: ${result.statistics.max_depth}`);
-    console.log(`Average coherence: ${result.statistics.avg_coherence.toFixed(3)}\n`);
+    if (!process.env.BRIDGE_TEST_MODE) {
+      console.log('\n🌟 COMPREHENSIVE PATTERN DISCOVERY RESULTS\n');
+      
+      // Statistics
+      console.log('📊 OVERVIEW:');
+      console.log(`Total experiences: ${result.statistics.total_experiences}`);
+      console.log(`Hierarchical patterns: ${result.statistics.hierarchical_patterns_found}`);
+      console.log(`Quality clusters: ${result.statistics.quality_clusters_found}`);
+      console.log(`Outliers: ${result.statistics.outliers_count}`);
+      console.log(`Max hierarchy depth: ${result.statistics.max_depth}`);
+      console.log(`Average coherence: ${result.statistics.avg_coherence.toFixed(3)}\n`);
+    }
     
     // Hierarchical patterns
     if (result.hierarchical_patterns.length > 0) {
-      console.log('🌳 HIERARCHICAL PATTERNS:');
-      this.printPatternHierarchy(result.hierarchical_patterns, 0);
-      console.log();
+      if (!process.env.BRIDGE_TEST_MODE) {
+        console.log('🌳 HIERARCHICAL PATTERNS:');
+        this.printPatternHierarchy(result.hierarchical_patterns, 0);
+        console.log();
+      }
     }
     
     // Quality clusters
     if (result.quality_clusters.length > 0) {
-      console.log('🎯 QUALITY DIMENSION CLUSTERS:');
-      const byDimension = new Map<string, QualityCluster[]>();
-      result.quality_clusters.forEach(cluster => {
-        if (!byDimension.has(cluster.dimension)) {
-          byDimension.set(cluster.dimension, []);
-        }
-        byDimension.get(cluster.dimension)!.push(cluster);
-      });
-      
-      byDimension.forEach((clusters, dimension) => {
-        console.log(`\n  ${dimension.toUpperCase()}:`);
-        clusters.forEach(cluster => {
-          console.log(`    ${cluster.semantic_meaning} (${cluster.size})`);
-          console.log(`      Keywords: ${cluster.representative_keywords.slice(0, 5).join(', ')}`);
-          console.log(`      Coherence: ${cluster.coherence.toFixed(3)}`);
+      if (!process.env.BRIDGE_TEST_MODE) {
+        console.log('🎯 QUALITY DIMENSION CLUSTERS:');
+        const byDimension = new Map<string, QualityCluster[]>();
+        result.quality_clusters.forEach(cluster => {
+          if (!byDimension.has(cluster.dimension)) {
+            byDimension.set(cluster.dimension, []);
+          }
+          byDimension.get(cluster.dimension)!.push(cluster);
         });
-      });
-      console.log();
+        
+        byDimension.forEach((clusters, dimension) => {
+          console.log(`\n  ${dimension.toUpperCase()}:`);
+          clusters.forEach(cluster => {
+            console.log(`    ${cluster.semantic_meaning} (${cluster.size})`);
+            console.log(`      Keywords: ${cluster.representative_keywords.slice(0, 5).join(', ')}`);
+            console.log(`      Coherence: ${cluster.coherence.toFixed(3)}`);
+          });
+        });
+        console.log();
+      }
     }
   }
   
@@ -426,9 +448,11 @@ export class ComprehensivePatternDiscovery {
     const indentStr = '  '.repeat(indent);
     
     patterns.forEach(pattern => {
-      console.log(`${indentStr}${pattern.name}`);
-      console.log(`${indentStr}  Meaning: ${pattern.semantic_meaning}`);
-      console.log(`${indentStr}  Coherence: ${pattern.coherence.toFixed(3)}, Keywords: ${pattern.keywords.slice(0, 3).join(', ')}`);
+      if (!process.env.BRIDGE_TEST_MODE) {
+        console.log(`${indentStr}${pattern.name}`);
+        console.log(`${indentStr}  Meaning: ${pattern.semantic_meaning}`);
+        console.log(`${indentStr}  Coherence: ${pattern.coherence.toFixed(3)}, Keywords: ${pattern.keywords.slice(0, 3).join(', ')}`);
+      }
       
       if (pattern.children.length > 0) {
         this.printPatternHierarchy(pattern.children, indent + 1);

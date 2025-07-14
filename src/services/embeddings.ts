@@ -42,7 +42,9 @@ export class EmbeddingService {
       });
     } catch (error) {
       // Failed to initialize embeddings service
-      console.warn('Failed to initialize embedding service:', error instanceof Error ? error.message : error);
+      if (!process.env.BRIDGE_TEST_MODE) {
+        console.warn('Failed to initialize embedding service:', error instanceof Error ? error.message : error);
+      }
       this.disabled = true;
       // Don't throw - just disable embeddings
     }
@@ -153,7 +155,9 @@ export class EmbeddingService {
       return embedding;
     } catch (error) {
       // Failed to generate embedding, returning dummy embedding
-      console.warn('Failed to generate embedding:', error instanceof Error ? error.message : error);
+      if (!process.env.BRIDGE_TEST_MODE) {
+        console.warn('Failed to generate embedding:', error instanceof Error ? error.message : error);
+      }
       // Return dummy embedding on error
       return new Array(384).fill(0);
     }

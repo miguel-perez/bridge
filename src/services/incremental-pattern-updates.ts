@@ -315,7 +315,9 @@ export class IncrementalPatternUpdateService {
   ): Promise<NavigablePattern[]> {
     // For now, we'll trigger a full rediscovery if structural changes are needed
     // In a production system, this would handle merges/splits incrementally
-    console.log(`Structural changes detected: ${changes.length} changes. Full rediscovery recommended.`);
+    if (!process.env.BRIDGE_TEST_MODE) {
+      console.log(`Structural changes detected: ${changes.length} changes. Full rediscovery recommended.`);
+    }
     return patterns;
   }
   
