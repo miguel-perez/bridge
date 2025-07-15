@@ -1,7 +1,7 @@
 import { CaptureService } from '../services/capture.js';
 
 export interface CaptureRequestParams {
-  content?: string;
+  source?: string;
   perspective?: string;
   experiencer?: string;
   processing?: string;
@@ -50,7 +50,7 @@ export class CaptureHandler {
     try {
       // Handle null/undefined args for empty capture
       if (!args || Object.keys(args).length === 0) {
-        args = { captures: [{ content: '' }] };
+        args = { captures: [{ source: '' }] };
       }
       
       // Support both old single-capture format and new batch format
@@ -62,9 +62,9 @@ export class CaptureHandler {
       for (let i = 0; i < captures.length; i++) {
         const capture = captures[i];
         
-        // Ensure content property exists
-        if (capture && typeof capture === 'object' && !('content' in capture)) {
-          capture.content = '';
+        // Ensure source property exists
+        if (capture && typeof capture === 'object' && !('source' in capture)) {
+          capture.source = '';
         }
         
         // Handle regular capture
@@ -98,13 +98,13 @@ export class CaptureHandler {
   ): Promise<{ content: Array<{ type: string; text: string }> }> {
     try {
       // Validate required fields
-      if (!capture.content && !capture.experience?.narrative) {
-        throw new Error('Either content or experience.narrative is required');
+      if (!capture.source && !capture.experience?.narrative) {
+        throw new Error('Either source or experience.narrative is required');
       }
 
       // Capture the experience
       const result = await this.captureService.captureSource({
-        content: capture.content,
+        content: capture.source,
         perspective: capture.perspective,
         experiencer: capture.experiencer,
         processing: capture.processing,

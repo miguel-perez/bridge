@@ -14,7 +14,7 @@ import { formatContent, formatExperience } from './handler-utils.js';
 
 export interface UpdateRequestParams {
   id: string;
-  content?: string;
+  source?: string;
   perspective?: string;
   experiencer?: string;
   processing?: string;
@@ -51,7 +51,7 @@ export class UpdateHandler {
       // Map the tool input to the service input format
       const updateInput = {
         id: update.id,
-        content: update.content,
+        content: update.source,
         perspective: update.perspective,
         processing: update.processing,
         experiencer: update.experiencer,
