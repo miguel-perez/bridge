@@ -2,13 +2,13 @@
 export const tools = [
   {
     name: 'capture',
-    description: 'Capture framed moments - discrete units of consciousness that can be held in single attention, mapping to what could be captured in a single visual frame. Creates experiential frames with seven-dimensional analysis (embodied, attentional, affective, purposive, spatial, temporal, intersubjective) that preserve experiential wholeness while maintaining visual specificity. Each moment should be visually anchorable, experientially complete, and preserve the experiencer\'s authentic voice. Use the experiencer\'s actual words, phrases, and way of thinking. Each capture requires an emoji and narrative summary written in present tense. Supports both single captures and batch operations. Break down complex experiences into smaller framed moments by noticing shifts in experiential qualities. Use the experiencer field to capture experiences from multiple perspectives, including your own.',
+    description: 'Capture raw experiences from experiencers. The content field must contain the experiencer\'s exact words as written or spoken - do not summarize, interpret, or modify. Claude will process this raw source material into framed moments with seven-dimensional analysis (embodied, attentional, affective, purposive, spatial, temporal, intersubjective). Each capture requires an emoji and narrative summary written in present tense. Supports both single captures and batch operations. Use the experiencer field to capture experiences from multiple perspectives, including your own.',
     inputSchema: {
       type: 'object',
       properties: {
         content: {
           type: 'string',
-          description: 'The content to capture (optional if experience.narrative is provided)'
+          description: 'Raw, exact words from the experiencer - their actual text/voice as written or spoken. Do not summarize, interpret, or modify. This is the source material that Claude will process into a framed moment. (optional if experience.narrative is provided)'
         },
         perspective: {
           type: 'string',
@@ -76,7 +76,7 @@ export const tools = [
             properties: {
               content: {
                 type: 'string',
-                description: 'The content to capture (optional if experience.narrative is provided)'
+                description: 'Raw, exact words from the experiencer - their actual text/voice as written or spoken. Do not summarize, interpret, or modify. This is the source material that Claude will process into a framed moment. (optional if experience.narrative is provided)'
               },
               perspective: {
                 type: 'string',
