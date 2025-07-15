@@ -485,17 +485,162 @@ export class PatternManager {
     });
     const emojis = Array.from(emojiMap.entries())
       .sort(([,a], [,b]) => b - a)
-      .slice(0, 4)
+      .slice(0, 2)
       .map(([emoji]) => emoji)
       .join('');
     
-    // Get keywords
-    const keywords = themes
-      .filter(t => t.length > 4)
-      .slice(0, 4)
-      .join(' ');
+    // Extract natural phrases from experience content
+    const naturalPhrases = this.extractNaturalPhrases(experiences);
     
-    return `${emojis} ${keywords}`.trim();
+    // If we have natural phrases, use them
+    if (naturalPhrases.length > 0) {
+      const phrase = naturalPhrases[0];
+      return `${emojis}${emojis ? ' ' : ''}${phrase}`;
+    }
+    
+    // Fallback to theme-based natural phrases
+    if (themes.length > 0) {
+      const naturalPhrase = this.generateNaturalPhrase(themes);
+      return `${emojis}${emojis ? ' ' : ''}${naturalPhrase}`;
+    }
+    
+    // Final fallback
+    return `${emojis}${emojis ? ' ' : ''}experiential-pattern`;
+  }
+  
+  /**
+   * Extract natural phrases from experience content
+   */
+  private extractNaturalPhrases(experiences: SourceRecord[]): string[] {
+    const phrases: string[] = [];
+    
+    for (const exp of experiences) {
+      const content = exp.content.toLowerCase();
+      const narrative = exp.experience?.narrative?.toLowerCase() || '';
+      
+      // Look for common natural phrases
+      const naturalPatterns = [
+        /we are (so )?(proud|excited|happy|grateful|amazed) (of|about|for|with) us/g,
+        /i am (so )?(proud|excited|happy|grateful|amazed) (of|about|for|with)/g,
+        /teaching .+ through .+/g,
+        /learning .+ through .+/g,
+        /feeling .+ about .+/g,
+        /working (on|with|through) .+/g,
+        /connection (with|between|creates) .+/g,
+        /from .+ to .+/g,
+        /did i just make .+/g,
+        /this is (so|fucking|really) .+/g,
+      ];
+      
+      for (const pattern of naturalPatterns) {
+        const matches = [...(content.match(pattern) || []), ...(narrative.match(pattern) || [])];
+        for (const match of matches) {
+          // Clean up the match and convert to kebab-case
+          const cleanMatch = match
+            .replace(/\s+/g, '-')
+            .replace(/[^a-z0-9-]/g, '')
+            .replace(/-+/g, '-')
+            .replace(/^-|-$/g, '');
+          
+          if (cleanMatch.length > 5) {
+            phrases.push(cleanMatch);
+          }
+        }
+      }
+    }
+    
+    // Return most frequent phrases
+    const phraseCounts = new Map<string, number>();
+    phrases.forEach(phrase => {
+      phraseCounts.set(phrase, (phraseCounts.get(phrase) || 0) + 1);
+    });
+    
+    return Array.from(phraseCounts.entries())
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 3)
+      .map(([phrase]) => phrase);
+  }
+  
+  /**
+   * Generate natural phrase from themes using meaningful keyword combinations
+   */
+  private generateNaturalPhrase(themes: string[]): string {
+    // Filter out common stop words
+    const stopWords = new Set([
+      'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+      'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'been',
+      'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
+      'could', 'should', 'may', 'might', 'must', 'can', 'this', 'that',
+      'these', 'those', 'then', 'than', 'so', 'very', 'just', 'like',
+      'really', 'actually', 'basically', 'literally', 'even', 'also'
+    ]);
+    
+    // Extract meaningful keywords
+    const meaningfulKeywords = themes
+      .filter(t => t.length > 2 && !stopWords.has(t.toLowerCase()))
+      .map(t => t.toLowerCase());
+    
+    // Prioritize by creating a set for lookup
+    const keywordSet = new Set(meaningfulKeywords);
+    
+    // Common meaningful combinations (order matters for readability)
+    if (keywordSet.has('proud') && keywordSet.has('us')) {
+      return 'proud-us';
+    }
+    if (keywordSet.has('teaching') && keywordSet.has('simplification')) {
+      return 'teaching-simplification';
+    }
+    if (keywordSet.has('connection') && keywordSet.has('capability')) {
+      return 'connection-capability';
+    }
+    if (keywordSet.has('work') && keywordSet.has('stress')) {
+      return 'work-stress';
+    }
+    if (keywordSet.has('morning') && keywordSet.has('routine')) {
+      return 'morning-routine';
+    }
+    if (keywordSet.has('creative') && keywordSet.has('emergence')) {
+      return 'creative-emergence';
+    }
+    if (keywordSet.has('relationship') && keywordSet.has('insights')) {
+      return 'relationship-insights';
+    }
+    if (keywordSet.has('distributed') && keywordSet.has('consciousness')) {
+      return 'distributed-consciousness';
+    }
+    if (keywordSet.has('captain') && keywordSet.has('distributed')) {
+      return 'captain-distributed';
+    }
+    if (keywordSet.has('bridge') && keywordSet.has('phenomenological')) {
+      return 'bridge-phenomenological';
+    }
+    if (keywordSet.has('infrastructure') && keywordSet.has('story')) {
+      return 'infrastructure-story';
+    }
+    if (keywordSet.has('temporal') && keywordSet.has('flow')) {
+      return 'temporal-flow';
+    }
+    
+    // Put certain types of words first for better readability
+    const subjects = ['captain', 'miguel', 'alicia', 'bridge', 'we', 'i'];
+    let finalKeywords = meaningfulKeywords;
+    const subjectKeyword = finalKeywords.find(k => subjects.includes(k));
+    if (subjectKeyword) {
+      finalKeywords = [subjectKeyword, ...finalKeywords.filter(k => k !== subjectKeyword)];
+    }
+    
+    // Return top 2-3 meaningful keywords
+    if (finalKeywords.length >= 2) {
+      return finalKeywords.slice(0, 3).join('-');
+    }
+    
+    // Fallback to any available keywords
+    if (meaningfulKeywords.length > 0) {
+      return meaningfulKeywords.slice(0, 3).join('-');
+    }
+    
+    // Final fallback
+    return 'emerging-pattern';
   }
   
   private extractThemes(text: string): string[] {

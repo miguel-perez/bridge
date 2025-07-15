@@ -48,7 +48,7 @@
     },
     {
       "name": "search",
-      "description": "Find and explore captured experiences through text search, filters, and pattern tags. Supports multiple queries with filtering by experiencer, perspective, processing level, and date ranges. Pattern tags are automatically searchable."
+      "description": "🔍 UNIFIED SEARCH API v2 - The primary Bridge function that combines pattern discovery with source retrieval. Returns beautiful formatted text with emojis by default. Empty queries show the living ecosystem tree. Search IS the unified function - it reveals patterns through their sources, and sources through their patterns. Examples: search('') for tree view, search('consciousness') for experiences, search({in: 'we-are-so-proud-of-us', about: 'distributed thinking'}) for pattern-aware search."
     },
     {
       "name": "update",

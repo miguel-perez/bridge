@@ -20,6 +20,16 @@ Bridge resolves the paradox that consciousness flows continuously but human comm
 - **Temporal**: How past and future inhabit the present moment
 - **Intersubjective**: Social presence and relational dynamics
 
+### The Unified Search API v2
+
+**Search IS the unified function** - it reveals patterns through their sources, and sources through their patterns. One tool, multiple lenses:
+
+- **🌳 Ecosystem Tree View**: Empty queries show the living ecosystem with patterns and sources
+- **🔍 Pattern-Aware Search**: Search within specific patterns using natural language names
+- **🎯 Quality Dimension Exploration**: Explore experiences by phenomenological qualities
+- **⏰ Temporal Navigation**: Natural language time expressions and relative time
+- **💫 Beautiful Responses**: Always human-readable text with emojis and visual structure
+
 ### Why Bridge Matters
 - Computational approaches to traditionally qualitative data
 - Pattern recognition across thousands of experiential moments
@@ -31,13 +41,13 @@ Bridge resolves the paradox that consciousness flows continuously but human comm
 
 ## Roadmap
 
-### Current Focus
+### Current Focus ✅
 - Robust phenomenological capture
-- Multi-modal search refinement
+- **Unified Search API v2** - Pattern discovery + source retrieval
 - Core MCP integration
 
 ### Near Future
-- Pattern recognition algorithms
+- Enhanced pattern recognition algorithms
 - Integration with IBIS/decision frameworks
 - Collaborative wisdom pools
 

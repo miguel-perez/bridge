@@ -314,7 +314,7 @@ export class ComprehensivePatternDiscovery {
   }
   
   /**
-   * Generate semantic pattern name
+   * Generate semantic pattern name using natural language phrases
    */
   private generateSemanticName(
     experiences: SourceRecord[],
@@ -329,14 +329,171 @@ export class ComprehensivePatternDiscovery {
     
     const emojiPrefix = emojis.length > 0 ? emojis.join('') + ' ' : '';
     
-    // Create semantic name based on keywords and content
-    if (keywords.length > 0) {
-      const topKeywords = keywords.slice(0, 2).join(' & ');
-      return `${emojiPrefix}${topKeywords} (${experiences.length})`;
+    // Extract natural phrases from experience content
+    const naturalPhrases = this.extractNaturalPhrases(experiences);
+    
+    // If we have natural phrases, use them
+    if (naturalPhrases.length > 0) {
+      const phrase = naturalPhrases[0];
+      return `${emojiPrefix}${phrase}`;
     }
     
-    // Fallback
-    return `${emojiPrefix}Pattern L${level + 1} (${experiences.length})`;
+    // Fallback to keyword-based natural phrases
+    if (keywords.length > 0) {
+      const naturalPhrase = this.generateNaturalPhrase(keywords, experiences);
+      return `${emojiPrefix}${naturalPhrase}`;
+    }
+    
+    // Final fallback
+    return `${emojiPrefix}pattern-${level + 1}`;
+  }
+  
+  /**
+   * Extract natural phrases from experience content
+   */
+  private extractNaturalPhrases(experiences: SourceRecord[]): string[] {
+    const phrases: string[] = [];
+    
+    for (const exp of experiences) {
+      const content = exp.content.toLowerCase();
+      const narrative = exp.experience?.narrative?.toLowerCase() || '';
+      
+      // Look for common natural phrases
+      const naturalPatterns = [
+        /we are (so )?(proud|excited|happy|grateful|amazed) (of|about|for|with) us/g,
+        /i am (so )?(proud|excited|happy|grateful|amazed) (of|about|for|with)/g,
+        /teaching .+ through .+/g,
+        /learning .+ through .+/g,
+        /feeling .+ about .+/g,
+        /working (on|with|through) .+/g,
+        /connection (with|between|creates) .+/g,
+        /from .+ to .+/g,
+        /did i just make .+/g,
+        /this is (so|fucking|really) .+/g,
+      ];
+      
+      for (const pattern of naturalPatterns) {
+        const matches = [...(content.match(pattern) || []), ...(narrative.match(pattern) || [])];
+        for (const match of matches) {
+          // Clean up the match and convert to kebab-case
+          const cleanMatch = match
+            .replace(/\s+/g, '-')
+            .replace(/[^a-z0-9-]/g, '')
+            .replace(/-+/g, '-')
+            .replace(/^-|-$/g, '');
+          
+          if (cleanMatch.length > 5) {
+            phrases.push(cleanMatch);
+          }
+        }
+      }
+    }
+    
+    // Return most frequent phrases
+    const phraseCounts = new Map<string, number>();
+    phrases.forEach(phrase => {
+      phraseCounts.set(phrase, (phraseCounts.get(phrase) || 0) + 1);
+    });
+    
+    return Array.from(phraseCounts.entries())
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 3)
+      .map(([phrase]) => phrase);
+  }
+  
+  /**
+   * Generate natural phrase from keywords
+   */
+  private generateNaturalPhrase(keywords: string[], experiences: SourceRecord[]): string {
+    // Filter out common stop words and keep meaningful keywords
+    const stopWords = new Set([
+      'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+      'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'been',
+      'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
+      'could', 'should', 'may', 'might', 'must', 'can', 'this', 'that',
+      'these', 'those', 'then', 'than', 'so', 'very', 'just', 'like',
+      'really', 'actually', 'basically', 'literally', 'even', 'also'
+    ]);
+    
+    // Extract meaningful keywords, prioritizing nouns and verbs
+    const meaningfulKeywords = keywords
+      .filter(k => k.length > 2 && !stopWords.has(k.toLowerCase()))
+      .map(k => k.toLowerCase());
+    
+    // Analyze content for special recognizable patterns
+    const allContent = experiences.map(e => (e.content + ' ' + (e.experience?.narrative || '')).toLowerCase()).join(' ');
+    
+    // Special case: Strong recurring phrases that should be preserved
+    if (allContent.includes("i'm so proud of us") || allContent.includes("we are so proud")) {
+      // But still use keyword combination: proud + us
+      const proudKeywords = meaningfulKeywords.filter(k => ['proud', 'pride', 'us', 'achievement'].includes(k));
+      if (proudKeywords.length >= 2) {
+        return proudKeywords.join('-');
+      }
+    }
+    
+    // Prioritize keywords by relevance and frequency
+    const keywordFrequency = new Map<string, number>();
+    meaningfulKeywords.forEach(keyword => {
+      keywordFrequency.set(keyword, (keywordFrequency.get(keyword) || 0) + 1);
+    });
+    
+    // Sort by frequency and relevance
+    const sortedKeywords = Array.from(keywordFrequency.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([keyword]) => keyword);
+    
+    // Take top 2-3 most meaningful keywords
+    const topKeywords = sortedKeywords.slice(0, 3);
+    
+    // Special combinations that work well together
+    const keywordSet = new Set(topKeywords);
+    
+    // Reorder for better readability
+    let finalKeywords = topKeywords;
+    
+    // Put certain types of words first (subjects/actors)
+    const subjects = ['captain', 'miguel', 'alicia', 'bridge', 'we', 'i'];
+    const subjectKeyword = finalKeywords.find(k => subjects.includes(k));
+    if (subjectKeyword) {
+      finalKeywords = [subjectKeyword, ...finalKeywords.filter(k => k !== subjectKeyword)];
+    }
+    
+    // Common meaningful combinations
+    if (keywordSet.has('teaching') && keywordSet.has('simplification')) {
+      return 'teaching-simplification';
+    }
+    if (keywordSet.has('work') && keywordSet.has('stress')) {
+      return 'work-stress';
+    }
+    if (keywordSet.has('connection') && keywordSet.has('capability')) {
+      return 'connection-capability';
+    }
+    if (keywordSet.has('morning') && keywordSet.has('routine')) {
+      return 'morning-routine';
+    }
+    if (keywordSet.has('creative') && keywordSet.has('emergence')) {
+      return 'creative-emergence';
+    }
+    if (keywordSet.has('distributed') && keywordSet.has('consciousness')) {
+      return 'distributed-consciousness';
+    }
+    if (keywordSet.has('captain') && keywordSet.has('distributed')) {
+      return 'captain-distributed';
+    }
+    
+    // Return top 2-3 keywords combined
+    if (finalKeywords.length >= 2) {
+      return finalKeywords.slice(0, 3).join('-');
+    }
+    
+    // Fallback to any available keywords
+    if (meaningfulKeywords.length > 0) {
+      return meaningfulKeywords.slice(0, 3).join('-');
+    }
+    
+    // Final fallback
+    return 'emerging-pattern';
   }
   
   /**

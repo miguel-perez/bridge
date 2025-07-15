@@ -152,20 +152,72 @@ export const tools = [
 
   {
     name: "search",
-    description: "Finds previously captured experiences using text search, filters, or patterns. Use this to: recall past conversations, find similar experiences across time, track patterns in user feedback, or explore phenomenological themes. Returns results with emoji+narrative summaries and full content. Supports filtering by: who (experiencer), when (date ranges), how (perspective: I/we/you/they), and processing level (during/after). SUPPORTS BATCH: Run multiple searches in one call. IMPORTANT: Boolean operators (AND/OR/NOT) are not supported. To find experiences matching multiple criteria, use filters or run separate searches. For example, instead of 'anxiety OR stress', run two searches: one for 'anxiety' and one for 'stress'. Leave query empty to see all recent experiences.",
+    description: "🔍 UNIFIED SEARCH API v2 - The primary Bridge function that combines pattern discovery with source retrieval. Returns beautiful formatted text with emojis by default. Empty queries show the living ecosystem tree. Search IS the unified function - it reveals patterns through their sources, and sources through their patterns. SUPPORTS BATCH: Run multiple searches in one call. Examples: search('') for tree view, search('consciousness') for experiences, search({in: 'we-are-so-proud-of-us', about: 'distributed thinking'}) for pattern-aware search.",
     inputSchema: {
       type: "object",
       properties: {
         searches: {
           type: "array",
-          description: "One or more searches to execute (useful for initialization or comparing perspectives)",
+          description: "One or more searches to execute. Single empty search shows ecosystem tree. Multiple searches compare different perspectives or patterns.",
           items: {
             type: "object",
             properties: {
               query: {
                 type: "string",
-                description: "What you're looking for in the experiences. Examples: 'breakthrough moment', 'frustration with API', 'team collaboration', 'aha realization', '' (empty to see all recent). Note: Boolean operators (AND/OR/NOT) are not supported - use filters or separate queries instead"
+                description: "What you're looking for in the experiences. Examples: 'breakthrough moment', 'we are proud', 'alicia teaching', 'captain'. Empty string ('') shows ecosystem tree with patterns and sources. Note: Boolean operators (AND/OR/NOT) are not supported - use filters or separate queries instead"
               },
+              
+              // Pattern-aware search (new in v2)
+              in: {
+                type: "string",
+                description: "Search within specific pattern. Use pattern ID or natural name like 'we-are-so-proud-of-us' or 'teaching-through-simplification'. This is the pattern-aware search capability."
+              },
+              about: {
+                type: "string",
+                description: "What to search for within the pattern (when using 'in'). Semantic search within pattern boundaries."
+              },
+              examples: {
+                type: "number",
+                description: "Number of source experiences to show per pattern result (default: 3)",
+                default: 3
+              },
+              
+              // Tree view options (new in v2)
+              tree: {
+                type: "string",
+                enum: ["active", "people", "time", "quality"],
+                description: "Tree view mode for empty queries. 'active' shows only active patterns, 'people' organizes by experiencer, 'time' shows temporal tree, 'quality' shows by dominant qualities"
+              },
+              
+              // Quality-based search (new in v2)
+              dimension: {
+                type: "string",
+                enum: ["embodied", "attentional", "affective", "purposive", "spatial", "temporal", "intersubjective"],
+                description: "Search by dominant phenomenological quality dimension"
+              },
+              threshold: {
+                type: "number",
+                description: "Minimum prominence threshold for quality dimension (0-100, default: 70)",
+                minimum: 0,
+                maximum: 100,
+                default: 70
+              },
+              
+              // Temporal search (enhanced in v2)
+              when: {
+                type: "string",
+                description: "Natural language time expressions. Examples: 'this morning', 'last Tuesday', 'past week', 'January 2025', 'yesterday at 5pm'"
+              },
+              recent: {
+                type: "boolean",
+                description: "Show only recently active patterns/experiences (last 7 days)"
+              },
+              today: {
+                type: "boolean",
+                description: "Show only today's experiences"
+              },
+              
+              // Standard search options (maintained for compatibility)
               limit: {
                 type: "number",
                 description: "Maximum number of results to return",
@@ -192,6 +244,8 @@ export const tools = [
                 description: "Include full content instead of truncated snippets",
                 default: true
               },
+              
+              // Legacy filters (maintained for compatibility)
               filters: {
                 type: "object",
                 description: "Optional filters to apply to search results",
@@ -225,6 +279,22 @@ export const tools = [
                     }
                   }
                 }
+              },
+              
+              // Future enhancement placeholders (for natural language API)
+              experiencer: {
+                type: "string",
+                description: "Natural language alias for filters.experiencer. Examples: 'Miguel', 'Captain', 'self'"
+              },
+              perspective: {
+                type: "string",
+                enum: ["I", "we", "you", "they"],
+                description: "Natural language alias for filters.perspective"
+              },
+              processing: {
+                type: "string",
+                enum: ["during", "right-after", "long-after", "crafted"],
+                description: "Natural language alias for filters.processing"
               }
             },
             required: ["query"]
