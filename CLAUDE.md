@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Bridge is a phenomenological data capture system for distributed cognition between humans and AI. It's packaged as a Claude Desktop Extension (DXT) using the Model Context Protocol (MCP). The system captures and analyzes experiential data across seven phenomenological dimensions: salience, coherence, intensity, valence, agency, clarity, and novelty.
+Bridge is a phenomenological data capture system for distributed cognition between humans and AI. It's packaged as a Claude Desktop Extension (DXT) using the Model Context Protocol (MCP). The system captures and analyzes experiential data across seven phenomenological dimensions: embodied, attentional, affective, purposive, spatial, temporal, and intersubjective.
 
 ## Essential Commands
 
@@ -57,9 +57,9 @@ Example: `npm run test:bridge relationship-insights`
 - Bundles all code into a single `index.js` file (~118KB total package size)
 
 ### Utilities
-- `npm run clean` - Remove dist directory (removes dist directory)
+- `npm run clean` - Remove dist directory
 - `npm run migrate-schema` - Migrate data schema to latest version
-- `npm run migrate-embeddings` - Migrate embeddings to new format
+- `npm run migrate-embeddings-consolidation` - Consolidate embeddings to new format
 - `npm run validate:manifest` - Validate DXT manifest file structure
 
 ## Architecture
@@ -68,38 +68,47 @@ Example: `npm run test:bridge relationship-insights`
 
 1. **MCP Server** (`/src/mcp/`)
    - `server.ts` - Main MCP server implementation
-   - `handlers.ts` - Tool request handlers for capture, search, update, release, discover
+   - `handlers.ts` - Tool request handlers for capture, search, update, release
    - `tools.ts` - Tool definitions and schemas
-   - Individual handlers: `capture-handler.ts`, `search-handler.ts`, `update-handler.ts`, `release-handler.ts`, `discover-handler.ts`
+   - Individual handlers: `capture-handler.ts`, `search-handler.ts`, `update-handler.ts`, `release-handler.ts`
 
 2. **Services** (`/src/services/`)
    - `capture.ts` - Creates and persists experiential captures
    - `search.ts` - Multi-modal search (text, vector, semantic)
    - `embeddings.ts` - Generates and manages embeddings
+   - `enhanced-embedding.ts` - Enhanced embedding generation with semantic context
    - `enrich.ts` - LLM-based enrichment of captures
    - `vector-store.ts` - In-memory vector store for similarity search
+   - `consolidated-vector-store.ts` - Consolidated vector storage implementation
    - `release.ts` - Handles releasing/deleting experiential data
-   - `comprehensive-pattern-discovery.ts` - Pattern discovery algorithms
 
 3. **Core Domain** (`/src/core/`)
    - `types.ts` - TypeScript interfaces for all data models
    - `storage.ts` - JSON file persistence layer
-   - `config.ts` - Configuration management
    - `search.ts` - Core search functionality
 
 4. **Scripts** (`/src/scripts/`)
    - `bridge-test.ts` - User-outcome focused integration test scenarios
    - `test-fixtures.ts` - Generate synthetic test data
    - `migrate-schema.ts` - Data schema migration utilities
-   - `migrate-embeddings.ts` - Embedding migration utilities
+   - `migrate-embeddings-consolidation.ts` - Embedding consolidation migration
+   - `extract-experiencer-sources.ts` - Extract unique experiencer sources
 
 ### Data Flow
 1. User captures experience via MCP tool → 
 2. System creates ExperienceCapture with phenomenological ratings and narrative → 
 3. Background processing generates embeddings → 
 4. Data stored in local JSON file → 
-5. Pattern discovery algorithms analyze experiences for emerging themes →
-6. Search queries use multi-modal scoring across text, vectors, and semantics
+5. Search queries use multi-modal scoring across text, vectors, and semantics
+
+### Seven Phenomenological Dimensions
+- **Embodied**: Physical sensations and bodily experience
+- **Attentional**: Focus and awareness qualities
+- **Affective**: Emotional tone and feeling
+- **Purposive**: Intention and goal-directedness
+- **Spatial**: Environmental and contextual awareness
+- **Temporal**: Time perception and dynamics
+- **Intersubjective**: Social and relational aspects
 
 ### Search Scoring Weights
 - Text matching: 40%
@@ -119,12 +128,14 @@ Example: `npm run test:bridge relationship-insights`
 - All MCP handlers return proper error responses
 - Storage operations handle file system errors gracefully
 - Vector store rebuilds automatically on corruption
+- No console.log in MCP mode - use log/message notifications instead
 
 ### Testing Strategy
 - Unit tests for pure functions and services
 - Integration tests for LLM interactions (separate test suite)
 - Mock external dependencies in unit tests
 - Use `.test.ts` suffix for test files
+- User-outcome focused test scenarios based on usability testing principles
 
 ### File Organization
 - Keep related functionality together in service modules
@@ -152,12 +163,11 @@ Example: `npm run test:bridge relationship-insights`
 - Support both specific IDs and natural language queries
 - All tools support both individual and batch operations where applicable
 
-### Five Core MCP Tools
+### Four Core MCP Tools
 1. **capture** - Create new experiential records with phenomenological analysis
 2. **search** - Find experiences through multi-modal search
-3. **discover** - Navigate automatically discovered experience patterns
-4. **update** - Modify existing experiences while preserving integrity
-5. **release** - Remove experiences with gratitude and reasoning
+3. **update** - Modify existing experiences while preserving integrity
+4. **release** - Remove experiences with gratitude and reasoning
 
 ### Development Tips
 - Run `npm run dev` for live reloading during development
@@ -166,9 +176,4 @@ Example: `npm run test:bridge relationship-insights`
 - Test MCP tools via Claude Desktop after packaging with build-dxt script
 - Use `npm run test:bridge <scenario>` to test specific Bridge scenarios
 - Run `npm run test:fixtures` to generate fresh synthetic test data
-
-# important-instruction-reminders
-Do what has been asked; nothing more, nothing less.
-NEVER create files unless they're absolutely necessary for achieving your goal.
-ALWAYS prefer editing an existing file to creating a new one.
-NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
+- When debugging MCP issues, check the notification system as console.log is redirected

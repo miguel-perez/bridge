@@ -27,7 +27,7 @@ export class ReleaseService {
       return {
         success: true,
         message: `✓ Released source: "${source.content.substring(0, 50)}..." (ID: ${input.id})\n\n🌊 The experience has been released`,
-        releasedSource: source
+        releasedSource: { ...source, type: 'source' }
       };
     }
     

@@ -11,7 +11,6 @@ import { CaptureHandler } from './capture-handler.js';
 import { SearchHandler } from './search-handler.js';
 import { UpdateHandler } from './update-handler.js';
 import { ReleaseHandler } from './release-handler.js';
-import { discoverHandler } from './discover-handler.js';
 
 /**
  * MCP Tool Handlers class
@@ -43,18 +42,6 @@ export class MCPToolHandlers {
    */
   async handleCapture(args: any): Promise<{ content: Array<{ type: string; text: string }> }> {
     return this.captureHandler.handle(args);
-  }
-
-  /**
-   * Handles discover tool requests
-   * 
-   * Discovers and navigates experiential patterns in a hierarchical structure.
-   * 
-   * @param args - The discover arguments
-   * @returns Formatted discover result
-   */
-  async handleDiscover(args: any): Promise<{ content: Array<{ type: string; text: string }> }> {
-    return discoverHandler.handle(args);
   }
 
   /**

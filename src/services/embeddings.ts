@@ -1,5 +1,6 @@
 // Lazy loading approach for optional dependencies
-type Pipeline = any;
+// Define the result type for feature extraction
+import type { FeatureExtractionPipeline } from '@xenova/transformers';
 
 // Only check for BRIDGE_DISABLE_EMBEDDINGS to disable embeddings
 const EMBEDDINGS_DISABLED = process.env.BRIDGE_DISABLE_EMBEDDINGS === 'true';
@@ -7,7 +8,7 @@ const EMBEDDINGS_DISABLED = process.env.BRIDGE_DISABLE_EMBEDDINGS === 'true';
 import { bridgeLogger } from '../utils/bridge-logger.js';
 
 export class EmbeddingService {
-  private pipeline: Pipeline | null = null;
+  private pipeline: FeatureExtractionPipeline | null = null;
   private modelName: string = 'Xenova/all-MiniLM-L6-v2';
   private initPromise: Promise<void> | null = null;
   private cache = new Map<string, number[]>();
@@ -93,14 +94,6 @@ export class EmbeddingService {
         } else if (Array.isArray(result)) {
           // Direct array result
           embedding = result;
-        } else if (result.tensor) {
-          // Some models return { tensor: Tensor }
-          const tensor = result.tensor;
-          if (tensor && typeof tensor === 'object' && 'data' in tensor) {
-            embedding = Array.from(tensor.data);
-          } else {
-            throw new Error('Invalid tensor format');
-          }
         } else {
           // Try to extract from any array-like property
           const arrayProps = Object.values(result).filter(val => Array.isArray(val));

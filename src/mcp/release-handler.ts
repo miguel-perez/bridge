@@ -7,14 +7,13 @@
  * @module mcp/release-handler
  */
 
-import { ReleaseService } from '../services/release.js';
-import { patternManager } from '../services/pattern-manager.js';
+import { bridgeLogger } from '../utils/bridge-logger.js';
+import { deleteSource } from '../core/storage.js';
+import { VectorStore } from '../services/vector-store.js';
 
 export class ReleaseHandler {
-  private releaseService: ReleaseService;
-
   constructor() {
-    this.releaseService = new ReleaseService();
+    // No dependencies needed
   }
 
   /**
@@ -27,22 +26,27 @@ export class ReleaseHandler {
    * @returns Formatted release confirmation
    */
   async handle(args: any): Promise<{ content: Array<{ type: string; text: string }> }> {
-    // Support both old single-item format and new batch format
-    const releases = args.releases || [{ source_id: args.source_id, reason: args.reason }];
+    // Support both single-item format and batch format
+    const releases = args.releases || [{ id: args.id, reason: args.reason }];
     const results = [];
     
     for (const release of releases) {
-      await this.releaseService.releaseSource({ id: release.source_id });
+      // Delete from storage
+      await deleteSource(release.id);
       
-      // Trigger pattern discovery update
+      // Remove from vector store
       try {
-        await patternManager.onDelete(release.source_id);
+        const vectorStore = new VectorStore();
+        await vectorStore.initialize();
+        await vectorStore.removeVector(release.id);
+        await vectorStore.saveToDisk();
       } catch (error) {
-        // Don't fail release if pattern update fails
+        // Don't fail release if vector store update fails
+        bridgeLogger.warn('Vector store update failed:', error);
       }
       
       const content = `✓ Released experience
-ID: ${release.source_id}
+ID: ${release.id}
 Reason: ${release.reason || 'No reason provided'}`;
       
       results.push(content);

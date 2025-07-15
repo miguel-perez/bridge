@@ -17,7 +17,7 @@ interface TestExperience {
   experiencer: string;
   perspective: 'I' | 'we' | 'you' | 'they';
   processing: 'during' | 'right-after' | 'long-after' | 'crafted';
-  occurred: string;
+  created: string;
   experience: {
     emoji: string;
     narrative: string;
@@ -29,13 +29,15 @@ interface TestExperience {
   };
 }
 
+
+
 const WORK_STRESS_EXPERIENCES: TestExperience[] = [
   {
     content: "The deadline is tomorrow and I still have three major bugs to fix. My shoulders are tense and I can feel my heart racing every time I think about the presentation.",
     experiencer: "Alex Chen",
     perspective: "I",
     processing: "during",
-    occurred: "2024-12-10T14:30:00Z",
+    created: "2024-12-10T14:30:00Z",
     experience: {
       emoji: "😰",
       narrative: "Racing heart, tense shoulders, deadline panic setting in",
@@ -51,7 +53,7 @@ const WORK_STRESS_EXPERIENCES: TestExperience[] = [
     experiencer: "Alex Chen", 
     perspective: "I",
     processing: "during",
-    occurred: "2024-12-12T10:15:00Z",
+    created: "2024-12-12T10:15:00Z",
     experience: {
       emoji: "🙄",
       narrative: "Trapped in pointless meeting, work piling up, head throbbing",
@@ -67,7 +69,7 @@ const WORK_STRESS_EXPERIENCES: TestExperience[] = [
     experiencer: "Alex Chen",
     perspective: "I", 
     processing: "right-after",
-    occurred: "2024-12-13T17:45:00Z",
+    created: "2024-12-13T17:45:00Z",
     experience: {
       emoji: "🎉",
       narrative: "Relief flooding through relaxing body, celebrating with team",
@@ -86,7 +88,7 @@ const RELATIONSHIP_EXPERIENCES: TestExperience[] = [
     experiencer: "Jordan Kim",
     perspective: "I",
     processing: "right-after", 
-    occurred: "2024-12-08T13:30:00Z",
+    created: "2024-12-08T13:30:00Z",
     experience: {
       emoji: "🤗",
       narrative: "Feeling deeply heard and supported by close friend",
@@ -102,7 +104,7 @@ const RELATIONSHIP_EXPERIENCES: TestExperience[] = [
     experiencer: "Jordan Kim",
     perspective: "I",
     processing: "long-after",
-    occurred: "2024-12-05T19:20:00Z", 
+    created: "2024-12-05T19:20:00Z", 
     experience: {
       emoji: "😤",
       narrative: "Love mixed with frustration, feeling pressured and misunderstood",
@@ -118,7 +120,7 @@ const RELATIONSHIP_EXPERIENCES: TestExperience[] = [
     experiencer: "Jordan Kim",
     perspective: "I",
     processing: "right-after",
-    occurred: "2024-12-11T15:45:00Z",
+    created: "2024-12-11T15:45:00Z",
     experience: {
       emoji: "✨",
       narrative: "Being truly seen and respected in professional space",
@@ -137,7 +139,7 @@ const CREATIVE_EXPERIENCES: TestExperience[] = [
     experiencer: "River Martinez",
     perspective: "I", 
     processing: "right-after",
-    occurred: "2024-12-07T07:15:00Z",
+    created: "2024-12-07T07:15:00Z",
     experience: {
       emoji: "💡", 
       narrative: "Sudden creative clarity strikes during morning routine",
@@ -153,7 +155,7 @@ const CREATIVE_EXPERIENCES: TestExperience[] = [
     experiencer: "River Martinez",
     perspective: "I",
     processing: "right-after", 
-    occurred: "2024-12-09T22:30:00Z",
+    created: "2024-12-09T22:30:00Z",
     experience: {
       emoji: "🌊",
       narrative: "Lost in creative flow, time dissolving, story discovering itself",
@@ -172,7 +174,7 @@ const DAILY_LIFE_EXPERIENCES: TestExperience[] = [
     experiencer: "Sam Patel",
     perspective: "I",
     processing: "during",
-    occurred: "2024-12-06T08:20:00Z",
+    created: "2024-12-06T08:20:00Z",
     experience: {
       emoji: "🍂",
       narrative: "Morning light through oak triggers reflection on shared human paths",
@@ -188,7 +190,7 @@ const DAILY_LIFE_EXPERIENCES: TestExperience[] = [
     experiencer: "Sam Patel",
     perspective: "I",
     processing: "right-after",
-    occurred: "2024-12-10T18:45:00Z",
+    created: "2024-12-10T18:45:00Z",
     experience: {
       emoji: "😊",
       narrative: "Kindness cuts through chaos, human connection in mundane moment",
@@ -207,7 +209,7 @@ const LEARNING_EXPERIENCES: TestExperience[] = [
     experiencer: "Maya Singh",
     perspective: "I",
     processing: "during",
-    occurred: "2024-12-04T14:20:00Z", 
+    created: "2024-12-04T14:20:00Z", 
     experience: {
       emoji: "🤯",
       narrative: "Mind expanding as complex concept suddenly clicks into place",
@@ -223,7 +225,7 @@ const LEARNING_EXPERIENCES: TestExperience[] = [
     experiencer: "Maya Singh",
     perspective: "I", 
     processing: "during",
-    occurred: "2024-12-11T21:30:00Z",
+    created: "2024-12-11T21:30:00Z",
     experience: {
       emoji: "😠",
       narrative: "Mounting frustration, knowledge just out of reach, physical urge to quit",
@@ -263,7 +265,7 @@ export function createTestFixtures(): any {
           experiencer: "Alex Chen",
           perspective: "I",
           processing: "right-after", 
-          occurred: baseDate.toISOString(),
+          created: baseDate.toISOString(),
           experience: {
             emoji: "😫",
             narrative: "Familiar stress pattern, body holding tension in shoulders",
@@ -281,7 +283,7 @@ export function createTestFixtures(): any {
           experiencer: "Alex Chen", 
           perspective: "I",
           processing: "right-after",
-          occurred: baseDate.toISOString(),
+          created: baseDate.toISOString(),
           experience: {
             emoji: "🌱",
             narrative: "Practicing new coping strategies, noticing positive changes",
@@ -300,10 +302,8 @@ export function createTestFixtures(): any {
     sources: [...allExperiences, ...extendedExperiences].map((exp, index) => ({
       id: `test_${Date.now()}_${index.toString().padStart(3, '0')}`,
       type: "source",
-      system_time: new Date().toISOString(),
       content: exp.content,
-      contentType: "text",
-      occurred: exp.occurred,
+      created: exp.created,
       perspective: exp.perspective,
       processing: exp.processing,
       experiencer: exp.experiencer,

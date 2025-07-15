@@ -9,22 +9,19 @@ function makeSource(overrides: Partial<SourceRecord> = {}): SourceRecord {
   return {
     id: overrides.id || uuidv4(),
     content: overrides.content || 'Release test content',
-    contentType: overrides.contentType || 'text',
-    system_time: overrides.system_time || new Date().toISOString(),
+    created: overrides.created || new Date().toISOString(),
     perspective: overrides.perspective || 'I',
     experiencer: overrides.experiencer || 'self',
     processing: overrides.processing || 'during',
-    occurred: overrides.occurred || '2024-01-01T00:00:00Z',
     crafted: overrides.crafted ?? false,
-    experiential_qualities: overrides.experiential_qualities || {
+    experience: overrides.experience || {
       qualities: [
         { type: 'affective', prominence: 0.5, manifestation: 'neutral' }
       ],
-      vector: {
-        embodied: 0, attentional: 0, affective: 0.5, purposive: 0, spatial: 0, temporal: 0, intersubjective: 0
-      }
+      emoji: '😊',
+      narrative: 'Test narrative'
     },
-    content_embedding: overrides.content_embedding || [0.1, 0.2, 0.3, 0.4, 0.5, ...Array(379).fill(0)],
+    embedding: overrides.embedding || [0.1, 0.2, 0.3, 0.4, 0.5, ...Array(379).fill(0)],
     type: 'source',
     ...overrides
   };
@@ -58,7 +55,14 @@ describe('ReleaseService', () => {
   });
 
   test('releases a record with minimal content', async () => {
-    const minimal = makeSource({ content: 'x', experiential_qualities: { qualities: [], vector: { embodied: 0, attentional: 0, affective: 0, purposive: 0, spatial: 0, temporal: 0, intersubjective: 0 } } });
+    const minimal = makeSource({ 
+      content: 'x', 
+      experience: { 
+        qualities: [], 
+        emoji: '📝',
+        narrative: 'Minimal test'
+      } 
+    });
     await saveSource(minimal);
     const result = await releaseService.releaseSource({ id: minimal.id });
     expect(result.success).toBe(true);

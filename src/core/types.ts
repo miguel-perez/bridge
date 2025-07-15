@@ -43,9 +43,6 @@ export type Perspective = typeof PERSPECTIVES[number] | string;
 /** When the processing occurred relative to the experience */
 export type ProcessingLevel = typeof PROCESSING_LEVELS[number];
 
-/** Type of content being captured */
-export type ContentType = typeof CONTENT_TYPES[number] | string;
-
 /** Experiential quality dimensions */
 export type QualityType = typeof QUALITY_TYPES[number];
 
@@ -75,21 +72,14 @@ export interface Experience {
   narrative: string;
 }
 
-/**
- * A captured experiential moment or reflection.
- * Represents the core unit of data in the Bridge system.
- */
+/** A captured experiential moment */
 export interface Source {
   /** Unique identifier for this source */
   id: string;
   /** The captured content (text, audio transcript, etc.) */
   content: string;
-  /** Type of content being captured */
-  contentType?: ContentType;
-  /** System timestamp when captured (ISO format) */
-  system_time: string;
-  /** When the experience actually occurred (chrono-node compatible) */
-  occurred?: string;
+  /** When the experience was captured (auto-generated) */
+  created: string;
   
   // Context fields
   /** Perspective from which experience is captured */
@@ -104,21 +94,29 @@ export interface Source {
   // Analysis fields
   /** Experience analysis results (qualities + emoji + narrative) */
   experience?: Experience;
-  /** Vector embedding for semantic search (generated from combined format) */
-  embedding?: number[];
-  
-  // Pattern fields
-  /** Pattern tags auto-generated from pattern discovery */
-  pattern_tags?: string[];
-  /** Pattern IDs this experience belongs to */
-  pattern_ids?: string[];
-  /** Highest confidence score from patterns this belongs to */
-  pattern_confidence?: number;
+}
+
+/**
+ * Embedding record for semantic search
+ */
+export interface EmbeddingRecord {
+  /** Source ID this embedding belongs to */
+  sourceId: string;
+  /** Vector embedding for semantic search */
+  vector: number[];
+  /** When the embedding was generated */
+  generated: string;
 }
 
 // ============================================================================
 // STORAGE TYPES
 // ============================================================================
+
+/** Storage data structure */
+export interface StorageData {
+  sources: Source[];
+  embeddings?: EmbeddingRecord[];
+}
 
 /** Valid record types in the storage system */
 export type RecordType = "source";
@@ -130,8 +128,9 @@ export interface BaseRecord {
 }
 
 /** Storage record for experiential sources */
-export interface SourceRecord extends BaseRecord, Source {
-  type: "source";
+export interface SourceRecord extends Source {
+  // Note: type field removed from data model but kept in interface for compatibility
+  type?: "source";
 }
 
 /** Union type of all possible storage records */
@@ -189,17 +188,14 @@ export function isValidSource(source: unknown): source is Source {
   return (
     typeof s.id === 'string' && s.id.length > 0 &&
     typeof s.content === 'string' && s.content.length > 0 &&
-    typeof s.system_time === 'string' &&
+    typeof s.created === 'string' &&
     (s.experience === undefined || (
       typeof s.experience.narrative === 'string' && s.experience.narrative.length > 0 && s.experience.narrative.length <= 200
     )) &&
-    (s.contentType === undefined || typeof s.contentType === 'string') &&
-    (s.occurred === undefined || typeof s.occurred === 'string') &&
     (s.perspective === undefined || isValidPerspective(s.perspective)) &&
     (s.experiencer === undefined || typeof s.experiencer === 'string') &&
     (s.processing === undefined || isValidProcessingLevel(s.processing)) &&
-    (s.crafted === undefined || typeof s.crafted === 'boolean') &&
-    (s.embedding === undefined || Array.isArray(s.embedding))
+    (s.crafted === undefined || typeof s.crafted === 'boolean')
   );
 }
 
@@ -217,8 +213,7 @@ export function createSource(content: string, id?: string): Source {
   return {
     id: id || crypto.randomUUID(),
     content,
-    contentType: DEFAULTS.CONTENT_TYPE,
-    system_time: new Date().toISOString(),
+    created: new Date().toISOString(),
     perspective: DEFAULTS.PERSPECTIVE,
     experiencer: DEFAULTS.EXPERIENCER,
     processing: DEFAULTS.PROCESSING,

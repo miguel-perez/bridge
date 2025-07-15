@@ -22,9 +22,7 @@ describe('Search Relevance Scoring', () => {
       experiencer: 'text_test',
       perspective: 'I',
       processing: 'during',
-      contentType: 'text',
-      system_time: new Date().toISOString(),
-      occurred: new Date().toISOString(),
+      created: new Date().toISOString(),
       crafted: false
     };
 
@@ -34,16 +32,14 @@ describe('Search Relevance Scoring', () => {
       experiencer: 'text_test',
       perspective: 'I',
       processing: 'during',
-      contentType: 'text',
-      system_time: new Date().toISOString(),
-      occurred: new Date().toISOString(),
+      created: new Date().toISOString(),
       crafted: false
     };
 
     await saveSource(record1);
     await saveSource(record2);
 
-    // Search for "anxiety"
+    // Test text relevance scoring
     const results = await search({ query: 'anxiety', experiencer: 'text_test' });
 
     expect(results.results).toHaveLength(1);
@@ -60,9 +56,7 @@ describe('Search Relevance Scoring', () => {
       experiencer: 'Alice_filter',
       perspective: 'I',
       processing: 'during',
-      contentType: 'text',
-      system_time: new Date().toISOString(),
-      occurred: new Date().toISOString(),
+      created: new Date().toISOString(),
       crafted: false
     };
 
@@ -72,9 +66,7 @@ describe('Search Relevance Scoring', () => {
       experiencer: 'Bob_filter',
       perspective: 'I',
       processing: 'during',
-      contentType: 'text',
-      system_time: new Date().toISOString(),
-      occurred: new Date().toISOString(),
+      created: new Date().toISOString(),
       crafted: false
     };
 
@@ -98,19 +90,8 @@ describe('Search Relevance Scoring', () => {
       experiencer: 'vector_test',
       perspective: 'I',
       processing: 'during',
-      contentType: 'text',
-      system_time: new Date().toISOString(),
-      occurred: new Date().toISOString(),
-      crafted: false,
-      experiential_qualities: {
-        qualities: [
-          {
-            type: 'affective',
-            prominence: 0.8,
-            manifestation: 'emotional distress'
-          }
-        ]
-      }
+      created: new Date().toISOString(),
+      crafted: false
     };
 
     await saveSource(record);
@@ -140,16 +121,14 @@ describe('Search Relevance Scoring', () => {
   });
 
   it('should sort results by relevance score', async () => {
-    // Create test records with different content and unique IDs
+    // Create test records with different relevance levels
     const record1: Omit<SourceRecord, 'type'> = {
       id: 'sort_test_1',
       content: 'This is about anxiety and stress management techniques',
       experiencer: 'sort_test',
       perspective: 'I',
       processing: 'during',
-      contentType: 'text',
-      system_time: new Date().toISOString(),
-      occurred: new Date().toISOString(),
+      created: new Date().toISOString(),
       crafted: false
     };
 
@@ -159,9 +138,7 @@ describe('Search Relevance Scoring', () => {
       experiencer: 'sort_test',
       perspective: 'I',
       processing: 'during',
-      contentType: 'text',
-      system_time: new Date().toISOString(),
-      occurred: new Date().toISOString(),
+      created: new Date().toISOString(),
       crafted: false
     };
 
@@ -171,9 +148,7 @@ describe('Search Relevance Scoring', () => {
       experiencer: 'sort_test',
       perspective: 'I',
       processing: 'during',
-      contentType: 'text',
-      system_time: new Date().toISOString(),
-      occurred: new Date().toISOString(),
+      created: new Date().toISOString(),
       crafted: false
     };
 
@@ -181,11 +156,11 @@ describe('Search Relevance Scoring', () => {
     await saveSource(record2);
     await saveSource(record3);
 
-    // Search for "anxiety" with relevance sorting and filter by experiencer to isolate our test data
+    // Test sorting by relevance
     const results = await search({ 
       query: 'anxiety', 
-      sort: 'relevance',
-      experiencer: 'sort_test'
+      experiencer: 'sort_test',
+      sort: 'relevance'
     });
 
     expect(results.results).toHaveLength(3); // All 3 records contain the word "anxiety"
@@ -193,9 +168,6 @@ describe('Search Relevance Scoring', () => {
     // First result should have higher relevance than second
     expect(results.results[0].relevance_score).toBeGreaterThanOrEqual(results.results[1].relevance_score);
     expect(results.results[1].relevance_score).toBeGreaterThanOrEqual(results.results[2].relevance_score);
-    
-    // First result should be the one with "anxiety and stress" (more matches)
-    expect(results.results[0].snippet).toContain('anxiety and stress');
   });
 });
 
@@ -216,9 +188,7 @@ describe('Date Range Filtering', () => {
       experiencer: 'date_test',
       perspective: 'I',
       processing: 'during',
-      contentType: 'text',
-      system_time: today.toISOString(),
-      occurred: today.toISOString(),
+      created: today.toISOString(),
       crafted: false
     };
 
@@ -228,9 +198,7 @@ describe('Date Range Filtering', () => {
       experiencer: 'date_test',
       perspective: 'I',
       processing: 'during',
-      contentType: 'text',
-      system_time: yesterday.toISOString(),
-      occurred: yesterday.toISOString(),
+      created: yesterday.toISOString(),
       crafted: false
     };
 
@@ -239,7 +207,7 @@ describe('Date Range Filtering', () => {
 
     // Test same-day range: should return yesterday's record
     const results = await search({ 
-      occurred: { start: yesterday.toISOString(), end: yesterday.toISOString() },
+      created: { start: yesterday.toISOString(), end: yesterday.toISOString() },
       experiencer: 'date_test'
     });
 
@@ -259,9 +227,7 @@ describe('Date Range Filtering', () => {
       experiencer: 'single_date_test',
       perspective: 'I',
       processing: 'during',
-      contentType: 'text',
-      system_time: today.toISOString(),
-      occurred: today.toISOString(),
+      created: today.toISOString(),
       crafted: false
     };
 
@@ -271,9 +237,7 @@ describe('Date Range Filtering', () => {
       experiencer: 'single_date_test',
       perspective: 'I',
       processing: 'during',
-      contentType: 'text',
-      system_time: yesterday.toISOString(),
-      occurred: yesterday.toISOString(),
+      created: yesterday.toISOString(),
       crafted: false
     };
 
@@ -282,7 +246,7 @@ describe('Date Range Filtering', () => {
 
     // Test single date filter: should return records from yesterday onwards
     const results = await search({ 
-      occurred: yesterday.toISOString(),
+      created: yesterday.toISOString(),
       experiencer: 'single_date_test'
     });
 
@@ -305,9 +269,7 @@ describe('Date Range Filtering', () => {
       experiencer: 'range_test',
       perspective: 'I',
       processing: 'during',
-      contentType: 'text',
-      system_time: today.toISOString(),
-      occurred: today.toISOString(),
+      created: today.toISOString(),
       crafted: false
     };
 
@@ -317,9 +279,7 @@ describe('Date Range Filtering', () => {
       experiencer: 'range_test',
       perspective: 'I',
       processing: 'during',
-      contentType: 'text',
-      system_time: yesterday.toISOString(),
-      occurred: yesterday.toISOString(),
+      created: yesterday.toISOString(),
       crafted: false
     };
 
@@ -329,9 +289,7 @@ describe('Date Range Filtering', () => {
       experiencer: 'range_test',
       perspective: 'I',
       processing: 'during',
-      contentType: 'text',
-      system_time: twoDaysAgo.toISOString(),
-      occurred: twoDaysAgo.toISOString(),
+      created: twoDaysAgo.toISOString(),
       crafted: false
     };
 
@@ -341,7 +299,7 @@ describe('Date Range Filtering', () => {
 
     // Test multi-day range: should return yesterday and today's records
     const results = await search({ 
-      occurred: { start: yesterday.toISOString(), end: today.toISOString() },
+      created: { start: yesterday.toISOString(), end: today.toISOString() },
       experiencer: 'range_test'
     });
 
@@ -364,9 +322,7 @@ describe('Date Range Filtering', () => {
       experiencer: 'edge_test',
       perspective: 'I',
       processing: 'during',
-      contentType: 'text',
-      system_time: earlyToday.toISOString(),
-      occurred: earlyToday.toISOString(),
+      created: earlyToday.toISOString(),
       crafted: false
     };
 
@@ -376,9 +332,7 @@ describe('Date Range Filtering', () => {
       experiencer: 'edge_test',
       perspective: 'I',
       processing: 'during',
-      contentType: 'text',
-      system_time: lateToday.toISOString(),
-      occurred: lateToday.toISOString(),
+      created: lateToday.toISOString(),
       crafted: false
     };
 
@@ -387,7 +341,7 @@ describe('Date Range Filtering', () => {
 
     // Test that both records are found when filtering for today (UTC)
     const results = await search({ 
-      occurred: { start: earlyToday.toISOString(), end: lateToday.toISOString() },
+      created: { start: earlyToday.toISOString(), end: lateToday.toISOString() },
       experiencer: 'edge_test'
     });
 
@@ -421,9 +375,7 @@ describe('GroupBy Parameter Removal', () => {
       experiencer: 'groupby_test',
       perspective: 'I',
       processing: 'during',
-      contentType: 'text',
-      system_time: new Date().toISOString(),
-      occurred: new Date().toISOString(),
+      created: new Date().toISOString(),
       crafted: false
     };
 

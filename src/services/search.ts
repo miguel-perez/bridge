@@ -7,7 +7,7 @@ import { getVectorStore } from './vector-store.js';
 const DEBUG_MODE = process.env.BRIDGE_SEARCH_DEBUG === 'true' || process.env.BRIDGE_DEBUG === 'true';
 
 // Debug logging utility - silent in MCP context
-function debugLog(message: string, data?: any): { timestamp: string; message: string; data?: any } | null {
+function debugLog(message: string, data?: unknown): { timestamp: string; message: string; data?: unknown } | null {
   // In MCP context, we don't use console.log
   // Debug information is returned in the response instead
   if (DEBUG_MODE) {
@@ -22,8 +22,8 @@ function debugLog(message: string, data?: any): { timestamp: string; message: st
 }
 
 // Error logging utility with MCP-compliant formatting
-function logSearchError(context: string, error: any, details?: any): { error: boolean; message: string; context: string; details?: any } {
-  const errorMessage = `Search error in ${context}: ${error.message || error}`;
+function logSearchError(context: string, error: unknown, details?: unknown): { error: boolean; message: string; context: string; details?: unknown } {
+  const errorMessage = `Search error in ${context}: ${error instanceof Error ? error.message : error}`;
   
   // Return MCP-compliant error structure
   return {
@@ -36,19 +36,15 @@ function logSearchError(context: string, error: any, details?: any): { error: bo
 
 export interface SearchInput {
   query?: string;
-  system_time?: string | { start: string; end: string };
-  occurred?: string | { start: string; end: string };
+  limit?: number;
+  offset?: number;
   type?: string[];
   experiencer?: string;
   perspective?: string;
   processing?: string;
-  contentType?: string;
   crafted?: boolean;
-  sort?: 'relevance' | 'system_time' | 'occurred';
-  limit?: number;
-  offset?: number;
-  includeContext?: boolean;
-  includeFullContent?: boolean;
+  created?: string | { start: string; end: string };
+  sort?: 'relevance' | 'created';
   // Experiential qualities min/max
   min_embodied?: number;
   max_embodied?: number;
@@ -86,7 +82,7 @@ export interface SearchServiceResult {
   id: string;
   type: string;
   snippet: string;
-  content?: string; // Full original content when includeFullContent is true
+  content?: string; // Full original content
   metadata?: Record<string, any>;
   relevance_score: number; // Always present, 0-1 scale
   relevance_breakdown?: {
@@ -124,7 +120,6 @@ export interface SearchServiceResponse {
       experiencer_filter?: number;
       perspective_filter?: number;
       processing_filter?: number;
-      contentType_filter?: number;
       crafted_filter?: number;
       temporal_filter?: number;
       qualities_filter?: number;
@@ -136,12 +131,12 @@ export interface SearchServiceResponse {
     errors?: Array<{
       context: string;
       message: string;
-      details?: any;
+      details?: unknown;
     }>;
     debug_logs?: Array<{
       timestamp: string;
       message: string;
-      data?: any;
+      data?: unknown;
     }>;
   };
 }
@@ -205,9 +200,7 @@ function calculateFilterRelevance(record: SourceRecord, input: SearchInput): num
   const relevance = 1.0; // Start with full relevance
   
   // Check if record matches all applied filters
-  if (input.type && !input.type.includes(record.type)) {
-    return 0;
-  }
+  // Type filtering removed - type field no longer exists in data model
   
   if (input.experiencer && record.experiencer !== input.experiencer) {
     return 0;
@@ -218,10 +211,6 @@ function calculateFilterRelevance(record: SourceRecord, input: SearchInput): num
   }
   
   if (input.processing && record.processing !== input.processing) {
-    return 0;
-  }
-  
-  if (input.contentType && record.contentType !== input.contentType) {
     return 0;
   }
   
@@ -307,40 +296,30 @@ function calculateRelevanceScore(
   };
 }
 
-// Apply temporal filters
-async function applyTemporalFilter(records: SourceRecord[], filter: string | { start: string; end: string }, field: 'system_time' | 'occurred'): Promise<SourceRecord[]> {
-  function toUTCDateString(dateStr: string): string {
-    try {
-      const date = new Date(dateStr);
-      if (isNaN(date.getTime())) {
-        throw new Error('Invalid date');
-      }
-      return date.toISOString();
-    } catch {
-      throw new Error(`Invalid date format: ${dateStr}`);
-    }
-  }
-  
+/**
+ * Applies temporal filtering to records based on date ranges.
+ * @param records - Records to filter
+ * @param filter - Date filter (string or range object)
+ * @returns Filtered records
+ */
+async function applyTemporalFilter(records: SourceRecord[], filter: string | { start: string; end: string }): Promise<SourceRecord[]> {
   if (typeof filter === 'string') {
-    // Single date filter - find records on or after this date
-    const filterDate = toUTCDateString(filter);
-      return records.filter(record => {
-      const recordDate = field === 'occurred' ? (record.occurred || record.system_time) : record.system_time;
-      return recordDate >= filterDate;
-      });
-    } else {
-    // Date range filter
-    const startDate = filter.start ? toUTCDateString(filter.start) : null;
-    const endDate = filter.end ? toUTCDateString(filter.end) : null;
+    // Single date filter - find records from that date onwards
+    const filterDate = new Date(filter);
     
     return records.filter(record => {
-      const recordDate = field === 'occurred' ? (record.occurred || record.system_time) : record.system_time;
-      
-      if (startDate && recordDate < startDate) return false;
-      if (endDate && recordDate > endDate) return false;
-      
-        return true;
-      });
+      const recordDate = new Date(record.created);
+      return recordDate >= filterDate;
+    });
+  } else {
+    // Date range filter
+    const startDate = new Date(filter.start);
+    const endDate = new Date(filter.end);
+    
+    return records.filter(record => {
+      const recordDate = new Date(record.created);
+      return recordDate >= startDate && recordDate <= endDate;
+    });
   }
 }
 
@@ -357,7 +336,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
     debug_logs: []
   };
 
-  const addDebugLog = (message: string, data?: any): void => {
+  const addDebugLog = (message: string, data?: unknown): void => {
     if (DEBUG_MODE) {
       const log = debugLog(message, data);
       if (log) debugInfo.debug_logs!.push(log);
@@ -383,13 +362,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
     let filteredRecords = allRecords;
   
     // Apply basic filters
-    if (input.type && input.type.length > 0) {
-      const beforeCount = filteredRecords.length;
-        filteredRecords = filteredRecords.filter(record => input.type!.includes(record.type));
-      const afterCount = filteredRecords.length;
-      debugInfo.filter_breakdown!.type_filter = beforeCount - afterCount;
-      addDebugLog(`Type filter applied: ${beforeCount} -> ${afterCount} records`);
-    }
+    // Type filtering removed - type field no longer exists in data model
     
     if (input.experiencer) {
       const beforeCount = filteredRecords.length;
@@ -415,14 +388,6 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
       addDebugLog(`Processing filter applied: ${beforeCount} -> ${afterCount} records`);
     }
     
-    if (input.contentType) {
-      const beforeCount = filteredRecords.length;
-        filteredRecords = filteredRecords.filter(record => record.contentType === input.contentType);
-      const afterCount = filteredRecords.length;
-      debugInfo.filter_breakdown!.contentType_filter = beforeCount - afterCount;
-      addDebugLog(`Content type filter applied: ${beforeCount} -> ${afterCount} records`);
-    }
-    
     if (input.crafted !== undefined) {
       const beforeCount = filteredRecords.length;
         filteredRecords = filteredRecords.filter(record => record.crafted === input.crafted);
@@ -432,29 +397,12 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
     }
     
     // Apply temporal filters
-    if (input.system_time) {
+    if (input.created) {
       const beforeCount = filteredRecords.length;
-      filteredRecords = await applyTemporalFilter(filteredRecords, input.system_time, 'system_time');
+      filteredRecords = await applyTemporalFilter(filteredRecords, input.created);
       const afterCount = filteredRecords.length;
       debugInfo.filter_breakdown!.temporal_filter = beforeCount - afterCount;
-      addDebugLog(`System time filter applied: ${beforeCount} -> ${afterCount} records`);
-    }
-    
-    if (input.occurred) {
-      const beforeCount = filteredRecords.length;
-          filteredRecords = await applyTemporalFilter(filteredRecords, input.occurred, 'occurred');
-      const afterCount = filteredRecords.length;
-      debugInfo.filter_breakdown!.temporal_filter = (debugInfo.filter_breakdown!.temporal_filter || 0) + (beforeCount - afterCount);
-      addDebugLog(`Occurred filter applied: ${beforeCount} -> ${afterCount} records`);
-    }
-    
-    // Apply ID filter
-    if (input.id) {
-      const beforeCount = filteredRecords.length;
-      filteredRecords = filteredRecords.filter(record => record.id === input.id);
-      const afterCount = filteredRecords.length;
-      debugInfo.filter_breakdown!.id_filter = beforeCount - afterCount;
-      addDebugLog(`ID filter applied: ${beforeCount} -> ${afterCount} records`);
+      addDebugLog(`Created filter applied: ${beforeCount} -> ${afterCount} records`);
     }
     
     // Vector similarity search (deprecated - use semantic search instead)
@@ -586,28 +534,25 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
       });
     }
 
-    // Apply sorting (default to occurred date for recency)
-    const sortType = input.sort || 'occurred';
+    // Apply sorting (default to created date for recency)
+    const sortType = input.sort || 'created';
     addDebugLog(`Applying sort: ${sortType}`);
-      finalRecords.sort((a, b) => {
+    finalRecords.sort((a, b) => {
       switch (sortType) {
-          case 'system_time': {
-            const aTime = new Date(a.system_time).getTime();
-            const bTime = new Date(b.system_time).getTime();
-            return bTime - aTime; // Descending
-          }
-          case 'occurred': {
-            const aTime = new Date(a.occurred || a.system_time).getTime();
-            const bTime = new Date(b.occurred || b.system_time).getTime();
-            return bTime - aTime; // Descending
-          }
-          case 'relevance':
-          default: {
-            // Sort by relevance score
-            return b._relevance.score - a._relevance.score;
-          }
+        case 'created': {
+          const aTime = new Date(a.created).getTime();
+          const bTime = new Date(b.created).getTime();
+          return bTime - aTime; // Descending
         }
-      });
+        case 'relevance': {
+          const aScore = a._relevance.score;
+          const bScore = b._relevance.score;
+          return bScore - aScore; // Descending
+        }
+        default:
+          return 0;
+      }
+    });
 
     // Apply pagination (offset and limit)
     if (input.offset && input.offset > 0) {
@@ -629,26 +574,19 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
     debugInfo.filtered_records = finalRecords.length;
     addDebugLog(`Search completed: ${finalRecords.length} final results`);
 
-    // Convert to SearchServiceResult format
+    // Format results for return
     const results: SearchServiceResult[] = finalRecords.map(record => ({
       id: record.id,
-      type: record.type,
-      snippet: (input.includeFullContent ?? true) ? (record.experience?.narrative || record.content) : (record.experience?.narrative || record.content).substring(0, 200) + ((record.experience?.narrative || record.content).length > 200 ? '...' : ''),
-      content: (input.includeFullContent ?? true) ? record.content : undefined,
-      metadata: input.includeContext ? {
-        contentType: record.contentType,
+      type: 'source', // All records are sources
+      content: record.content,
+      snippet: record.content.length > 200 ? record.content.substring(0, 200) + '...' : record.content,
+      metadata: {
+        created: record.created,
         perspective: record.perspective,
         experiencer: record.experiencer,
         processing: record.processing,
-        crafted: record.crafted,
-        system_time: record.system_time,
-        occurred: record.occurred,
-        experience: record.experience ? {
-          emoji: record.experience.emoji,
-          narrative: record.experience.narrative
-          // Intentionally excluding qualities to reduce synthetic data overload
-        } : undefined
-      } : undefined,
+        experience: record.experience
+      },
       relevance_score: record._relevance.score,
       relevance_breakdown: record._relevance.breakdown
     }));

@@ -4,13 +4,13 @@ import { join, dirname, resolve } from 'path';
 export interface VectorRecord {
   id: string;
   vector: number[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface SimilarityResult {
   id: string;
   similarity: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export class VectorStore {

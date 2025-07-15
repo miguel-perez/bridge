@@ -1,15 +1,37 @@
-/**
- * MCP Capture Tool Handler
- * 
- * Handles capture tool requests for creating experiential moments.
- * Supports both single items and batch operations.
- * 
- * @module mcp/capture-handler
- */
-
 import { CaptureService } from '../services/capture.js';
-import { withTimeout, DEFAULT_TIMEOUTS, TimeoutError } from '../utils/timeout.js';
-import { formatDate, formatContent, formatExperience } from './handler-utils.js';
+
+export interface CaptureRequestParams {
+  content?: string;
+  perspective?: string;
+  experiencer?: string;
+  processing?: string;
+  crafted?: boolean;
+  experience?: {
+    qualities?: Array<{ type: string; prominence: number; manifestation: string }>;
+    emoji: string;
+    narrative: string;
+  };
+}
+
+export interface CaptureResponse {
+  success: boolean;
+  source?: {
+    id: string;
+    content: string;
+    created: string;
+    perspective?: string;
+    experiencer?: string;
+    processing?: string;
+    crafted?: boolean;
+    experience?: {
+      qualities: Array<{ type: string; prominence: number; manifestation: string }>;
+      emoji: string;
+      narrative: string;
+    };
+  };
+  defaultsUsed?: string[];
+  error?: string;
+}
 
 export class CaptureHandler {
   private captureService: CaptureService;
@@ -19,46 +41,130 @@ export class CaptureHandler {
   }
 
   /**
-   * Handles capture tool requests - supports both single items and batch operations
-   * 
-   * Captures one or more experiential moments and returns a formatted response
-   * showing the captured data with experiential analysis.
+   * Handles capture requests
    * 
    * @param args - The capture arguments containing the experiential data
    * @returns Formatted capture result
    */
   async handle(args: any): Promise<{ content: Array<{ type: string; text: string }> }> {
-    // Support both old single-item format and new batch format
-    const captures = args.captures || [args];
-    const results = [];
-    
-    for (const capture of captures) {
-      try {
-        const result = await withTimeout(
-          this.captureService.captureSource(capture),
-          DEFAULT_TIMEOUTS.CAPTURE,
-          'Capture operation'
-        );
-        const content = `✓ Captured experience for ${result.source.experiencer}
-ID: ${result.source.id}
-Occurred: ${formatDate(result.source.occurred || result.source.system_time)}
-
-${result.source.experience?.narrative ? 'Narrative: ' : 'Content: '}${formatContent(result.source.content, result.source.experience?.narrative, true)}
-
-Experience:\n${formatExperience(result.source.experience)}
-
-${result.defaultsUsed.length > 0 ? `Defaults used: ${result.defaultsUsed.join(', ')}` : ''}`;
-        results.push(content);
-      } catch (error) {
-        if (error instanceof TimeoutError) {
-          throw error; // Re-throw timeout errors to be handled by MCP
-        }
-        throw error; // Re-throw other errors
+    try {
+      // Handle null/undefined args for empty capture
+      if (!args || Object.keys(args).length === 0) {
+        args = { captures: [{ content: '' }] };
       }
+      
+      // Support both old single-capture format and new batch format
+      const captures = args.captures || [args];
+      
+      // Handle regular captures
+      const allResults = [];
+      
+      for (let i = 0; i < captures.length; i++) {
+        const capture = captures[i];
+        
+        // Ensure content property exists
+        if (capture && typeof capture === 'object' && !('content' in capture)) {
+          capture.content = '';
+        }
+        
+        // Handle regular capture
+        const result = await this.handleRegularCapture(capture);
+        allResults.push(...result.content);
+        
+        // Add separator between captures if there are multiple
+        if (i < captures.length - 1) {
+          allResults.push({ type: 'text', text: '\n---\n\n' });
+        }
+      }
+      
+      return { content: allResults };
+      
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return {
+        content: [{
+          type: 'text',
+          text: errorMessage
+        }]
+      };
     }
-    const summary = captures.length > 1 ? `Captured ${captures.length} experiences:\n\n` : '';
-    return {
-      content: [{ type: 'text', text: summary + results.join('\n\n---\n\n') }]
-    };
   }
-}
+
+  /**
+   * Handle regular capture
+   */
+  private async handleRegularCapture(
+    capture: any
+  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+    try {
+      // Validate required fields
+      if (!capture.content && !capture.experience?.narrative) {
+        throw new Error('Either content or experience.narrative is required');
+      }
+
+      // Capture the experience
+      const result = await this.captureService.captureSource({
+        content: capture.content,
+        perspective: capture.perspective,
+        experiencer: capture.experiencer,
+        processing: capture.processing,
+        crafted: capture.crafted,
+        experience: capture.experience ? {
+          qualities: capture.experience.qualities || [],
+          emoji: capture.experience.emoji,
+          narrative: capture.experience.narrative
+        } : undefined
+      });
+
+      // Format the response
+      let output = '✅ Experience captured successfully!\n\n';
+      
+      const source = result.source;
+      const experience = source.experience;
+      
+      // Show emoji and narrative
+      if (experience?.emoji) {
+        output += `${experience.emoji} ${experience.narrative || ''}\n\n`;
+      }
+      
+      // Show content if different from narrative
+      if (source.content && source.content !== experience?.narrative) {
+        output += `${source.content}\n\n`;
+      }
+      
+      // Show qualities if available
+      if (experience?.qualities && experience.qualities.length > 0) {
+        const qualitiesText = experience.qualities
+          .map(q => `${q.type}: ${q.prominence}%`)
+          .join(', ');
+        output += `✨ Qualities: ${qualitiesText}\n\n`;
+      }
+      
+      // Show metadata
+      output += `📝 ID: ${source.id}\n`;
+      output += `👤 Experiencer: ${source.experiencer || 'Unknown'}\n`;
+      output += `👁️  Perspective: ${source.perspective || 'I'}\n`;
+      output += `⏰ Processing: ${source.processing || 'during'}\n`;
+      output += `🕐 Created: ${source.created}\n`;
+      
+      if (result.defaultsUsed && result.defaultsUsed.length > 0) {
+        output += `\n📋 Defaults used: ${result.defaultsUsed.join(', ')}\n`;
+      }
+
+      return {
+        content: [{
+          type: 'text',
+          text: output
+        }]
+      };
+      
+    } catch (error) {
+      return {
+        content: [{
+          type: 'text',
+          text: error instanceof Error ? error.message : 'Unknown error'
+        }]
+      };
+    }
+  }
+} 

@@ -63,15 +63,6 @@ export const createMockStorage = () => ({
   updateSource: jest.fn((source: any) => Promise.resolve(source))
 });
 
-export const createMockPatternManager = () => ({
-  onCapture: jest.fn(() => Promise.resolve()),
-  onUpdate: jest.fn(() => Promise.resolve()),
-  onRelease: jest.fn(() => Promise.resolve()),
-  onDelete: jest.fn(() => Promise.resolve()),
-  getPatterns: jest.fn(() => Promise.resolve([])),
-  refreshPatterns: jest.fn(() => Promise.resolve())
-});
-
 // Helper to setup all common mocks
 export function setupCommonMocks() {
   return {
@@ -81,7 +72,12 @@ export function setupCommonMocks() {
     os: createMockOs(),
     embeddingService: createMockEmbeddingService(),
     vectorStore: createMockVectorStore(),
-    storage: createMockStorage(),
-    patternManager: createMockPatternManager()
+    storage: createMockStorage()
   };
+}
+
+// Global teardown to clean up any pending timers or background processes
+export async function globalTeardown(): Promise<void> {
+  // Wait a bit for any pending operations to complete
+  await new Promise(resolve => setTimeout(resolve, 100));
 }

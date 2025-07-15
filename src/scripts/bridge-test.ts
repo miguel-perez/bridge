@@ -29,179 +29,50 @@ interface TestScenario {
 }
 
 const TEST_SCENARIOS: Record<string, TestScenario> = {
-  'stress-pattern-evolution': {
-    name: 'Work Stress Pattern Evolution',
-    description: 'Discover how stress patterns have changed over time (requires fixtures)',
-    userGoal: 'I want to understand how my work stress has evolved and what I\'ve learned',
-    prompt: `I've been tracking my work stress for several months now. I'm curious to see what patterns have emerged and how they've changed over time.
+  'bridge-exploration': {
+    name: 'Bridge Tool Exploration',
+    description: 'Test Claude\'s understanding and use of Bridge as a phenomenological data capture system',
+    userGoal: 'I want to understand what Bridge is and explore its capabilities',
+    prompt: `Hi, I'm going to be walking you through this session today.
 
-Can you help me:
-1. Search for my stress-related experiences 
-2. Discover patterns in how I handle work pressure
-3. Show me if there's been any evolution in my coping strategies
+Before we begin, I have some information for you. We're asking AIs to try using an MCP tool that we're working on so we can see whether it works as intended.
 
-I'm particularly interested in whether I'm getting better at managing stress.`,
-    validateOutcome: (result: TestResult, finalResponse: string) => {
-      const insights = [
-        result.toolCalls.some(tc => tc.tool === 'search' && tc.success),
-        result.toolCalls.some(tc => tc.tool === 'discover' && tc.success),
-        finalResponse.toLowerCase().includes('stress') || finalResponse.toLowerCase().includes('pattern'),
-        finalResponse.toLowerCase().includes('change') || finalResponse.toLowerCase().includes('evolution') || finalResponse.toLowerCase().includes('better'),
-        finalResponse.length > 200
-      ];
-      return insights.filter(Boolean).length >= 4;
-    },
-    successCriteria: [
-      'User explored existing stress experiences',
-      'Pattern discovery revealed stress evolution over time',
-      'Response addressed changes in coping strategies',
-      'Tools provided meaningful temporal insights'
-    ]
-  },
+The first thing I want to make clear right away is that we're testing the tool, not you. You can't do anything wrong here. In fact, this is probably the one place today where you don't have to worry about making mistakes.
 
-  'memory-exploration': {
-    name: 'Personal Experience Discovery',
-    description: 'Help user explore their captured memories and find meaningful connections',
-    userGoal: 'I want to explore my experiences and discover meaningful patterns',
-    prompt: `I'd love to explore what experiences I've captured in Bridge. Can you help me:
+As you use the tool, I'm going to ask you as much as possible to try to think out loud: to say what you're looking at, what you're trying to do, and what you're thinking. What you expect to happen, and what you actually see. This will be a big help to us.
 
-1. Search through my existing experiences
-2. Show me what themes or patterns emerge
-3. Help me understand what these reveal about my experiential life
+Also, please don't worry that you're going to hurt our feelings. We're doing this to improve the site, so we need to hear your honest reactions.
 
-I'm curious about what my data shows about me and my patterns of living.`,
+If you have any questions as we go along, just ask them. I may not be able to answer them right away, since we're interested in how people do when they don't have someone sitting next to them to help.
+
+Now, I want you to explore and use the Bridge tool. Here's what I'd like you to do:
+
+1. First, tell me what you think Bridge is for and what capabilities you see available
+2. Then, think about what tasks you'd naturally want to do with this tool and try them out
+
+What would you want to explore or accomplish with Bridge? What questions do you have about the data or functionality? Follow your curiosity and try whatever makes sense to you.
+
+Think out loud as you do this - tell me what you're trying, what you expect to happen, and what actually happens. Don't just describe what you think the tool does - actually use it and show me the results!`,
     validateOutcome: (result: TestResult, finalResponse: string) => {
       const exploration = [
-        result.toolCalls.some(tc => tc.tool === 'search' && tc.success),
-        finalResponse.includes('experience') || finalResponse.includes('pattern'),
-        finalResponse.length > 150,
-        !finalResponse.includes('No results found') || result.toolCalls.some(tc => tc.tool === 'discover')
+        // Claude should demonstrate understanding of Bridge's purpose
+        finalResponse.toLowerCase().includes('experience') || finalResponse.toLowerCase().includes('phenomenological') || finalResponse.toLowerCase().includes('capture'),
+        // Should use Bridge tools appropriately (now required)
+        result.toolCalls.some(tc => ['capture', 'search', 'update', 'release'].includes(tc.tool)),
+        // Should provide thoughtful analysis
+        finalResponse.length > 400,
+        // Should show understanding of the tool's domain
+        finalResponse.toLowerCase().includes('bridge') || finalResponse.toLowerCase().includes('tool') || finalResponse.toLowerCase().includes('system'),
+        // Should demonstrate actual tool usage with results
+        result.toolCalls.length > 0 && result.toolCalls.some(tc => tc.success)
       ];
-      return exploration.filter(Boolean).length >= 3;
+      return exploration.filter(Boolean).length >= 4;
     },
     successCriteria: [
-      'User successfully explored their experiential data',
-      'Search or discovery functionality worked effectively', 
-      'User received meaningful insights about their experiences',
-      'Response addressed exploration goals'
-    ]
-  },
-
-  'creative-capture': {
-    name: 'Creative Breakthrough Documentation',
-    description: 'Help user capture and understand a creative insight moment',
-    userGoal: 'I want to properly capture and understand a creative breakthrough',
-    prompt: `I just had an amazing creative breakthrough - one of those moments where everything suddenly clicks! 
-I want to capture this properly so I can remember it and understand what led to this insight.
-
-Can you help me:
-1. Capture this breakthrough moment with all its phenomenological richness
-2. Help me understand the qualities of this creative experience
-3. Maybe find similar creative moments I've had before
-
-This feels important and I want to preserve it well.`,
-    validateOutcome: (result: TestResult, finalResponse: string) => {
-      const captureSuccess = [
-        result.toolCalls.some(tc => tc.tool === 'capture' && tc.success),
-        finalResponse.includes('creative') || finalResponse.includes('breakthrough') || finalResponse.includes('insight'),
-        finalResponse.includes('experience') || finalResponse.includes('moment'),
-        finalResponse.length > 150
-      ];
-      return captureSuccess.filter(Boolean).length >= 3;
-    },
-    successCriteria: [
-      'Creative breakthrough was successfully captured',
-      'User gained understanding of their creative process',
-      'Bridge preserved the phenomenological richness',
-      'Response addressed the importance of the moment'
-    ]
-  },
-
-  'relationship-insights': {
-    name: 'Social Connection Pattern Discovery',
-    description: 'Explore patterns in relationships and social interactions',
-    userGoal: 'I want to understand patterns in my relationships and social connections',
-    prompt: `I'm curious about patterns in my relationships and social interactions. I feel like I have different experiences with different people and in different contexts.
-
-Can you help me:
-1. Search for experiences involving relationships or social interactions
-2. Discover what patterns emerge in how I connect with others
-3. Help me understand what these patterns reveal about my social life
-
-I'm particularly interested in what makes some interactions feel meaningful versus draining.`,
-    validateOutcome: (result: TestResult, finalResponse: string) => {
-      const social = [
-        result.toolCalls.some(tc => tc.tool === 'search' && tc.success),
-        result.toolCalls.some(tc => tc.tool === 'discover' && tc.success),
-        finalResponse.toLowerCase().includes('relationship') || finalResponse.toLowerCase().includes('social') || finalResponse.toLowerCase().includes('connection'),
-        finalResponse.length > 200,
-        finalResponse.toLowerCase().includes('pattern') || finalResponse.toLowerCase().includes('meaningful')
-      ];
-      return social.filter(Boolean).length >= 4;
-    },
-    successCriteria: [
-      'User explored relationship and social experiences', 
-      'Pattern discovery revealed social connection insights',
-      'Response addressed meaningful vs draining interactions',
-      'Tools provided valuable social pattern analysis'
-    ]
-  },
-
-  'first-time-exploration': {
-    name: 'New User Bridge Discovery',
-    description: 'Guide first-time user through Bridge capabilities',
-    userGoal: 'I\'m new to Bridge and want to understand what it can do for me',
-    prompt: `I just started using Bridge and I'm not sure what it can do. I've heard it can help me understand patterns in my experiences, but I don't really know where to start.
-
-Can you:
-1. Show me what Bridge can do
-2. Help me explore any data I might have
-3. Give me some guidance on how to use it effectively
-
-I'm basically looking for a gentle introduction to what Bridge offers.`,
-    validateOutcome: (result: TestResult, finalResponse: string) => {
-      const guidance = [
-        result.toolCalls.some(tc => tc.tool === 'discover' || tc.tool === 'search'),
-        finalResponse.toLowerCase().includes('bridge') && (finalResponse.toLowerCase().includes('can') || finalResponse.toLowerCase().includes('help')),
-        finalResponse.toLowerCase().includes('pattern') || finalResponse.toLowerCase().includes('experience'),
-        finalResponse.length > 250, // Substantial guidance
-        finalResponse.toLowerCase().includes('start') || finalResponse.toLowerCase().includes('begin') || finalResponse.toLowerCase().includes('try')
-      ];
-      return guidance.filter(Boolean).length >= 4;
-    },
-    successCriteria: [
-      'User received clear explanation of Bridge capabilities',
-      'Bridge tools were demonstrated appropriately',
-      'Response provided actionable guidance for getting started',
-      'User felt welcomed and oriented to the system'
-    ]
-  },
-
-  'error-recovery': {
-    name: 'Graceful Error Handling',
-    description: 'Test how Claude handles problems and continues helping user',
-    userGoal: 'I want to explore my data even when encountering problems',
-    prompt: `I want to search for "unicorn-rainbow-nonexistent-topic-xyz" and then explore whatever data I actually have.
-Even if that specific search doesn't work, please help me understand what experiences I do have.
-
-Please:
-1. Try that search  
-2. If it doesn't work, show me what I do have
-3. Help me discover patterns in my actual data`,
-    validateOutcome: (result: TestResult, finalResponse: string) => {
-      const recovery = [
-        result.toolCalls.some(tc => tc.tool === 'search'),
-        finalResponse.includes('No results') || finalResponse.includes('found') || finalResponse.includes('available'),
-        result.toolCalls.length >= 2,
-        finalResponse.length > 100
-      ];
-      return recovery.filter(Boolean).length >= 3;
-    },
-    successCriteria: [
-      'Claude attempted the requested search',
-      'Empty results were handled gracefully',
-      'Alternative value was provided when primary request failed',
-      'User still received helpful exploration despite errors'
+      'Claude demonstrated understanding of Bridge\'s purpose',
+      'Bridge tools were used appropriately',
+      'Claude provided thoughtful analysis and exploration',
+      'Response showed genuine engagement with the tool'
     ]
   }
 };
@@ -690,15 +561,30 @@ class TestOrchestrator {
       console.log(`\n🤔 Usability Reflection:`);
       console.log(`📈 Bridge Usability Score: ${result.reflection.bridgeUsabilityScore}/10`);
       
+      // Show Claude's initial expectations
+      console.log(`\n📋 Claude's Initial Expectations:`);
+      console.log(result.reflection.expectations);
+      
+      // Show actual experience summary
+      console.log(`\n📝 Actual Experience:`);
+      console.log(result.reflection.actualExperience);
+      
       if (result.reflection.misalignments.length > 0) {
-        console.log(`🔍 Identified Misalignments:`);
+        console.log(`\n🔍 Identified Misalignments:`);
         result.reflection.misalignments.forEach(mis => {
           const icon = mis.category === 'good_surprise' ? '✨' :
                       mis.category === 'usability_issue' ? '⚠️' :
                       mis.category === 'tool_limitation' ? '🚧' : '📋';
           console.log(`  ${icon} ${mis.description} (${mis.impact} impact)`);
+          if (mis.suggestions) {
+            console.log(`    💡 Suggestion: ${mis.suggestions}`);
+          }
         });
       }
+      
+      // Show overall assessment
+      console.log(`\n📊 Overall Assessment:`);
+      console.log(result.reflection.overallAssessment);
     }
     
     if (scenario.successCriteria) {
@@ -848,14 +734,16 @@ async function main(): Promise<void> {
     options.useFixtures = true;
   }
   
-  if (!scenario) {
-    console.log('Usage: npm run test:bridge <scenario|all> [options]');
-    console.log('\nUser-Outcome Focused Scenarios:');
+  // Default to bridge-exploration if no scenario specified
+  const testScenario = scenario || 'bridge-exploration';
+  
+  if (testScenario === 'help') {
+    console.log('Usage: npm run test:bridge [scenario] [options]');
+    console.log('\nAvailable Scenarios:');
     Object.entries(TEST_SCENARIOS).forEach(([key, value]) => {
       console.log(`  ${key} - ${value.name}`);
       console.log(`    Goal: ${value.userGoal}`);
     });
-    console.log('  all - Run all scenarios');
     console.log('\nOptions:');
     console.log('  --fixtures      Use synthetic test fixtures (default)');
     console.log('  --use-existing  Use existing bridge.json data');
@@ -867,12 +755,11 @@ async function main(): Promise<void> {
   const orchestrator = new TestOrchestrator();
   
   try {
-    if (scenario === 'all') {
-      await orchestrator.runAll(options);
-    } else if (TEST_SCENARIOS[scenario]) {
-      await orchestrator.runTest(scenario, options);
+    if (TEST_SCENARIOS[testScenario]) {
+      await orchestrator.runTest(testScenario, options);
     } else {
-      console.error(`❌ Unknown scenario: ${scenario}`);
+      console.error(`❌ Unknown scenario: ${testScenario}`);
+      console.log('Run "npm run test:bridge help" to see available scenarios');
       process.exit(1);
     }
   } catch (error) {

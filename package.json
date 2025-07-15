@@ -16,7 +16,7 @@
     "test": "jest",
     "test:unit": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js",
     "test:bridge": "npx tsx src/scripts/bridge-test.ts",
-    "test:integration": "npx tsx src/scripts/bridge-test.ts all",
+    "test:integration": "npx tsx src/scripts/bridge-test.ts",
     "test:fixtures": "npx tsx src/scripts/test-fixtures.ts",
     "test:watch": "npm run test -- --watch",
     "test:coverage": "npm run test:unit -- --coverage",
@@ -28,7 +28,7 @@
     "build:dxt": ".\\build-dxt.ps1",
     "build:dxt:unix": "./build-dxt.sh",
     "migrate-schema": "tsx src/scripts/migrate-schema.ts",
-    "migrate-embeddings": "tsx src/scripts/migrate-embeddings.ts",
+    "migrate-embeddings-consolidation": "tsx src/scripts/migrate-embeddings-consolidation.ts",
     "prepare": "husky"
   },
   "lint-staged": {
@@ -47,9 +47,9 @@
     "@anthropic-ai/sdk": "^0.56.0",
     "@modelcontextprotocol/sdk": "latest",
     "@xenova/transformers": "^2.17.2",
-    "chrono-node": "^2.6.0",
     "dotenv": "^17.1.0",
     "nanoid": "^5.1.5",
+    "stopwords": "^0.0.9",
     "zod": "^3.22.4"
   },
   "devDependencies": {

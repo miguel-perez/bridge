@@ -4,14 +4,14 @@
  */
 
 import { z } from 'zod';
-import { generateId, saveSource } from '../core/storage.js';
-import type { SourceRecord, ProcessingLevel } from '../core/types.js';
-import { parseOccurredDate } from '../utils/validation.js';
-// import { embeddingService } from './embeddings.js';
-import { EnhancedEmbeddingService } from './enhanced-embedding.js';
-import { getVectorStore } from './vector-store.js';
-import { patternManager } from './pattern-manager.js';
 import { bridgeLogger } from '../utils/bridge-logger.js';
+import { saveSource, saveEmbedding } from '../core/storage.js';
+import { generateId } from '../core/storage.js';
+import type { Source, EmbeddingRecord } from '../core/types.js';
+import { QUALITY_TYPES } from '../core/types.js';
+import { EmbeddingService } from './embeddings.js';
+import { VectorStore } from './vector-store.js';
+import { EnhancedEmbeddingService } from './enhanced-embedding.js';
 
 // ============================================================================
 // CONSTANTS
@@ -24,12 +24,6 @@ export const CAPTURE_DEFAULTS = {
   PROCESSING: 'during',
   EXPERIENCER: 'self',
 };
-
-/** Valid quality types */
-export const QUALITY_TYPES = [
-  'embodied', 'attentional', 'affective', 'purposive',
-  'spatial', 'temporal', 'intersubjective',
-] as const;
 
 // ============================================================================
 // VALIDATION FUNCTIONS
@@ -111,25 +105,25 @@ function validateQualityTypes(qualities: Array<{ type: string; prominence: numbe
 
 /**
  * Zod schema for validating capture input.
- * Narrative is required - a concise experiential summary in the experiencer's voice.
+ * Content is optional - if not provided, narrative will be used as content.
  */
 export const captureSchema = z.object({
   content: z.string().optional(),
-  contentType: z.string().optional().default(CAPTURE_DEFAULTS.CONTENT_TYPE),
-  perspective: z.enum(['I', 'we', 'you', 'they']).optional().default(CAPTURE_DEFAULTS.PERSPECTIVE as 'I' | 'we' | 'you' | 'they'),
-  processing: z.enum(['during', 'right-after', 'long-after', 'crafted']).optional().default(CAPTURE_DEFAULTS.PROCESSING as 'during' | 'right-after' | 'long-after' | 'crafted'),
-  occurred: z.string().optional(),
-  experiencer: z.string().optional().default(CAPTURE_DEFAULTS.EXPERIENCER),
+  perspective: z.enum(['I', 'we', 'you', 'they']).optional(),
+  experiencer: z.string().optional(),
+  processing: z.enum(['during', 'right-after', 'long-after', 'crafted']).optional(),
   crafted: z.boolean().optional(),
+  
+  // Experience analysis
   experience: z.object({
     qualities: z.array(z.object({
       type: z.enum(QUALITY_TYPES),
       prominence: z.number().min(0).max(1),
-      manifestation: z.string(),
+      manifestation: z.string()
     })),
     emoji: z.string().min(1, 'Emoji is required'),
-    narrative: z.string().min(1, 'Narrative is required').max(200, 'Narrative should be a concise experiential summary'),
-  }),
+    narrative: z.string().min(1, 'Narrative is required').max(200, 'Narrative too long')
+  }).optional()
 });
 
 /**
@@ -137,20 +131,14 @@ export const captureSchema = z.object({
  */
 export interface CaptureInput {
   content?: string;
-  contentType?: string;
-  perspective?: 'I' | 'we' | 'you' | 'they';
-  processing?: 'during' | 'right-after' | 'long-after' | 'crafted';
-  occurred?: string;
+  perspective?: string;
   experiencer?: string;
+  processing?: string;
   crafted?: boolean;
-  experience: {
-    qualities: Array<{
-      type: typeof QUALITY_TYPES[number];
-      prominence: number;
-      manifestation: string;
-    }>;
+  experience?: {
+    qualities: Array<{ type: string; prominence: number; manifestation: string }>;
     emoji: string;
-    narrative: string; // Required - concise experiential summary in experiencer's voice
+    narrative: string;
   };
 }
 
@@ -158,7 +146,7 @@ export interface CaptureInput {
  * Result of a capture operation.
  */
 export interface CaptureResult {
-  source: SourceRecord;
+  source: Source;
   defaultsUsed: string[];
 }
 
@@ -187,89 +175,77 @@ export class CaptureService {
       input.experience.qualities = validateQualityTypes(input.experience.qualities);
     }
     
-    // Validate input using Zod schema first
+    // Validate input
     const validatedInput = captureSchema.parse(input);
-
-    // Validate occurred field with chrono-node parsing
-    let occurredDate: string | undefined;
-    if (validatedInput.occurred) {
-      try {
-        occurredDate = await parseOccurredDate(validatedInput.occurred);
-        if (!occurredDate || isNaN(Date.parse(occurredDate))) {
-          throw new Error();
-        }
-      } catch {
-        throw new Error('Invalid occurred date format. Example valid formats: "2024-01-15", "yesterday", "last week", "2024-01-01T10:00:00Z".');
+    
+    // Generate unique ID
+    const id = await generateId();
+    
+    // Auto-generate created timestamp
+    const created = new Date().toISOString();
+    
+    // Use narrative as content if content is not provided
+    const content = validatedInput.content || validatedInput.experience?.narrative || 'Experience captured';
+    
+    // Create source record
+    const sourceRecord: Source = {
+      id,
+      content,
+      created,
+      perspective: validatedInput.perspective || 'I',
+      experiencer: validatedInput.experiencer || 'self',
+      processing: validatedInput.processing || 'during',
+      crafted: validatedInput.crafted || false,
+      experience: validatedInput.experience || {
+        qualities: [],
+        emoji: '📝',
+        narrative: 'Experience captured'
       }
-    }
-
-    // Use validated input with defaults applied
-    const perspective = validatedInput.perspective;
-    const processing = validatedInput.processing;
-    const experiencer = validatedInput.experiencer;
-
-    // Process experience - no vector generation needed
-    const processedExperience: import('../core/types.js').Experience = {
-      qualities: validatedInput.experience.qualities,
-      emoji: validatedInput.experience.emoji,
-      narrative: validatedInput.experience.narrative,
     };
-
-    // Generate enhanced embedding with temporal context and richer formatting
-    let embedding: number[] | undefined;
+    
+    // Save the source record
+    const savedSource = await saveSource(sourceRecord);
+    
+    // Generate and save embedding
     try {
-      embedding = await this.enhancedEmbeddingService.generateEnhancedEmbedding(
-        validatedInput.experience.emoji,
-        validatedInput.experience.narrative,
-        validatedInput.content || validatedInput.experience.narrative,
-        validatedInput.experience.qualities,
-        occurredDate || new Date().toISOString(),
-        perspective,
-        experiencer,
-        processing
+      const embeddingService = new EmbeddingService();
+      await embeddingService.initialize();
+      
+      const enhancedService = new EnhancedEmbeddingService();
+      const embedding = await enhancedService.generateEnhancedEmbedding(
+        savedSource.experience?.emoji || '📝',
+        savedSource.experience?.narrative || '',
+        savedSource.content,
+        savedSource.experience?.qualities || [],
+        savedSource.created,
+        savedSource.perspective,
+        savedSource.experiencer,
+        savedSource.processing
       );
+      
+      // Save embedding to storage
+      const embeddingRecord: EmbeddingRecord = {
+        sourceId: savedSource.id,
+        vector: embedding,
+        generated: new Date().toISOString()
+      };
+      
+      await saveEmbedding(embeddingRecord);
+      
+      // Save to vector store for backward compatibility
+      const vectorStore = new VectorStore();
+      await vectorStore.initialize();
+      await vectorStore.addVector(savedSource.id, embedding);
+      await vectorStore.saveToDisk();
+      
+      const defaultsUsed = this.getDefaultsUsed(input);
+      return { source: savedSource, defaultsUsed };
     } catch (error) {
-      // Silently handle embedding generation errors in MCP context
+      // Don't fail capture if embedding generation fails
+      bridgeLogger.warn('Embedding generation failed:', error);
+      const defaultsUsed = this.getDefaultsUsed(input);
+      return { source: savedSource, defaultsUsed };
     }
-
-    const source = await saveSource({
-      id: await generateId('src'),
-      content: validatedInput.content || validatedInput.experience.narrative,  // Use content if provided, otherwise use narrative
-      contentType: validatedInput.contentType,
-      system_time: new Date().toISOString(),
-      occurred: occurredDate || new Date().toISOString(),
-      perspective,
-      experiencer,
-      processing: processing as ProcessingLevel,
-      crafted: validatedInput.crafted,
-      experience: processedExperience,
-      embedding: embedding, // Renamed from narrative_embedding
-    });
-
-    // Store vector in vector store if embedding was generated
-    if (embedding) {
-      try {
-        const vectorStore = getVectorStore();
-        vectorStore.addVector(source.id, embedding);
-        // Save vectors to disk immediately to ensure persistence
-        await vectorStore.saveToDisk();
-      } catch (error) {
-        // Silently handle vector storage errors in MCP context
-      }
-    }
-
-    // Trigger pattern discovery update
-    try {
-      await patternManager.onCapture(source.id);
-    } catch (error) {
-      // Don't fail capture if pattern update fails
-      if (!process.env.BRIDGE_TEST_MODE) {
-        bridgeLogger.warn('Pattern update failed:', error);
-      }
-    }
-
-    const defaultsUsed = this.getDefaultsUsed(input);
-    return { source, defaultsUsed };
   }
 
   /**
@@ -282,7 +258,7 @@ export class CaptureService {
     if (!originalInput.perspective) defaultsUsed.push('perspective="I"');
     if (!originalInput.experiencer) defaultsUsed.push('experiencer="self"');
     if (!originalInput.processing) defaultsUsed.push('processing="during"');
-    if (!originalInput.contentType) defaultsUsed.push('contentType="text"');
+    if (!originalInput.content) defaultsUsed.push('content="Experience captured"');
     return defaultsUsed;
   }
 } 

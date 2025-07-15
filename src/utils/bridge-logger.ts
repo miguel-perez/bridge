@@ -16,35 +16,16 @@ interface BridgeLogger {
  * Creates a logger that respects the MCP/JSON RPC context
  */
 function createBridgeLogger(): BridgeLogger {
-  // Check if we're in MCP mode (JSON RPC over stdio)
-  const isMCPMode = process.env.MCP_MODE === 'true' || 
-                    process.argv.includes('--mcp') ||
-                    // If started by Claude Desktop or similar MCP client
-                    process.env.MCP_SERVER_NAME === 'bridge';
-  
-  // In test mode, we might want to see logs
-  const isTestMode = process.env.BRIDGE_TEST_MODE === 'true' ||
-                     process.env.NODE_ENV === 'test';
+  // Removed: const isMCPMode = ...; // No longer needed
+  // Removed: const isTestMode = ...; // No longer needed
   
   // Disable logging in MCP mode to prevent JSON RPC corruption
-  const shouldLog = !isMCPMode && !isTestMode;
+  // Removed: const shouldLog = ...; // No longer needed since all methods are no-ops
   
   return {
-    log: (...args: any[]) => {
-      if (shouldLog) {
-        console.log(...args);
-      }
-    },
-    warn: (...args: any[]) => {
-      if (shouldLog) {
-        console.warn(...args);
-      }
-    },
-    error: (...args: any[]) => {
-      if (shouldLog) {
-        console.error(...args);
-      }
-    }
+    log: () => {},
+    warn: () => {},
+    error: () => {},
   };
 }
 

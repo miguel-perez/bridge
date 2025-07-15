@@ -248,7 +248,7 @@ Content Type: ${source.contentType || 'text'}
 Perspective: ${source.perspective || 'I'}
 Processing: ${source.processing || 'during'}
 Experiencer: ${source.experiencer || 'self'}
-Occurred: ${source.occurred || 'unknown'}
+Created: ${source.created || 'unknown'}
 
 Please create a narrative that:
 1. Weaves the content with experiential qualities

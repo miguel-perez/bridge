@@ -3,8 +3,8 @@
   "name": "bridge-experiential-data",
   "display_name": "Bridge",
   "version": "0.1.0",
-  "description": "MCP server for capturing and managing experiential data with analysis and reflection",
-  "long_description": "Implements insights from embodied cognition, micro-phenomenology, and extended mind theory into practical infrastructure for the age of human-AI collaboration.\n\nBridge captures experiential moments with rich dimensions including embodied sensations, attentional patterns, affective states, purposive intentions, spatial presence, temporal flow, and intersubjective dynamics.",
+  "description": "MCP server for experience capture",
+  "long_description": "Bridge is an experience capture system that creates experiential records with seven-dimensional analysis (embodied, attentional, affective, purposive, spatial, temporal, intersubjective) and preserves authentic first-person voice.\n\nBased on micro-phenomenology, experience sampling methods, and narrative therapy, Bridge helps users capture, search, and reflect on their lived experiences in ways that preserve experiential wholeness while enabling pattern recognition and personal insight.",
   
   "author": {
     "name": "Miguel Angel Perez",
@@ -40,23 +40,19 @@
   "tools": [
     {
       "name": "capture",
-      "description": "Preserve one or more experiences exactly as they were shared with you, maintaining their authentic voice through seven-dimensional phenomenological analysis (embodied, attentional, affective, purposive, spatial, temporal, intersubjective). Each experience requires a narrative field (max 200 chars) written in the experiencer's voice using present tense and active language, plus an emoji for visual summary."
-    },
-    {
-      "name": "discover",
-      "description": "Discover and navigate experiential patterns. Patterns are automatically discovered from your experiences and organized into hierarchical groups with emoji signatures. Use to: browse patterns, navigate into specific patterns, refresh discovery, or view statistics. Everything is at most 3 clicks away."
+      "description": "Capture an experience. Creates experiential records with seven-dimensional analysis (embodied, attentional, affective, purposive, spatial, temporal, intersubjective). CRITICAL: All content must preserve the user's authentic voice—narrative and manifestations should feel like 'that's my brain right there.' Use the experiencer's actual words, phrases, and way of thinking. Each capture requires an emoji and narrative (max 200 chars) written in the experiencer's voice using present tense."
     },
     {
       "name": "search",
-      "description": "🔍 UNIFIED SEARCH API v2 - The primary Bridge function that combines pattern discovery with source retrieval. Returns beautiful formatted text with emojis by default. Empty queries show the living ecosystem tree. Search IS the unified function - it reveals patterns through their sources, and sources through their patterns. Examples: search('') for tree view, search('consciousness') for experiences, search({in: 'we-are-so-proud-of-us', about: 'distributed thinking'}) for pattern-aware search."
+      "description": "Search experiences using semantic matching and metadata filters. Returns experiences with their seven-dimensional qualities, emoji, narrative, and metadata. Empty queries show recent experiences. Supports filtering by experiencer, perspective, processing level, and date ranges."
     },
     {
       "name": "update",
-      "description": "Correct or update existing experiences when mistakes were made during capture, maintaining the integrity of the experiential record. Supports partial updates to any field including content, experience analysis, metadata, and can regenerate embeddings when needed."
+      "description": "Update existing experiences. Can modify content, perspective, experiencer, processing level, crafted status, and the seven-dimensional experiential qualities. Useful for correcting mistakes or refining experiential analysis."
     },
     {
       "name": "release",
-      "description": "Let go of experiences that no longer need to be held, returning them to the flow of memory with gratitude. Supports releasing multiple experiences at once with reasons for each release."
+      "description": "Release experiences by ID. Removes experiences from the system with gratitude and reasoning. Useful for letting go of experiences that no longer need to be held."
     }
   ],
   

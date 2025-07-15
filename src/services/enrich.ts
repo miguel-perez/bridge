@@ -4,9 +4,8 @@
  */
 
 import { z } from 'zod';
-import { getSource, saveSource, deleteSource } from '../core/storage.js';
-import type { SourceRecord } from '../core/types.js';
-import { parseOccurredDate } from '../utils/validation.js';
+import { getSource, saveSource, deleteSource, saveEmbedding, deleteEmbedding } from '../core/storage.js';
+import type { SourceRecord, Source, QualityEvidence, ProcessingLevel, EmbeddingRecord } from '../core/types.js';
 import { embeddingService } from './embeddings.js';
 import { getVectorStore } from './vector-store.js';
 
@@ -16,17 +15,10 @@ import { getVectorStore } from './vector-store.js';
 
 /** Default values for enrichment fields */
 export const ENRICH_DEFAULTS = {
-  CONTENT_TYPE: 'text',
   PERSPECTIVE: 'I',
   PROCESSING: 'during',
   EXPERIENCER: 'self',
 };
-
-/** Valid quality types */
-export const QUALITY_TYPES = [
-  'embodied', 'attentional', 'affective', 'purposive',
-  'spatial', 'temporal', 'intersubjective',
-] as const;
 
 // ============================================================================
 // SCHEMA & TYPES
@@ -37,24 +29,21 @@ export const QUALITY_TYPES = [
  * Allows partial updates to existing captures.
  */
 export const enrichSchema = z.object({
-  id: z.string().describe('The ID of the source to enrich'),
-  content: z.string().optional().describe('Updated content text'),
-  contentType: z.string().optional().describe('Updated content type'),
-  perspective: z.enum(['I', 'we', 'you', 'they']).optional().describe('Updated perspective'),
-  processing: z.enum(['during', 'right-after', 'long-after', 'crafted']).optional().describe('Updated processing level'),
-  occurred: z.string().optional().describe('Updated occurred time (chrono-node compatible)'),
+  id: z.string().describe('ID of the source to enrich'),
+  content: z.string().optional().describe('Updated content'),
+  perspective: z.string().optional().describe('Updated perspective'),
   experiencer: z.string().optional().describe('Updated experiencer'),
+  processing: z.string().optional().describe('Updated processing level'),
   crafted: z.boolean().optional().describe('Updated crafted flag'),
   experience: z.object({
     qualities: z.array(z.object({
-      type: z.enum(QUALITY_TYPES),
-      prominence: z.number().min(0).max(1),
-      manifestation: z.string(),
+      type: z.string(),
+      prominence: z.number(),
+      manifestation: z.string()
     })).optional(),
     emoji: z.string().optional(),
-    narrative: z.string().optional().describe('Updated narrative text'),
-  }).partial().optional().describe('Updated experience (qualities + emoji + narrative)'),
-  regenerate_embeddings: z.boolean().optional().default(false).describe('Whether to regenerate content embeddings'),
+    narrative: z.string().optional()
+  }).optional().describe('Updated experience analysis')
 });
 
 /**
@@ -63,22 +52,15 @@ export const enrichSchema = z.object({
 export interface EnrichInput {
   id: string;
   content?: string;
-  contentType?: string;
-  perspective?: 'I' | 'we' | 'you' | 'they';
-  processing?: 'during' | 'right-after' | 'long-after' | 'crafted';
-  occurred?: string;
+  perspective?: string;
   experiencer?: string;
+  processing?: ProcessingLevel;
   crafted?: boolean;
   experience?: {
-    qualities?: Array<{
-      type: typeof QUALITY_TYPES[number];
-      prominence: number;
-      manifestation: string;
-    }>;
+    qualities?: QualityEvidence[];
     emoji?: string;
     narrative?: string;
   };
-  regenerate_embeddings?: boolean;
 }
 
 /**
@@ -111,16 +93,6 @@ export class EnrichService {
       throw new Error(`Source with ID '${input.id}' not found`);
     }
 
-    // Validate and parse occurred field with chrono-node
-    let occurredDate: string | undefined;
-    if (input.occurred) {
-      try {
-        occurredDate = await parseOccurredDate(input.occurred);
-      } catch {
-        throw new Error('Invalid occurred date format. Example valid formats: "2024-01-15", "yesterday", "last week", "2024-01-01T10:00:00Z".');
-      }
-    }
-
     // Process experience - merge with existing if present
     let processedExperience: import('../core/types.js').Experience | undefined = undefined;
     if (input.experience) {
@@ -135,12 +107,12 @@ export class EnrichService {
     }
 
     // Determine if we need to regenerate embeddings
-    const shouldRegenerateEmbeddings = input.regenerate_embeddings || 
+    const shouldRegenerateEmbeddings = 
       (input.content && input.content !== existingSource.content) ||
       (input.experience?.narrative && input.experience.narrative !== existingSource.experience?.narrative);
 
     // Generate new embedding if needed
-    let embedding: number[] | undefined = existingSource.embedding;
+    let embedding: number[] | undefined;
     if (shouldRegenerateEmbeddings) {
       // Create the new embedding text format: [emoji] + [narrative] "[content]" {qualities[array]}
       const experience = processedExperience || existingSource.experience;
@@ -161,39 +133,52 @@ export class EnrichService {
       }
     }
 
-    // When saving, use 'experience' instead of 'experiential_qualities'
+    // Create updated source
     const updatedSource = {
       ...existingSource,
       content: input.content ?? existingSource.content,
-      contentType: input.contentType ?? existingSource.contentType,
       perspective: input.perspective ?? existingSource.perspective,
-      processing: input.processing ?? existingSource.processing,
-      occurred: occurredDate ?? existingSource.occurred,
       experiencer: input.experiencer ?? existingSource.experiencer,
+      processing: input.processing ?? existingSource.processing,
       crafted: input.crafted ?? existingSource.crafted,
-      experience: processedExperience,
-      embedding: embedding, // Renamed from narrative_embedding
+      experience: input.experience ? {
+        qualities: input.experience.qualities ?? existingSource.experience?.qualities ?? [],
+        emoji: input.experience.emoji ?? existingSource.experience?.emoji ?? '',
+        narrative: input.experience.narrative ?? existingSource.experience?.narrative ?? ''
+      } : existingSource.experience
     };
 
     // Delete the old record and save the new one
     await deleteSource(input.id);
     const source = await saveSource(updatedSource);
 
-    // Update vector store if embeddings were regenerated
+    // Update embeddings if regenerated
     if (shouldRegenerateEmbeddings && embedding) {
       try {
+        // Delete old embedding
+        await deleteEmbedding(input.id);
+        
+        // Save new embedding
+        const embeddingRecord: EmbeddingRecord = {
+          sourceId: source.id,
+          vector: embedding,
+          generated: new Date().toISOString()
+        };
+        await saveEmbedding(embeddingRecord);
+        
+        // Update vector store for backward compatibility
         await getVectorStore().removeVector(input.id);
         await getVectorStore().addVector(source.id, embedding);
       } catch (error) {
-        // Silently handle vector store update errors in MCP context
+        // Silently handle embedding update errors in MCP context
       }
     }
 
     // Track what was updated
-    const updatedFields = this.getUpdatedFields(existingSource, updatedSource);
+    const updatedFields = this.getUpdatedFields(existingSource, source);
     
     return { 
-      source, 
+      source: { ...source, type: 'source' as const }, 
       updatedFields,
       embeddingsRegenerated: shouldRegenerateEmbeddings || false,
     };
@@ -202,24 +187,19 @@ export class EnrichService {
   /**
    * Returns a list of which fields were updated in the enrichment.
    * @param original - Original source record
-   * @param updated - Updated source record (without type field)
+   * @param updated - Updated source
    * @returns Array of updated field names
    */
-  private getUpdatedFields(original: SourceRecord, updated: Omit<SourceRecord, 'type'>): string[] {
+  private getUpdatedFields(original: Source, updated: Source): string[] {
     const fields: string[] = [];
     if (original.content !== updated.content) fields.push('content');
-    if (original.contentType !== updated.contentType) fields.push('contentType');
     if (original.perspective !== updated.perspective) fields.push('perspective');
     if (original.experiencer !== updated.experiencer) fields.push('experiencer');
     if (original.processing !== updated.processing) fields.push('processing');
-    if (original.occurred !== updated.occurred) fields.push('occurred');
     if (original.crafted !== updated.crafted) fields.push('crafted');
-    if (JSON.stringify(original.experience) !== JSON.stringify(updated.experience)) {
-      fields.push('experience');
-    }
-    if (JSON.stringify(original.embedding) !== JSON.stringify(updated.embedding)) {
-      fields.push('embedding');
-    }
+    if (original.experience?.emoji !== updated.experience?.emoji) fields.push('experience.emoji');
+    if (original.experience?.narrative !== updated.experience?.narrative) fields.push('experience.narrative');
+    if (original.experience?.qualities !== updated.experience?.qualities) fields.push('experience.qualities');
     return fields;
   }
 } 

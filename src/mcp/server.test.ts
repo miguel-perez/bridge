@@ -66,14 +66,13 @@ describe('MCP Server Protocol Compliance', () => {
       
       // This would have failed without the initialize handler
       const tools = await client.listTools();
-      expect(tools.tools).toHaveLength(5); // capture, release, search, update, discover
+      expect(tools.tools).toHaveLength(4); // capture, release, search, update
       
       const toolNames = tools.tools.map(t => t.name);
       expect(toolNames).toContain('capture');
       expect(toolNames).toContain('release');
       expect(toolNames).toContain('search');
       expect(toolNames).toContain('update');
-      expect(toolNames).toContain('discover');
     }, 30000);
 
     test('should execute capture tool with experiential qualities', async () => {
@@ -206,17 +205,14 @@ describe('MCP Server Protocol Compliance', () => {
           content: '',
           experiencer: '',
           perspective: 'I',
-          processing: 'during',
-          experiential_qualities: {
-            qualities: []
-          }
+          processing: 'during'
         }
       });
       
       expect(result.content).toBeDefined();
       expect(Array.isArray(result.content)).toBe(true);
       // Should return an error response - narrative is now required
-      expect((result.content as any[])[0].text).toContain('Required');
+      expect((result.content as any[])[0].text).toContain('Either content or experience.narrative is required');
     }, 30000);
 
     test('should handle invalid perspective values', async () => {
@@ -238,23 +234,14 @@ describe('MCP Server Protocol Compliance', () => {
           content: 'Test content',
           experiencer: 'Test User',
           perspective: 'invalid_perspective', // This should fail Zod enum validation
-          processing: 'during',
-          experiential_qualities: {
-            qualities: [
-              {
-                type: 'affective',
-                prominence: 0.5,
-                manifestation: 'test feeling'
-              }
-            ]
-          }
+          processing: 'during'
         }
       });
       
       expect(result.content).toBeDefined();
       expect(Array.isArray(result.content)).toBe(true);
       // Should return an error response for invalid perspective
-      expect((result.content as any[])[0].text).toContain('Invalid perspective');
+      expect((result.content as any[])[0].text).toContain('Invalid enum value');
     }, 30000);
 
     test('should handle unknown tool gracefully', async () => {

@@ -24,8 +24,8 @@ cat > dxt-build/manifest.json << 'EOF'
   "name": "bridge-experiential-data",
   "display_name": "Bridge",
   "version": "0.1.0",
-  "description": "MCP server for capturing and managing experiential data with analysis and reflection",
-  "long_description": "Implements insights from embodied cognition, micro-phenomenology, and extended mind theory into practical infrastructure for the age of human-AI collaboration.\n\nBridge captures experiential moments with rich dimensions including embodied sensations, attentional patterns, affective states, purposive intentions, spatial presence, temporal flow, and intersubjective dynamics.",
+  "description": "MCP server for experience capture",
+  "long_description": "Bridge is an experience capture system that creates experiential records with seven-dimensional analysis (embodied, attentional, affective, purposive, spatial, temporal, intersubjective) and preserves authentic first-person voice.\n\nBased on micro-phenomenology, experience sampling methods, and narrative therapy, Bridge helps users capture, search, and reflect on their lived experiences in ways that preserve experiential wholeness while enabling pattern recognition and personal insight.",
   
   "author": {
     "name": "Miguel Angel Perez",
@@ -60,19 +60,19 @@ cat > dxt-build/manifest.json << 'EOF'
   "tools": [
     {
       "name": "capture",
-      "description": "Preserve one or more experiences exactly as they were shared with you, maintaining their authentic voice through seven-dimensional phenomenological analysis (embodied, attentional, affective, purposive, spatial, temporal, intersubjective). Each experience requires a narrative field (max 200 chars) written in the experiencer's voice using present tense and active language, plus an emoji for visual summary."
+      "description": "Capture experiences. Creates experiential records with seven-dimensional analysis (embodied, attentional, affective, purposive, spatial, temporal, intersubjective). CRITICAL: All content must preserve the user's authentic voice—narrative and manifestations should feel like 'that's my brain right there.' Use the experiencer's actual words, phrases, and way of thinking. Each capture requires an emoji and narrative (max 200 chars) written in the experiencer's voice using present tense. Supports both single captures and batch operations."
     },
     {
       "name": "search",
-      "description": "Find and explore captured experiences through text, phenomenological patterns, meaning, and context. Supports multiple queries with filtering by experiencer, perspective, processing level, and date ranges. Results can be sorted by relevance, system time, or occurrence time."
+      "description": "Search experiences using semantic matching and metadata filters. Returns experiences with their seven-dimensional qualities, emoji, narrative, and metadata. Empty queries show recent experiences. Supports filtering by experiencer, perspective, processing level, and date ranges. Supports both single searches and batch operations."
     },
     {
       "name": "update",
-      "description": "Correct or update existing experiences when mistakes were made during capture, maintaining the integrity of the experiential record. Supports partial updates to any field including content, experience analysis, metadata, and can regenerate embeddings when needed."
+      "description": "Update existing experiences. Can modify content, perspective, experiencer, processing level, crafted status, and the seven-dimensional experiential qualities. Useful for correcting mistakes or refining experiential analysis. Supports both single updates and batch operations."
     },
     {
       "name": "release",
-      "description": "Let go of experiences that no longer need to be held, returning them to the flow of memory with gratitude. Supports releasing multiple experiences at once with reasons for each release."
+      "description": "Release experiences by ID. Removes experiences from the system with gratitude and reasoning. Useful for letting go of experiences that no longer need to be held. Supports both single releases and batch operations."
     }
   ],
   
@@ -121,8 +121,8 @@ EOF
 cp dist/bundle.js dxt-build/index.js
 
 # Copy other files
-cp LICENSE dxt-build/
-cp README.md dxt-build/
+cp LICENSE.md dxt-build/
+cp DXT-README.md dxt-build/README.md
 
 # Create icon if it doesn't exist
 if [ ! -f icon.png ]; then

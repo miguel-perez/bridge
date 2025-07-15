@@ -118,8 +118,8 @@ export function formatMetadata(source: SourceRecord): string {
     source.processing || 'Unknown processing'
   ];
   
-  if (source.occurred) {
-    parts.push(formatDate(source.occurred));
+  if (source.created) {
+    parts.push(formatDate(source.created));
   }
   
   return parts.join(' | ');
@@ -171,4 +171,36 @@ export function formatRelevanceBreakdown(breakdown: any): string {
   }
   
   return parts.join(' | ') || 'No relevance breakdown';
+}
+
+/**
+ * Formats a single source record for display
+ * 
+ * @param source - The source record to format
+ * @returns Formatted string representation of the source
+ */
+export function formatSource(source: SourceRecord): string {
+  const parts: string[] = [];
+  
+  // Basic info
+  parts.push(`ID: ${source.id}`);
+  parts.push(`Content: ${source.content}`);
+  
+  // Context fields
+  if (source.perspective) parts.push(`Perspective: ${source.perspective}`);
+  if (source.experiencer) parts.push(`Experiencer: ${source.experiencer}`);
+  if (source.processing) parts.push(`Processing: ${source.processing}`);
+  if (source.crafted !== undefined) parts.push(`Crafted: ${source.crafted}`);
+  
+  // Timestamps
+  if (source.created) {
+    parts.push(formatDate(source.created));
+  }
+  
+  // Experience analysis
+  if (source.experience) {
+    parts.push(formatExperience(source.experience));
+  }
+  
+  return parts.join('\n');
 }
