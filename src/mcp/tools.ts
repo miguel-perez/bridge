@@ -2,7 +2,7 @@
 export const tools = [
   {
     name: 'capture',
-    description: 'Capture experiences. Creates experiential records with seven-dimensional analysis (embodied, attentional, affective, purposive, spatial, temporal, intersubjective). CRITICAL: All content must preserve the user\'s authentic voice - narrative and manifestations should feel like "that\'s my brain right there." Use the experiencer\'s actual words, phrases, and way of thinking. Each capture requires an emoji and narrative (max 200 chars) written in the experiencer\'s voice using present tense. Supports both single captures and batch operations.',
+    description: 'Capture framed moments - discrete units of consciousness that can be held in single attention, mapping to what could be captured in a single visual frame. Creates experiential frames with seven-dimensional analysis (embodied, attentional, affective, purposive, spatial, temporal, intersubjective) that preserve experiential wholeness while maintaining visual specificity. Each moment should be visually anchorable, experientially complete, and preserve the experiencer\'s authentic voice. Use the experiencer\'s actual words, phrases, and way of thinking. Each capture requires an emoji and narrative summary written in present tense. Supports both single captures and batch operations. Break down complex experiences into smaller framed moments by noticing shifts in experiential qualities. Use the experiencer field to capture experiences from multiple perspectives, including your own.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -21,12 +21,12 @@ export const tools = [
         },
         processing: {
           type: 'string',
-          enum: ['during', 'right-after', 'long-after', 'crafted'],
-          description: 'When processing occurred: during (real-time), right-after (immediate), long-after (retrospective), crafted (refined/edited)'
+          enum: ['during', 'right-after', 'long-after'],
+          description: 'When processing occurred: during (real-time), right-after (immediate), long-after (retrospective)'
         },
         crafted: {
           type: 'boolean',
-          description: 'Whether this is crafted content (blog/refined) vs raw capture (journal/immediate)'
+          description: 'Whether this is crafted content (blog/refined for an audience) vs raw capture (journal/immediate)'
         },
         experience: {
           type: 'object',
@@ -63,7 +63,7 @@ export const tools = [
             },
             narrative: {
               type: 'string',
-              description: 'Concise experiential summary in experiencer\'s own words and voice (max 200 characters). Must sound like the actual person who lived the experience.'
+              description: 'Concise experiential summary in experiencer\'s own words and voice (max 200 characters). Must present unified experience, be visually anchorable, feel experientially complete, and preserve authentic voice.'
             }
           },
           required: ['emoji', 'narrative']
@@ -131,7 +131,7 @@ export const tools = [
                   },
                   narrative: {
                     type: 'string',
-                    description: 'Concise experiential summary in experiencer\'s own words and voice (max 200 characters)'
+                    description: 'Concise experiential summary in experiencer\'s own words and voice (max 200 characters). Must present unified experience, be visually anchorable, feel experientially complete, and preserve authentic voice.'
                   }
                 },
                 required: ['emoji', 'narrative']
@@ -146,7 +146,7 @@ export const tools = [
   },
   {
     name: 'search',
-    description: 'Search experiences using semantic matching and metadata filters. Returns experiences with their seven-dimensional qualities, emoji, narrative, and metadata. Empty queries show recent experiences. Supports filtering by experiencer, perspective, processing level, and date ranges. Supports both single searches and batch operations.',
+    description: 'Search framed moments using semantic matching and metadata filters. Returns experiences with their seven-dimensional qualities, emoji, narrative, and metadata. Empty queries show recent framed moments. Supports filtering by experiencer, perspective, processing level, and date ranges. Supports both single searches and batch operations.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -274,7 +274,7 @@ export const tools = [
   },
   {
     name: 'update',
-    description: 'Update existing experiences. Can modify content, perspective, experiencer, processing level, crafted status, and the seven-dimensional experiential qualities. Useful for correcting mistakes or refining experiential analysis. Supports both single updates and batch operations.',
+    description: 'Update existing framed moments. Can modify content, perspective, experiencer, processing level, crafted status, and the seven-dimensional experiential qualities. Useful for correcting mistakes or refining experiential analysis to ensure moments remain visually anchorable, experientially complete, and preserve authentic voice. Supports both single updates and batch operations.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -339,7 +339,7 @@ export const tools = [
             },
             narrative: {
               type: 'string',
-              description: 'Updated experiential summary in experiencer\'s own words and voice (max 200 characters). Must sound like the actual person who lived the experience.'
+              description: 'Updated experiential summary in experiencer\'s own words and voice (max 200 characters). Must present unified experience, be visually anchorable, feel experientially complete, and preserve authentic voice.'
             }
           }
           // No required here: all fields optional for update
@@ -411,7 +411,7 @@ export const tools = [
                   },
                   narrative: {
                     type: 'string',
-                    description: 'Updated experiential summary in experiencer\'s own words and voice (max 200 characters)'
+                    description: 'Updated experiential summary in experiencer\'s own words and voice (max 200 characters). Must present unified experience, be visually anchorable, feel experientially complete, and preserve authentic voice.'
                   }
                 }
                 // No required here: all fields optional for update
@@ -426,7 +426,7 @@ export const tools = [
   },
   {
     name: 'release',
-    description: 'Release experiences by ID. Removes experiences from the system with gratitude and reasoning. Useful for letting go of experiences that no longer need to be held. Supports both single releases and batch operations.',
+    description: 'Release framed moments by ID. Removes experiences from the system with gratitude and reasoning. Useful for letting go of moments that no longer need to be held, acknowledging that significance emerges through accumulation and connection rather than through permanent retention. Supports both single releases and batch operations.',
     inputSchema: {
       type: 'object',
       properties: {

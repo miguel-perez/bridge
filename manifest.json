@@ -3,8 +3,8 @@
   "name": "bridge-experiential-data",
   "display_name": "Bridge",
   "version": "0.1.0",
-  "description": "MCP server for experience capture",
-  "long_description": "Bridge is an experience capture system that creates experiential records with seven-dimensional analysis (embodied, attentional, affective, purposive, spatial, temporal, intersubjective) and preserves authentic first-person voice.\n\nBased on micro-phenomenology, experience sampling methods, and narrative therapy, Bridge helps users capture, search, and reflect on their lived experiences in ways that preserve experiential wholeness while fostering personal insight and understanding.",
+  "description": "MCP server for framed moment capture",
+  "long_description": "Bridge is a framed moment capture system that creates experiential records with seven-dimensional analysis (embodied, attentional, affective, purposive, spatial, temporal, intersubjective) and preserves authentic first-person voice. Based on the Framed Moments framework, micro-phenomenology, experience sampling methods, and narrative therapy, Bridge helps users capture, search, and reflect on discrete moments of consciousness in ways that preserve experiential wholeness while maintaining visual specificity and narrative clarity.",
   
   "author": {
     "name": "Miguel Angel Perez",
@@ -40,25 +40,26 @@
   "tools": [
     {
       "name": "capture",
-      "description": "Capture an experience. Creates experiential records with seven-dimensional analysis (embodied, attentional, affective, purposive, spatial, temporal, intersubjective). CRITICAL: All content must preserve the user's authentic voice—narrative and manifestations should feel like 'that's my brain right there.' Use the experiencer's actual words, phrases, and way of thinking. Each capture requires an emoji and narrative (max 200 chars) written in the experiencer's voice using present tense."
+      "description": "Capture framed moments - discrete units of consciousness that can be held in single attention, mapping to what could be captured in a single visual frame. Creates experiential frames with seven-dimensional analysis that preserve experiential wholeness while maintaining visual specificity. Each moment should be visually anchorable, experientially complete, and preserve the experiencer's authentic voice."
     },
     {
       "name": "search",
-      "description": "Search experiences using semantic matching and metadata filters. Returns experiences with their seven-dimensional qualities, emoji, narrative, and metadata. Empty queries show recent experiences. Supports filtering by experiencer, perspective, processing level, and date ranges."
+      "description": "Search framed moments using semantic matching and metadata filters. Returns experiences with their seven-dimensional qualities, emoji, narrative, and metadata. Empty queries show recent framed moments. Supports filtering by experiencer, perspective, processing level, and date ranges."
     },
     {
       "name": "update",
-      "description": "Update existing experiences. Can modify content, perspective, experiencer, processing level, crafted status, and the seven-dimensional experiential qualities. Useful for correcting mistakes or refining experiential analysis."
+      "description": "Update existing framed moments. Can modify content, perspective, experiencer, processing level, crafted status, and the seven-dimensional experiential qualities. Useful for correcting mistakes or refining experiential analysis to ensure moments remain visually anchorable, experientially complete, and preserve authentic voice."
     },
     {
       "name": "release",
-      "description": "Release experiences by ID. Removes experiences from the system with gratitude and reasoning. Useful for letting go of experiences that no longer need to be held."
+      "description": "Release framed moments by ID. Removes experiences from the system with gratitude and reasoning. Useful for letting go of moments that no longer need to be held, acknowledging that significance emerges through accumulation and connection rather than through permanent retention."
     }
   ],
   
   "tools_generated": false,
   
   "keywords": [
+    "framed-moments",
     "phenomenology",
     "consciousness",
     "experiential-data",
@@ -66,7 +67,9 @@
     "distributed-cognition",
     "mcp",
     "ai-collaboration",
-    "knowledge-capture"
+    "knowledge-capture",
+    "micro-phenomenology",
+    "experience-sampling"
   ],
   
   "license": "MIT",
@@ -82,7 +85,7 @@
     "data_file_path": {
       "type": "string",
       "title": "Bridge Data File Path",
-      "description": "Path to your Bridge experiential data file. Can be an absolute path or relative to your home directory (e.g., ~/bridge.json)",
+      "description": "Path to your Bridge framed moments data file. Can be an absolute path or relative to your home directory (e.g., ~/bridge.json)",
       "default": "${HOME}/bridge.json",
       "required": true
     },
