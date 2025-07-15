@@ -11,6 +11,7 @@
 import { EnrichService } from '../services/enrich.js';
 import { withTimeout, DEFAULT_TIMEOUTS } from '../utils/timeout.js';
 import { formatContent, formatExperience } from './handler-utils.js';
+import { patternManager } from '../services/pattern-manager.js';
 
 export class UpdateHandler {
   private updateService: EnrichService; // Keeping enrich service but calling it update
@@ -79,6 +80,13 @@ export class UpdateHandler {
       // Show updated qualities if qualities were changed
       if (result.updatedFields.includes('experience')) {
         content += `\n\nCorrected Experience:\n${formatExperience(result.source.experience)}`;
+      }
+      
+      // Trigger pattern discovery update
+      try {
+        await patternManager.onUpdate(result.source.id);
+      } catch (error) {
+        // Don't fail update if pattern update fails
       }
       
       results.push(content);

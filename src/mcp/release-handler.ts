@@ -8,6 +8,7 @@
  */
 
 import { ReleaseService } from '../services/release.js';
+import { patternManager } from '../services/pattern-manager.js';
 
 export class ReleaseHandler {
   private releaseService: ReleaseService;
@@ -32,6 +33,13 @@ export class ReleaseHandler {
     
     for (const release of releases) {
       await this.releaseService.releaseSource({ id: release.source_id });
+      
+      // Trigger pattern discovery update
+      try {
+        await patternManager.onDelete(release.source_id);
+      } catch (error) {
+        // Don't fail release if pattern update fails
+      }
       
       const content = `✓ Released experience
 ID: ${release.source_id}
