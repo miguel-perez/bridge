@@ -11,6 +11,7 @@ import { parseOccurredDate } from '../utils/validation.js';
 import { EnhancedEmbeddingService } from './enhanced-embedding.js';
 import { getVectorStore } from './vector-store.js';
 import { patternManager } from './pattern-manager.js';
+import { bridgeLogger } from '../utils/bridge-logger.js';
 
 // ============================================================================
 // CONSTANTS
@@ -86,7 +87,7 @@ function validateQualityTypes(qualities: Array<{ type: string; prominence: numbe
     const mappedType = typeMapping[quality.type];
     if (mappedType) {
       if (!process.env.BRIDGE_TEST_MODE) {
-        console.warn(`Quality type "${quality.type}" at index ${index} was mapped to "${mappedType}". Valid types are: ${validTypes.join(', ')}`);
+        bridgeLogger.warn(`Quality type "${quality.type}" at index ${index} was mapped to "${mappedType}". Valid types are: ${validTypes.join(', ')}`);
       }
       return {
         type: mappedType,
@@ -263,7 +264,7 @@ export class CaptureService {
     } catch (error) {
       // Don't fail capture if pattern update fails
       if (!process.env.BRIDGE_TEST_MODE) {
-        console.warn('Pattern update failed:', error);
+        bridgeLogger.warn('Pattern update failed:', error);
       }
     }
 

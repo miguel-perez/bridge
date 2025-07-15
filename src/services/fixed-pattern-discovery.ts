@@ -8,6 +8,7 @@
 
 import { SourceRecord } from '../core/types.js';
 import { EmbeddingService } from './embeddings.js';
+import { bridgeLogger } from '../utils/bridge-logger.js';
 
 export interface FixedPattern {
   id: string;
@@ -59,7 +60,7 @@ export class FixedPatternDiscovery {
     } = options;
     
     if (!process.env.BRIDGE_TEST_MODE) {
-      console.log(`🔧 Fixed clustering: threshold=${similarity_threshold}, min_size=${min_cluster_size}`);
+      bridgeLogger.log(`🔧 Fixed clustering: threshold=${similarity_threshold}, min_size=${min_cluster_size}`);
     }
     
     // Filter experiences with valid embeddings
@@ -132,7 +133,7 @@ export class FixedPatternDiscovery {
     const assigned = new Set<string>();
     
     if (!process.env.BRIDGE_TEST_MODE) {
-      console.log(`📊 Hard clustering ${experiences.length} experiences with threshold ${threshold}`);
+      bridgeLogger.log(`📊 Hard clustering ${experiences.length} experiences with threshold ${threshold}`);
     }
     
     // Sort experiences by some criteria to get consistent clustering
@@ -174,7 +175,7 @@ export class FixedPatternDiscovery {
       if (cluster.length >= minSize) {
         clusters.push(cluster);
         if (!process.env.BRIDGE_TEST_MODE) {
-          console.log(`✅ Created cluster ${clusters.length} with ${cluster.length} experiences (min similarity: ${threshold})`);
+          bridgeLogger.log(`✅ Created cluster ${clusters.length} with ${cluster.length} experiences (min similarity: ${threshold})`);
         }
       } else {
         // Remove assignments for rejected cluster
@@ -183,7 +184,7 @@ export class FixedPatternDiscovery {
     }
     
     if (!process.env.BRIDGE_TEST_MODE) {
-      console.log(`🎯 Final result: ${clusters.length} clusters, ${assigned.size} assigned experiences`);
+      bridgeLogger.log(`🎯 Final result: ${clusters.length} clusters, ${assigned.size} assigned experiences`);
     }
     
     return clusters;
@@ -316,48 +317,48 @@ export class FixedPatternDiscovery {
    */
   printResults(result: ClusteringResult): void {
     if (!process.env.BRIDGE_TEST_MODE) {
-      console.log('\n🎯 FIXED PATTERN DISCOVERY RESULTS\n');
+      bridgeLogger.log('\n🎯 FIXED PATTERN DISCOVERY RESULTS\n');
       
-      console.log('📊 STATISTICS:');
-      console.log(`Total experiences: ${result.statistics.total_experiences}`);
-      console.log(`Patterns found: ${result.statistics.patterns_found}`);
-      console.log(`Outliers: ${result.statistics.outliers_count}`);
-      console.log(`Average pattern size: ${result.statistics.average_pattern_size.toFixed(1)}`);
-      console.log(`Average coherence: ${result.statistics.average_coherence.toFixed(3)}`);
-      console.log(`Clustering time: ${result.statistics.clustering_time}ms\n`);
+      bridgeLogger.log('📊 STATISTICS:');
+      bridgeLogger.log(`Total experiences: ${result.statistics.total_experiences}`);
+      bridgeLogger.log(`Patterns found: ${result.statistics.patterns_found}`);
+      bridgeLogger.log(`Outliers: ${result.statistics.outliers_count}`);
+      bridgeLogger.log(`Average pattern size: ${result.statistics.average_pattern_size.toFixed(1)}`);
+      bridgeLogger.log(`Average coherence: ${result.statistics.average_coherence.toFixed(3)}`);
+      bridgeLogger.log(`Clustering time: ${result.statistics.clustering_time}ms\n`);
     }
     
     if (result.patterns.length > 0) {
       if (!process.env.BRIDGE_TEST_MODE) {
-        console.log('🔍 DISCOVERED PATTERNS:');
+        bridgeLogger.log('🔍 DISCOVERED PATTERNS:');
       }
       result.patterns.forEach((pattern, i) => {
         if (!process.env.BRIDGE_TEST_MODE) {
-          console.log(`${i + 1}. ${pattern.name}`);
-          console.log(`   ID: ${pattern.id}`);
-          console.log(`   Size: ${pattern.experiences.length} experiences`);
-          console.log(`   Coherence: ${pattern.coherence.toFixed(3)}`);
-          console.log(`   Keywords: ${pattern.keywords.join(', ')}`);
-          console.log(`   Sample: "${pattern.experiences[0].experience?.narrative || pattern.experiences[0].content?.slice(0, 80) || 'No content'}"`);
-          console.log();
+          bridgeLogger.log(`${i + 1}. ${pattern.name}`);
+          bridgeLogger.log(`   ID: ${pattern.id}`);
+          bridgeLogger.log(`   Size: ${pattern.experiences.length} experiences`);
+          bridgeLogger.log(`   Coherence: ${pattern.coherence.toFixed(3)}`);
+          bridgeLogger.log(`   Keywords: ${pattern.keywords.join(', ')}`);
+          bridgeLogger.log(`   Sample: "${pattern.experiences[0].experience?.narrative || pattern.experiences[0].content?.slice(0, 80) || 'No content'}"`);
+          bridgeLogger.log();
         }
       });
     }
     
     if (result.outliers.length > 0) {
       if (!process.env.BRIDGE_TEST_MODE) {
-        console.log(`🔍 OUTLIERS (${result.outliers.length} experiences):`);
-        console.log('   Experiences that didn\'t cluster with others');
-        console.log(`   Sample: "${result.outliers[0].experience?.narrative || result.outliers[0].content?.slice(0, 80) || 'No content'}"`);
-        console.log();
+        bridgeLogger.log(`🔍 OUTLIERS (${result.outliers.length} experiences):`);
+        bridgeLogger.log('   Experiences that didn\'t cluster with others');
+        bridgeLogger.log(`   Sample: "${result.outliers[0].experience?.narrative || result.outliers[0].content?.slice(0, 80) || 'No content'}"`);
+        bridgeLogger.log();
       }
     }
     
     if (!process.env.BRIDGE_TEST_MODE) {
-      console.log('✅ KEY IMPROVEMENT:');
-      console.log('   Each experience belongs to AT MOST one pattern (hard clustering)');
-      console.log('   No more "every experience in 5 clusters" issue');
-      console.log('   Clear pattern boundaries and meaningful groupings');
+      bridgeLogger.log('✅ KEY IMPROVEMENT:');
+      bridgeLogger.log('   Each experience belongs to AT MOST one pattern (hard clustering)');
+      bridgeLogger.log('   No more "every experience in 5 clusters" issue');
+      bridgeLogger.log('   Clear pattern boundaries and meaningful groupings');
     }
   }
 }

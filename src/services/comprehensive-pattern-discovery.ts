@@ -11,6 +11,7 @@
 import { SourceRecord } from '../core/types.js';
 import { FixedPatternDiscovery } from './fixed-pattern-discovery.js';
 import { QualityAwareKeywordExtractor } from './quality-aware-keywords.js';
+import { bridgeLogger } from '../utils/bridge-logger.js';
 
 // ============================================================================
 // ENHANCED INTERFACES
@@ -87,12 +88,12 @@ export class ComprehensivePatternDiscovery {
     } = options;
     
     if (!process.env.BRIDGE_TEST_MODE) {
-      console.log('🌳 Starting comprehensive pattern discovery...\n');
+      bridgeLogger.log('🌳 Starting comprehensive pattern discovery...\n');
     }
     
     // 1. Build hierarchical patterns using fixed clustering
     if (!process.env.BRIDGE_TEST_MODE) {
-      console.log('📊 Building hierarchical patterns...');
+      bridgeLogger.log('📊 Building hierarchical patterns...');
     }
     const hierarchicalPatterns = await this.buildHierarchicalPatterns(
       experiences,
@@ -105,7 +106,7 @@ export class ComprehensivePatternDiscovery {
     let qualityClusters: QualityCluster[] = [];
     if (quality_analysis) {
       if (!process.env.BRIDGE_TEST_MODE) {
-        console.log('🎯 Analyzing quality dimensions...');
+        bridgeLogger.log('🎯 Analyzing quality dimensions...');
       }
       qualityClusters = await this.analyzeQualityDimensions(experiences, min_cluster_size);
     }
@@ -156,7 +157,7 @@ export class ComprehensivePatternDiscovery {
     }
     
     if (!process.env.BRIDGE_TEST_MODE) {
-      console.log(`  Level ${currentLevel + 1}: Processing ${experiences.length} experiences`);
+      bridgeLogger.log(`  Level ${currentLevel + 1}: Processing ${experiences.length} experiences`);
     }
     
     // Use fixed clustering to get clean patterns at this level
@@ -204,7 +205,7 @@ export class ComprehensivePatternDiscovery {
     }
     
     if (!process.env.BRIDGE_TEST_MODE) {
-      console.log(`  Level ${currentLevel + 1}: Found ${patterns.length} patterns`);
+      bridgeLogger.log(`  Level ${currentLevel + 1}: Found ${patterns.length} patterns`);
     }
     
     return patterns;
@@ -222,7 +223,7 @@ export class ComprehensivePatternDiscovery {
     
     for (const dimension of dimensions) {
       if (!process.env.BRIDGE_TEST_MODE) {
-        console.log(`  Analyzing ${dimension} dimension...`);
+        bridgeLogger.log(`  Analyzing ${dimension} dimension...`);
       }
       
       // Filter experiences with this quality prominently featured
@@ -233,7 +234,7 @@ export class ComprehensivePatternDiscovery {
       
       if (relevantExperiences.length < minSize) {
         if (!process.env.BRIDGE_TEST_MODE) {
-          console.log(`    ${dimension}: Only ${relevantExperiences.length} experiences, skipping`);
+          bridgeLogger.log(`    ${dimension}: Only ${relevantExperiences.length} experiences, skipping`);
         }
         continue;
       }
@@ -269,7 +270,7 @@ export class ComprehensivePatternDiscovery {
       });
       
       if (!process.env.BRIDGE_TEST_MODE) {
-        console.log(`    ${dimension}: Found ${clusterResult.patterns.length} clusters`);
+        bridgeLogger.log(`    ${dimension}: Found ${clusterResult.patterns.length} clusters`);
       }
     }
     
@@ -555,31 +556,31 @@ export class ComprehensivePatternDiscovery {
    */
   printResults(result: ComprehensiveResult): void {
     if (!process.env.BRIDGE_TEST_MODE) {
-      console.log('\n🌟 COMPREHENSIVE PATTERN DISCOVERY RESULTS\n');
+      bridgeLogger.log('\n🌟 COMPREHENSIVE PATTERN DISCOVERY RESULTS\n');
       
       // Statistics
-      console.log('📊 OVERVIEW:');
-      console.log(`Total experiences: ${result.statistics.total_experiences}`);
-      console.log(`Hierarchical patterns: ${result.statistics.hierarchical_patterns_found}`);
-      console.log(`Quality clusters: ${result.statistics.quality_clusters_found}`);
-      console.log(`Outliers: ${result.statistics.outliers_count}`);
-      console.log(`Max hierarchy depth: ${result.statistics.max_depth}`);
-      console.log(`Average coherence: ${result.statistics.avg_coherence.toFixed(3)}\n`);
+      bridgeLogger.log('📊 OVERVIEW:');
+      bridgeLogger.log(`Total experiences: ${result.statistics.total_experiences}`);
+      bridgeLogger.log(`Hierarchical patterns: ${result.statistics.hierarchical_patterns_found}`);
+      bridgeLogger.log(`Quality clusters: ${result.statistics.quality_clusters_found}`);
+      bridgeLogger.log(`Outliers: ${result.statistics.outliers_count}`);
+      bridgeLogger.log(`Max hierarchy depth: ${result.statistics.max_depth}`);
+      bridgeLogger.log(`Average coherence: ${result.statistics.avg_coherence.toFixed(3)}\n`);
     }
     
     // Hierarchical patterns
     if (result.hierarchical_patterns.length > 0) {
       if (!process.env.BRIDGE_TEST_MODE) {
-        console.log('🌳 HIERARCHICAL PATTERNS:');
+        bridgeLogger.log('🌳 HIERARCHICAL PATTERNS:');
         this.printPatternHierarchy(result.hierarchical_patterns, 0);
-        console.log();
+        bridgeLogger.log();
       }
     }
     
     // Quality clusters
     if (result.quality_clusters.length > 0) {
       if (!process.env.BRIDGE_TEST_MODE) {
-        console.log('🎯 QUALITY DIMENSION CLUSTERS:');
+        bridgeLogger.log('🎯 QUALITY DIMENSION CLUSTERS:');
         const byDimension = new Map<string, QualityCluster[]>();
         result.quality_clusters.forEach(cluster => {
           if (!byDimension.has(cluster.dimension)) {
@@ -589,14 +590,14 @@ export class ComprehensivePatternDiscovery {
         });
         
         byDimension.forEach((clusters, dimension) => {
-          console.log(`\n  ${dimension.toUpperCase()}:`);
+          bridgeLogger.log(`\n  ${dimension.toUpperCase()}:`);
           clusters.forEach(cluster => {
-            console.log(`    ${cluster.semantic_meaning} (${cluster.size})`);
-            console.log(`      Keywords: ${cluster.representative_keywords.slice(0, 5).join(', ')}`);
-            console.log(`      Coherence: ${cluster.coherence.toFixed(3)}`);
+            bridgeLogger.log(`    ${cluster.semantic_meaning} (${cluster.size})`);
+            bridgeLogger.log(`      Keywords: ${cluster.representative_keywords.slice(0, 5).join(', ')}`);
+            bridgeLogger.log(`      Coherence: ${cluster.coherence.toFixed(3)}`);
           });
         });
-        console.log();
+        bridgeLogger.log();
       }
     }
   }
@@ -606,9 +607,9 @@ export class ComprehensivePatternDiscovery {
     
     patterns.forEach(pattern => {
       if (!process.env.BRIDGE_TEST_MODE) {
-        console.log(`${indentStr}${pattern.name}`);
-        console.log(`${indentStr}  Meaning: ${pattern.semantic_meaning}`);
-        console.log(`${indentStr}  Coherence: ${pattern.coherence.toFixed(3)}, Keywords: ${pattern.keywords.slice(0, 3).join(', ')}`);
+        bridgeLogger.log(`${indentStr}${pattern.name}`);
+        bridgeLogger.log(`${indentStr}  Meaning: ${pattern.semantic_meaning}`);
+        bridgeLogger.log(`${indentStr}  Coherence: ${pattern.coherence.toFixed(3)}, Keywords: ${pattern.keywords.slice(0, 3).join(', ')}`);
       }
       
       if (pattern.children.length > 0) {

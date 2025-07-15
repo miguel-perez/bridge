@@ -4,6 +4,8 @@ type Pipeline = any;
 // Only check for BRIDGE_DISABLE_EMBEDDINGS to disable embeddings
 const EMBEDDINGS_DISABLED = process.env.BRIDGE_DISABLE_EMBEDDINGS === 'true';
 
+import { bridgeLogger } from '../utils/bridge-logger.js';
+
 export class EmbeddingService {
   private pipeline: Pipeline | null = null;
   private modelName: string = 'Xenova/all-MiniLM-L6-v2';
@@ -43,7 +45,7 @@ export class EmbeddingService {
     } catch (error) {
       // Failed to initialize embeddings service
       if (!process.env.BRIDGE_TEST_MODE) {
-        console.warn('Failed to initialize embedding service:', error instanceof Error ? error.message : error);
+        bridgeLogger.warn('Failed to initialize embedding service:', error instanceof Error ? error.message : error);
       }
       this.disabled = true;
       // Don't throw - just disable embeddings
@@ -156,7 +158,7 @@ export class EmbeddingService {
     } catch (error) {
       // Failed to generate embedding, returning dummy embedding
       if (!process.env.BRIDGE_TEST_MODE) {
-        console.warn('Failed to generate embedding:', error instanceof Error ? error.message : error);
+        bridgeLogger.warn('Failed to generate embedding:', error instanceof Error ? error.message : error);
       }
       // Return dummy embedding on error
       return new Array(384).fill(0);

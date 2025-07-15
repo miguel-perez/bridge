@@ -13,6 +13,7 @@ import { getAllRecords, updateSource } from '../core/storage.js';
 import { readFile, writeFile } from 'fs/promises';
 import { join, dirname } from 'path';
 import { getDataFilePath } from '../core/config.js';
+import { bridgeLogger } from '../utils/bridge-logger.js';
 
 // ============================================================================
 // INTERFACES
@@ -296,7 +297,7 @@ export class PatternManager {
       if (withEmbeddings.length === 0) return;
       
       if (!process.env.BRIDGE_TEST_MODE) {
-        console.log(`Performing incremental pattern update for ${withEmbeddings.length} experiences...`);
+        bridgeLogger.log(`Performing incremental pattern update for ${withEmbeddings.length} experiences...`);
       }
       
       // Use incremental update service
@@ -314,7 +315,7 @@ export class PatternManager {
       
       if (structuralChanges.length > 0) {
         if (!process.env.BRIDGE_TEST_MODE) {
-          console.log(`Structural changes detected (${structuralChanges.length}). Performing full rediscovery...`);
+          bridgeLogger.log(`Structural changes detected (${structuralChanges.length}). Performing full rediscovery...`);
         }
         await this.fullPatternDiscovery();
         return;
@@ -341,11 +342,11 @@ export class PatternManager {
       await this.updateSourceTags(updatedRecords);
       
       if (!process.env.BRIDGE_TEST_MODE) {
-        console.log(`Incremental update completed: ${updateResult.stats.patternsAffected} patterns affected in ${updateResult.stats.timeMs}ms`);
+        bridgeLogger.log(`Incremental update completed: ${updateResult.stats.patternsAffected} patterns affected in ${updateResult.stats.timeMs}ms`);
       }
       
     } catch (error) {
-      console.error('Error in incremental pattern update:', error);
+      bridgeLogger.error('Error in incremental pattern update:', error);
       // Fallback to full rediscovery on error
       await this.fullPatternDiscovery();
     }
@@ -404,7 +405,7 @@ export class PatternManager {
       await this.updateSourceTags(withEmbeddings);
       
     } catch (error) {
-      console.error('Error in full pattern discovery:', error);
+      bridgeLogger.error('Error in full pattern discovery:', error);
     }
   }
   
@@ -817,7 +818,7 @@ export class PatternManager {
       const cacheData = JSON.stringify(this.cache, null, 2);
       await writeFile(cachePath, cacheData, 'utf-8');
     } catch (error) {
-      console.error('Failed to save pattern cache:', error);
+      bridgeLogger.error('Failed to save pattern cache:', error);
     }
   }
 }
