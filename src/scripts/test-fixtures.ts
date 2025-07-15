@@ -2,10 +2,10 @@
  * Synthetic Test Fixtures for Bridge Testing
  * 
  * Creates realistic but fictional experiential data for testing scenarios:
- * - Enough diversity for pattern discovery
- * - Multiple experiencers and timeframes
+ * - Diverse experiences across multiple experiencers
+ * - Multiple timeframes for temporal testing
  * - Various phenomenological qualities
- * - Relationship and social patterns
+ * - Relationship and social experiences
  * - Creative and work experiences
  */
 
@@ -238,7 +238,7 @@ const LEARNING_EXPERIENCES: TestExperience[] = [
   }
 ];
 
-// Create fixture data that spans 6 months for temporal pattern testing
+// Create fixture data that spans 6 months for temporal testing
 export function createTestFixtures(): any {
   const allExperiences = [
     ...WORK_STRESS_EXPERIENCES,
@@ -258,20 +258,20 @@ export function createTestFixtures(): any {
       baseDate.setMonth(baseDate.getMonth() + month);
       baseDate.setDate(baseDate.getDate() + (week * 7));
       
-      // Add some evolving stress patterns for Alex
+      // Add evolving stress experiences for Alex
       if (month < 3) {
         extendedExperiences.push({
-          content: `Another stressful day at work. The pressure never seems to ease up. I'm starting to recognize this pattern of shoulder tension.`,
+          content: `Another stressful day at work. The pressure never seems to ease up. I'm noticing how my shoulders always tense up.`,
           experiencer: "Alex Chen",
           perspective: "I",
           processing: "right-after", 
           created: baseDate.toISOString(),
           experience: {
             emoji: "😫",
-            narrative: "Familiar stress pattern, body holding tension in shoulders",
+            narrative: "Familiar stress response, body holding tension in shoulders",
             qualities: [
               { type: "embodied", prominence: 0.7, manifestation: "chronic shoulder tension" },
-              { type: "temporal", prominence: 0.6, manifestation: "recognizing recurring pattern" },
+              { type: "temporal", prominence: 0.6, manifestation: "recognizing recurring experience" },
               { type: "affective", prominence: 0.8, manifestation: "ongoing stress and fatigue" }
             ]
           }

@@ -4,7 +4,7 @@
   "display_name": "Bridge",
   "version": "0.1.0",
   "description": "MCP server for experience capture",
-  "long_description": "Bridge is an experience capture system that creates experiential records with seven-dimensional analysis (embodied, attentional, affective, purposive, spatial, temporal, intersubjective) and preserves authentic first-person voice.\n\nBased on micro-phenomenology, experience sampling methods, and narrative therapy, Bridge helps users capture, search, and reflect on their lived experiences in ways that preserve experiential wholeness while enabling pattern recognition and personal insight.",
+  "long_description": "Bridge is an experience capture system that creates experiential records with seven-dimensional analysis (embodied, attentional, affective, purposive, spatial, temporal, intersubjective) and preserves authentic first-person voice.\n\nBased on micro-phenomenology, experience sampling methods, and narrative therapy, Bridge helps users capture, search, and reflect on their lived experiences in ways that preserve experiential wholeness while fostering personal insight and understanding.",
   
   "author": {
     "name": "Miguel Angel Perez",

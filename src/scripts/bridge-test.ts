@@ -402,7 +402,7 @@ Format your response as structured data that can be parsed for analysis.`;
     // Simple parsing - could be enhanced with more sophisticated NLP
     const misalignments = [];
     
-    // Look for common patterns in reflection text
+    // Look for common indicators in reflection text
     if (reflectionText.toLowerCase().includes('surprised') || reflectionText.toLowerCase().includes('unexpected')) {
       misalignments.push({
         description: 'Unexpected aspect discovered in interaction',
