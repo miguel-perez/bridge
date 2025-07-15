@@ -2,13 +2,13 @@
 export const tools = [
   {
     name: 'capture',
-    description: 'Capture raw experiences from experiencers. The content field must contain the experiencer\'s exact words as written or spoken - do not summarize, interpret, or modify. Claude will process this raw source material into framed moments with seven-dimensional analysis (embodied, attentional, affective, purposive, spatial, temporal, intersubjective). Each capture requires an emoji and narrative summary written in present tense. Supports both single captures and batch operations. Use the experiencer field to capture experiences from multiple perspectives, including your own.',
+    description: 'Capture experiences. The source field must contain the experiencer\'s exact words as written or spoken - without summarizing, interpreting, or modifying. Process this raw source material into framed moments with seven-dimensional analysis (embodied, attentional, affective, purposive, spatial, temporal, intersubjective). Each capture requires an emoji and narrative summary written in present tense. Supports both single captures and batch operations. Use the experiencer field and batch operations to capture experiences from each perspective, including your own.',
     inputSchema: {
       type: 'object',
       properties: {
-        content: {
+        source: {
           type: 'string',
-          description: 'Raw, exact words from the experiencer - their actual text/voice as written or spoken. Do not summarize, interpret, or modify. This is the source material that Claude will process into a framed moment. (optional if experience.narrative is provided)'
+          description: 'Raw, exact words from the experiencer - their actual text/voice as written or spoken. Do not summarize, interpret, or modify. This is the source material that will be processed into a framed moment.'
         },
         perspective: {
           type: 'string',
@@ -34,7 +34,7 @@ export const tools = [
           properties: {
             qualities: {
               type: 'array',
-              description: 'Seven-dimensional experiential analysis: embodied (physical sensations), attentional (focus/awareness), affective (emotional tone), purposive (intention/direction), spatial (sense of place), temporal (time awareness), intersubjective (social presence)',
+              description: 'Seven-dimensional experiential analysis: embodied (physical sensations), attentional (focus/awareness), affective (emotional tone), purposive (intention/direction), spatial (sense of place), temporal (time awareness), intersubjective (social presence), pick the ones that are most relevant to the experience',
               items: {
                 type: 'object',
                 properties: {
@@ -74,9 +74,9 @@ export const tools = [
           items: {
             type: 'object',
             properties: {
-              content: {
+              source: {
                 type: 'string',
-                description: 'Raw, exact words from the experiencer - their actual text/voice as written or spoken. Do not summarize, interpret, or modify. This is the source material that Claude will process into a framed moment. (optional if experience.narrative is provided)'
+                description: 'Raw, exact words from the experiencer - their actual text/voice as written or spoken. Do not summarize, interpret, or modify. This is the source material that will be processed into a framed moment.'
               },
               perspective: {
                 type: 'string',
@@ -140,8 +140,9 @@ export const tools = [
             required: ['experience']
           }
         }
-      }
-      // No required fields - either single capture fields or 'captures' array can be used
+      },
+      required: ['source']
+      // Required fields: source is always needed, other fields are optional
     }
   },
   {
@@ -282,9 +283,9 @@ export const tools = [
           type: 'string',
           description: 'ID of the experience to update (for single updates)'
         },
-        content: {
+        source: {
           type: 'string',
-          description: 'Updated content (optional)'
+          description: 'Updated source (optional)'
         },
         perspective: {
           type: 'string',
@@ -354,9 +355,9 @@ export const tools = [
                 type: 'string',
                 description: 'ID of the experience to update'
               },
-              content: {
+              source: {
                 type: 'string',
-                description: 'Updated content (optional)'
+                description: 'Updated source (optional)'
               },
               perspective: {
                 type: 'string',
