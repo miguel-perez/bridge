@@ -13,7 +13,7 @@ import { writeFileSync } from 'fs';
 import { join } from 'path';
 
 interface TestExperience {
-  content: string;
+  source: string;
   experiencer: string;
   perspective: 'I' | 'we' | 'you' | 'they';
   processing: 'during' | 'right-after' | 'long-after' | 'crafted';
@@ -33,7 +33,7 @@ interface TestExperience {
 
 const WORK_STRESS_EXPERIENCES: TestExperience[] = [
   {
-    content: "The deadline is tomorrow and I still have three major bugs to fix. My shoulders are tense and I can feel my heart racing every time I think about the presentation.",
+    source: "The deadline is tomorrow and I still have three major bugs to fix. My shoulders are tense and I can feel my heart racing every time I think about the presentation.",
     experiencer: "Alex Chen",
     perspective: "I",
     processing: "during",
@@ -49,7 +49,7 @@ const WORK_STRESS_EXPERIENCES: TestExperience[] = [
     }
   },
   {
-    content: "Another meeting that could have been an email. I'm sitting here watching people repeat the same points while my actual work piles up. The fluorescent lights are giving me a headache.",
+    source: "Another meeting that could have been an email. I'm sitting here watching people repeat the same points while my actual work piles up. The fluorescent lights are giving me a headache.",
     experiencer: "Alex Chen", 
     perspective: "I",
     processing: "during",
@@ -65,7 +65,7 @@ const WORK_STRESS_EXPERIENCES: TestExperience[] = [
     }
   },
   {
-    content: "Finally submitted the project! The relief is incredible. I can feel my whole body relaxing for the first time in weeks. Team celebration at the coffee shop felt so good.",
+    source: "Finally submitted the project! The relief is incredible. I can feel my whole body relaxing for the first time in weeks. Team celebration at the coffee shop felt so good.",
     experiencer: "Alex Chen",
     perspective: "I", 
     processing: "right-after",
@@ -84,7 +84,7 @@ const WORK_STRESS_EXPERIENCES: TestExperience[] = [
 
 const RELATIONSHIP_EXPERIENCES: TestExperience[] = [
   {
-    content: "Had lunch with Sarah today. She really listened when I talked about my career doubts. There's something special about being truly heard by a friend.",
+    source: "Had lunch with Sarah today. She really listened when I talked about my career doubts. There's something special about being truly heard by a friend.",
     experiencer: "Jordan Kim",
     perspective: "I",
     processing: "right-after", 
@@ -100,7 +100,7 @@ const RELATIONSHIP_EXPERIENCES: TestExperience[] = [
     }
   },
   {
-    content: "Mom called again asking when I'm getting married. I love her but the pressure makes me want to avoid family calls. Why can't she just accept where I am in life?",
+    source: "Mom called again asking when I'm getting married. I love her but the pressure makes me want to avoid family calls. Why can't she just accept where I am in life?",
     experiencer: "Jordan Kim",
     perspective: "I",
     processing: "long-after",
@@ -116,7 +116,7 @@ const RELATIONSHIP_EXPERIENCES: TestExperience[] = [
     }
   },
   {
-    content: "The way Marcus looked at me during the presentation - like he was really seeing my ideas, not just waiting for his turn to speak. That kind of professional respect feels rare.",
+    source: "The way Marcus looked at me during the presentation - like he was really seeing my ideas, not just waiting for his turn to speak. That kind of professional respect feels rare.",
     experiencer: "Jordan Kim",
     perspective: "I",
     processing: "right-after",
@@ -135,7 +135,7 @@ const RELATIONSHIP_EXPERIENCES: TestExperience[] = [
 
 const CREATIVE_EXPERIENCES: TestExperience[] = [
   {
-    content: "I was stuck on this painting for weeks, then this morning while making coffee, I suddenly knew exactly what color the sky needed to be. Ran to my easel still in pajamas.",
+    source: "I was stuck on this painting for weeks, then this morning while making coffee, I suddenly knew exactly what color the sky needed to be. Ran to my easel still in pajamas.",
     experiencer: "River Martinez",
     perspective: "I", 
     processing: "right-after",
@@ -151,7 +151,7 @@ const CREATIVE_EXPERIENCES: TestExperience[] = [
     }
   },
   {
-    content: "Three hours went by like minutes while I was writing. I looked up and it was dark outside. The story was just flowing through me, like I was discovering it rather than creating it.",
+    source: "Three hours went by like minutes while I was writing. I looked up and it was dark outside. The story was just flowing through me, like I was discovering it rather than creating it.",
     experiencer: "River Martinez",
     perspective: "I",
     processing: "right-after", 
@@ -170,7 +170,7 @@ const CREATIVE_EXPERIENCES: TestExperience[] = [
 
 const DAILY_LIFE_EXPERIENCES: TestExperience[] = [
   {
-    content: "Walking to work this morning, I noticed how the autumn light filters through the oak tree by the library. Made me think about how many people have walked this same path over the years.",
+    source: "Walking to work this morning, I noticed how the autumn light filters through the oak tree by the library. Made me think about how many people have walked this same path over the years.",
     experiencer: "Sam Patel",
     perspective: "I",
     processing: "during",
@@ -186,7 +186,7 @@ const DAILY_LIFE_EXPERIENCES: TestExperience[] = [
     }
   },
   {
-    content: "The grocery store was chaos tonight - long lines, screaming kids, everyone seemed stressed. But the cashier smiled and asked about my day. Small kindness in the middle of madness.",
+    source: "The grocery store was chaos tonight - long lines, screaming kids, everyone seemed stressed. But the cashier smiled and asked about my day. Small kindness in the middle of madness.",
     experiencer: "Sam Patel",
     perspective: "I",
     processing: "right-after",
@@ -205,7 +205,7 @@ const DAILY_LIFE_EXPERIENCES: TestExperience[] = [
 
 const LEARNING_EXPERIENCES: TestExperience[] = [
   {
-    content: "Finally understood recursion today! It clicked when the professor drew it on the board - each function calling itself, building up then unwinding. My mind feels expanded.",
+    source: "Finally understood recursion today! It clicked when the professor drew it on the board - each function calling itself, building up then unwinding. My mind feels expanded.",
     experiencer: "Maya Singh",
     perspective: "I",
     processing: "during",
@@ -221,7 +221,7 @@ const LEARNING_EXPERIENCES: TestExperience[] = [
     }
   },
   {
-    content: "Struggling with this math proof for hours. I know I'm missing something obvious but I can't see it. The frustration is building and I want to throw my notebook across the room.",
+    source: "Struggling with this math proof for hours. I know I'm missing something obvious but I can't see it. The frustration is building and I want to throw my notebook across the room.",
     experiencer: "Maya Singh",
     perspective: "I", 
     processing: "during",
@@ -261,7 +261,7 @@ export function createTestFixtures(): any {
       // Add evolving stress experiences for Alex
       if (month < 3) {
         extendedExperiences.push({
-          content: `Another stressful day at work. The pressure never seems to ease up. I'm noticing how my shoulders always tense up.`,
+          source: `Another stressful day at work. The pressure never seems to ease up. I'm noticing how my shoulders always tense up.`,
           experiencer: "Alex Chen",
           perspective: "I",
           processing: "right-after", 
@@ -279,7 +279,7 @@ export function createTestFixtures(): any {
       } else {
         // Show evolution - Alex learning to manage stress better
         extendedExperiences.push({
-          content: `Work was busy today but I remembered to do the breathing exercise. The stress didn't build up in my shoulders as much. Small progress feels significant.`,
+          source: `Work was busy today but I remembered to do the breathing exercise. The stress didn't build up in my shoulders as much. Small progress feels significant.`,
           experiencer: "Alex Chen", 
           perspective: "I",
           processing: "right-after",
@@ -302,7 +302,7 @@ export function createTestFixtures(): any {
     sources: [...allExperiences, ...extendedExperiences].map((exp, index) => ({
       id: `test_${Date.now()}_${index.toString().padStart(3, '0')}`,
       type: "source",
-      content: exp.content,
+      source: exp.source,
       created: exp.created,
       perspective: exp.perspective,
       processing: exp.processing,

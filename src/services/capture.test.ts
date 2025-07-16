@@ -104,8 +104,8 @@ describe('CaptureService', () => {
       const result2 = await captureService.captureSource(input2);
 
       expect(result1.source.id).not.toBe(result2.source.id);
-      expect(result1.source.content).toBe('First capture');
-      expect(result2.source.content).toBe('Second capture');
+      expect(result1.source.source).toBe('First capture');
+      expect(result2.source.source).toBe('Second capture');
     });
 
     it('should use narrative as content when content is not provided', async () => {
@@ -120,7 +120,7 @@ describe('CaptureService', () => {
 
       const result = await captureService.captureSource(input);
 
-      expect(result.source.content).toBe('This should become the content');
+      expect(result.source.source).toBe('This should become the content');
     });
 
     it('should generate embeddings for captured experiences', async () => {

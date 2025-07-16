@@ -184,7 +184,7 @@ export function formatSource(source: SourceRecord): string {
   
   // Basic info
   parts.push(`ID: ${source.id}`);
-  parts.push(`Content: ${source.content}`);
+  parts.push(`Content: ${source.source}`);
   
   // Context fields
   if (source.perspective) parts.push(`Perspective: ${source.perspective}`);

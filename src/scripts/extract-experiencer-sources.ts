@@ -24,7 +24,7 @@ function extractCombinedStringsForExperiencer(sources: SourceRecord[], experienc
   
   return experiencerSources.map(s => {
     let combinedString = `Experiencer: ${s.experiencer}
-Content: ${s.content}
+Content: ${s.source}
 Created: ${s.created}
 Perspective: ${s.perspective}
 Processing: ${s.processing}

@@ -18,7 +18,7 @@ describe('Search Relevance Scoring', () => {
     // Create test records
     const record1: Omit<SourceRecord, 'type'> = {
       id: 'text_test_1',
-      content: 'This is a test record about anxiety and stress',
+      source: 'This is a test record about anxiety and stress',
       experiencer: 'text_test',
       perspective: 'I',
       processing: 'during',
@@ -28,7 +28,7 @@ describe('Search Relevance Scoring', () => {
 
     const record2: Omit<SourceRecord, 'type'> = {
       id: 'text_test_2',
-      content: 'This is about something completely different',
+      source: 'This is about something completely different',
       experiencer: 'text_test',
       perspective: 'I',
       processing: 'during',
@@ -52,7 +52,7 @@ describe('Search Relevance Scoring', () => {
     // Create test records with different experiencers
     const record1: Omit<SourceRecord, 'type'> = {
       id: 'filter_test_1',
-      content: 'Test record from Alice',
+      source: 'Test record from Alice',
       experiencer: 'Alice_filter',
       perspective: 'I',
       processing: 'during',
@@ -62,7 +62,7 @@ describe('Search Relevance Scoring', () => {
 
     const record2: Omit<SourceRecord, 'type'> = {
       id: 'filter_test_2',
-      content: 'Test record from Bob',
+      source: 'Test record from Bob',
       experiencer: 'Bob_filter',
       perspective: 'I',
       processing: 'during',
@@ -86,7 +86,7 @@ describe('Search Relevance Scoring', () => {
     // Create a test record with experiential qualities
     const record: Omit<SourceRecord, 'type'> = {
       id: 'vector_test_1',
-      content: 'I felt anxious and stressed during the meeting',
+      source: 'I felt anxious and stressed during the meeting',
       experiencer: 'vector_test',
       perspective: 'I',
       processing: 'during',
@@ -124,7 +124,7 @@ describe('Search Relevance Scoring', () => {
     // Create test records with different relevance levels
     const record1: Omit<SourceRecord, 'type'> = {
       id: 'sort_test_1',
-      content: 'This is about anxiety and stress management techniques',
+      source: 'This is about anxiety and stress management techniques',
       experiencer: 'sort_test',
       perspective: 'I',
       processing: 'during',
@@ -134,7 +134,7 @@ describe('Search Relevance Scoring', () => {
 
     const record2: Omit<SourceRecord, 'type'> = {
       id: 'sort_test_2',
-      content: 'This mentions anxiety briefly in passing',
+      source: 'This mentions anxiety briefly in passing',
       experiencer: 'sort_test',
       perspective: 'I',
       processing: 'during',
@@ -144,7 +144,7 @@ describe('Search Relevance Scoring', () => {
 
     const record3: Omit<SourceRecord, 'type'> = {
       id: 'sort_test_3',
-      content: 'This has nothing to do with anxiety at all',
+      source: 'This has nothing to do with anxiety at all',
       experiencer: 'sort_test',
       perspective: 'I',
       processing: 'during',
@@ -184,7 +184,7 @@ describe('Date Range Filtering', () => {
     
     const record1: Omit<SourceRecord, 'type'> = {
       id: 'date_test_1',
-      content: 'Record from today',
+      source: 'Record from today',
       experiencer: 'date_test',
       perspective: 'I',
       processing: 'during',
@@ -194,7 +194,7 @@ describe('Date Range Filtering', () => {
 
     const record2: Omit<SourceRecord, 'type'> = {
       id: 'date_test_2',
-      content: 'Record from yesterday',
+      source: 'Record from yesterday',
       experiencer: 'date_test',
       perspective: 'I',
       processing: 'during',
@@ -223,7 +223,7 @@ describe('Date Range Filtering', () => {
     
     const record1: Omit<SourceRecord, 'type'> = {
       id: 'single_date_test_1',
-      content: 'Record from today',
+      source: 'Record from today',
       experiencer: 'single_date_test',
       perspective: 'I',
       processing: 'during',
@@ -233,7 +233,7 @@ describe('Date Range Filtering', () => {
 
     const record2: Omit<SourceRecord, 'type'> = {
       id: 'single_date_test_2',
-      content: 'Record from yesterday',
+      source: 'Record from yesterday',
       experiencer: 'single_date_test',
       perspective: 'I',
       processing: 'during',
@@ -265,7 +265,7 @@ describe('Date Range Filtering', () => {
     
     const record1: Omit<SourceRecord, 'type'> = {
       id: 'range_test_1',
-      content: 'Record from today',
+      source: 'Record from today',
       experiencer: 'range_test',
       perspective: 'I',
       processing: 'during',
@@ -275,7 +275,7 @@ describe('Date Range Filtering', () => {
 
     const record2: Omit<SourceRecord, 'type'> = {
       id: 'range_test_2',
-      content: 'Record from yesterday',
+      source: 'Record from yesterday',
       experiencer: 'range_test',
       perspective: 'I',
       processing: 'during',
@@ -285,7 +285,7 @@ describe('Date Range Filtering', () => {
 
     const record3: Omit<SourceRecord, 'type'> = {
       id: 'range_test_3',
-      content: 'Record from two days ago',
+      source: 'Record from two days ago',
       experiencer: 'range_test',
       perspective: 'I',
       processing: 'during',
@@ -318,7 +318,7 @@ describe('Date Range Filtering', () => {
     
     const record1: Omit<SourceRecord, 'type'> = {
       id: 'edge_test_1',
-      content: 'Early morning record',
+      source: 'Early morning record',
       experiencer: 'edge_test',
       perspective: 'I',
       processing: 'during',
@@ -328,7 +328,7 @@ describe('Date Range Filtering', () => {
 
     const record2: Omit<SourceRecord, 'type'> = {
       id: 'edge_test_2',
-      content: 'Late night record',
+      source: 'Late night record',
       experiencer: 'edge_test',
       perspective: 'I',
       processing: 'during',
@@ -371,7 +371,7 @@ describe('GroupBy Parameter Removal', () => {
     
     const record: Omit<SourceRecord, 'type'> = {
       id: 'groupby_test_1',
-      content: 'Test record for groupBy removal verification',
+      source: 'Test record for groupBy removal verification',
       experiencer: 'groupby_test',
       perspective: 'I',
       processing: 'during',

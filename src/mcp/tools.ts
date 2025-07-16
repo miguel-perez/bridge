@@ -1,464 +1,379 @@
+/**
+ * MCP Tool Definitions (Zod-based)
+ *
+ * All tool input schemas are defined using Zod for type safety, validation, and maintainability.
+ * - Use `.describe()` on every field for manifest/JSON Schema documentation.
+ * - Use Zod enums for enum fields.
+ * - Infer TypeScript types from Zod schemas for use in handlers and tests.
+ * - Convert Zod schemas to JSON Schema using `zod-to-json-schema` for MCP tool registration.
+ * - The `tools` array uses the generated JSON Schemas for each tool's `inputSchema`.
+ *
+ * MCP Tool Annotations:
+ * - title: Human-friendly name for UI display
+ * - readOnlyHint: true if tool doesn't modify state, false if it does
+ * - destructiveHint: true if tool can delete/irreversibly change data (only meaningful when readOnlyHint=false)
+ * - idempotentHint: true if repeated calls with same args have no additional effect (only meaningful when readOnlyHint=false)
+ * - openWorldHint: true if tool interacts with external systems/entities, false if closed system only
+ *
+ * To add a new tool:
+ * 1. Define a Zod schema for the tool's input at the top of this file.
+ * 2. Export the inferred TypeScript type and JSON Schema.
+ * 3. Add the tool to the `tools` array, referencing the JSON Schema for `inputSchema`.
+ * 4. Add appropriate annotations based on the tool's behavior.
+ * 5. Use the inferred type in your handler for type-safe access and validation.
+ *
+ * This pattern ensures:
+ * - DRY, maintainable schemas
+ * - Consistent validation and documentation
+ * - Full MCP protocol compatibility
+ * - Clear tool behavior hints for clients and LLMs
+ */
 // MCP Tool definitions - must match DXT manifest exactly
+
+// Zod-based schemas for MCP tools
+import { zodToJsonSchema } from 'zod-to-json-schema';
+import {
+  CaptureInputSchema,
+  SearchInputSchema,
+  UpdateInputSchema,
+  ReleaseInputSchema
+} from './schemas.js';
+
+
+// JSON Schemas for MCP tool registration - generate without $ref structure
+export const CaptureInputJsonSchema = zodToJsonSchema(CaptureInputSchema);
+export const SearchInputJsonSchema = zodToJsonSchema(SearchInputSchema);
+export const UpdateInputJsonSchema = zodToJsonSchema(UpdateInputSchema);
+export const ReleaseInputJsonSchema = zodToJsonSchema(ReleaseInputSchema);
+
+// Utility to post-process schema for MCP compatibility
+function makeDraft202012Schema(schema: any) {
+  // Add the required $schema property for JSON Schema draft 2020-12
+  schema['$schema'] = 'https://json-schema.org/draft/2020-12/schema';
+  return schema;
+}
+
+// Tools array with schemas compatible with JSON Schema draft 2020-12
+export async function getTools() {
+  return [
+    {
+      name: 'capture',
+      description: 'Capture experiences. The source field must contain the experiencer\'s exact words as written or spoken - without summarizing, interpreting, or modifying. Process this raw source material into framed moments with seven-dimensional analysis (embodied, attentional, affective, purposive, spatial, temporal, intersubjective). Each capture requires an emoji and narrative summary written in present tense. Supports both single captures and batch operations. Use the experiencer field and batch operations to capture experiences from each perspective, including your own.',
+      inputSchema: makeDraft202012Schema(CaptureInputJsonSchema),
+      annotations: {
+        title: 'Capture Experience',
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false
+      },
+      examples: [
+        {
+          id: 'basic-capture',
+          description: 'Capture a simple experience with narrative and emoji',
+          input: {
+            source: 'I\'m walking through the rain and feeling completely alive. The water is cold but invigorating.',
+            perspective: 'I',
+            experiencer: 'Alex',
+            processing: 'during',
+            experience: {
+              qualities: [
+                {
+                  type: 'embodied',
+                  prominence: 0.9,
+                  manifestation: 'cold water invigorating the body'
+                },
+                {
+                  type: 'affective',
+                  prominence: 0.8,
+                  manifestation: 'feeling completely alive'
+                }
+              ],
+              emoji: '🌧️',
+              narrative: 'Step through cold rain, body tingles with life'
+            }
+          },
+          output: {
+            content: [
+              {
+                type: 'text',
+                text: '✅ Experience captured successfully!\n\n🌧️ Step through cold rain, body tingles with life\n\n✨ Qualities: embodied: 90%, affective: 80%\n\n📝 ID: exp_1234567890\n👤 Experiencer: Alex\n👁️  Perspective: I\n⏰ Processing: during\n🕐 Created: 2025-01-15T10:30:00.000Z'
+              }
+            ]
+          }
+        },
+        {
+          id: 'capture-with-defaults',
+          description: 'Capture with minimal input, using system defaults',
+          input: {
+            source: 'Just had a breakthrough moment with the code.',
+            experiencer: 'Developer'
+          },
+          output: {
+            content: [
+              {
+                type: 'text',
+                text: '✅ Experience captured successfully!\n\n💡 Fidget with pen, heart thuds hard\n\n✨ Qualities: purposive: 85%, affective: 75%\n\n📝 ID: exp_9876543210\n👤 Experiencer: Developer\n👁️  Perspective: I\n⏰ Processing: during\n🕐 Created: 2025-01-15T10:30:00.000Z\n\n📋 Defaults applied: perspective, processing, experience'
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      name: 'search',
+      description: 'Search framed moments using semantic matching and metadata filters. Returns sources with their qualities, emoji, narrative, and metadata. Empty queries show recent framed moments. Supports filtering by experiencer, perspective, processing level, and date ranges. Supports both single searches and batch operations.',
+      inputSchema: makeDraft202012Schema(SearchInputJsonSchema),
+      annotations: {
+        title: 'Search Experiences',
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false
+      },
+      examples: [
+        {
+          id: 'semantic-search',
+          description: 'Search for experiences using natural language',
+          input: {
+            query: 'creative breakthrough moments',
+            limit: 5,
+            experiencer: 'Alex'
+          },
+          output: {
+            content: [
+              {
+                type: 'text',
+                text: '🔍 Search: "creative breakthrough moments"\n📊 Found 3 experiences\n\n💡 Hover over keyboard, afternoon light streams in, excitement and uncertainty bubble up about this project that feels special but unclear.\n\n✨ Qualities: purposive: 85%, affective: 80%\n\nexp_1234567890 • Alex • I • during • 2h ago\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n🎨 Focus deep on the creative challenge, breakthrough clarity hits.\n\n✨ Qualities: attentional: 90%\n\nexp_2345678901 • Alex • I • during • 1d ago'
+              }
+            ]
+          }
+        },
+        {
+          id: 'recent-experiences',
+          description: 'Show recent experiences without a specific query',
+          input: {
+            limit: 3
+          },
+          output: {
+            content: [
+              {
+                type: 'text',
+                text: '📚 Recent Experiences (3 total)\n\n🌧️ Step through cold rain, body tingles with life\n\n✨ Qualities: embodied: 90%, affective: 80%\n\nexp_1234567890 • Alex • I • during • 2h ago\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n💡 Hover over keyboard, afternoon light streams in, excitement and uncertainty bubble up about this project that feels special but unclear.\n\n✨ Qualities: purposive: 85%, affective: 80%\n\nexp_2345678901 • Alex • I • during • 1d ago'
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      name: 'update',
+      description: 'Update existing framed moments. Can modify content, perspective, experiencer, processing level, crafted status, and the seven-dimensional experiential qualities. Useful for correcting mistakes or refining experiential analysis to ensure moments remain visually anchorable, experientially complete, and preserve authentic voice. Supports both single updates and batch operations.',
+      inputSchema: makeDraft202012Schema(UpdateInputJsonSchema),
+      annotations: {
+        title: 'Update Experience',
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false
+      },
+      examples: [
+        {
+          id: 'update-narrative',
+          description: 'Update the narrative and emoji of an experience',
+          input: {
+            id: 'exp_1234567890',
+            experience: {
+              emoji: '🎯',
+              narrative: 'Focus intently on keyboard, afternoon light streams in, excitement and uncertainty bubble up about this project that feels special but unclear.'
+            }
+          },
+          output: {
+            content: [
+              {
+                type: 'text',
+                text: '✅ Experience updated successfully!\n\n🎯 Focus intently on keyboard, afternoon light streams in, excitement and uncertainty bubble up about this project that feels special but unclear.\n\n📝 ID: exp_1234567890\n🔄 Fields updated: emoji, narrative\n🕐 Updated: 2025-01-15T10:30:00.000Z'
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      name: 'release',
+      description: 'Release framed moments by ID. Removes experiences from the system with gratitude and reasoning. Useful for letting go of moments that no longer need to be held, acknowledging that significance emerges through accumulation and connection rather than through permanent retention. Supports both single releases and batch operations.',
+      inputSchema: makeDraft202012Schema(ReleaseInputJsonSchema),
+      annotations: {
+        title: 'Release Experience',
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: false
+      },
+      examples: [
+        {
+          id: 'single-release',
+          description: 'Release a single experience with gratitude',
+          input: {
+            id: 'exp_1234567890',
+            reason: 'No longer relevant to current work'
+          },
+          output: {
+            content: [
+              {
+                type: 'text',
+                text: '🙏 Experience released with gratitude\n\n📝 ID: exp_1234567890\n💭 Reason: No longer relevant to current work\n🕐 Released: 2025-01-15T10:30:00.000Z\n\nThank you for the insights this moment provided. Significance emerges through accumulation and connection rather than through permanent retention.'
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ];
+}
+
+// Legacy export for backward compatibility (will be removed)
 export const tools = [
   {
     name: 'capture',
     description: 'Capture experiences. The source field must contain the experiencer\'s exact words as written or spoken - without summarizing, interpreting, or modifying. Process this raw source material into framed moments with seven-dimensional analysis (embodied, attentional, affective, purposive, spatial, temporal, intersubjective). Each capture requires an emoji and narrative summary written in present tense. Supports both single captures and batch operations. Use the experiencer field and batch operations to capture experiences from each perspective, including your own.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        source: {
-          type: 'string',
-          description: 'Raw, exact words from the experiencer - their actual text/voice as written or spoken. Do not summarize, interpret, or modify. This is the source material that will be processed into a framed moment.'
-        },
-        perspective: {
-          type: 'string',
-          enum: ['I', 'we', 'you', 'they'],
-          description: 'Perspective from which experience is captured: I (first person), we (collective), you (second person), they (third person)'
-        },
-        experiencer: {
-          type: 'string',
-          description: 'Who experienced this moment (person, group, or entity)'
-        },
-        processing: {
-          type: 'string',
-          enum: ['during', 'right-after', 'long-after'],
-          description: 'When processing occurred: during (real-time), right-after (immediate), long-after (retrospective)'
-        },
-        crafted: {
-          type: 'boolean',
-          description: 'Whether this is crafted content (blog/refined for an audience) vs raw capture (journal/immediate)'
-        },
-        experience: {
-          type: 'object',
-          description: 'Experience analysis (all fields optional for updates)',
-          properties: {
-            qualities: {
-              type: 'array',
-              description: 'Seven-dimensional experiential analysis: embodied (physical sensations), attentional (focus/awareness), affective (emotional tone), purposive (intention/direction), spatial (sense of place), temporal (time awareness), intersubjective (social presence), pick the ones that are most relevant to the experience',
-              items: {
-                type: 'object',
-                properties: {
-                  type: {
-                    type: 'string',
-                    enum: ['embodied', 'attentional', 'affective', 'purposive', 'spatial', 'temporal', 'intersubjective'],
-                    description: 'The experiential dimension being analyzed'
-                  },
-                  prominence: {
-                    type: 'number',
-                    minimum: 0,
-                    maximum: 1,
-                    description: 'How prominent this dimension is in the moment (0-1 scale)'
-                  },
-                  manifestation: {
-                    type: 'string',
-                    description: 'How this dimension manifests in the specific moment - use the experiencer\'s actual words and phrases, preserving their authentic voice and way of expressing themselves.'
-                  }
-                },
-                required: ['type', 'prominence', 'manifestation']
+    inputSchema: CaptureInputJsonSchema,
+    annotations: {
+      title: 'Capture Experience',
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false
+    },
+    examples: [
+      {
+        id: 'basic-capture',
+        description: 'Capture a simple experience with narrative and emoji',
+        input: {
+          source: 'I\'m walking through the rain and feeling completely alive. The water is cold but invigorating.',
+          perspective: 'I',
+          experiencer: 'Alex',
+          processing: 'during',
+          experience: {
+            qualities: [
+              {
+                type: 'embodied',
+                prominence: 0.9,
+                manifestation: 'cold water invigorating the body'
+              },
+              {
+                type: 'affective',
+                prominence: 0.8,
+                manifestation: 'feeling completely alive'
               }
-            },
-            emoji: {
-              type: 'string',
-              description: 'Emoji representing the experience'
-            },
-            narrative: {
-              type: 'string',
-              description: 'Concise experiential summary in experiencer\'s own words and voice (max 200 characters). Must present unified experience, be visually anchorable, feel experientially complete, and preserve authentic voice.'
-            }
-          },
-          required: ['emoji', 'narrative']
-        },
-        captures: {
-          type: 'array',
-          description: 'Array of experiences to capture (for batch operations)',
-          items: {
-            type: 'object',
-            properties: {
-              source: {
-                type: 'string',
-                description: 'Raw, exact words from the experiencer - their actual text/voice as written or spoken. Do not summarize, interpret, or modify. This is the source material that will be processed into a framed moment.'
-              },
-              perspective: {
-                type: 'string',
-                enum: ['I', 'we', 'you', 'they'],
-                description: 'Perspective from which experience is captured'
-              },
-              experiencer: {
-                type: 'string',
-                description: 'Who experienced this moment'
-              },
-              processing: {
-                type: 'string',
-                enum: ['during', 'right-after', 'long-after', 'crafted'],
-                description: 'When processing occurred'
-              },
-              crafted: {
-                type: 'boolean',
-                description: 'Whether this is crafted content'
-              },
-              experience: {
-                type: 'object',
-                description: 'Experience analysis',
-                properties: {
-                  qualities: {
-                    type: 'array',
-                    description: 'Seven-dimensional experiential analysis',
-                    items: {
-                      type: 'object',
-                      properties: {
-                        type: {
-                          type: 'string',
-                          enum: ['embodied', 'attentional', 'affective', 'purposive', 'spatial', 'temporal', 'intersubjective'],
-                          description: 'The experiential dimension being analyzed'
-                        },
-                        prominence: {
-                          type: 'number',
-                          minimum: 0,
-                          maximum: 1,
-                          description: 'How prominent this dimension is in the moment (0-1 scale)'
-                        },
-                        manifestation: {
-                          type: 'string',
-                          description: 'How this dimension manifests - use the experiencer\'s actual words and phrases'
-                        }
-                      },
-                      required: ['type', 'prominence', 'manifestation']
-                    }
-                  },
-                  emoji: {
-                    type: 'string',
-                    description: 'Emoji representing the experience'
-                  },
-                  narrative: {
-                    type: 'string',
-                    description: 'Concise experiential summary in experiencer\'s own words and voice (max 200 characters). Must present unified experience, be visually anchorable, feel experientially complete, and preserve authentic voice.'
-                  }
-                },
-                required: ['emoji', 'narrative']
-              }
-            },
-            required: ['experience']
+            ],
+            emoji: '🌧️',
+            narrative: 'Step through cold rain, body tingles with life'
           }
+        },
+        output: {
+          content: [
+            {
+              type: 'text',
+              text: '✅ Experience captured successfully!\n\n🌧️ Step through cold rain, body tingles with life\n\n✨ Qualities: embodied: 90%, affective: 80%\n\n📝 ID: exp_1234567890\n👤 Experiencer: Alex\n👁️  Perspective: I\n⏰ Processing: during\n🕐 Created: 2025-01-15T10:30:00.000Z'
+            }
+          ]
         }
-      },
-      required: ['source']
-      // Required fields: source is always needed, other fields are optional
-    }
+      }
+    ]
   },
   {
     name: 'search',
-    description: 'Search framed moments using semantic matching and metadata filters. Returns experiences with their seven-dimensional qualities, emoji, narrative, and metadata. Empty queries show recent framed moments. Supports filtering by experiencer, perspective, processing level, and date ranges. Supports both single searches and batch operations.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        query: {
-          type: 'string',
-          description: 'Search query for semantic matching'
+    description: 'Search framed moments using semantic matching and metadata filters. Returns sources with their qualities, emoji, narrative, and metadata. Empty queries show recent framed moments. Supports filtering by experiencer, perspective, processing level, and date ranges. Supports both single searches and batch operations.',
+    inputSchema: SearchInputJsonSchema,
+    annotations: {
+      title: 'Search Experiences',
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false
+    },
+    examples: [
+      {
+        id: 'semantic-search',
+        description: 'Search for experiences using natural language',
+        input: {
+          query: 'creative breakthrough moments',
+          limit: 5,
+          experiencer: 'Alex'
         },
-        limit: {
-          type: 'number',
-          description: 'Maximum number of results to return'
-        },
-        offset: {
-          type: 'number',
-          description: 'Number of results to skip for pagination'
-        },
-        experiencer: {
-          type: 'string',
-          description: 'Filter by experiencer'
-        },
-        perspective: {
-          type: 'string',
-          enum: ['I', 'we', 'you', 'they'],
-          description: 'Filter by perspective'
-        },
-        processing: {
-          type: 'string',
-          enum: ['during', 'right-after', 'long-after', 'crafted'],
-          description: 'Filter by processing level'
-        },
-        created: {
-          oneOf: [
+        output: {
+          content: [
             {
-              type: 'string',
-              description: 'Filter by specific date (YYYY-MM-DD format)'
-            },
-            {
-              type: 'object',
-              properties: {
-                start: {
-                  type: 'string',
-                  description: 'Start date (YYYY-MM-DD format)'
-                },
-                end: {
-                  type: 'string',
-                  description: 'End date (YYYY-MM-DD format)'
-                }
-              },
-              required: ['start', 'end']
+              type: 'text',
+              text: '🔍 Search: "creative breakthrough moments"\n📊 Found 3 experiences\n\n💡 Hover over keyboard, afternoon light streams in, excitement and uncertainty bubble up about this project that feels special but unclear.\n\n✨ Qualities: purposive: 85%, affective: 80%\n\nexp_1234567890 • Alex • I • during • 2h ago\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n🎨 Focus deep on the creative challenge, breakthrough clarity hits.\n\n✨ Qualities: attentional: 90%\n\nexp_2345678901 • Alex • I • during • 1d ago'
             }
-          ],
-          description: 'Filter by creation date'
-        },
-        sort: {
-          type: 'string',
-          enum: ['relevance', 'created'],
-          description: 'Sort order for results'
-        },
-        searches: {
-          type: 'array',
-          description: 'Array of search queries to execute (for batch operations)',
-          items: {
-            type: 'object',
-            properties: {
-              query: {
-                type: 'string',
-                description: 'Search query for semantic matching'
-              },
-              limit: {
-                type: 'number',
-                description: 'Maximum number of results to return'
-              },
-              offset: {
-                type: 'number',
-                description: 'Number of results to skip for pagination'
-              },
-              experiencer: {
-                type: 'string',
-                description: 'Filter by experiencer'
-              },
-              perspective: {
-                type: 'string',
-                enum: ['I', 'we', 'you', 'they'],
-                description: 'Filter by perspective'
-              },
-              processing: {
-                type: 'string',
-                enum: ['during', 'right-after', 'long-after', 'crafted'],
-                description: 'Filter by processing level'
-              },
-              created: {
-                oneOf: [
-                  {
-                    type: 'string',
-                    description: 'Filter by specific date (YYYY-MM-DD format)'
-                  },
-                  {
-                    type: 'object',
-                    properties: {
-                      start: {
-                        type: 'string',
-                        description: 'Start date (YYYY-MM-DD format)'
-                      },
-                      end: {
-                        type: 'string',
-                        description: 'End date (YYYY-MM-DD format)'
-                      }
-                    },
-                    required: ['start', 'end']
-                  }
-                ],
-                description: 'Filter by creation date'
-              },
-              sort: {
-                type: 'string',
-                enum: ['relevance', 'created'],
-                description: 'Sort order for results'
-              }
-            }
-            // No required fields for search items
-          }
+          ]
         }
       }
-      // No required fields - either single search fields or 'searches' array can be used
-    }
+    ]
   },
   {
     name: 'update',
     description: 'Update existing framed moments. Can modify content, perspective, experiencer, processing level, crafted status, and the seven-dimensional experiential qualities. Useful for correcting mistakes or refining experiential analysis to ensure moments remain visually anchorable, experientially complete, and preserve authentic voice. Supports both single updates and batch operations.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        id: {
-          type: 'string',
-          description: 'ID of the experience to update (for single updates)'
+    inputSchema: UpdateInputJsonSchema,
+    annotations: {
+      title: 'Update Experience',
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false
+    },
+    examples: [
+      {
+        id: 'update-narrative',
+        description: 'Update the narrative and emoji of an experience',
+        input: {
+          id: 'exp_1234567890',
+          experience: {
+            emoji: '🎯',
+            narrative: 'Focus intently on keyboard, afternoon light streams in, excitement and uncertainty bubble up about this project that feels special but unclear.'
+          }
         },
-        source: {
-          type: 'string',
-          description: 'Updated source (optional)'
-        },
-        perspective: {
-          type: 'string',
-          enum: ['I', 'we', 'you', 'they'],
-          description: 'Updated perspective (optional)'
-        },
-        experiencer: {
-          type: 'string',
-          description: 'Updated experiencer (optional)'
-        },
-        processing: {
-          type: 'string',
-          enum: ['during', 'right-after', 'long-after', 'crafted'],
-          description: 'Updated processing level (optional)'
-        },
-        crafted: {
-          type: 'boolean',
-          description: 'Updated crafted status (optional)'
-        },
-        experience: {
-          type: 'object',
-          description: 'Experience analysis',
-          properties: {
-            qualities: {
-              type: 'array',
-              description: 'Seven-dimensional experiential analysis: embodied (physical sensations), attentional (focus/awareness), affective (emotional tone), purposive (intention/direction), spatial (sense of place), temporal (time awareness), intersubjective (social presence)',
-              items: {
-                type: 'object',
-                properties: {
-                  type: {
-                    type: 'string',
-                    enum: ['embodied', 'attentional', 'affective', 'purposive', 'spatial', 'temporal', 'intersubjective'],
-                    description: 'The experiential dimension being analyzed'
-                  },
-                  prominence: {
-                    type: 'number',
-                    minimum: 0,
-                    maximum: 1,
-                    description: 'How prominent this dimension is in the moment (0-1 scale)'
-                  },
-                  manifestation: {
-                    type: 'string',
-                    description: 'How this dimension manifests in the specific moment - use the experiencer\'s actual words and phrases, preserving their authentic voice and way of expressing themselves.'
-                  }
-                },
-                required: ['type', 'prominence', 'manifestation']
-              }
-            },
-            emoji: {
-              type: 'string',
-              description: 'Updated emoji representing the experience'
-            },
-            narrative: {
-              type: 'string',
-              description: 'Updated experiential summary in experiencer\'s own words and voice (max 200 characters). Must present unified experience, be visually anchorable, feel experientially complete, and preserve authentic voice.'
+        output: {
+          content: [
+            {
+              type: 'text',
+              text: '✅ Experience updated successfully!\n\n🎯 Focus intently on keyboard, afternoon light streams in, excitement and uncertainty bubble up about this project that feels special but unclear.\n\n📝 ID: exp_1234567890\n🔄 Fields updated: emoji, narrative\n🕐 Updated: 2025-01-15T10:30:00.000Z'
             }
-          }
-          // No required here: all fields optional for update
-        },
-        updates: {
-          type: 'array',
-          description: 'Array of experiences to update (for batch operations)',
-          items: {
-            type: 'object',
-            properties: {
-              id: {
-                type: 'string',
-                description: 'ID of the experience to update'
-              },
-              source: {
-                type: 'string',
-                description: 'Updated source (optional)'
-              },
-              perspective: {
-                type: 'string',
-                enum: ['I', 'we', 'you', 'they'],
-                description: 'Updated perspective (optional)'
-              },
-              experiencer: {
-                type: 'string',
-                description: 'Updated experiencer (optional)'
-              },
-              processing: {
-                type: 'string',
-                enum: ['during', 'right-after', 'long-after', 'crafted'],
-                description: 'Updated processing level (optional)'
-              },
-              crafted: {
-                type: 'boolean',
-                description: 'Updated crafted status (optional)'
-              },
-              experience: {
-                type: 'object',
-                description: 'Experience analysis',
-                properties: {
-                  qualities: {
-                    type: 'array',
-                    description: 'Seven-dimensional experiential analysis',
-                    items: {
-                      type: 'object',
-                      properties: {
-                        type: {
-                          type: 'string',
-                          enum: ['embodied', 'attentional', 'affective', 'purposive', 'spatial', 'temporal', 'intersubjective'],
-                          description: 'The experiential dimension being analyzed'
-                        },
-                        prominence: {
-                          type: 'number',
-                          minimum: 0,
-                          maximum: 1,
-                          description: 'How prominent this dimension is in the moment (0-1 scale)'
-                        },
-                        manifestation: {
-                          type: 'string',
-                          description: 'How this dimension manifests - use the experiencer\'s actual words and phrases'
-                        }
-                      },
-                      required: ['type', 'prominence', 'manifestation']
-                    }
-                  },
-                  emoji: {
-                    type: 'string',
-                    description: 'Updated emoji representing the experience'
-                  },
-                  narrative: {
-                    type: 'string',
-                    description: 'Updated experiential summary in experiencer\'s own words and voice (max 200 characters). Must present unified experience, be visually anchorable, feel experientially complete, and preserve authentic voice.'
-                  }
-                }
-                // No required here: all fields optional for update
-              }
-            },
-            required: ['id']
-          }
+          ]
         }
       }
-      // No required fields - either 'id' or 'updates' array can be used
-    }
+    ]
   },
   {
     name: 'release',
     description: 'Release framed moments by ID. Removes experiences from the system with gratitude and reasoning. Useful for letting go of moments that no longer need to be held, acknowledging that significance emerges through accumulation and connection rather than through permanent retention. Supports both single releases and batch operations.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        id: {
-          type: 'string',
-          description: 'ID of the experience to release (for single releases)'
+    inputSchema: ReleaseInputJsonSchema,
+    annotations: {
+      title: 'Release Experience',
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: false
+    },
+    examples: [
+      {
+        id: 'single-release',
+        description: 'Release a single experience with gratitude',
+        input: {
+          id: 'exp_1234567890',
+          reason: 'No longer relevant to current work'
         },
-        reason: {
-          type: 'string',
-          description: 'Reason for releasing the experience (optional)'
-        },
-        releases: {
-          type: 'array',
-          description: 'Array of experiences to release (for batch operations)',
-          items: {
-            type: 'object',
-            properties: {
-              id: {
-                type: 'string',
-                description: 'ID of the experience to release'
-              },
-              reason: {
-                type: 'string',
-                description: 'Reason for releasing this experience (optional)'
-              }
-            },
-            required: ['id']
-          }
+        output: {
+          content: [
+            {
+              type: 'text',
+              text: '🙏 Experience released with gratitude\n\n📝 ID: exp_1234567890\n💭 Reason: No longer relevant to current work\n🕐 Released: 2025-01-15T10:30:00.000Z\n\nThank you for the insights this moment provided. Significance emerges through accumulation and connection rather than through permanent retention.'
+            }
+          ]
         }
       }
-      // No required fields - either 'id' or 'releases' can be used
-    }
+    ]
   }
 ];

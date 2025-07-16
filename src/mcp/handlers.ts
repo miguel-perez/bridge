@@ -11,6 +11,13 @@ import { CaptureHandler } from './capture-handler.js';
 import { SearchHandler } from './search-handler.js';
 import { UpdateHandler } from './update-handler.js';
 import { ReleaseHandler } from './release-handler.js';
+import { 
+  type CaptureInput,
+  type SearchInput,
+  type UpdateInput,
+  type ReleaseInput,
+  type ToolResult
+} from './schemas.js';
 
 /**
  * MCP Tool Handlers class
@@ -40,7 +47,7 @@ export class MCPToolHandlers {
    * @param args - The capture arguments containing the experiential data
    * @returns Formatted capture result
    */
-  async handleCapture(args: any): Promise<{ content: Array<{ type: string; text: string }> }> {
+  async handleCapture(args: CaptureInput): Promise<ToolResult> {
     return this.captureHandler.handle(args);
   }
 
@@ -53,7 +60,7 @@ export class MCPToolHandlers {
    * @param args - The search arguments containing queries and filters
    * @returns Formatted search results
    */
-  async handleSearch(args: any): Promise<{ content: Array<{ type: string; text: string }> }> {
+  async handleSearch(args: SearchInput): Promise<ToolResult> {
     return this.searchHandler.handle(args);
   }
 
@@ -66,7 +73,7 @@ export class MCPToolHandlers {
    * @param args - The update arguments containing the correction data
    * @returns Formatted update result
    */
-  async handleUpdate(args: any): Promise<{ content: Array<{ type: string; text: string }> }> {
+  async handleUpdate(args: UpdateInput): Promise<ToolResult> {
     return this.updateHandler.handle(args);
   }
 
@@ -79,7 +86,7 @@ export class MCPToolHandlers {
    * @param args - The release arguments containing the IDs and reasons
    * @returns Formatted release confirmation
    */
-  async handleRelease(args: any): Promise<{ content: Array<{ type: string; text: string }> }> {
+  async handleRelease(args: ReleaseInput): Promise<ToolResult> {
     return this.releaseHandler.handle(args);
   }
 }

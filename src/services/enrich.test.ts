@@ -27,7 +27,7 @@ jest.mock('./vector-store.js', () => ({
 function makeSource(overrides: Partial<Source> = {}): Source {
   return {
     id: overrides.id || uuidv4(),
-    content: overrides.content || 'Original content',
+    source: overrides.source || 'Original content',
     created: overrides.created || new Date().toISOString(),
     perspective: overrides.perspective || 'I',
     experiencer: overrides.experiencer || 'self',
@@ -57,12 +57,12 @@ describe('EnrichService', () => {
   });
 
   test('enriches an existing record with new content', async () => {
-    const result = await enrichService.enrichSource({
-      id: baseSource.id,
-      content: 'Updated content',
-    });
-    expect(result.source.content).toBe('Updated content');
-    expect(result.updatedFields).toContain('content');
+          const result = await enrichService.enrichSource({
+        id: baseSource.id,
+        content: 'Updated content',
+      });
+      expect(result.source.source).toBe('Updated content');
+      expect(result.updatedFields).toContain('content');
   });
 
   test('partial update: only updates provided fields', async () => {
@@ -72,7 +72,7 @@ describe('EnrichService', () => {
     });
     expect(result.source.perspective).toBe('we');
     expect(result.updatedFields).toContain('perspective');
-    expect(result.source.content).toBe(baseSource.content);
+    expect(result.source.source).toBe(baseSource.source);
   });
 
   test('updates experience and generates vector', async () => {
@@ -94,21 +94,21 @@ describe('EnrichService', () => {
   });
 
   test('throws if record does not exist', async () => {
-    await expect(enrichService.enrichSource({
-      id: 'nonexistent-id',
-      content: 'Should fail'
-    })).rejects.toThrow(/not found/);
+          await expect(enrichService.enrichSource({
+        id: 'nonexistent-id',
+        content: 'Should fail'
+      })).rejects.toThrow(/not found/);
   });
 
-  test('accepts any perspective string', async () => {
-    const input = { id: 'test', content: 'test', created: new Date().toISOString(), perspective: 'invalid' };
-    expect(() => enrichSchema.parse(input)).not.toThrow();
-  });
+      test('accepts any perspective string', async () => {
+      const input = { id: 'test', content: 'test', created: new Date().toISOString(), perspective: 'invalid' };
+      expect(() => enrichSchema.parse(input)).not.toThrow();
+    });
 
   test('accepts any prominence value', async () => {
     const input = {
       id: 'test',
-      content: 'test',
+      source: 'test',
       created: new Date().toISOString(),
       experience: {
         qualities: [
@@ -137,6 +137,6 @@ describe('EnrichService', () => {
     const result = await enrichService.enrichSource({ id: baseSource.id });
     expect(result.updatedFields.length).toBe(0);
     expect(result.source.id).toBe(baseSource.id);
-    expect(result.source.content).toBe(baseSource.content);
+    expect(result.source.source).toBe(baseSource.source);
   });
 }); 

@@ -150,7 +150,7 @@ function calculateTextRelevance(record: SourceRecord, query: string | undefined)
   }
   
   const queryLower = query.toLowerCase();
-  const contentLower = record.content.toLowerCase();
+  const contentLower = record.source.toLowerCase();
   const narrativeLower = record.experience?.narrative?.toLowerCase() || '';
   
   // Check for exact phrase match in content or narrative (highest score)
@@ -578,8 +578,8 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
     const results: SearchServiceResult[] = finalRecords.map(record => ({
       id: record.id,
       type: 'source', // All records are sources
-      content: record.content,
-      snippet: record.content.length > 200 ? record.content.substring(0, 200) + '...' : record.content,
+      content: record.source,
+      snippet: record.source.length > 200 ? record.source.substring(0, 200) + '...' : record.source,
       metadata: {
         created: record.created,
         perspective: record.perspective,

@@ -185,12 +185,12 @@ export class CaptureService {
     const created = new Date().toISOString();
     
     // Use narrative as content if content is not provided
-    const content = validatedInput.content || validatedInput.experience?.narrative || 'Experience captured';
+    const source = validatedInput.content || validatedInput.experience?.narrative || 'Experience captured';
     
     // Create source record
     const sourceRecord: Source = {
       id,
-      content,
+      source,
       created,
       perspective: validatedInput.perspective || 'I',
       experiencer: validatedInput.experiencer || 'self',
@@ -215,7 +215,7 @@ export class CaptureService {
       const embedding = await enhancedService.generateEnhancedEmbedding(
         savedSource.experience?.emoji || '📝',
         savedSource.experience?.narrative || '',
-        savedSource.content,
+        savedSource.source,
         savedSource.experience?.qualities || [],
         savedSource.created,
         savedSource.perspective,

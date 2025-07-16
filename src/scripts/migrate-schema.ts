@@ -147,13 +147,13 @@ class SchemaMigrationService {
           }
           
           // Generate new embeddings using the new format: [emoji] + [narrative] "[content]" {qualities[array]}
-          if (source.experience && source.experience.narrative && source.content) {
+          if (source.experience && source.experience.narrative && source.source) {
             console.log(`    🧠 Generating new embeddings for source ${sourceId}...`);
             const qualitiesText = source.experience.qualities.length > 0 
               ? `{${source.experience.qualities.map((q: any) => q.type).join(', ')}}`
               : '{}';
             
-            const embeddingText = `${source.experience.emoji} ${source.experience.narrative} "${source.content}" ${qualitiesText}`;
+            const embeddingText = `${source.experience.emoji} ${source.experience.narrative} "${source.source}" ${qualitiesText}`;
             const embedding = await embeddingService.generateEmbedding(embeddingText);
             source.embedding = embedding;
           }
@@ -243,7 +243,7 @@ class SchemaMigrationService {
   private async generateNarrative(source: any): Promise<string> {
     const prompt = `Generate a rich, phenomenological narrative from this experiential data:
 
-Content: ${source.content}
+Content: ${source.source}
 Content Type: ${source.contentType || 'text'}
 Perspective: ${source.perspective || 'I'}
 Processing: ${source.processing || 'during'}

@@ -78,7 +78,7 @@ export class EnhancedEmbeddingService {
   async updateSourceEmbedding(source: SourceRecord): Promise<number[]> {
     const emoji = source.experience?.emoji || '💭';
     const narrative = source.experience?.narrative || 'Experience recorded';
-    const content = source.content || narrative;
+    const content = source.source || narrative;
     const qualities = source.experience?.qualities || [];
     const created = source.created;
     const perspective = source.perspective || 'I';
@@ -106,7 +106,7 @@ export class EnhancedEmbeddingService {
         const embeddingText = this.createEmbeddingText(
           source.experience?.emoji || '💭',
           source.experience?.narrative || 'Experience recorded',
-                      source.content || source.experience?.narrative || '',
+                      source.source || source.experience?.narrative || '',
             source.experience?.qualities || [],
             source.created,
             source.perspective || 'I',

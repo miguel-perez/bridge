@@ -26,7 +26,7 @@ export class ReleaseService {
       await deleteSource(input.id);
       return {
         success: true,
-        message: `✓ Released source: "${source.content.substring(0, 50)}..." (ID: ${input.id})\n\n🌊 The experience has been released`,
+        message: `✓ Released source: "${source.source.substring(0, 50)}..." (ID: ${input.id})\n\n🌊 The experience has been released`,
         releasedSource: { ...source, type: 'source' }
       };
     }

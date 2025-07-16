@@ -73,6 +73,34 @@ describe('MCP Server Protocol Compliance', () => {
       expect(toolNames).toContain('release');
       expect(toolNames).toContain('search');
       expect(toolNames).toContain('update');
+      
+      // Verify tool annotations are present
+      const captureTool = tools.tools.find(t => t.name === 'capture');
+      const searchTool = tools.tools.find(t => t.name === 'search');
+      const updateTool = tools.tools.find(t => t.name === 'update');
+      const releaseTool = tools.tools.find(t => t.name === 'release');
+      
+      expect(captureTool?.annotations).toBeDefined();
+      expect(searchTool?.annotations).toBeDefined();
+      expect(updateTool?.annotations).toBeDefined();
+      expect(releaseTool?.annotations).toBeDefined();
+      
+      // Verify specific annotation values
+      expect(captureTool?.annotations?.title).toBe('Capture Experience');
+      expect(captureTool?.annotations?.readOnlyHint).toBe(false);
+      expect(captureTool?.annotations?.destructiveHint).toBe(false);
+      
+      expect(searchTool?.annotations?.title).toBe('Search Experiences');
+      expect(searchTool?.annotations?.readOnlyHint).toBe(true);
+      expect(searchTool?.annotations?.destructiveHint).toBe(false);
+      
+      expect(updateTool?.annotations?.title).toBe('Update Experience');
+      expect(updateTool?.annotations?.readOnlyHint).toBe(false);
+      expect(updateTool?.annotations?.destructiveHint).toBe(false);
+      
+      expect(releaseTool?.annotations?.title).toBe('Release Experience');
+      expect(releaseTool?.annotations?.readOnlyHint).toBe(false);
+      expect(releaseTool?.annotations?.destructiveHint).toBe(true);
     }, 30000);
 
     test('should execute capture tool with experiential qualities', async () => {
@@ -202,7 +230,7 @@ describe('MCP Server Protocol Compliance', () => {
         name: 'capture',
         arguments: {
           // Missing required fields
-          content: '',
+          source: '',
           experiencer: '',
           perspective: 'I',
           processing: 'during'
@@ -211,8 +239,8 @@ describe('MCP Server Protocol Compliance', () => {
       
       expect(result.content).toBeDefined();
       expect(Array.isArray(result.content)).toBe(true);
-      // Should return an error response - narrative is now required
-      expect((result.content as any[])[0].text).toContain('Either content or experience.narrative is required');
+      // Should return an error response - source is now required
+      expect((result.content as any[])[0].text).toContain('Either source or experience.narrative is required');
     }, 30000);
 
     test('should handle invalid perspective values', async () => {
@@ -231,7 +259,7 @@ describe('MCP Server Protocol Compliance', () => {
       const result = await client.callTool({
         name: 'capture',
         arguments: {
-          content: 'Test content',
+          source: 'Test content',
           experiencer: 'Test User',
           perspective: 'invalid_perspective', // This should fail Zod enum validation
           processing: 'during'

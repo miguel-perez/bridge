@@ -71,7 +71,7 @@ function analyzeSource(source: any): any {
   
   return {
     id: source.id,
-    content: source.content ? source.content.substring(0, 100) + '...' : 'No content',
+    source: source.source ? source.source.substring(0, 100) + '...' : 'No content',
     experiencer: source.experiencer || 'Not specified',
     perspective: source.perspective || 'Not specified',
     processing: source.processing || 'Not specified',
@@ -121,7 +121,7 @@ async function main(): Promise<void> {
       
       sourcesNeedingMigration.forEach((source, index) => {
         console.log(`${index + 1}. ID: ${source.id}`);
-        console.log(`   Content: ${source.content}`);
+        console.log(`   Content: ${source.source}`);
         console.log(`   Issues: ${source.issues.join(', ')}`);
         console.log('');
       });
@@ -144,7 +144,7 @@ async function main(): Promise<void> {
       console.log('-'.repeat(60));
       sourcesOK.slice(0, 3).forEach((source, index) => {
         console.log(`${index + 1}. ID: ${source.id}`);
-        console.log(`   Content: ${source.content}`);
+        console.log(`   Content: ${source.source}`);
         console.log(`   Narrative: ${source.narrative}`);
         console.log('');
       });

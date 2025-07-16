@@ -6,19 +6,9 @@
  * @module mcp/search-handler
  */
 
-import { SearchService, type SearchInput } from '../services/search.js';
+import { SearchService } from '../services/search.js';
 import { withTimeout, DEFAULT_TIMEOUTS } from '../utils/timeout.js';
-
-export interface SearchRequestParams {
-  query?: string;
-  limit?: number;
-  offset?: number;
-  experiencer?: string;
-  perspective?: string;
-  processing?: string;
-  created?: string | { start: string; end: string };
-  sort?: 'relevance' | 'created';
-}
+import { SearchInput, ToolResultSchema, type ToolResult } from './schemas.js';
 
 export interface SearchResponse {
   success: boolean;
@@ -58,46 +48,17 @@ export class SearchHandler {
    * @param args - The search arguments containing queries and filters
    * @returns Formatted search results
    */
-  async handle(args: any): Promise<{ content: Array<{ type: string; text: string }> }> {
+  async handle(args: SearchInput): Promise<ToolResult> {
     try {
-      // Handle null/undefined args for empty search
-      if (!args || Object.keys(args).length === 0) {
-        args = { searches: [{ query: '' }] };
-      }
-      
-      // Support both old single-query format and new batch format
-      const searches = args.searches || [args];
-      
-      // Handle regular searches
-      const allResults = [];
-      
-      for (let i = 0; i < searches.length; i++) {
-        const search = searches[i];
-        
-        // Ensure query property exists
-        if (search && typeof search === 'object' && !('query' in search)) {
-          search.query = '';
-        }
-        
-        // Handle regular search
-        const result = await this.handleRegularSearch(search);
-        allResults.push(...result.content);
-        
-        // Add separator between searches if there are multiple
-        if (i < searches.length - 1) {
-          allResults.push({ type: 'text', text: '\n---\n\n' });
-        }
-      }
-      
-      return { content: allResults };
-      
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const result = await this.handleRegularSearch(args);
+      ToolResultSchema.parse(result);
+      return result;
+    } catch (err) {
       return {
-        content: [{
-          type: 'text',
-          text: `Error in search: ${errorMessage}`
-        }]
+        isError: true,
+        content: [
+          { type: 'text', text: 'Internal error: Output validation failed.' }
+        ]
       };
     }
   }
@@ -106,89 +67,104 @@ export class SearchHandler {
    * Handle regular search
    */
   private async handleRegularSearch(
-    search: any
-  ): Promise<{ content: Array<{ type: string; text: string }> }> {
-    const query = search.query || '';
-    const limit = search.limit || search.examples || 10;
-    
-    // Perform search
-    const { results } = await withTimeout(
-      this.searchService.search({
-        query,
-        limit
-      } as SearchInput),
-      DEFAULT_TIMEOUTS.SEARCH,
-      'Search operation'
-    );
-    
-    // Format results
-    let output = '';
-    
-    if (query.trim()) {
-      output += `🔍 "${query}"\n`;
-      output += `Found ${results.length} experience${results.length === 1 ? '' : 's'}\n\n`;
-    } else {
-      output += `📚 ${results.length} Recent Experience${results.length === 1 ? '' : 's'}\n\n`;
-    }
-    
-    if (results.length === 0) {
-      output += 'No results found.\n';
-    } else {
-      for (let i = 0; i < results.length; i++) {
-        const result = results[i];
-        const metadata = result.metadata || {};
-        const experience = metadata.experience || {};
-        
-        // Get qualities for display
-        const qualities = experience.qualities || [];
-        const topQualities = qualities
-          .filter((q: any) => q.prominence >= 70)
-          .sort((a: any, b: any) => b.prominence - a.prominence)
-          .slice(0, 2)
-          .map((q: any) => `${q.type}: ${q.prominence}%`);
-        
-        // Format with emoji and narrative  
-        const emoji = experience.emoji || '📝';
-        const narrative = experience.narrative || '';
-        
-        // Main content - show narrative and content beautifully
-        if (narrative) {
-          output += `${emoji} ${narrative}\n\n`;
+    search: SearchInput
+  ): Promise<ToolResult> {
+    try {
+      const query = search.query || '';
+      const limit = search.limit || 10;
+      
+      // Perform search
+      const { results } = await withTimeout(
+        this.searchService.search({
+          query,
+          limit
+        }),
+        DEFAULT_TIMEOUTS.SEARCH,
+        'Search operation'
+      );
+      
+      // Format results with enhanced feedback
+      let output = '';
+      
+      if (query.trim()) {
+        output += `🔍 Search: "${query}"\n`;
+        output += `📊 Found ${results.length} experience${results.length === 1 ? '' : 's'}\n\n`;
+      } else {
+        output += `📚 Recent Experiences (${results.length} total)\n\n`;
+      }
+      
+      if (results.length === 0) {
+        output += '❌ No experiences found matching your criteria.\n';
+        output += '💡 Try a different search term or check your filters.\n';
+      } else {
+        for (let i = 0; i < results.length; i++) {
+          const result = results[i];
+          const metadata = result.metadata || {};
+          const experience = metadata.experience || {};
+          
+          // Get top qualities for display (sorted by prominence)
+          const qualities = experience.qualities || [];
+          const topQualities = qualities
+            .sort((a: any, b: any) => b.prominence - a.prominence)
+            .slice(0, 3)
+            .map((q: any) => `${q.type}: ${Math.round(q.prominence * 100)}%`);
+          
+          // Format with emoji and narrative  
+          const emoji = experience.emoji || '📝';
+          const narrative = experience.narrative || '';
+          
+          // Main content - show narrative prominently
+          if (narrative) {
+            output += `${emoji} ${narrative}\n\n`;
+          }
+          
+          // Show source content if different from narrative (truncated for readability)
+          const content = result.content || result.snippet || '';
+          if (content && content !== narrative) {
+            const displayContent = content.length > 250 ? 
+              content.substring(0, 250) + '...' : content;
+            output += `📄 ${displayContent}\n\n`;
+          }
+          
+          // Show top qualities if available
+          if (topQualities.length > 0) {
+            output += `✨ Qualities: ${topQualities.join(', ')}\n`;
+          }
+          
+          // Metadata line - clean and informative
+          const timeAgo = this.formatTimeAgo(metadata.created || '');
+          const experiencer = metadata.experiencer || 'Unknown';
+          const perspective = metadata.perspective || 'I';
+          const processing = metadata.processing || 'during';
+          
+          output += `📝 ${result.id} • 👤 ${experiencer} • 👁️ ${perspective} • ⏰ ${processing} • 🕐 ${timeAgo}\n`;
+          
+          if (i < results.length - 1) {
+            output += '\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
+          }
         }
         
-        // Content (avoid duplication with narrative)
-        const content = result.content || result.snippet || '';
-        if (content && content !== narrative) {
-          // Smart truncate if content is very long
-          const displayContent = content.length > 300 ? content.substring(0, 300) + '...' : content;
-          output += `${displayContent}\n\n`;
-        }
-        
-        // Show top qualities if available
-        if (topQualities.length > 0) {
-          output += `✨ Qualities: ${topQualities.join(', ')}\n`;
-        }
-        
-        // Metadata line - more compact and readable
-        const timeAgo = this.formatTimeAgo(metadata.created || '');
-        const experiencer = metadata.experiencer || 'Unknown';
-        const perspective = metadata.perspective || 'I';
-        const processing = metadata.processing || 'during';
-        
-        output += `${result.id} • ${experiencer} • ${perspective} • ${processing} • ${timeAgo}\n`;
-        
-        if (i < results.length - 1) {
-          output += '\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
+        // Add helpful summary
+        if (query.trim()) {
+          output += `\n💡 Found ${results.length} experience${results.length === 1 ? '' : 's'} matching "${query}". Use the ID to update or release experiences.`;
         }
       }
+      
+      return {
+        content: [{
+          type: 'text',
+          text: output
+        }]
+      };
+    } catch (error) {
+      return {
+        isError: true,
+        content: [{
+          type: 'text',
+          text: error instanceof Error ? error.message : 'Unknown error'
+        }]
+      };
     }
-    
-    return {
-      content: [{
-        type: 'text',
-        text: output
-      }]
-    };
   }
 
   /**

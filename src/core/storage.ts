@@ -432,7 +432,7 @@ export async function deleteEmbedding(sourceId: string): Promise<void> {
  * @returns Searchable text content
  */
 export function getSearchableText(record: Source): string {
-  return record.content;
+  return record.source;
 }
 
 // ============================================================================

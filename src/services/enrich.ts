@@ -108,7 +108,7 @@ export class EnrichService {
 
     // Determine if we need to regenerate embeddings
     const shouldRegenerateEmbeddings = 
-      (input.content && input.content !== existingSource.content) ||
+      (input.content && input.content !== existingSource.source) ||
       (input.experience?.narrative && input.experience.narrative !== existingSource.experience?.narrative);
 
     // Generate new embedding if needed
@@ -116,7 +116,7 @@ export class EnrichService {
     if (shouldRegenerateEmbeddings) {
       // Create the new embedding text format: [emoji] + [narrative] "[content]" {qualities[array]}
       const experience = processedExperience || existingSource.experience;
-      const content = input.content || existingSource.content;
+      const content = input.content || existingSource.source;
       
       if (experience) {
         const qualitiesText = experience.qualities.length > 0 
@@ -136,7 +136,7 @@ export class EnrichService {
     // Create updated source
     const updatedSource = {
       ...existingSource,
-      content: input.content ?? existingSource.content,
+      source: input.content ?? existingSource.source,
       perspective: input.perspective ?? existingSource.perspective,
       experiencer: input.experiencer ?? existingSource.experiencer,
       processing: input.processing ?? existingSource.processing,
@@ -192,7 +192,7 @@ export class EnrichService {
    */
   private getUpdatedFields(original: Source, updated: Source): string[] {
     const fields: string[] = [];
-    if (original.content !== updated.content) fields.push('content');
+    if (original.source !== updated.source) fields.push('content');
     if (original.perspective !== updated.perspective) fields.push('perspective');
     if (original.experiencer !== updated.experiencer) fields.push('experiencer');
     if (original.processing !== updated.processing) fields.push('processing');

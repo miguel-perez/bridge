@@ -12,7 +12,7 @@ describe('Search Module', () => {
     {
       type: 'source',
       id: 'test-1',
-      content: 'First test experience',
+      source: 'First test experience',
       created: '2024-01-15T10:00:00Z',
       perspective: 'I',
       experiencer: 'self',
@@ -22,7 +22,7 @@ describe('Search Module', () => {
     {
       type: 'source',
       id: 'test-2',
-      content: 'Second test experience',
+      source: 'Second test experience',
       created: '2024-01-16T14:00:00Z',
       perspective: 'we',
       experiencer: 'team',
@@ -32,7 +32,7 @@ describe('Search Module', () => {
     {
       type: 'source',
       id: 'test-3',
-      content: 'Third test experience',
+      source: 'Third test experience',
       created: '2024-01-17T09:00:00Z',
       perspective: 'I',
       experiencer: 'self',
@@ -42,7 +42,7 @@ describe('Search Module', () => {
     {
       type: 'source',
       id: 'test-4',
-      content: 'Fourth test experience',
+      source: 'Fourth test experience',
       created: '2024-01-18T16:00:00Z',
       perspective: 'you',
       experiencer: 'other',
@@ -55,7 +55,7 @@ describe('Search Module', () => {
     type: 'source',
     id: record.id,
     relevance: 0.8,
-    snippet: record.content.substring(0, 50),
+    snippet: record.source.substring(0, 50),
     source: record
   }));
 
@@ -152,7 +152,7 @@ describe('Search Module', () => {
         type: 'source' as const,
         id: record.id,
         relevance: 0.8,
-        snippet: record.content.substring(0, 50),
+        snippet: record.source.substring(0, 50),
         source: record
       }));
 
@@ -176,7 +176,7 @@ describe('Search Module', () => {
         {
           type: 'source',
           id: 'minimal',
-          content: 'Minimal content',
+          source: 'Minimal content',
           created: '2024-01-15T10:00:00Z'
         }
       ];
@@ -185,7 +185,7 @@ describe('Search Module', () => {
         type: 'source' as const,
         id: record.id,
         relevance: 0.8,
-        snippet: record.content.substring(0, 50),
+        snippet: record.source.substring(0, 50),
         source: record
       }));
 

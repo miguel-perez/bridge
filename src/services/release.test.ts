@@ -8,7 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 function makeSource(overrides: Partial<SourceRecord> = {}): SourceRecord {
   return {
     id: overrides.id || uuidv4(),
-    content: overrides.content || 'Release test content',
+    source: overrides.source || 'Release test content',
     created: overrides.created || new Date().toISOString(),
     perspective: overrides.perspective || 'I',
     experiencer: overrides.experiencer || 'self',
@@ -21,7 +21,7 @@ function makeSource(overrides: Partial<SourceRecord> = {}): SourceRecord {
       emoji: '😊',
       narrative: 'Test narrative'
     },
-    embedding: overrides.embedding || [0.1, 0.2, 0.3, 0.4, 0.5, ...Array(379).fill(0)],
+    // embedding: overrides.embedding || [0.1, 0.2, 0.3, 0.4, 0.5, ...Array(379).fill(0)],
     type: 'source',
     ...overrides
   };
@@ -56,7 +56,7 @@ describe('ReleaseService', () => {
 
   test('releases a record with minimal content', async () => {
     const minimal = makeSource({ 
-      content: 'x', 
+      source: 'x', 
       experience: { 
         qualities: [], 
         emoji: '📝',
@@ -66,12 +66,12 @@ describe('ReleaseService', () => {
     await saveSource(minimal);
     const result = await releaseService.releaseSource({ id: minimal.id });
     expect(result.success).toBe(true);
-    expect(result.releasedSource?.content).toBe('x');
+    expect(result.releasedSource?.source).toBe('x');
   });
 
   test('message includes content snippet and id', async () => {
     const result = await releaseService.releaseSource({ id: baseSource.id });
     expect(result.message).toContain(baseSource.id);
-    expect(result.message).toContain(baseSource.content.substring(0, 10));
+    expect(result.message).toContain(baseSource.source.substring(0, 10));
   });
 }); 

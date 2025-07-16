@@ -4,6 +4,8 @@
  * through phenomenological dimensions and narrative generation.
  */
 
+import { z } from 'zod';
+
 // ============================================================================
 // CONSTANTS
 // ============================================================================
@@ -76,8 +78,8 @@ export interface Experience {
 export interface Source {
   /** Unique identifier for this source */
   id: string;
-  /** The captured content (text, audio transcript, etc.) */
-  content: string;
+  /** The captured source (text, audio transcript, etc.) */
+  source: string;
   /** When the experience was captured (auto-generated) */
   created: string;
   
@@ -137,6 +139,57 @@ export interface SourceRecord extends Source {
 export type StorageRecord = SourceRecord;
 
 // ============================================================================
+// ZOD SCHEMAS FOR INTERNAL DATA MODELS
+// ============================================================================
+
+/** Zod schema for QualityEvidence */
+export const QualityEvidenceSchema = z.object({
+  type: z.enum(QUALITY_TYPES).describe('The type of experiential quality'),
+  prominence: z.number().min(0).max(1).describe('Prominence score from 0.0 (absent) to 1.0 (dominant)'),
+  manifestation: z.string().describe('Description of how this quality manifests in the experience')
+});
+
+/** Zod schema for Experience */
+export const ExperienceSchema = z.object({
+  qualities: z.array(QualityEvidenceSchema).describe('Specific evidence of experiential qualities'),
+  emoji: z.string().describe('Emoji representing the experience'),
+  narrative: z.string().max(200).describe('Concise experiential summary in the experiencer\'s voice')
+});
+
+/** Zod schema for Source */
+export const SourceSchema = z.object({
+  id: z.string().min(1).describe('Unique identifier for this source'),
+  source: z.string().min(1).describe('The captured source (text, audio transcript, etc.)'),
+  created: z.string().describe('When the experience was captured (auto-generated)'),
+  perspective: z.union([
+    z.enum(PERSPECTIVES),
+    z.string().min(1)
+  ]).optional().describe('Perspective from which experience is captured'),
+  experiencer: z.string().optional().describe('Who experienced this (default: "self")'),
+  processing: z.enum(PROCESSING_LEVELS).optional().describe('When processing occurred relative to experience'),
+  crafted: z.boolean().optional().describe('Whether this is crafted content (blog) vs raw capture (journal)'),
+  experience: ExperienceSchema.optional().describe('Experience analysis results (qualities + emoji + narrative)')
+});
+
+/** Zod schema for EmbeddingRecord */
+export const EmbeddingRecordSchema = z.object({
+  sourceId: z.string().describe('Source ID this embedding belongs to'),
+  vector: z.array(z.number()).describe('Vector embedding for semantic search'),
+  generated: z.string().describe('When the embedding was generated')
+});
+
+/** Zod schema for StorageData */
+export const StorageDataSchema = z.object({
+  sources: z.array(SourceSchema).describe('Array of captured experiential sources'),
+  embeddings: z.array(EmbeddingRecordSchema).optional().describe('Array of embedding records for semantic search')
+});
+
+/** Zod schema for SourceRecord */
+export const SourceRecordSchema = SourceSchema.extend({
+  type: z.literal('source').optional().describe('Record type identifier')
+});
+
+// ============================================================================
 // VALIDATION FUNCTIONS
 // ============================================================================
 
@@ -164,7 +217,7 @@ export function isValidQualityType(value: string): value is QualityType {
  * @returns True if the value is a valid perspective
  */
 export function isValidPerspective(value: string): value is Perspective {
-  return PERSPECTIVES.includes(value as any) || typeof value === 'string';
+  return PERSPECTIVES.includes(value as any) || (typeof value === 'string' && value.length > 0);
 }
 
 /**
@@ -187,7 +240,7 @@ export function isValidSource(source: unknown): source is Source {
   const s = source as Source;
   return (
     typeof s.id === 'string' && s.id.length > 0 &&
-    typeof s.content === 'string' && s.content.length > 0 &&
+    typeof s.source === 'string' && s.source.length > 0 &&
     typeof s.created === 'string' &&
     (s.experience === undefined || (
       typeof s.experience.narrative === 'string' && s.experience.narrative.length > 0 && s.experience.narrative.length <= 200
@@ -200,41 +253,76 @@ export function isValidSource(source: unknown): source is Source {
 }
 
 // ============================================================================
-// FACTORY FUNCTIONS
+// ZOD-BASED VALIDATION FUNCTIONS
+// ============================================================================
+
+/**
+ * Validates a source object using Zod schema.
+ * @param source - The source to validate
+ * @returns Validation result with success status and parsed data or errors
+ */
+export function validateSource(source: unknown) {
+  return SourceSchema.safeParse(source);
+}
+
+/**
+ * Validates an experience object using Zod schema.
+ * @param experience - The experience to validate
+ * @returns Validation result with success status and parsed data or errors
+ */
+export function validateExperience(experience: unknown) {
+  return ExperienceSchema.safeParse(experience);
+}
+
+/**
+ * Validates a quality evidence object using Zod schema.
+ * @param quality - The quality evidence to validate
+ * @returns Validation result with success status and parsed data or errors
+ */
+export function validateQualityEvidence(quality: unknown) {
+  return QualityEvidenceSchema.safeParse(quality);
+}
+
+/**
+ * Validates storage data using Zod schema.
+ * @param data - The storage data to validate
+ * @returns Validation result with success status and parsed data or errors
+ */
+export function validateStorageData(data: unknown) {
+  return StorageDataSchema.safeParse(data);
+}
+
+// ============================================================================
+// UTILITY FUNCTIONS
 // ============================================================================
 
 /**
  * Creates a new source with default values.
- * @param content - The content to capture
- * @param id - Optional ID (will be generated if not provided)
- * @returns A new source with sensible defaults
+ * @param source - The source to capture
+ * @param id - Optional ID (auto-generated if not provided)
+ * @returns A new source object
  */
-export function createSource(content: string, id?: string): Source {
+export function createSource(source: string, id?: string): Source {
   return {
-    id: id || crypto.randomUUID(),
-    content,
+    id: id || `exp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    source,
     created: new Date().toISOString(),
     perspective: DEFAULTS.PERSPECTIVE,
     experiencer: DEFAULTS.EXPERIENCER,
     processing: DEFAULTS.PROCESSING,
-    crafted: DEFAULTS.CRAFTED,
-    experience: {
-      qualities: [],
-      emoji: '',
-      narrative: ''
-    }
+    crafted: DEFAULTS.CRAFTED
   };
 }
 
 /**
- * Creates a new source record for storage.
- * @param content - The content to capture
- * @param id - Optional ID (will be generated if not provided)
- * @returns A new source record ready for storage
+ * Creates a new source record with default values.
+ * @param source - The source to capture
+ * @param id - Optional ID (auto-generated if not provided)
+ * @returns A new source record object
  */
-export function createSourceRecord(content: string, id?: string): SourceRecord {
+export function createSourceRecord(source: string, id?: string): SourceRecord {
   return {
-    ...createSource(content, id),
+    ...createSource(source, id),
     type: 'source'
   };
 } 

@@ -1,17 +1,5 @@
 import { CaptureService } from '../services/capture.js';
-
-export interface CaptureRequestParams {
-  source?: string;
-  perspective?: string;
-  experiencer?: string;
-  processing?: string;
-  crafted?: boolean;
-  experience?: {
-    qualities?: Array<{ type: string; prominence: number; manifestation: string }>;
-    emoji: string;
-    narrative: string;
-  };
-}
+import { CaptureInput, ToolResultSchema, type ToolResult } from './schemas.js';
 
 export interface CaptureResponse {
   success: boolean;
@@ -46,46 +34,17 @@ export class CaptureHandler {
    * @param args - The capture arguments containing the experiential data
    * @returns Formatted capture result
    */
-  async handle(args: any): Promise<{ content: Array<{ type: string; text: string }> }> {
+  async handle(args: CaptureInput): Promise<ToolResult> {
     try {
-      // Handle null/undefined args for empty capture
-      if (!args || Object.keys(args).length === 0) {
-        args = { captures: [{ source: '' }] };
-      }
-      
-      // Support both old single-capture format and new batch format
-      const captures = args.captures || [args];
-      
-      // Handle regular captures
-      const allResults = [];
-      
-      for (let i = 0; i < captures.length; i++) {
-        const capture = captures[i];
-        
-        // Ensure source property exists
-        if (capture && typeof capture === 'object' && !('source' in capture)) {
-          capture.source = '';
-        }
-        
-        // Handle regular capture
-        const result = await this.handleRegularCapture(capture);
-        allResults.push(...result.content);
-        
-        // Add separator between captures if there are multiple
-        if (i < captures.length - 1) {
-          allResults.push({ type: 'text', text: '\n---\n\n' });
-        }
-      }
-      
-      return { content: allResults };
-      
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const result = await this.handleRegularCapture(args);
+      ToolResultSchema.parse(result);
+      return result;
+    } catch (err) {
       return {
-        content: [{
-          type: 'text',
-          text: errorMessage
-        }]
+        isError: true,
+        content: [
+          { type: 'text', text: 'Internal error: Output validation failed.' }
+        ]
       };
     }
   }
@@ -94,8 +53,8 @@ export class CaptureHandler {
    * Handle regular capture
    */
   private async handleRegularCapture(
-    capture: any
-  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+    capture: CaptureInput
+  ): Promise<ToolResult> {
     try {
       // Validate required fields
       if (!capture.source && !capture.experience?.narrative) {
@@ -116,40 +75,48 @@ export class CaptureHandler {
         } : undefined
       });
 
-      // Format the response
+      // Format the response with enhanced feedback
       let output = '✅ Experience captured successfully!\n\n';
       
       const source = result.source;
       const experience = source.experience;
       
-      // Show emoji and narrative
+      // Show emoji and narrative prominently
       if (experience?.emoji) {
         output += `${experience.emoji} ${experience.narrative || ''}\n\n`;
       }
       
-      // Show content if different from narrative
-      if (source.content && source.content !== experience?.narrative) {
-        output += `${source.content}\n\n`;
+      // Show source content if different from narrative (for transparency)
+      if (source.source && source.source !== experience?.narrative) {
+        const truncatedSource = source.source.length > 200 ? 
+          source.source.substring(0, 200) + '...' : source.source;
+        output += `📄 Source: ${truncatedSource}\n\n`;
       }
       
-      // Show qualities if available
+      // Show qualities with better formatting
       if (experience?.qualities && experience.qualities.length > 0) {
-        const qualitiesText = experience.qualities
-          .map(q => `${q.type}: ${q.prominence}%`)
+        const topQualities = experience.qualities
+          .sort((a: any, b: any) => b.prominence - a.prominence)
+          .slice(0, 3)
+          .map((q: { type: string; prominence: number }) => `${q.type}: ${Math.round(q.prominence * 100)}%`)
           .join(', ');
-        output += `✨ Qualities: ${qualitiesText}\n\n`;
+        output += `✨ Qualities: ${topQualities}\n\n`;
       }
       
-      // Show metadata
+      // Show metadata in a clean format
       output += `📝 ID: ${source.id}\n`;
       output += `👤 Experiencer: ${source.experiencer || 'Unknown'}\n`;
       output += `👁️  Perspective: ${source.perspective || 'I'}\n`;
       output += `⏰ Processing: ${source.processing || 'during'}\n`;
-      output += `🕐 Created: ${source.created}\n`;
+      output += `🕐 Created: ${new Date(source.created).toLocaleString()}\n`;
       
+      // Show defaults used if any
       if (result.defaultsUsed && result.defaultsUsed.length > 0) {
-        output += `\n📋 Defaults used: ${result.defaultsUsed.join(', ')}\n`;
+        output += `\n📋 Defaults applied: ${result.defaultsUsed.join(', ')}\n`;
       }
+      
+      // Add a helpful note for next steps
+      output += `\n💡 You can search for this experience or update it later using the ID: ${source.id}`;
 
       return {
         content: [{
@@ -160,6 +127,7 @@ export class CaptureHandler {
       
     } catch (error) {
       return {
+        isError: true,
         content: [{
           type: 'text',
           text: error instanceof Error ? error.message : 'Unknown error'

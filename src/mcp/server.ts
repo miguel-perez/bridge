@@ -16,7 +16,7 @@ import { embeddingService } from '../services/embeddings.js';
 import { mkdirSync } from 'fs';
 import { dirname, join } from 'path';
 import { MCPToolHandlers } from './handlers.js';
-import { tools } from './tools.js';
+import { getTools } from './tools.js';
 
 // ============================================================================
 // CONSTANTS
@@ -219,6 +219,7 @@ server.setRequestHandler(InitializeRequestSchema, async (request) => {
  * Handles tool listing requests
  */
 server.setRequestHandler(ListToolsRequestSchema, async () => {
+  const tools = await getTools();
   return { tools };
 });
 

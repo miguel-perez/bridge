@@ -307,7 +307,7 @@ export async function semanticSearch(
           type: 'source',
           id: record.id,
           relevance: similarity,
-          snippet: record.content.substring(0, 100) + '...',
+          snippet: record.source.substring(0, 100) + '...',
           source: record
         });
       }
