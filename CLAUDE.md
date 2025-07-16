@@ -23,27 +23,21 @@ Bridge is a phenomenological data capture system for distributed cognition betwe
 - `npm run test:watch` - Run tests in watch mode
 - `npm run test:coverage` - Generate coverage report
 
-#### Bridge Test Scenarios
-User-outcome focused test scenarios that validate real Bridge use cases:
-- `stress-pattern-evolution` - Work stress pattern evolution over time
-- `memory-exploration` - Personal experience discovery  
-- `creative-capture` - Creative breakthrough documentation
-- `relationship-insights` - Social connection pattern discovery
-- `first-time-exploration` - New user Bridge discovery
-- `error-recovery` - Graceful error handling
+##### Bridge Test Scenarios
+The bridge-test.ts script implements user-outcome focused testing with Claude:
+- `bridge-exploration` - Tests Claude's understanding and use of Bridge tools
+- Run specific scenario: `npm run test:bridge bridge-exploration`
+- Run all scenarios: `npm run test:integration`
 
 **Test Data Options:**
-- Uses synthetic test fixtures by default (36 diverse experiences across 6 months)
 - `--fixtures` - Use synthetic test data (default)
 - `--use-existing` - Use your actual bridge.json data (be careful!)
 
 **Results Tracking:**
 - All results automatically saved to `/test-results/` directory
-- `latest-run.json` - Most recent test run
-- `trend-data.json` - Historical pass rates and performance metrics
 - Individual scenario results with full conversation logs
 
-Example: `npm run test:bridge relationship-insights`
+Example: `npm run test:bridge bridge-exploration`
 
 ### Code Quality
 - `npm run lint` - Check for linting errors
@@ -57,7 +51,6 @@ Example: `npm run test:bridge relationship-insights`
 - Bundles all code into a single `index.js` file (~118KB total package size)
 
 ### Utilities
-- `npm run clean` - Remove dist directory
 - `npm run migrate-schema` - Migrate data schema to latest version
 - `npm run migrate-embeddings-consolidation` - Consolidate embeddings to new format
 - `npm run validate:manifest` - Validate DXT manifest file structure
@@ -105,24 +98,25 @@ Example: `npm run test:bridge relationship-insights`
 - **Embodied**: Physical sensations and bodily experience
 - **Attentional**: Focus and awareness qualities
 - **Affective**: Emotional tone and feeling
-- **Purposive**: Intention and goal-directedness
+- **Purposive**: Intention and goal direction
 - **Spatial**: Environmental and contextual awareness
 - **Temporal**: Time perception and dynamics
 - **Intersubjective**: Social and relational aspects
 
 ### Search Scoring Weights
-- Text matching: 40%
-- Vector similarity: 30%
-- Semantic relevance: 20%
-- Filter matches: 10%
+- Text matching: 60% (primary signal)
+- Filter relevance: 20%
+- Vector similarity: 10% (deprecated)
+- Semantic similarity: 10%
 
 ## Development Patterns
 
 ### TypeScript Conventions
-- Strict mode enabled - avoid `any` types
-- Use explicit return types for functions
+- Strict mode enabled - avoid `any` types (ESLint warns on usage)
+- Use explicit return types for functions (ESLint warns if missing)
 - Prefer interfaces over type aliases for object shapes
 - Use ES modules (`import`/`export`)
+- ESLint configuration in `.eslintrc`
 
 ### Error Handling
 - All MCP handlers return proper error responses
@@ -177,3 +171,69 @@ Example: `npm run test:bridge relationship-insights`
 - Use `npm run test:bridge <scenario>` to test specific Bridge scenarios
 - Run `npm run test:fixtures` to generate fresh synthetic test data
 - When debugging MCP issues, check the notification system as console.log is redirected
+
+## MCP Protocol Information
+
+### Architecture Overview
+
+Bridge implements the MCP server component in a client-host-server architecture:
+
+- **Host**: Claude Desktop manages the Bridge client connection
+- **Client**: Claude Desktop's MCP client maintains the session with Bridge
+- **Server**: Bridge exposes tools, handles requests, and manages local data
+
+### Protocol Details
+
+- Built on JSON-RPC 2.0 specification
+- Stateful sessions with capability negotiation
+- Request-response pattern with optional notifications
+- All messages use JSON encoding over stdio transport
+
+### Key MCP Concepts for Bridge Development
+
+1. **Capability Negotiation**: Bridge declares tool support during initialization
+2. **Tool Registration**: All four tools (capture, search, update, release) are registered with JSON schemas
+3. **Error Handling**: Use proper MCP error codes (InvalidRequest, MethodNotFound, etc.)
+4. **Notifications**: Use log/message for debugging instead of console.log
+5. **Security Boundaries**: Bridge only sees tool requests, not full conversations
+
+## DXT Packaging Specifications
+
+### Manifest Requirements
+
+The DXT manifest.json must include:
+
+- `dxt_version`: Currently "0.1"
+- `server.mcp_config`: Command and args for launching the MCP server
+- `tools`: Array of tool definitions matching the MCP implementation
+- `user_config`: Configuration options exposed to users
+
+### Build Process
+
+The build-dxt scripts create a flat-structure package to work around Claude Desktop limitations:
+
+- All TypeScript is compiled and bundled into a single `index.js`
+- No subdirectories in the final package
+- Total package size should be kept under 200KB
+
+## Helpful Resources
+
+### MCP Specifications
+
+- [MCP Documentation](https://github.com/modelcontextprotocol/modelcontextprotocol/tree/main/docs)
+- [MCP Protocol Schema](https://raw.githubusercontent.com/modelcontextprotocol/modelcontextprotocol/refs/heads/main/schema/2025-06-18/schema.ts)
+- [JSON-RPC 2.0 Specification](https://www.jsonrpc.org/)
+
+### DXT Documentation
+
+- [DXT Manifest Specification](https://raw.githubusercontent.com/anthropics/dxt/refs/heads/main/MANIFEST.md)
+- [DXT CLI Documentation](https://raw.githubusercontent.com/anthropics/dxt/refs/heads/main/CLI.md)
+- [DXT README](https://raw.githubusercontent.com/anthropics/dxt/refs/heads/main/README.md)
+
+### Development Best Practices
+
+1. **Defensive Programming**: Always validate inputs with Zod schemas
+2. **Clear Error Messages**: Provide actionable error messages for debugging
+3. **Protocol Compliance**: Follow exact MCP/DXT specifications for compatibility
+4. **Stateless Design**: Each tool request should be independent
+5. **Performance**: Keep vector operations efficient with in-memory caching
