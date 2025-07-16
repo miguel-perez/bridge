@@ -37,24 +37,7 @@ export const createMockEmbeddingService = () => ({
   initialize: jest.fn(() => Promise.resolve())
 });
 
-export const createMockVectorStore = () => ({
-  addVector: jest.fn(() => true),
-  addVectors: jest.fn(() => ({ added: 2, rejected: 0 })),
-  removeVector: jest.fn(() => Promise.resolve()),
-  findSimilar: jest.fn(() => Promise.resolve([])),
-  findSimilarById: jest.fn(() => Promise.resolve([])),
-  getVector: jest.fn(() => Promise.resolve([0.1, 0.2, 0.3])),
-  hasVector: jest.fn(() => Promise.resolve(true)),
-  getVectorCount: jest.fn(() => 0),
-  clear: jest.fn(() => undefined),
-  saveToDisk: jest.fn(() => Promise.resolve()),
-  loadFromDisk: jest.fn(() => Promise.resolve()),
-  initialize: jest.fn(() => Promise.resolve()),
-  validateVectors: jest.fn(() => Promise.resolve({ valid: 2, invalid: 0, details: [] })),
-  removeInvalidVectors: jest.fn(() => Promise.resolve(0)),
-  cleanup: jest.fn(() => Promise.resolve(0)),
-  getHealthStats: jest.fn(() => ({ total: 2, valid: 2, invalid: 0 }))
-});
+// VectorStore removed - embeddings now in main storage
 
 export const createMockStorage = () => ({
   generateId: jest.fn(() => Promise.resolve('src_test-id-12345')),
@@ -71,7 +54,6 @@ export function setupCommonMocks() {
     path: createMockPath(),
     os: createMockOs(),
     embeddingService: createMockEmbeddingService(),
-    vectorStore: createMockVectorStore(),
     storage: createMockStorage()
   };
 }

@@ -7,7 +7,6 @@ import { z } from 'zod';
 import { getSource, saveSource, deleteSource, saveEmbedding, deleteEmbedding } from '../core/storage.js';
 import type { SourceRecord, Source, QualityEvidence, ProcessingLevel, EmbeddingRecord } from '../core/types.js';
 import { embeddingService } from './embeddings.js';
-import { getVectorStore } from './vector-store.js';
 
 // ============================================================================
 // CONSTANTS
@@ -165,10 +164,6 @@ export class EnrichService {
           generated: new Date().toISOString()
         };
         await saveEmbedding(embeddingRecord);
-        
-        // Update vector store for backward compatibility
-        await getVectorStore().removeVector(input.id);
-        await getVectorStore().addVector(source.id, embedding);
       } catch (error) {
         // Silently handle embedding update errors in MCP context
       }

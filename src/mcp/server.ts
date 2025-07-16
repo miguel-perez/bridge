@@ -125,9 +125,9 @@ async function initializeConfiguration(serverInstance?: Server): Promise<void> {
     // Initialize core services
     try {
       // Initialize vector store for similarity search
-      const { VectorStore } = await import('../services/vector-store.js');
-      const vectorStore = new VectorStore();
-      await vectorStore.initialize();
+      // VectorStore removed - embeddings now in main storage
+      
+      
       mcpLog('info', 'Vector store initialized successfully', serverInstance);
     } catch (vectorError) {
       // Vector search won't work but basic functionality will

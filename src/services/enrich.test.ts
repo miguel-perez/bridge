@@ -15,13 +15,7 @@ jest.mock('./embeddings.js', () => ({
   }
 }));
 
-// Mock the vector store
-jest.mock('./vector-store.js', () => ({
-  getVectorStore: jest.fn().mockReturnValue({
-    removeVector: jest.fn().mockResolvedValue(undefined),
-    addVector: jest.fn().mockResolvedValue(undefined)
-  })
-}));
+// VectorStore removed - embeddings now in main storage
 
 // Helper to create a minimal valid source
 function makeSource(overrides: Partial<Source> = {}): Source {

@@ -10,7 +10,7 @@ import { generateId } from '../core/storage.js';
 import type { Source, EmbeddingRecord } from '../core/types.js';
 import { QUALITY_TYPES } from '../core/types.js';
 import { EmbeddingService } from './embeddings.js';
-import { VectorStore } from './vector-store.js';
+
 import { EnhancedEmbeddingService } from './enhanced-embedding.js';
 
 // ============================================================================
@@ -231,12 +231,6 @@ export class CaptureService {
       };
       
       await saveEmbedding(embeddingRecord);
-      
-      // Save to vector store for backward compatibility
-      const vectorStore = new VectorStore();
-      await vectorStore.initialize();
-      await vectorStore.addVector(savedSource.id, embedding);
-      await vectorStore.saveToDisk();
       
       const defaultsUsed = this.getDefaultsUsed(input);
       return { source: savedSource, defaultsUsed };

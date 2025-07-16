@@ -1,7 +1,7 @@
 import { SourceRecord } from '../core/types.js';
 import { getAllRecords } from '../core/storage.js';
 import { embeddingService } from './embeddings.js';
-import { getVectorStore } from './vector-store.js';
+import { findSimilarByEmbedding } from './embedding-search.js';
 
 // Debug mode configuration
 const DEBUG_MODE = process.env.BRIDGE_SEARCH_DEBUG === 'true' || process.env.BRIDGE_DEBUG === 'true';
@@ -253,7 +253,6 @@ function calculateFilterRelevance(record: SourceRecord, input: SearchInput): num
 function calculateRelevanceScore(
   record: SourceRecord, 
   input: SearchInput, 
-  vectorSimilarity?: number, 
   semanticSimilarity?: number
 ): { score: number; breakdown: any } {
   const textMatch = calculateTextRelevance(record, input.query || '');
@@ -266,9 +265,9 @@ function calculateRelevanceScore(
     filter_relevance: filterRelevance
   };
   
-  // Text matching is primary
+  // Balanced scoring: text (50%), semantic (30%), filters (20%)
   if (input.query && input.query.trim()) {
-    finalScore += textMatch * 0.6;
+    finalScore += textMatch * 0.5;
   } else {
     // For empty queries, give a base score to all records
     finalScore += 0.5;
@@ -278,16 +277,10 @@ function calculateRelevanceScore(
   // Filter relevance affects overall score
   finalScore += filterRelevance * 0.2;
   
-  // Vector similarity (deprecated - use semantic search instead)
-  if (vectorSimilarity !== undefined) {
-    breakdown.vector_similarity = vectorSimilarity;
-    finalScore += vectorSimilarity * 0.1;
-  }
-  
-  // Semantic similarity
+  // Semantic similarity is now a major component
   if (semanticSimilarity !== undefined) {
     breakdown.semantic_similarity = semanticSimilarity;
-    finalScore += semanticSimilarity * 0.1;
+    finalScore += semanticSimilarity * 0.3;
   }
   
   return {
@@ -405,8 +398,6 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
       addDebugLog(`Created filter applied: ${beforeCount} -> ${afterCount} records`);
     }
     
-    // Vector similarity search (deprecated - use semantic search instead)
-    const vectorSimilarityMap: Record<string, number> = {};
     if (input.vector) {
       debugInfo.vector_search_performed = true;
       addDebugLog('Starting vector similarity search (deprecated)', { 
@@ -434,63 +425,28 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
         debugInfo.query_embedding_dimension = queryEmbedding.length;
         addDebugLog(`Generated query embedding with dimension: ${queryEmbedding.length}`);
         
-        // Get vector store stats
-        const vectorStore = getVectorStore();
-        const health = await vectorStore.getHealthStats();
-        debugInfo.vector_store_stats = {
-          total_vectors: health.total,
-          valid_vectors: health.valid,
-          invalid_vectors: health.invalid
-        };
-        addDebugLog('Vector store stats', debugInfo.vector_store_stats);
-        
-        // Validate and potentially clean up vectors before searching
-        const validation = await vectorStore.validateVectors(queryEmbedding.length);
-        if (validation.invalid > 0) {
-          addDebugLog(`Found ${validation.invalid} vectors with mismatched dimensions. Cleaning up...`);
-          addDebugLog('Invalid vectors:', validation.details.slice(0, 5)); // Show first 5
-          const removed = await vectorStore.removeInvalidVectors(queryEmbedding.length);
-          addDebugLog(`Removed ${removed} invalid vectors`);
-        }
-        
-        // Find similar vectors in the vector store
-        let similarResults = await vectorStore.findSimilar(
-          queryEmbedding, 
-          input.limit || 50, 
+        // Find similar embeddings using cosine similarity
+        const similarResults = await findSimilarByEmbedding(
+          queryEmbedding,
+          input.limit ? input.limit * 2 : 100,  // Get more results to filter later
           input.semantic_threshold || 0.7
         );
         
-        addDebugLog(`Initial semantic search found ${similarResults.length} results with threshold ${input.semantic_threshold || 0.7}`);
-        
-        // Fallback: if no results and threshold > 0.4, try again with lower threshold
-        if (similarResults.length === 0 && (input.semantic_threshold === undefined || input.semantic_threshold > 0.4)) {
-          addDebugLog('No semantic results found, retrying with lower threshold 0.4');
-          similarResults = await vectorStore.findSimilar(
-            queryEmbedding,
-            input.limit || 50,
-            0.4
-          );
-          addDebugLog(`Fallback semantic search found ${similarResults.length} results with threshold 0.4`);
-        }
+        addDebugLog(`Found ${similarResults.length} semantically similar results with threshold ${input.semantic_threshold || 0.7}`);
         
         // Log top similarity scores
         const topSemanticScores = similarResults
           .slice(0, 10)
-          .map(r => ({ id: r.id, score: r.similarity }));
+          .map(r => ({ id: r.sourceId, score: r.similarity }));
         
         addDebugLog('Top 10 semantic similarity scores', topSemanticScores);
         
-        // Filter records to only include semantically similar ones
-        const beforeCount = filteredRecords.length;
-        const semanticIds = new Set(similarResults.map(r => r.id));
-        filteredRecords = filteredRecords.filter(record => semanticIds.has(record.id));
-        const afterCount = filteredRecords.length;
-        debugInfo.filter_breakdown!.semantic_threshold_filter = beforeCount - afterCount;
-        addDebugLog(`Semantic threshold filter applied: ${beforeCount} -> ${afterCount} records`);
+        // Don't filter out records - semantic similarity should contribute to scoring, not exclude results
+        addDebugLog(`Found ${similarResults.length} semantically similar results to enhance scoring`);
         
         // Add semantic similarity scores to the similarity map
         for (const result of similarResults) {
-          semanticSimilarityMap[result.id] = result.similarity;
+          semanticSimilarityMap[result.sourceId] = result.similarity;
         }
         
         // Add to debug similarity scores
@@ -509,11 +465,10 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
     }
 
     // Calculate relevance scores for all filtered records
-    const recordsWithRelevance = filteredRecords.map(record => {
+    const recordsWithRelevance = filteredRecords.map((record: any) => {
       const relevance = calculateRelevanceScore(
         record, 
         input, 
-        vectorSimilarityMap[record.id], 
         semanticSimilarityMap[record.id]
       );
       return { ...record, _relevance: relevance };
@@ -523,7 +478,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
     let finalRecords = recordsWithRelevance;
     if (input.query && input.query.trim()) {
       const beforeCount = finalRecords.length;
-      finalRecords = finalRecords.filter(r => r._relevance.breakdown.text_match > 0);
+      finalRecords = finalRecords.filter((r: any) => r._relevance.breakdown.text_match > 0);
       const afterCount = finalRecords.length;
       addDebugLog(`Text relevance filter applied: ${beforeCount} -> ${afterCount} records`);
     } else {
@@ -537,7 +492,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
     // Apply sorting (default to created date for recency)
     const sortType = input.sort || 'created';
     addDebugLog(`Applying sort: ${sortType}`);
-    finalRecords.sort((a, b) => {
+    finalRecords.sort((a: any, b: any) => {
       switch (sortType) {
         case 'created': {
           const aTime = new Date(a.created).getTime();

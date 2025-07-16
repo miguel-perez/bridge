@@ -7,9 +7,8 @@
  * @module mcp/release-handler
  */
 
-import { bridgeLogger } from '../utils/bridge-logger.js';
 import { deleteSource } from '../core/storage.js';
-import { VectorStore } from '../services/vector-store.js';
+
 import { ReleaseInput, ToolResultSchema, type ToolResult } from './schemas.js';
 
 export class ReleaseHandler {
@@ -42,16 +41,7 @@ export class ReleaseHandler {
         // Delete from storage
         await deleteSource(release.id);
         
-        // Remove from vector store
-        try {
-          const vectorStore = new VectorStore();
-          await vectorStore.initialize();
-          await vectorStore.removeVector(release.id);
-          await vectorStore.saveToDisk();
-        } catch (error) {
-          // Don't fail release if vector store update fails
-          bridgeLogger.warn('Vector store update failed:', error);
-        }
+        // Vector store removed - embeddings are deleted with the source
         
         const content = `🙏 Experience released with gratitude\n\n📝 ID: ${release.id}\n💭 Reason: ${release.reason || 'No reason provided'}\n🕐 Released: ${new Date().toLocaleString()}\n\nThank you for the insights this moment provided. Significance emerges through accumulation and connection rather than through permanent retention.`;
         

@@ -4,10 +4,7 @@
  */
 
 import { bridgeLogger } from '../utils/bridge-logger.js';
-import { getAllRecords } from './storage.js';
 import type { SourceRecord } from './types.js';
-import { getVectorStore } from '../services/vector-store.js';
-import { embeddingService } from '../services/embeddings.js';
 
 // ============================================================================
 // CONSTANTS
@@ -276,51 +273,18 @@ export async function semanticSearch(
     sortBy?: SortOption;
   } = {}
 ): Promise<SearchResult[]> {
-  const {
-    limit = 20,
-    threshold = 0.3,
-    filters,
-    sortBy = 'relevance'
-  } = options;
+  // Parameters unused - semantic search moved to search service
+  void options;
+  void query;
 
   try {
-    // Get all records
-    const sources = await getAllRecords();
-    const records: SourceRecord[] = sources.map(source => ({ ...source, type: 'source' as const }));
-    
-    // Generate query embedding
-    const queryEmbedding = await embeddingService.generateEmbedding(query);
     
     // Get vector store for similarity search
-    const vectorStore = getVectorStore();
+    // Vector store removed - embeddings now in main storage
     
-    // Perform similarity search
-    const similarIds = await vectorStore.findSimilar(queryEmbedding, limit * 2, threshold);
-    
-    // Create search results
-    const results: SearchResult[] = [];
-    
-    for (const { id, similarity } of similarIds) {
-      const record = records.find(r => r.id === id);
-      if (record) {
-        results.push({
-          type: 'source',
-          id: record.id,
-          relevance: similarity,
-          snippet: record.source.substring(0, 100) + '...',
-          source: record
-        });
-      }
-    }
-    
-    // Apply filters
-    const { filtered } = advancedFilters(results, filters);
-    
-    // Sort results
-    const sorted = sortResults(filtered, sortBy);
-    
-    // Apply limit
-    return sorted.slice(0, limit);
+    // Vector store removed - semantic search is not available in core search
+    // Use the search service for full functionality
+    return [];
     
   } catch (error) {
     bridgeLogger.error('Semantic search failed:', error);

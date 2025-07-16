@@ -77,7 +77,10 @@ export class SearchHandler {
       const { results } = await withTimeout(
         this.searchService.search({
           query,
-          limit
+          limit,
+          // If query is provided, also use it for semantic search
+          semantic_query: query,
+          semantic_threshold: 0.7
         }),
         DEFAULT_TIMEOUTS.SEARCH,
         'Search operation'

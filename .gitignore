@@ -34,6 +34,7 @@ data/
 *.jsonl
 processed-sources/
 extracted-strings/
+CLAUDE.md
 
 # Personal data and logs
 bridge.json
