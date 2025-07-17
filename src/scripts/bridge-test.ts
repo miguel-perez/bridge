@@ -94,19 +94,12 @@ class TestEnvironment {
     this.testVectorsFile = join(this.testDataDir, `test-${this.testId}-vectors.json`);
   }
   
-  async setup(useExistingData: boolean = false, useFixtures: boolean = false): Promise<void> {
+  async setup(useExistingData: boolean = false): Promise<void> {
     if (!existsSync(this.testDataDir)) {
       mkdirSync(this.testDataDir, { recursive: true });
     }
     
-    if (useFixtures) {
-      // Use synthetic test fixtures
-      const { createTestFixtures } = await import('./test-fixtures.js');
-      const fixtures = createTestFixtures();
-      writeFileSync(this.testBridgeFile, JSON.stringify(fixtures, null, 2));
-      writeFileSync(this.testVectorsFile, JSON.stringify([], null, 2));
-      console.log(`✅ Created test environment with ${fixtures.sources.length} synthetic experiences`);
-    } else if (useExistingData) {
+    if (useExistingData) {
       const sourceBridge = join(process.cwd(), 'bridge.json');
       const sourceVectors = join(process.cwd(), 'vectors.json');
       
@@ -460,7 +453,6 @@ Format your response as structured data that can be parsed for analysis.`;
 
 interface TestOptions {
   useExistingData?: boolean;
-  useFixtures?: boolean;
   saveResults?: boolean;
   keepTestData?: boolean;
 }
@@ -491,7 +483,7 @@ class TestOrchestrator {
     
     try {
       console.log('🔧 Setting up test environment...');
-      await testEnv.setup(options.useExistingData, options.useFixtures);
+      await testEnv.setup(options.useExistingData);
       await runner.connect();
       
       const result = await runner.runScenario(scenarioKey);
@@ -520,7 +512,7 @@ class TestOrchestrator {
         const testEnv = new TestEnvironment(scenarioKey);
         const runner = new BridgeTestRunner(testEnv);
         
-        await testEnv.setup(options.useExistingData, options.useFixtures);
+        await testEnv.setup(options.useExistingData);
         await runner.connect();
         
         const result = await runner.runScenario(scenarioKey);
@@ -630,7 +622,7 @@ class TestOrchestrator {
       environment: {
         nodeVersion: process.version,
         platform: process.platform,
-        dataSource: options.useFixtures ? 'fixtures' : options.useExistingData ? 'existing' : 'empty'
+        dataSource: options.useExistingData ? 'existing' : 'empty'
       },
       configuration: options,
       duration: result.endTime!.getTime() - result.startTime.getTime()
@@ -659,7 +651,7 @@ class TestOrchestrator {
       environment: {
         nodeVersion: process.version,
         platform: process.platform,
-        dataSource: options.useFixtures ? 'fixtures' : options.useExistingData ? 'existing' : 'empty'
+        dataSource: options.useExistingData ? 'existing' : 'empty'
       },
       results: results,
       summary: {
@@ -724,15 +716,9 @@ async function main(): Promise<void> {
   const [scenario] = process.argv.slice(2);
   const options: TestOptions = {
     useExistingData: process.argv.includes('--use-existing'),
-    useFixtures: process.argv.includes('--fixtures'),
     saveResults: process.argv.includes('--save'),
     keepTestData: process.argv.includes('--keep')
   };
-
-  // Default to fixtures if neither existing nor fixtures specified
-  if (!options.useExistingData && !options.useFixtures) {
-    options.useFixtures = true;
-  }
   
   // Default to bridge-exploration if no scenario specified
   const testScenario = scenario || 'bridge-exploration';
@@ -745,7 +731,6 @@ async function main(): Promise<void> {
       console.log(`    Goal: ${value.userGoal}`);
     });
     console.log('\nOptions:');
-    console.log('  --fixtures      Use synthetic test fixtures (default)');
     console.log('  --use-existing  Use existing bridge.json data');
     console.log('  --keep          Keep test data after completion');
     console.log('\nResults are automatically saved to /test-results/ for tracking improvements');
