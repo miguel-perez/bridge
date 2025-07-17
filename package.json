@@ -19,6 +19,8 @@
     "test:integration": "npx tsx src/scripts/bridge-test.ts",
     "test:watch": "npm run test -- --watch",
     "test:coverage": "npm run test:unit -- --coverage",
+    "ux:trend": "npx tsx src/scripts/ux-trend.ts",
+    "organize:results": "npx tsx src/scripts/organize-test-results.ts",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
     "format": "prettier --write src/**/*.ts",
