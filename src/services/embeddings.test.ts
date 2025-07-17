@@ -3,7 +3,7 @@ import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
 // Mock environment variables to disable embeddings for tests
 const originalEnv = process.env;
 beforeAll(() => {
-  process.env = { ...originalEnv, MCP: 'false', BRIDGE_DISABLE_EMBEDDINGS: 'true' };
+  process.env = { ...originalEnv, BRIDGE_DISABLE_EMBEDDINGS: 'true' };
 });
 
 afterAll(() => {

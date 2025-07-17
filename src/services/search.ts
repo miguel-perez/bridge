@@ -104,11 +104,6 @@ export interface SearchServiceResponse {
     filtered_records: number;
     vector_search_performed: boolean;
     semantic_search_performed: boolean;
-    vector_store_stats?: {
-      total_vectors: number;
-      valid_vectors: number;
-      invalid_vectors: number;
-    };
     query_embedding_dimension?: number;
     similarity_scores?: Array<{
       id: string;
@@ -572,11 +567,11 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
 // Determine why no results were found
 function determineNoResultsReason(input: SearchInput, debugInfo: SearchServiceResponse['debug']): string {
   if (debugInfo?.total_records === 0) {
-    return 'Vector store is empty - no records available';
+    return 'No records available';
   }
   
-  if (input.semantic_query && debugInfo?.vector_store_stats?.total_vectors === 0) {
-    return 'Vector store has no vectors for semantic search';
+  if (input.semantic_query && !debugInfo?.semantic_search_performed) {
+    return 'Semantic search not available';
   }
   
   if (input.semantic_threshold && input.semantic_threshold > 0.9) {

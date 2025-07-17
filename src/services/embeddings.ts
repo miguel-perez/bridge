@@ -6,6 +6,8 @@ import type { FeatureExtractionPipeline } from '@xenova/transformers';
 const EMBEDDINGS_DISABLED = process.env.BRIDGE_DISABLE_EMBEDDINGS === 'true';
 
 import { bridgeLogger } from '../utils/bridge-logger.js';
+import { RateLimiter } from '../utils/security.js';
+import { withTimeout, DEFAULT_TIMEOUTS } from '../utils/timeout.js';
 
 export class EmbeddingService {
   private pipeline: FeatureExtractionPipeline | null = null;
@@ -13,6 +15,7 @@ export class EmbeddingService {
   private initPromise: Promise<void> | null = null;
   private cache = new Map<string, number[]>();
   private disabled = false;
+  private rateLimiter = new RateLimiter(100); // 100ms between requests
   
   async initialize(): Promise<void> {
     // Skip initialization if embeddings are disabled
@@ -69,6 +72,17 @@ export class EmbeddingService {
     // Initialize if not already done
     await this.initialize();
     
+    // Apply rate limiting and timeout
+    return await this.rateLimiter.enforce(async () => {
+      return await withTimeout(
+        this._generateEmbeddingInternal(text),
+        DEFAULT_TIMEOUTS.EMBEDDING,
+        'embedding generation'
+      );
+    });
+  }
+
+  private async _generateEmbeddingInternal(text: string): Promise<number[]> {
     // Double-check after initialization
     if (this.disabled || !this.pipeline) {
       return new Array(384).fill(0);

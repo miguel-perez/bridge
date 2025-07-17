@@ -240,7 +240,7 @@ describe('MCP Server Protocol Compliance', () => {
       expect(result.content).toBeDefined();
       expect(Array.isArray(result.content)).toBe(true);
       // Should return an error response - source is now required
-      expect((result.content as any[])[0].text).toContain('Either source or experience.narrative is required');
+      expect((result.content as any[])[0].text).toContain("Either source or experience.narrative is required");
     }, 30000);
 
     test('should handle invalid perspective values', async () => {
