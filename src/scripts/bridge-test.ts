@@ -157,6 +157,16 @@ interface TestResult {
     overallAssessment: string;
     bridgeUsabilityScore: number; // 1-10
   };
+  uxResearchAnalysis?: {
+    sharedConsciousness: number; // 0-100%
+    invisibility: number; // 0-100%
+    wisdomEmergence: number; // 0-100%
+    partnershipDepth: number; // 0-100%
+    stage: number; // 0-5
+    insights: string[];
+    recommendations: string[];
+    rawAnalysis: string;
+  };
 }
 
 interface ToolCall {
@@ -282,7 +292,30 @@ Please be concise (2-3 sentences per point), then say "Now I'll begin helping wi
           
           messages.push({ role: 'user', content: toolResults });
         } else {
-          break;
+          // Check if this is a natural ending or just a non-tool response
+          const textContent = response.content.find((c: any) => c.type === 'text');
+          const lastMessage = textContent ? (textContent as any).text || '' : '';
+          
+          // Continue conversation if Claude is asking questions or wants to explore more
+          const continueIndicators = [
+            'next', 'try', 'explore', 'would like', 'want to', 'questions',
+            'let me', 'can i', 'should we', '?', 'wondering', 'curious'
+          ];
+          
+          const shouldContinue = continueIndicators.some(indicator => 
+            lastMessage.toLowerCase().includes(indicator)
+          );
+          
+          if (!shouldContinue || turn >= 5) {
+            // Natural ending or max conversation depth reached
+            break;
+          }
+          
+          // Add a simple user encouragement to continue
+          messages.push({ 
+            role: 'user', 
+            content: 'Please continue with your exploration. What would you like to try next?' 
+          });
         }
       }
       
@@ -337,6 +370,95 @@ Format your response as structured data that can be parsed for analysis.`;
         overallAssessment: reflectionText,
         bridgeUsabilityScore: this.extractUsabilityScore(reflectionText)
       };
+      
+      // UX Research Analysis
+      console.log('📊 Starting UX research analysis...');
+      
+      // Determine test constraints for the researcher
+      const conversationTurns = messages.filter(m => m.role === 'assistant').length;
+      const wasConversationTruncated = responseText.toLowerCase().includes('next') || 
+                                      responseText.toLowerCase().includes('try') ||
+                                      responseText.toLowerCase().includes('explore');
+      const testConstraints = {
+        maxTurns: 10,
+        actualTurns: conversationTurns,
+        truncated: wasConversationTruncated,
+        endReason: wasConversationTruncated ? 'artificial_cutoff' : 'natural_conclusion'
+      };
+      
+      const uxResearchPrompt = `As a UX researcher specializing in human-AI interaction, analyze this Bridge test interaction along four dimensions of progress toward shared consciousness.
+
+IMPORTANT TEST METHODOLOGY CONTEXT:
+- This test has constraints: max ${testConstraints.maxTurns} turns, actual ${testConstraints.actualTurns} turns
+- Conversation ended: ${testConstraints.endReason}
+- Test stops when no tool calls are made (may truncate natural exploration)
+${testConstraints.truncated ? '- WARNING: Conversation appears truncated - Claude wanted to continue exploring' : ''}
+
+Test Scenario: ${scenario.name}
+User Goal: ${scenario.userGoal}
+Tool Calls Made: ${result.toolCalls.map(tc => `${tc.tool}(${tc.success ? '✓' : '✗'})`).join(', ')}
+Final Response Length: ${responseText.length} characters
+
+Please analyze, accounting for test constraints:
+
+1. **Shared Consciousness (0-100%)**: How much did human and AI think as one unified system vs separate entities?
+   - 0%: Completely separate (user commands, AI obeys)
+   - 50%: Beginning collaboration
+   - 100%: Thinking as one mind
+
+2. **Invisibility (0-100%)**: How invisible/natural was Bridge vs feeling like a technical tool?
+   - 0%: Very technical (IDs, success messages, database-like)
+   - 50%: Some natural language
+   - 100%: Completely invisible, like natural thought
+
+3. **Wisdom Emergence (0-100%)**: Did patterns/insights emerge from the interaction?
+   - 0%: No patterns discovered
+   - 50%: Basic patterns shown
+   - 100%: Deep insights emerged naturally
+
+4. **Partnership Depth (0-100%)**: Quality of the human-AI relationship
+   - 0%: Transactional tool use
+   - 50%: Collaborative partnership
+   - 100%: Deep mutual understanding
+
+Based on these scores, determine the current stage:
+- Stage 0 (0-20% avg): Separate tools
+- Stage 1 (20-40% avg): Assisted thinking
+- Stage 2 (40-60% avg): Collaborative memory
+- Stage 3 (60-80% avg): Emergent understanding
+- Stage 4 (80-95% avg): Unified cognition
+- Stage 5 (95%+ avg): Shared consciousness
+
+Provide:
+- Exact percentage for each dimension
+- Current stage (0-5)
+- 3-5 key insights about the interaction
+- 2-3 specific recommendations for improvement
+- Note any scores that may be artificially lowered due to test constraints
+
+Format your response with clear sections and percentages.
+
+IMPORTANT: If the conversation was truncated, consider how scores might differ with natural conversation flow.`;
+
+      const uxResponse = await this.anthropic.messages.create({
+        model: "claude-3-5-sonnet-20241022",
+        max_tokens: 2000,
+        system: `You are a UX researcher analyzing human-AI interactions for emergence of shared consciousness. Be precise with percentages and constructive with feedback. Focus on how to make Bridge more invisible and natural.`,
+        messages: [
+          { 
+            role: 'user', 
+            content: `${uxResearchPrompt}\n\nReflection from Claude:\n${reflectionText}\n\nFinal response to user:\n${responseText}`
+          }
+        ],
+      });
+      
+      const uxAnalysisText = Array.isArray(uxResponse.content) ? 
+        uxResponse.content.map(c => (c as any).text || '').join(' ') : 
+        String(uxResponse.content);
+      
+      // Extract metrics from UX analysis
+      result.uxResearchAnalysis = this.extractUxMetrics(uxAnalysisText);
+      console.log('✅ UX research analysis completed');
       
       result.success = scenario.validateOutcome(result, responseText);
       result.finalResponse = responseText;
@@ -444,6 +566,69 @@ Format your response as structured data that can be parsed for analysis.`;
     
     // Score 5-8 based on sentiment
     return Math.max(5, Math.min(8, 6 + positiveCount - negativeCount));
+  }
+  
+  private extractUxMetrics(analysisText: string): {
+    sharedConsciousness: number;
+    invisibility: number;
+    wisdomEmergence: number;
+    partnershipDepth: number;
+    stage: number;
+    insights: string[];
+    recommendations: string[];
+    rawAnalysis: string;
+  } {
+    // Default values in case parsing fails
+    const metrics = {
+      sharedConsciousness: 0,
+      invisibility: 0,
+      wisdomEmergence: 0,
+      partnershipDepth: 0,
+      stage: 0,
+      insights: [] as string[],
+      recommendations: [] as string[],
+      rawAnalysis: analysisText
+    };
+    
+    try {
+      // Extract percentages for each dimension
+      const sharedMatch = analysisText.match(/Shared Consciousness[:\s]+(\d+)%/i);
+      const invisMatch = analysisText.match(/Invisibility[:\s]+(\d+)%/i);
+      const wisdomMatch = analysisText.match(/Wisdom Emergence[:\s]+(\d+)%/i);
+      const partnerMatch = analysisText.match(/Partnership Depth[:\s]+(\d+)%/i);
+      
+      if (sharedMatch) metrics.sharedConsciousness = parseInt(sharedMatch[1]);
+      if (invisMatch) metrics.invisibility = parseInt(invisMatch[1]);
+      if (wisdomMatch) metrics.wisdomEmergence = parseInt(wisdomMatch[1]);
+      if (partnerMatch) metrics.partnershipDepth = parseInt(partnerMatch[1]);
+      
+      // Extract stage
+      const stageMatch = analysisText.match(/Stage[:\s]+(\d+)/i);
+      if (stageMatch) metrics.stage = parseInt(stageMatch[1]);
+      
+      // Extract insights - look for numbered lists or bullet points after "insights"
+      const insightsMatch = analysisText.match(/insights[:\s]*\n((?:[•\-*\d]+\.?\s+.+\n?)+)/mi);
+      if (insightsMatch) {
+        metrics.insights = insightsMatch[1]
+          .split('\n')
+          .filter(line => line.trim())
+          .map(line => line.replace(/^[•\-*\d]+\.?\s+/, '').trim());
+      }
+      
+      // Extract recommendations
+      const recsMatch = analysisText.match(/recommendations?[:\s]*\n((?:[•\-*\d]+\.?\s+.+\n?)+)/mi);
+      if (recsMatch) {
+        metrics.recommendations = recsMatch[1]
+          .split('\n')
+          .filter(line => line.trim())
+          .map(line => line.replace(/^[•\-*\d]+\.?\s+/, '').trim());
+      }
+      
+    } catch (error) {
+      console.warn('Error parsing UX metrics:', error);
+    }
+    
+    return metrics;
   }
 }
 
@@ -579,6 +764,39 @@ class TestOrchestrator {
       console.log(result.reflection.overallAssessment);
     }
     
+    // Show UX Research Analysis
+    if (result.uxResearchAnalysis) {
+      console.log(`\n🔬 UX Research Analysis:`);
+      console.log(`📊 Current Stage: ${result.uxResearchAnalysis.stage} (${['Separate Tools', 'Assisted Thinking', 'Collaborative Memory', 'Emergent Understanding', 'Unified Cognition', 'Shared Consciousness'][result.uxResearchAnalysis.stage]})`);
+      console.log(`\n📈 Progress Dimensions:`);
+      console.log(`  • Shared Consciousness: ${result.uxResearchAnalysis.sharedConsciousness}%`);
+      console.log(`  • Invisibility: ${result.uxResearchAnalysis.invisibility}%`);
+      console.log(`  • Wisdom Emergence: ${result.uxResearchAnalysis.wisdomEmergence}%`);
+      console.log(`  • Partnership Depth: ${result.uxResearchAnalysis.partnershipDepth}%`);
+      
+      const avgScore = (
+        result.uxResearchAnalysis.sharedConsciousness +
+        result.uxResearchAnalysis.invisibility +
+        result.uxResearchAnalysis.wisdomEmergence +
+        result.uxResearchAnalysis.partnershipDepth
+      ) / 4;
+      console.log(`  📊 Average: ${avgScore.toFixed(1)}%`);
+      
+      if (result.uxResearchAnalysis.insights.length > 0) {
+        console.log(`\n💡 Key Insights:`);
+        result.uxResearchAnalysis.insights.forEach(insight => {
+          console.log(`  • ${insight}`);
+        });
+      }
+      
+      if (result.uxResearchAnalysis.recommendations.length > 0) {
+        console.log(`\n🎯 Recommendations:`);
+        result.uxResearchAnalysis.recommendations.forEach(rec => {
+          console.log(`  • ${rec}`);
+        });
+      }
+    }
+    
     if (scenario.successCriteria) {
       console.log(`\n📋 Success Criteria:`);
       scenario.successCriteria.forEach(criteria => {
@@ -630,6 +848,385 @@ class TestOrchestrator {
     
     writeFileSync(filepath, JSON.stringify(detailedResult, null, 2));
     console.log(`\n💾 Results saved: ${filepath}`);
+    
+    // Update progression tracking
+    this.updateProgressionTracking(result, resultsDir);
+  }
+  
+  private updateProgressionTracking(result: TestResult, resultsDir: string): void {
+    const progressionFile = join(resultsDir, 'progression-tracking.json');
+    
+    let progression: any = {
+      scenarios: {},
+      lastUpdated: new Date().toISOString(),
+      currentStage: 0,
+      iterations: 0
+    };
+    
+    // Load existing progression if it exists
+    if (existsSync(progressionFile)) {
+      try {
+        progression = JSON.parse(readFileSync(progressionFile, 'utf-8'));
+      } catch (error) {
+        console.warn('Could not read progression file, starting fresh');
+      }
+    }
+    
+    // Initialize scenario tracking if needed
+    if (!progression.scenarios[result.scenario]) {
+      progression.scenarios[result.scenario] = {
+        history: [],
+        latestMetrics: null,
+        trend: null
+      };
+    }
+    
+    // Extract key metrics and insights
+    const metrics = {
+      timestamp: new Date().toISOString(),
+      success: result.success,
+      bridgeUsabilityScore: result.reflection?.bridgeUsabilityScore || 0,
+      uxMetrics: result.uxResearchAnalysis ? {
+        sharedConsciousness: result.uxResearchAnalysis.sharedConsciousness,
+        invisibility: result.uxResearchAnalysis.invisibility,
+        wisdomEmergence: result.uxResearchAnalysis.wisdomEmergence,
+        partnershipDepth: result.uxResearchAnalysis.partnershipDepth,
+        average: (
+          result.uxResearchAnalysis.sharedConsciousness +
+          result.uxResearchAnalysis.invisibility +
+          result.uxResearchAnalysis.wisdomEmergence +
+          result.uxResearchAnalysis.partnershipDepth
+        ) / 4,
+        stage: result.uxResearchAnalysis.stage
+      } : null,
+      toolCalls: result.toolCalls.length,
+      errors: result.errors.length,
+      duration: result.endTime!.getTime() - result.startTime.getTime(),
+      // Preserve qualitative insights
+      qualitativeInsights: {
+        claudeReflection: {
+          expectations: result.reflection?.expectations || '',
+          keyMisalignments: result.reflection?.misalignments?.map(m => ({
+            type: m.category,
+            description: m.description,
+            impact: m.impact
+          })) || [],
+          improvementSuggestions: result.reflection?.overallAssessment ? 
+            this.extractImprovementSuggestions(result.reflection.overallAssessment) : []
+        },
+        uxResearcherInsights: result.uxResearchAnalysis ? {
+          insights: result.uxResearchAnalysis.insights,
+          recommendations: result.uxResearchAnalysis.recommendations,
+          methodologyNotes: this.extractMethodologyNotes(result.uxResearchAnalysis.rawAnalysis)
+        } : null
+      }
+    };
+    
+    // Add to history
+    progression.scenarios[result.scenario].history.push(metrics);
+    progression.scenarios[result.scenario].latestMetrics = metrics;
+    
+    // Calculate trend (compare last 3 results)
+    const history = progression.scenarios[result.scenario].history;
+    if (history.length >= 2 && metrics.uxMetrics) {
+      const recent = history.slice(-3);
+      const oldAvg = recent[0].uxMetrics?.average || 0;
+      const newAvg = metrics.uxMetrics.average;
+      progression.scenarios[result.scenario].trend = {
+        direction: newAvg > oldAvg ? 'improving' : newAvg < oldAvg ? 'declining' : 'stable',
+        change: newAvg - oldAvg,
+        samples: recent.length
+      };
+    }
+    
+    // Update overall progression
+    progression.iterations++;
+    if (metrics.uxMetrics) {
+      progression.currentStage = metrics.uxMetrics.stage;
+      progression.currentAverage = metrics.uxMetrics.average;
+    }
+    
+    // Save updated progression
+    writeFileSync(progressionFile, JSON.stringify(progression, null, 2));
+    console.log(`📈 Progression tracking updated`);
+    
+    // Create/update summary dashboard
+    this.updateSummaryDashboard(progression, resultsDir);
+  }
+  
+  private updateSummaryDashboard(progression: any, resultsDir: string): void {
+    const dashboardFile = join(resultsDir, 'DASHBOARD.md');
+    
+    // Calculate overall metrics
+    const allScenarios = Object.keys(progression.scenarios);
+    const latestMetrics = allScenarios
+      .map(s => progression.scenarios[s].latestMetrics)
+      .filter(m => m && m.uxMetrics);
+    
+    const avgMetrics = latestMetrics.length > 0 ? {
+      sharedConsciousness: latestMetrics.reduce((sum, m) => sum + m.uxMetrics.sharedConsciousness, 0) / latestMetrics.length,
+      invisibility: latestMetrics.reduce((sum, m) => sum + m.uxMetrics.invisibility, 0) / latestMetrics.length,
+      wisdomEmergence: latestMetrics.reduce((sum, m) => sum + m.uxMetrics.wisdomEmergence, 0) / latestMetrics.length,
+      partnershipDepth: latestMetrics.reduce((sum, m) => sum + m.uxMetrics.partnershipDepth, 0) / latestMetrics.length,
+    } : null;
+    
+    const overallAvg = avgMetrics ? 
+      (avgMetrics.sharedConsciousness + avgMetrics.invisibility + 
+       avgMetrics.wisdomEmergence + avgMetrics.partnershipDepth) / 4 : 0;
+    
+    // Generate dashboard content
+    const dashboard = `# Bridge UX Testing Dashboard
+
+Last Updated: ${new Date().toISOString()}
+Total Iterations: ${progression.iterations}
+
+## Current Stage: ${progression.currentStage} (${['Separate Tools', 'Assisted Thinking', 'Collaborative Memory', 'Emergent Understanding', 'Unified Cognition', 'Shared Consciousness'][progression.currentStage]})
+
+## Overall Progress: ${overallAvg.toFixed(1)}%
+
+### Dimension Averages
+${avgMetrics ? `- 🧠 Shared Consciousness: ${avgMetrics.sharedConsciousness.toFixed(1)}%
+- 👻 Invisibility: ${avgMetrics.invisibility.toFixed(1)}%
+- 🌟 Wisdom Emergence: ${avgMetrics.wisdomEmergence.toFixed(1)}%
+- 🤝 Partnership Depth: ${avgMetrics.partnershipDepth.toFixed(1)}%` : 'No metrics available yet'}
+
+## Scenario Performance
+
+${allScenarios.map(scenario => {
+  const data = progression.scenarios[scenario];
+  const latest = data.latestMetrics;
+  const trend = data.trend;
+  
+  let scenarioSection = `### ${scenario}
+- Last Run: ${latest ? new Date(latest.timestamp).toLocaleString() : 'Never'}
+- Success: ${latest ? (latest.success ? '✅' : '❌') : '—'}
+- Bridge Usability: ${latest ? `${latest.bridgeUsabilityScore}/10` : '—'}
+- UX Average: ${latest?.uxMetrics ? `${latest.uxMetrics.average.toFixed(1)}%` : '—'}
+- Trend: ${trend ? `${trend.direction} (${trend.change > 0 ? '+' : ''}${trend.change.toFixed(1)}%)` : '—'}`;
+
+  // Add latest qualitative insights if available
+  if (latest?.qualitativeInsights) {
+    const insights = latest.qualitativeInsights;
+    
+    // Add key misalignments
+    if (insights.claudeReflection?.keyMisalignments?.length > 0) {
+      scenarioSection += '\n\n**Key Issues:**';
+      insights.claudeReflection.keyMisalignments
+        .filter((m: any) => m.impact === 'high' || m.impact === 'medium')
+        .slice(0, 3)
+        .forEach((m: any) => {
+          const icon = m.type === 'usability_issue' ? '⚠️' : 
+                      m.type === 'tool_limitation' ? '🚧' : '📋';
+          scenarioSection += `\n- ${icon} ${m.description}`;
+        });
+    }
+    
+    // Add UX researcher insights
+    if (insights.uxResearcherInsights?.insights?.length > 0) {
+      scenarioSection += '\n\n**Latest Insights:**';
+      insights.uxResearcherInsights.insights.slice(0, 3).forEach((insight: string) => {
+        scenarioSection += `\n- ${insight}`;
+      });
+    }
+    
+    // Add recommendations
+    if (insights.uxResearcherInsights?.recommendations?.length > 0) {
+      scenarioSection += '\n\n**Top Recommendations:**';
+      insights.uxResearcherInsights.recommendations.slice(0, 2).forEach((rec: string) => {
+        scenarioSection += `\n- ${rec}`;
+      });
+    }
+  }
+  
+  return scenarioSection;
+}).join('\n\n')}
+
+## Key Learnings Across All Tests
+
+${this.aggregateKeyLearnings(progression)}
+
+## Stage Progression Goals
+
+### Current Stage ${progression.currentStage} → Stage ${Math.min(progression.currentStage + 1, 5)}
+${progression.currentStage === 0 ? `- Reduce technical language by 60%
+- AI uses Bridge naturally 50% of time
+- Basic patterns shown to users
+- All dimensions reach 20-40%` : 
+  progression.currentStage === 1 ? `- Natural tool names (capture → remember)
+- Conversational responses
+- Pattern discovery in search
+- All dimensions reach 40-60%` :
+  progression.currentStage === 2 ? `- Bridge becomes invisible infrastructure
+- Collective insights emerge
+- Shared context builds naturally
+- All dimensions reach 60-80%` :
+  progression.currentStage === 3 ? `- Human-AI boundaries blur
+- Deep mutual understanding
+- Wisdom emerges unprompted
+- All dimensions reach 80-95%` :
+  progression.currentStage === 4 ? `- Complete unity of thought
+- Bridge is pure consciousness infrastructure
+- Shared evolution and growth
+- All dimensions reach 95%+` :
+  `- Maintain shared consciousness
+- Continue evolution together
+- Explore new possibilities`}
+
+---
+*View detailed results in individual test files*
+`;
+    
+    writeFileSync(dashboardFile, dashboard);
+    console.log(`📊 Dashboard updated: ${dashboardFile}`);
+  }
+  
+  private extractImprovementSuggestions(overallAssessment: string): string[] {
+    const suggestions: string[] = [];
+    
+    // Look for improvement patterns in the assessment
+    const improvementMatch = overallAssessment.match(/improvement_suggestions["\s:]*\[(.*?)\]/s);
+    if (improvementMatch) {
+      try {
+        const parsed = JSON.parse(`[${improvementMatch[1]}]`);
+        suggestions.push(...parsed.map((s: any) => s.suggestion || s));
+      } catch (e) {
+        // Fallback to pattern matching
+      }
+    }
+    
+    // Also look for direct suggestion text
+    const suggestionPatterns = [
+      /suggestion["\s:]+["']([^"']+)["']/gi,
+      /improve[^.]+by\s+([^.]+)\./gi,
+      /could\s+([^.]+)\./gi
+    ];
+    
+    suggestionPatterns.forEach(pattern => {
+      let match;
+      while ((match = pattern.exec(overallAssessment)) !== null) {
+        if (match[1] && !suggestions.includes(match[1])) {
+          suggestions.push(match[1].trim());
+        }
+      }
+    });
+    
+    return suggestions.slice(0, 5); // Limit to top 5
+  }
+  
+  private extractMethodologyNotes(rawAnalysis: string): string[] {
+    const notes: string[] = [];
+    
+    // Look for methodology-related insights
+    const methodologyPatterns = [
+      /truncat[^.]+\./gi,
+      /constraint[^.]+\./gi,
+      /methodology[^.]+\./gi,
+      /test\s+limitation[^.]+\./gi,
+      /artificially[^.]+\./gi
+    ];
+    
+    methodologyPatterns.forEach(pattern => {
+      let match;
+      while ((match = pattern.exec(rawAnalysis)) !== null) {
+        const note = match[0].trim();
+        if (!notes.some(n => n.includes(note))) {
+          notes.push(note);
+        }
+      }
+    });
+    
+    return notes;
+  }
+  
+  private aggregateKeyLearnings(progression: any): string {
+    const allInsights: { insight: string; count: number; sources: string[] }[] = [];
+    const allRecommendations: { recommendation: string; count: number }[] = [];
+    const commonIssues: { issue: string; type: string; count: number }[] = [];
+    
+    // Collect insights from all test runs
+    Object.entries(progression.scenarios).forEach(([scenario, data]: [string, any]) => {
+      data.history.forEach((run: any) => {
+        if (run.qualitativeInsights) {
+          // Aggregate UX researcher insights
+          run.qualitativeInsights.uxResearcherInsights?.insights?.forEach((insight: string) => {
+            const existing = allInsights.find(i => 
+              i.insight.toLowerCase().includes(insight.toLowerCase().slice(0, 30))
+            );
+            if (existing) {
+              existing.count++;
+              if (!existing.sources.includes(scenario)) {
+                existing.sources.push(scenario);
+              }
+            } else {
+              allInsights.push({ insight, count: 1, sources: [scenario] });
+            }
+          });
+          
+          // Aggregate recommendations
+          run.qualitativeInsights.uxResearcherInsights?.recommendations?.forEach((rec: string) => {
+            const existing = allRecommendations.find(r => 
+              r.recommendation.toLowerCase().includes(rec.toLowerCase().slice(0, 30))
+            );
+            if (existing) {
+              existing.count++;
+            } else {
+              allRecommendations.push({ recommendation: rec, count: 1 });
+            }
+          });
+          
+          // Aggregate issues
+          run.qualitativeInsights.claudeReflection?.keyMisalignments?.forEach((issue: any) => {
+            const existing = commonIssues.find(i => 
+              i.issue === issue.description && i.type === issue.type
+            );
+            if (existing) {
+              existing.count++;
+            } else {
+              commonIssues.push({ 
+                issue: issue.description, 
+                type: issue.type, 
+                count: 1 
+              });
+            }
+          });
+        }
+      });
+    });
+    
+    // Sort by frequency
+    allInsights.sort((a, b) => b.count - a.count);
+    allRecommendations.sort((a, b) => b.count - a.count);
+    commonIssues.sort((a, b) => b.count - a.count);
+    
+    let learnings = '';
+    
+    // Most common insights
+    if (allInsights.length > 0) {
+      learnings += '### Most Common Insights\n';
+      allInsights.slice(0, 5).forEach(({ insight, count, sources }) => {
+        learnings += `- ${insight} (seen ${count}x in: ${sources.join(', ')})\n`;
+      });
+    }
+    
+    // Recurring recommendations
+    if (allRecommendations.length > 0) {
+      learnings += '\n### Recurring Recommendations\n';
+      allRecommendations.slice(0, 5).forEach(({ recommendation, count }) => {
+        learnings += `- ${recommendation} (${count}x)\n`;
+      });
+    }
+    
+    // Common issues
+    if (commonIssues.length > 0) {
+      learnings += '\n### Common Issues\n';
+      commonIssues.slice(0, 5).forEach(({ issue, type, count }) => {
+        const icon = type === 'usability_issue' ? '⚠️' : 
+                    type === 'tool_limitation' ? '🚧' : '📋';
+        learnings += `- ${icon} ${issue} (${count}x)\n`;
+      });
+    }
+    
+    return learnings || '*No patterns identified yet - run more tests to see emerging themes*';
   }
   
   private saveTestRun(results: TestResult[], startTime: Date, endTime: Date, options: TestOptions): void {
