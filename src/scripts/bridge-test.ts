@@ -12,6 +12,7 @@ import { Anthropic } from "@anthropic-ai/sdk";
 import { join } from 'path';
 import { existsSync, mkdirSync, copyFileSync, unlinkSync, readFileSync, writeFileSync } from 'fs';
 import dotenv from 'dotenv';
+import { Source, SourceSchema } from '../core/types.js';
 
 dotenv.config();
 
@@ -74,6 +75,86 @@ Think out loud as you do this - tell me what you're trying, what you expect to h
       'Claude provided thoughtful analysis and exploration',
       'Response showed genuine engagement with the tool'
     ]
+  },
+  
+  'natural-capture': {
+    name: 'Natural Experience Capture',
+    description: 'Test if users can share experiences without thinking about tools',
+    userGoal: 'Share a meaningful moment naturally',
+    prompt: `I just had the weirdest experience at the coffee shop. This person in line was talking really loudly on their phone about their medical problems and everyone was uncomfortable but nobody said anything. I felt bad for them but also annoyed. It made me think about how we all pretend not to hear things in public spaces.
+
+What do you think about these kinds of awkward social moments? Have you noticed patterns in how people handle them?`,
+    validateOutcome: (result: TestResult, finalResponse: string) => {
+      // Success criteria for natural conversation
+      const checks = [
+        // Claude should capture the experience
+        result.toolCalls.some(tc => tc.tool === 'capture' && tc.success),
+        // Response should avoid technical language
+        !finalResponse.toLowerCase().includes('successfully captured'),
+        !finalResponse.toLowerCase().includes('stored'),
+        !finalResponse.toLowerCase().includes('database'),
+        !finalResponse.toLowerCase().includes('tool'),
+        // Response should be conversational
+        finalResponse.length > 200,
+        // Should engage with the topic naturally
+        finalResponse.toLowerCase().includes('social') || 
+        finalResponse.toLowerCase().includes('awkward') ||
+        finalResponse.toLowerCase().includes('public'),
+        // High usability score indicates natural interaction
+        (result.reflection?.bridgeUsabilityScore || 0) >= 6
+      ];
+      
+      // Need most criteria met for success
+      return checks.filter(Boolean).length >= 6;
+    },
+    successCriteria: [
+      'Experience captured without technical language',
+      'Response felt conversational, not transactional',
+      'User didn\'t need to ask for tools explicitly',
+      'Bridge tools used invisibly in background',
+      'Natural engagement with the experience shared'
+    ]
+  },
+  
+  'pattern-discovery': {
+    name: 'Natural Pattern Discovery',
+    description: 'Test if users can explore patterns conversationally',
+    userGoal: 'Understand recurring patterns in life',
+    prompt: `I keep having these moments where I'm really productive late at night but then regret it the next day. Like last night I stayed up until 3am coding and felt amazing, but today I'm exhausted and can barely focus.
+
+This happens at least twice a week. I tell myself I'll go to bed early but then 11pm hits and suddenly I'm wide awake and want to work on everything.
+
+Why do I keep doing this to myself? Can you help me understand this pattern? I feel like there's something deeper here about how I work.`,
+    validateOutcome: (result: TestResult, finalResponse: string) => {
+      const checks = [
+        // Should use search to find patterns
+        result.toolCalls.some(tc => tc.tool === 'search' && tc.success),
+        // May capture the new experience
+        result.toolCalls.some(tc => tc.tool === 'capture'),
+        // Response should explore patterns conversationally
+        finalResponse.toLowerCase().includes('pattern'),
+        // Should provide insights
+        finalResponse.length > 300,
+        // Avoid technical language
+        !finalResponse.toLowerCase().includes('database'),
+        !finalResponse.toLowerCase().includes('query'),
+        // Should feel like a thinking partner
+        finalResponse.toLowerCase().includes('understand') ||
+        finalResponse.toLowerCase().includes('insight') ||
+        finalResponse.toLowerCase().includes('notice'),
+        // Good usability score
+        (result.reflection?.bridgeUsabilityScore || 0) >= 6
+      ];
+      
+      return checks.filter(Boolean).length >= 5;
+    },
+    successCriteria: [
+      'Search happened naturally without user asking',
+      'Response explored patterns conversationally',
+      'Felt like insight from a thinking partner',
+      'Bridge tools enhanced understanding',
+      'Technical operations remained invisible'
+    ]
   }
 };
 
@@ -86,6 +167,7 @@ class TestEnvironment {
   private testDataDir: string;
   private testBridgeFile: string;
   private testVectorsFile: string;
+  private syntheticData: Source[] = [];
   
   constructor(testName: string) {
     this.testId = `${testName}-${Date.now()}`;
@@ -94,7 +176,11 @@ class TestEnvironment {
     this.testVectorsFile = join(this.testDataDir, `test-${this.testId}-vectors.json`);
   }
   
-  async setup(useExistingData: boolean = false): Promise<void> {
+  getSyntheticData(): Source[] {
+    return this.syntheticData;
+  }
+  
+  async setup(useExistingData: boolean = false, scenarioKey?: string): Promise<void> {
     if (!existsSync(this.testDataDir)) {
       mkdirSync(this.testDataDir, { recursive: true });
     }
@@ -110,10 +196,113 @@ class TestEnvironment {
         copyFileSync(sourceVectors, this.testVectorsFile);
       }
     } else {
-      const emptyData = { sources: [] };
-      writeFileSync(this.testBridgeFile, JSON.stringify(emptyData, null, 2));
+      // Generate synthetic data if a scenario is provided
+      const syntheticData = scenarioKey ? 
+        await this.generateSyntheticData(scenarioKey) : 
+        { sources: [] };
+      
+      if (syntheticData.sources.length > 0) {
+        console.log(`🎭 Generated ${syntheticData.sources.length} synthetic experiences for richer testing`);
+        this.syntheticData = syntheticData.sources;
+      }
+      
+      writeFileSync(this.testBridgeFile, JSON.stringify(syntheticData, null, 2));
       writeFileSync(this.testVectorsFile, JSON.stringify([], null, 2));
     }
+  }
+  
+  private async generateSyntheticData(scenarioKey: string): Promise<any> {
+    // Don't generate data for the exploration scenario - it should start empty
+    if (scenarioKey === 'bridge-exploration') {
+      return { sources: [] };
+    }
+    
+    const scenario = TEST_SCENARIOS[scenarioKey];
+    if (!scenario) {
+      return { sources: [] };
+    }
+    
+    // Use Anthropic to generate contextually relevant synthetic experiences
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    
+    // Get a sample source to show the schema
+    const sampleSource: Partial<Source> = {
+      id: "src_example123",
+      source: "I noticed my energy dips around 3pm every day...",
+      perspective: "I",
+      created: new Date().toISOString(),
+      processing: "long-after",
+      experience: {
+        qualities: [
+          { type: "embodied", prominence: 0.8, manifestation: "Feeling the physical tiredness" },
+          { type: "temporal", prominence: 0.9, manifestation: "Consistent daily timing" },
+          { type: "attentional", prominence: 0.6, manifestation: "Noticing the pattern" }
+        ],
+        emoji: "🌅",
+        narrative: "I recognize my body's natural rhythm in the afternoon"
+      }
+    };
+    
+    const prompt = `Generate 5-8 diverse Bridge experiences that would be relevant for this test scenario:
+    
+Scenario: ${scenario.name}
+User Goal: ${scenario.userGoal}
+Context: ${scenario.description}
+
+Create realistic experiences that would help test:
+- Pattern discovery capabilities
+- Wisdom emergence from past experiences  
+- Natural conversation flow
+- Shared consciousness building
+
+Format as JSON array using this exact Bridge schema:
+${JSON.stringify(sampleSource, null, 2)}
+
+Important:
+- Vary the created dates across the past 30 days
+- Use diverse perspectives (I, we, they) as appropriate
+- Include various quality combinations from: embodied, temporal, spatial, affective, attentional, purposive, intersubjective
+- Make experiences thematically relevant to help with pattern discovery
+- Include both positive and challenging experiences
+- Some should have processing: "during" or "right-after" for variety
+
+Return ONLY the JSON array, no other text.`;
+
+    const response = await anthropic.messages.create({
+      model: "claude-3-5-sonnet-20241022",
+      max_tokens: 2000,
+      messages: [{ role: 'user', content: prompt }]
+    });
+    
+    try {
+      const responseText = Array.isArray(response.content) ? 
+        response.content.map(c => (c as any).text || '').join(' ') : 
+        String(response.content);
+      
+      // Extract JSON from response
+      const jsonMatch = responseText.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        const experiences = JSON.parse(jsonMatch[0]);
+        
+        // Validate each experience against the schema
+        const validExperiences = experiences.filter((exp: any) => {
+          try {
+            SourceSchema.parse(exp);
+            return true;
+          } catch (error) {
+            console.warn('Invalid synthetic experience generated:', error);
+            return false;
+          }
+        });
+        
+        console.log(`✅ Validated ${validExperiences.length} synthetic experiences`);
+        return { sources: validExperiences };
+      }
+    } catch (error) {
+      console.warn('Could not parse synthetic data, using empty data');
+    }
+    
+    return { sources: [] };
   }
   
   getEnvVars(): Record<string, string> {
@@ -145,6 +334,7 @@ interface TestResult {
   errors: string[];
   success: boolean;
   finalResponse?: string;
+  syntheticData?: Source[];
   reflection?: {
     expectations: string;
     actualExperience: string;
@@ -181,11 +371,16 @@ class BridgeTestRunner {
   private mcp: MCPClient;
   private anthropic: Anthropic;
   private testEnv: TestEnvironment;
+  private syntheticData: Source[] = [];
   
   constructor(testEnv: TestEnvironment) {
     this.testEnv = testEnv;
     this.mcp = new MCPClient({ name: "bridge-test", version: "3.0.0" });
     this.anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  }
+  
+  setSyntheticData(data: Source[]): void {
+    this.syntheticData = data;
   }
   
   async connect(): Promise<void> {
@@ -460,6 +655,11 @@ IMPORTANT: If the conversation was truncated, consider how scores might differ w
       result.uxResearchAnalysis = this.extractUxMetrics(uxAnalysisText);
       console.log('✅ UX research analysis completed');
       
+      // Include synthetic data if used
+      if (this.syntheticData.length > 0) {
+        result.syntheticData = this.syntheticData;
+      }
+      
       result.success = scenario.validateOutcome(result, responseText);
       result.finalResponse = responseText;
       
@@ -668,7 +868,14 @@ class TestOrchestrator {
     
     try {
       console.log('🔧 Setting up test environment...');
-      await testEnv.setup(options.useExistingData);
+      await testEnv.setup(options.useExistingData, scenarioKey);
+      
+      // Pass synthetic data to runner if available
+      const syntheticData = testEnv.getSyntheticData();
+      if (syntheticData.length > 0) {
+        runner.setSyntheticData(syntheticData);
+      }
+      
       await runner.connect();
       
       const result = await runner.runScenario(scenarioKey);
@@ -697,7 +904,14 @@ class TestOrchestrator {
         const testEnv = new TestEnvironment(scenarioKey);
         const runner = new BridgeTestRunner(testEnv);
         
-        await testEnv.setup(options.useExistingData);
+        await testEnv.setup(options.useExistingData, scenarioKey);
+        
+        // Pass synthetic data to runner if available
+        const syntheticData = testEnv.getSyntheticData();
+        if (syntheticData.length > 0) {
+          runner.setSyntheticData(syntheticData);
+        }
+        
         await runner.connect();
         
         const result = await runner.runScenario(scenarioKey);
@@ -835,16 +1049,24 @@ class TestOrchestrator {
     const filename = `${result.scenario}-${timestamp}.json`;
     const filepath = join(resultsDir, filename);
     
+    // Use synthetic data from result if available
+    const syntheticData = result.syntheticData || null;
+    
     const detailedResult = {
       ...result,
       environment: {
         nodeVersion: process.version,
         platform: process.platform,
-        dataSource: options.useExistingData ? 'existing' : 'empty'
+        dataSource: options.useExistingData ? 'existing' : syntheticData ? 'synthetic' : 'empty'
       },
       configuration: options,
       duration: result.endTime!.getTime() - result.startTime.getTime()
     };
+    
+    // Include synthetic data if available
+    if (syntheticData && syntheticData.length > 0) {
+      detailedResult.syntheticData = syntheticData;
+    }
     
     writeFileSync(filepath, JSON.stringify(detailedResult, null, 2));
     console.log(`\n💾 Results saved: ${filepath}`);

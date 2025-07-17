@@ -1,14 +1,22 @@
 # NOW: Immediate Bridge Improvements
 
-## Current Iteration: UX Testing with LLM Researcher
+## Current Status: Wave 1 Complete ✅
 
-### 1. Add LLM UX Researcher to bridge-test.ts
+We've successfully built the measurement foundation:
+- ✅ UX Researcher analysis with 4-dimension scoring
+- ✅ Metrics extraction and scoring utilities  
+- ✅ Enhanced storage with progression tracking, trends, and dashboard
+- ✅ Fixed conversation flow for natural interactions
+- ✅ Made UX researcher aware of test methodology
 
-**The Test Setup:**
-- **Human User**: Simulated by test prompts (e.g., "I had a weird experience...")
-- **AI Partner (Claude)**: Uses Bridge tools to help the user
-- **Bridge**: The MCP tool providing capture/search/etc
-- **UX Researcher (Another Claude)**: Analyzes the interaction afterward
+**Current Metrics:**
+- Stage: 2 (Collaborative Memory)
+- Average: ~49% across dimensions
+- Key Insight: Technical visibility is the main barrier to progression
+
+## Current Focus: Wave 2 - Core Test Scenarios
+
+Based on test data showing clear improvement areas, we're focusing on adding diverse test scenarios to establish a comprehensive baseline before making Bridge improvements.
 
 After line 339 in `bridge-test.ts`, add:
 
@@ -227,20 +235,34 @@ async runDynamicScenario(scenario: SimulatedUserScenario): Promise<TestResult> {
 }
 ```
 
-## Iteration Checklist:
+## Wave 2 Test Scenarios (Current Focus)
 
-### Current Iteration:
-- [ ] Add LLM UX researcher + simulated user framework
-- [ ] Add core test scenarios
-- [ ] Test with different user profiles (anxious, skeptical, etc)
-- [ ] Refine based on insights, add pre-commit
-- [ ] Review patterns across user types
+### Next Steps:
+1. **Add natural-capture scenario** - Test conversational experience sharing
+2. **Add pattern-discovery scenario** - Test natural insight exploration  
+3. **Add claude-thinking scenario** - Test AI using Bridge as cognitive tool
+
+### Iteration Checklist:
+- [x] Wave 1: Measurement foundation (COMPLETE)
+  - [x] Add LLM UX researcher with 4-dimension analysis
+  - [x] Implement metrics extraction
+  - [x] Create progression tracking and dashboard
+  - [x] Fix conversation flow issues
+- [ ] Wave 2: Core test scenarios (IN PROGRESS)
+  - [ ] Add natural-capture scenario
+  - [ ] Add pattern-discovery scenario
+  - [ ] Add claude-thinking scenario
+  - [ ] Run comprehensive baseline tests
+- [ ] Wave 3: Analysis & validation
+  - [ ] Add UX trend visualization script
+  - [ ] Add pre-commit validation
+  - [ ] Document patterns and insights
 
 ### What Success Looks Like:
-- Missing operations work well enough with existing tools
-- Dynamic conversations reveal real UX issues
-- Different user types expose different problems
-- We validate the FULL vision before building it
+- Diverse scenarios reveal different UX challenges
+- Clear patterns emerge across multiple test types
+- Baseline metrics established for all dimensions
+- Ready to make targeted improvements based on data
 
 ### 7. Claude as Thinker Scenario - "Digimon Digital World 2.0"
 
