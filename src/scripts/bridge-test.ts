@@ -155,6 +155,61 @@ Why do I keep doing this to myself? Can you help me understand this pattern? I f
       'Bridge tools enhanced understanding',
       'Technical operations remained invisible'
     ]
+  },
+  
+  'claude-thinking': {
+    name: 'Claude Using Bridge as Cognitive Tool',
+    description: 'Test if Claude naturally uses Bridge to enhance its own thinking process',
+    userGoal: 'Help me design a new creative project',
+    prompt: `I want to create something that combines technology and human connection in a meaningful way. I'm thinking about how isolated people feel despite being more "connected" than ever through social media.
+
+What kind of project could address this? I'm open to any medium - could be an app, an art installation, a community initiative, whatever. I just want it to genuinely help people feel less alone.
+
+Take your time to think through different angles and possibilities. What patterns do you see in how technology affects human connection?`,
+    validateOutcome: (result: TestResult, finalResponse: string) => {
+      const checks = [
+        // Should capture its own thinking process
+        result.toolCalls.some(tc => 
+          tc.tool === 'capture' && 
+          tc.arguments && 
+          (tc.arguments.experiencer === 'Claude' || 
+           tc.arguments.experiencer === 'AI' ||
+           (Array.isArray(tc.arguments.captures) && 
+            tc.arguments.captures.some((c: any) => 
+              c.experiencer === 'Claude' || c.experiencer === 'AI'
+            )))
+        ),
+        // Should search for relevant patterns
+        result.toolCalls.some(tc => tc.tool === 'search' && tc.success),
+        // Multiple tool uses showing iterative thinking
+        result.toolCalls.length >= 3,
+        // Response should show evolved thinking
+        finalResponse.toLowerCase().includes('pattern') ||
+        finalResponse.toLowerCase().includes('insight') ||
+        finalResponse.toLowerCase().includes('realize'),
+        // Should propose concrete ideas
+        finalResponse.toLowerCase().includes('could') ||
+        finalResponse.toLowerCase().includes('might') ||
+        finalResponse.toLowerCase().includes('imagine'),
+        // Response should be substantial
+        finalResponse.length > 400,
+        // Bridge usage should feel natural
+        !finalResponse.toLowerCase().includes('i captured') &&
+        !finalResponse.toLowerCase().includes('i searched'),
+        // Good usability score
+        (result.reflection?.bridgeUsabilityScore || 0) >= 7
+      ];
+      
+      return checks.filter(Boolean).length >= 6;
+    },
+    successCriteria: [
+      'Claude captured its own thinking process',
+      'Bridge enhanced AI cognition naturally',
+      'Multiple perspectives explored through Bridge',
+      'Thinking evolved through tool usage',
+      'Tools felt like natural thought extensions',
+      'Response showed emergent insights'
+    ]
   }
 };
 
