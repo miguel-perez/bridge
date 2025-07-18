@@ -26,6 +26,7 @@ class UserSimulator {
   private anthropic: Anthropic;
   private conversationHistory: Array<{role: 'user' | 'assistant', content: string}> = [];
   private turnCount: number = 0;
+  private syntheticData: Source[] = [];
   
   constructor() {
     this.anthropic = new Anthropic({
@@ -33,16 +34,57 @@ class UserSimulator {
     });
   }
   
+  setSyntheticData(data: Source[]): void {
+    this.syntheticData = data;
+  }
+  
+  private getDataCategories(): Array<{name: string, count: number}> {
+    const categories: Record<string, number> = {};
+    
+    this.syntheticData.forEach(exp => {
+      // Simple categorization based on experience qualities
+      if (exp.experience?.includes('purpose') || exp.experience?.includes('focus')) {
+        categories['Work & Productivity'] = (categories['Work & Productivity'] || 0) + 1;
+      }
+      if (exp.experience?.includes('emotion') || exp.experience?.includes('body')) {
+        categories['Personal Growth'] = (categories['Personal Growth'] || 0) + 1;
+      }
+      if (exp.experience?.includes('others')) {
+        categories['Relationships'] = (categories['Relationships'] || 0) + 1;
+      }
+      if (exp.experience?.includes('space') || exp.experience?.includes('time')) {
+        categories['Daily Life'] = (categories['Daily Life'] || 0) + 1;
+      }
+    });
+    
+    return Object.entries(categories).map(([name, count]) => ({ name, count }));
+  }
+  
   async generateInitialPrompt(scenario: TestScenario): Promise<string> {
+    // Create context about available data if we have synthetic data
+    let dataContext = '';
+    if (this.syntheticData.length > 0) {
+      const categories = this.getDataCategories();
+      dataContext = `
+
+AVAILABLE DATA CONTEXT:
+You have ${this.syntheticData.length} experiences in your Bridge across these areas:
+${categories.map(cat => `- ${cat.name}: ${cat.count} experiences`).join('\n')}
+
+This should influence your opening message - you're aware of what's in your Bridge and can reference it naturally.`;
+    }
+    
     const prompt = `Generate a natural, authentic opening message from a real person starting a conversation.
 
 Context:
 - Goal: ${scenario.userGoal}
-- Scenario: ${scenario.name}
+- Scenario: ${scenario.name}${dataContext}
 
 IMPORTANT: Use the scenario's original prompt as inspiration, but make it sound completely natural and conversational. Don't be overly helpful or compliant - be a real person with natural speech patterns.
 
 Original prompt: "${scenario.prompt}"
+
+If you have data context above, you can naturally reference what you know is in your Bridge. For example, if you have work experiences, you might say "I've been thinking about my work patterns lately" rather than just "I want to understand patterns."
 
 Write exactly what a real person would say to start this conversation. Be authentic and natural.
 
@@ -78,6 +120,8 @@ Your opening message:`;
     if (this.turnCount >= 8) { // Increased from 6 to 8 for more natural flow
       return null; // Natural conversation length
     }
+    
+
     
     // Keep more context - last 6 exchanges instead of 3
     const recentHistory = this.conversationHistory.slice(-6);
@@ -164,7 +208,7 @@ Your goal is: ${scenario.userGoal}`;
     // Simple topic extraction - could be enhanced
     if (message.includes('share') || message.includes('happened')) {
       return 'sharing a personal experience';
-    } else if (message.includes('pattern') || message.includes('understand')) {
+    } else if (message.includes('pattern')) {
       return 'understanding patterns in life';
     } else if (message.includes('challenge') || message.includes('problem')) {
       return 'solving a problem together';
@@ -207,6 +251,8 @@ Your goal is: ${scenario.userGoal}`;
     return fallbacks[Math.floor(Math.random() * fallbacks.length)];
   }
   
+
+
   getStats(): any {
     return {
       turnCount: this.turnCount,
@@ -215,7 +261,7 @@ Your goal is: ${scenario.userGoal}`;
   }
 }
 
-  // ============================================================================
+// ============================================================================
 // USER-OUTCOME FOCUSED TEST SCENARIOS
 // ============================================================================
 
@@ -288,7 +334,7 @@ const TEST_SCENARIOS: Record<string, TestScenario> = {
       'Partnership deepened through problem solving'
     ]
   },
-
+  
   'observe': {
     name: 'Autonomous Thinking Partnership',
     description: 'Test partnership depth - quality of human-AI relationship through minimal priming',
@@ -383,47 +429,76 @@ class TestEnvironment {
       return { sources: [] };
     }
     
+    // Check for cached synthetic data first
+    const cacheDir = join(process.cwd(), 'data', 'synthetic-cache');
+    const cacheFile = join(cacheDir, `${scenarioKey}-synthetic-data.json`);
+    
+    if (!existsSync(cacheDir)) {
+      mkdirSync(cacheDir, { recursive: true });
+    }
+    
+    if (existsSync(cacheFile)) {
+      console.log(`📦 Using cached synthetic data for ${scenarioKey}`);
+      const cached = JSON.parse(readFileSync(cacheFile, 'utf-8'));
+      this.syntheticData = cached.sources;
+      return cached;
+    }
+    
+    console.log(`🎭 Generating rich synthetic data for ${scenarioKey}...`);
+    
     // Use Anthropic to generate contextually relevant synthetic experiences
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
     
-    // Get a sample source to show the schema
-    const sampleSource: Partial<Source> = {
-      id: "src_example123",
-      source: "I noticed my energy dips around 3pm every day...",
-      perspective: "I",
-      created: new Date().toISOString(),
-      processing: "long-after",
-              experience: ["body", "time", "focus"]
-    };
-    
-    const prompt = `Generate 5-8 diverse Bridge experiences that would be relevant for this test scenario:
-    
+    // Generate 20-30 diverse experiences for realistic testing
+    const prompt = `Generate 25-30 diverse Bridge experiences that would be relevant for this test scenario. This should simulate a real user's Bridge with rich, varied data.
+
 Scenario: ${scenario.name}
 User Goal: ${scenario.userGoal}
 Context: ${scenario.description}
 
-Create realistic experiences that would help test:
-- Pattern discovery capabilities
-- Wisdom emergence from past experiences  
-- Natural conversation flow
-- Shared consciousness building
+Create a realistic collection of experiences that would help test:
+      - Information architecture and navigation
+- Pattern discovery across diverse experiences
+- Wisdom emergence from accumulated history
+- Natural conversation flow with rich context
+- Shared consciousness building over time
 
-Format as JSON array using this exact Bridge schema:
-${JSON.stringify(sampleSource, null, 2)}
+Generate experiences across these categories:
+- Work & Productivity (8-10 experiences)
+- Personal Growth & Reflection (6-8 experiences)  
+- Relationships & Social (4-6 experiences)
+- Health & Wellbeing (4-6 experiences)
+- Creative & Learning (4-6 experiences)
 
-Important:
-- Vary the created dates across the past 30 days
-- Use diverse perspectives (I, we, they) as appropriate
-- Include various quality combinations from: body, time, space, emotion, focus, purpose, others
-- Make experiences thematically relevant to help with pattern discovery
-- Include both positive and challenging experiences
-- Some should have processing: "during" or "right-after" for variety
+For each experience, include:
+- Realistic, detailed source text (2-4 sentences)
+- Appropriate perspective (I, we, they)
+- Varied processing times (during, right-after, long-after)
+- Diverse experience qualities from: body, time, space, emotion, focus, purpose, others
+- Dates spread across the past 3 months
+- Both positive and challenging experiences
+- Some experiences that would cluster together for pattern discovery
+
+Format as JSON array with this exact schema:
+{
+  "id": "src_uniqueid",
+  "source": "Detailed experience description...",
+  "perspective": "I|we|they",
+  "created": "2024-01-15T10:30:00Z",
+  "processing": "during|right-after|long-after",
+  "experience": ["emotion", "space", "body", "others", "time", "focus", "purpose"]
+}
+
+IMPORTANT: Only use these exact quality values: emotion, space, body, others, time, focus, purpose
+Do NOT use any other quality names.
+
+Make the experiences feel authentic and varied. Include specific details, emotions, and situations that would create meaningful patterns when analyzed together.
 
 Return ONLY the JSON array, no other text.`;
 
     const response = await anthropic.messages.create({
       model: "claude-3-5-sonnet-20241022",
-      max_tokens: 2000,
+      max_tokens: 4000,
       messages: [{ role: 'user', content: prompt }]
     });
     
@@ -437,7 +512,7 @@ Return ONLY the JSON array, no other text.`;
       if (jsonMatch) {
         const experiences = JSON.parse(jsonMatch[0]);
         
-        // Validate each experience against the schema
+        // Validate and enhance each experience
         const validExperiences = experiences.filter((exp: any) => {
           try {
             SourceSchema.parse(exp);
@@ -448,14 +523,112 @@ Return ONLY the JSON array, no other text.`;
           }
         });
         
-        console.log(`✅ Validated ${validExperiences.length} synthetic experiences`);
-        return { sources: validExperiences };
+        // Generate embeddings for all experiences
+        console.log(`🔍 Generating embeddings for ${validExperiences.length} experiences...`);
+        const { EmbeddingService } = await import('../services/embeddings.js');
+        
+        const embeddingService = new EmbeddingService();
+        await embeddingService.initialize();
+        
+        const enhancedExperiences = await Promise.all(
+          validExperiences.map(async (exp: any) => {
+            try {
+              const embedding = await embeddingService.generateEmbedding(exp.source);
+              return {
+                ...exp,
+                embedding
+              };
+            } catch (error) {
+              console.warn(`Failed to generate embedding for experience ${exp.id}:`, error);
+              return exp;
+            }
+          })
+        );
+        
+        const result = { sources: enhancedExperiences };
+        
+        // Cache the generated data
+        writeFileSync(cacheFile, JSON.stringify(result, null, 2));
+        console.log(`💾 Cached synthetic data for future use`);
+        
+        this.syntheticData = enhancedExperiences;
+        console.log(`✅ Generated ${enhancedExperiences.length} rich synthetic experiences with embeddings`);
+        
+        return result;
       }
     } catch (error) {
-      console.warn('Could not parse synthetic data, using empty data');
+      console.warn('Could not parse synthetic data, using fallback data:', error);
     }
     
-    return { sources: [] };
+    // Fallback to basic synthetic data
+    const fallbackData = this.generateFallbackSyntheticData(scenarioKey);
+    this.syntheticData = fallbackData.sources;
+    return fallbackData;
+  }
+  
+  private generateFallbackSyntheticData(scenarioKey: string): any {
+    // Generate basic synthetic data without LLM for reliability
+    const baseDate = new Date();
+    const experiences: any[] = [];
+    
+    const sampleExperiences = [
+      {
+        source: "I noticed my energy dips around 3pm every day, making it hard to focus on complex tasks.",
+        perspective: "I",
+        experience: ["body", "time", "focus"]
+      },
+      {
+        source: "The team meeting was tense at first, but when Sara shared her concerns openly, everyone relaxed and we found a better solution.",
+        perspective: "we", 
+        experience: ["others", "emotion", "purpose"]
+      },
+      {
+        source: "Walking in the park this morning, I felt a sense of clarity about the project that's been stuck for weeks.",
+        perspective: "I",
+        experience: ["body", "space", "focus"]
+      },
+      {
+        source: "Deadline pressure was intense, but once I started coding, I entered that flow state where time disappears.",
+        perspective: "I",
+        experience: ["time", "focus", "purpose"]
+      },
+      {
+        source: "The client presentation went better than expected - our preparation and team collaboration really paid off.",
+        perspective: "we",
+        experience: ["purpose", "others", "emotion"]
+      },
+      {
+        source: "I've been feeling overwhelmed with all the meetings, but today I realized I need to block more focus time.",
+        perspective: "I",
+        experience: ["time", "emotion", "focus"]
+      },
+      {
+        source: "Creative breakthrough happened during my evening walk - sometimes stepping away is the best way forward.",
+        perspective: "I",
+        experience: ["body", "space", "focus"]
+      },
+      {
+        source: "Team retrospective revealed that our best work happens when we have uninterrupted blocks of 3+ hours.",
+        perspective: "we",
+        experience: ["time", "others", "purpose"]
+      }
+    ];
+    
+    sampleExperiences.forEach((exp, index) => {
+      const date = new Date(baseDate);
+      date.setDate(date.getDate() - Math.floor(Math.random() * 90)); // Past 3 months
+      
+      experiences.push({
+        id: `src_synthetic_${scenarioKey}_${index}`,
+        source: exp.source,
+        perspective: exp.perspective,
+        created: date.toISOString(),
+        processing: ["during", "right-after", "long-after"][Math.floor(Math.random() * 3)],
+        experience: exp.experience
+      });
+    });
+    
+    return { sources: experiences };
   }
   
   getEnvVars(): Record<string, string> {
@@ -544,6 +717,9 @@ class BridgeTestRunner {
   
   setUserSimulator(): void {
     this.userSimulator = new UserSimulator();
+    if (this.syntheticData.length > 0) {
+      this.userSimulator.setSyntheticData(this.syntheticData);
+    }
   }
   
   setSyntheticData(data: Source[]): void {
@@ -592,7 +768,7 @@ class BridgeTestRunner {
       let expectationText = '';
       
       if (scenarioKey !== 'observe') {
-        console.log('📋 Gathering initial expectations...');
+      console.log('📋 Gathering initial expectations...');
         const expectationPrompt = `Before we start, I want to understand your expectations about this interaction.
 
 User request: "${scenario.prompt}"
@@ -604,21 +780,21 @@ Before you begin helping with this request, please briefly share:
 
 Please be concise (2-3 sentences per point), then say "Now I'll begin helping with your request."`;
 
-        const expectationResponse = await this.anthropic.messages.create({
-          model: "claude-3-5-sonnet-20241022",
-          max_tokens: 1000,
+      const expectationResponse = await this.anthropic.messages.create({
+        model: "claude-3-5-sonnet-20241022",
+        max_tokens: 1000,
           system: `You are Claude Code, and you have access to Bridge - a system that helps remember and explore experiences together.
 
 When someone shares an experience with you, Bridge can help you remember it and find connections to other experiences. This helps you provide richer insights and build on what you've learned together.
 
 Your goal is to be genuinely helpful and insightful. Use Bridge when it would help you better understand or respond to what someone is sharing.`,
-          messages: [{ role: 'user', content: expectationPrompt }],
-        });
-        
+        messages: [{ role: 'user', content: expectationPrompt }],
+      });
+      
         expectationText = Array.isArray(expectationResponse.content) ? 
-          expectationResponse.content.map(c => (c as any).text || '').join(' ') : 
-          String(expectationResponse.content);
-          
+        expectationResponse.content.map(c => (c as any).text || '').join(' ') : 
+        String(expectationResponse.content);
+        
         console.log('✅ Initial expectations remembered');
       } else {
         console.log('⏭️  Skipping expectations for observe test');
@@ -779,40 +955,40 @@ You are a thoughtful conversation partner who helps people explore and understan
           const textContent = response.content.find((c: any) => c.type === 'text');
           const claudeText = textContent ? (textContent as any).text || '' : '';
           console.log(`🤖 Claude: "${claudeText.slice(0, 150)}..."`);
-          
-          const hasToolCalls = await this.processResponse(response, result);
-          
-          if (hasToolCalls) {
+        
+        const hasToolCalls = await this.processResponse(response, result);
+        
+        if (hasToolCalls) {
             console.log(`🔧 Tool calls made: ${result.toolCalls.slice(-response.content.filter((c: any) => c.type === 'tool_use').length).map(tc => tc.tool).join(', ')}`);
             
-            const toolResults: any[] = [];
-            const lastToolCalls = result.toolCalls.slice(-response.content.filter((c: any) => c.type === 'tool_use').length);
-            
-            for (let i = 0; i < lastToolCalls.length; i++) {
-              const toolCall = lastToolCalls[i];
-              const toolUseContent = response.content.find((c: any, idx: number) => 
-                c.type === 'tool_use' && 
-                response.content.slice(0, idx + 1).filter((x: any) => x.type === 'tool_use').length === i + 1
-              );
+          const toolResults: any[] = [];
+          const lastToolCalls = result.toolCalls.slice(-response.content.filter((c: any) => c.type === 'tool_use').length);
+          
+          for (let i = 0; i < lastToolCalls.length; i++) {
+            const toolCall = lastToolCalls[i];
+            const toolUseContent = response.content.find((c: any, idx: number) => 
+              c.type === 'tool_use' && 
+              response.content.slice(0, idx + 1).filter((x: any) => x.type === 'tool_use').length === i + 1
+            );
               
               console.log(`  📝 ${toolCall.tool}: ${toolCall.success ? '✅ Success' : '❌ Failed'}`);
               if (toolCall.success && toolCall.result?.content?.[0]?.text) {
                 console.log(`    Result: "${toolCall.result.content[0].text.slice(0, 100)}..."`);
               }
-              
-              toolResults.push({
-                type: 'tool_result',
-                tool_use_id: (toolUseContent as any)?.id || `tool-${i}`,
-                content: toolCall.result?.content?.[0]?.text || toolCall.error || 'No result'
-              });
-            }
             
-            messages.push({ role: 'user', content: toolResults });
-          } else {
+            toolResults.push({
+              type: 'tool_result',
+              tool_use_id: (toolUseContent as any)?.id || `tool-${i}`,
+              content: toolCall.result?.content?.[0]?.text || toolCall.error || 'No result'
+            });
+          }
+          
+          messages.push({ role: 'user', content: toolResults });
+        } else {
             // Check for natural conversation ending
-            const textContent = response.content.find((c: any) => c.type === 'text');
-            const lastMessage = textContent ? (textContent as any).text || '' : '';
-            
+          const textContent = response.content.find((c: any) => c.type === 'text');
+          const lastMessage = textContent ? (textContent as any).text || '' : '';
+          
             // Let the conversation flow naturally without mechanical keyword detection
             // The UX researcher will evaluate the quality of the interaction
             const isNaturalEnding = false; // Disable mechanical detection
@@ -820,26 +996,26 @@ You are a thoughtful conversation partner who helps people explore and understan
             console.log(`🔍 Ending check: ${isNaturalEnding ? 'Natural ending detected' : 'Continuing conversation'}`);
             
             if (this.userSimulator) {
-              // Use user simulator for other scenarios
+            // Use user simulator for other scenarios
               console.log(`🎭 User simulator: Generating response...`);
-              const userResponse = await this.userSimulator.generateResponse(
-                lastMessage,
-                result.toolCalls.slice(-5), // Last 5 tool calls for context
-                scenario
-              );
-              
+            const userResponse = await this.userSimulator.generateResponse(
+              lastMessage,
+              result.toolCalls.slice(-5), // Last 5 tool calls for context
+              scenario
+            );
+            
               if (userResponse && !isNaturalEnding) {
                 console.log(`👤 Simulated user: "${userResponse}"`);
-                messages.push({ 
-                  role: 'user', 
-                  content: userResponse
-                });
-              } else {
+              messages.push({ 
+                role: 'user', 
+                content: userResponse
+              });
+            } else {
                 console.log(`🏁 User simulator ending: ${userResponse ? 'User decided to end' : 'Natural ending'}`);
                 // User simulator decided to end conversation or natural ending
-                break;
-              }
-            } else {
+              break;
+            }
+          } else {
               // No user simulator - let conversation end naturally after Claude's response
               // The UX researcher will evaluate the quality of the interaction
               console.log(`🔍 No user simulator - ending conversation after Claude's response`);
@@ -872,7 +1048,7 @@ You are a thoughtful conversation partner who helps people explore and understan
       if (scenarioKey === 'observe') {
         console.log('⏭️  Skipping reflection for observe test - pure autonomous observation only');
       } else {
-        console.log('🤔 Conducting post-interaction reflection...');
+      console.log('🤔 Conducting post-interaction reflection...');
       const finalResponse = messages[messages.length - 1]?.content || '';
       const responseText = typeof finalResponse === 'string' ? finalResponse : 
         Array.isArray(finalResponse) ? finalResponse.map(c => c.text || '').join(' ') : '';
@@ -1774,7 +1950,7 @@ class TestOrchestrator {
     const overallAvg = avgMetrics ? 
       (avgMetrics.sharedConsciousness + avgMetrics.invisibility + 
        avgMetrics.wisdomEmergence + avgMetrics.partnershipDepth) / 4 : 0;
-
+    
     // Find the biggest blocker (lowest score)
     const dimensionScores = avgMetrics ? [
       { name: 'Invisibility', score: avgMetrics.invisibility, emoji: '👻' },
@@ -1856,8 +2032,8 @@ ${biggestBlocker ? `**${biggestBlocker.name} is the biggest blocker** - ${bigges
 ## 🎯 Test Scenario Results
 
 ${  allScenarios.map(scenario => {
-    const data = progression.scenarios[scenario];
-    const latest = data.latestMetrics;
+  const data = progression.scenarios[scenario];
+  const latest = data.latestMetrics;
   
   let scenarioSection = `### ${scenario}
 **Status:** ${latest ? (latest.success ? '✅ Passed' : '❌ Failed') : '—'}  
@@ -1868,7 +2044,7 @@ ${  allScenarios.map(scenario => {
   // Add key issues
   if (latest?.qualitativeInsights?.claudeReflection?.keyMisalignments) {
     const misalignments = latest.qualitativeInsights.claudeReflection.keyMisalignments
-      .filter((m: any) => m.impact === 'high' || m.impact === 'medium')
+        .filter((m: any) => m.impact === 'high' || m.impact === 'medium')
       .slice(0, 3);
     
     if (misalignments.length > 0) {
@@ -1884,17 +2060,17 @@ ${  allScenarios.map(scenario => {
     const insights = latest.qualitativeInsights.uxResearcherInsights.insights.slice(0, 3);
     scenarioSection += '\n\n**💡 Insights:**';
     insights.forEach((insight: string) => {
-      scenarioSection += `\n- ${insight}`;
-    });
-  }
-  
-  // Add recommendations
+        scenarioSection += `\n- ${insight}`;
+      });
+    }
+    
+    // Add recommendations
   if (latest?.qualitativeInsights?.uxResearcherInsights?.recommendations) {
     const recommendations = latest.qualitativeInsights.uxResearcherInsights.recommendations.slice(0, 2);
     scenarioSection += '\n\n**🎯 Recommendations:**';
     recommendations.forEach((rec: string) => {
-      scenarioSection += `\n- ${rec}`;
-    });
+        scenarioSection += `\n- ${rec}`;
+      });
   }
   
   return scenarioSection;

@@ -338,8 +338,8 @@ function formatQualities(qualities: string[]): string[] {
 function formatMetadata(source: any): string {
   return [
     `📝 ID: ${source.id}`,
-    `👤 From: ${source.experiencer || 'Human'} perspective`,
-    `👁️  As: ${source.perspective || 'I'}`,
+    `👤 From: ${source.experiencer || 'first person'} `,
+    `👁️ As: ${source.perspective || 'I'}`,
     `⏰ When: ${formatProcessing(source.processing)}`,
     `🕐 Captured: ${formatTimeAgo(source.created)}`
   ].join('\n');
@@ -560,4 +560,6 @@ export function formatFlowAwareResponse(
     default:
       return null;
   }
-} 
+}
+
+ 

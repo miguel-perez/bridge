@@ -11,6 +11,7 @@ import { RememberHandler } from './remember-handler.js';
 import { RecallHandler } from './recall-handler.js';
 import { ReconsiderHandler } from './reconsider-handler.js';
 import { ReleaseHandler } from './release-handler.js';
+
 import { 
   // type RememberInput,
   // type SearchInput,
@@ -49,6 +50,7 @@ export class MCPToolHandlers {
         return this.reconsiderHandler.handle(args);
       case 'release':
         return this.releaseHandler.handle(args);
+
       default:
         throw new Error(`Unknown tool: ${toolName}`);
     }

@@ -66,7 +66,7 @@ describe('MCP Server Protocol Compliance', () => {
       
       // This would have failed without the initialize handler
       const tools = await client.listTools();
-      expect(tools.tools).toHaveLength(4); // remember, release, recall, update
+      expect(tools.tools).toHaveLength(4); // remember, release, recall, reconsider
       
       const toolNames = tools.tools.map(t => t.name);
       expect(toolNames).toContain('remember');

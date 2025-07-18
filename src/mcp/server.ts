@@ -251,6 +251,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'reconsider':
         return await toolHandlers.handle('reconsider', parsedArgs);
 
+
+
       default:
         throw new McpError(
           ErrorCode.InvalidParams,
