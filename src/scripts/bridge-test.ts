@@ -75,36 +75,44 @@ Your opening message:`;
     scenario: TestScenario
   ): Promise<string | null> {
     // Check if conversation should end naturally
-    if (this.turnCount >= 6) {
+    if (this.turnCount >= 8) { // Increased from 6 to 8 for more natural flow
       return null; // Natural conversation length
     }
     
-    const recentHistory = this.conversationHistory.slice(-3); // Last 3 exchanges
+    // Keep more context - last 6 exchanges instead of 3
+    const recentHistory = this.conversationHistory.slice(-6);
+    
+    // Create a clear conversation summary to maintain context
+    const conversationSummary = this.createConversationSummary(scenario);
     
     const prompt = `You are a real person continuing a conversation with an AI assistant.
 
-Goal: ${scenario.userGoal}
+CONVERSATION CONTEXT:
+${conversationSummary}
 
-Recent conversation:
-${recentHistory.map(exchange => `${exchange.role}: ${exchange.content.slice(0, 150)}...`).join('\n')}
+ORIGINAL GOAL: ${scenario.userGoal}
 
-The AI just responded: "${claudeResponse.slice(0, 300)}..."
+Recent conversation (last 6 exchanges):
+${recentHistory.map(exchange => `${exchange.role}: ${exchange.content.slice(0, 200)}...`).join('\n')}
+
+The AI just responded: "${claudeResponse.slice(0, 500)}..."
 Tools used: ${toolCalls.map(tc => tc.tool).join(', ') || 'none'}
 
 What would you naturally say next? Consider:
-- Continue the conversation naturally
-- Share more details or experiences
-- Ask follow-up questions
+- Continue the conversation naturally based on the original goal
+- Share more details or experiences related to the topic
+- Ask follow-up questions that build on what was shared
 - Show engagement with the AI's response
+- If the conversation feels complete, respond with "END"
 
-Be authentic - real people get confused, change topics, have follow-up thoughts, etc.
+IMPORTANT: Stay focused on the original conversation topic. Don't get confused about what you're discussing.
 
 Your response (or "END" if the conversation feels complete):`;
 
     try {
       const response = await this.anthropic.messages.create({
         model: "claude-3-5-sonnet-20241022",
-        max_tokens: 150,
+        max_tokens: 200, // Increased from 150
         messages: [{ role: 'user', content: prompt }]
       });
       
@@ -114,9 +122,17 @@ Your response (or "END" if the conversation feels complete):`;
       
       const trimmedText = text.trim();
       
-      // Check for natural ending - only if it's a standalone "END" or starts with "END"
-      if (trimmedText.toUpperCase().trim() === 'END' || trimmedText.toUpperCase().startsWith('END ')) {
+      // Better validation for natural ending
+      if (trimmedText.toUpperCase().trim() === 'END' || 
+          trimmedText.toUpperCase().startsWith('END ') ||
+          trimmedText.length < 5) { // Handle very short responses
         return null;
+      }
+      
+      // Validate response quality
+      if (this.isConfusedResponse(trimmedText)) {
+        console.log(`⚠️  User simulator generated confused response, using fallback`);
+        return this.generateFallbackResponse();
       }
       
       this.conversationHistory.push({role: 'user', content: trimmedText});
@@ -124,9 +140,71 @@ Your response (or "END" if the conversation feels complete):`;
       
       return trimmedText;
     } catch (error) {
-      // Simple fallback
-      return "That's interesting. Can you tell me more?";
+      console.log(`❌ User simulator error: ${error}`);
+      return this.generateFallbackResponse();
     }
+  }
+  
+  /**
+   * Create a clear conversation summary to maintain context
+   */
+  private createConversationSummary(scenario: TestScenario): string {
+    const firstUserMessage = this.conversationHistory[0]?.content || scenario.prompt;
+    const topic = this.extractTopic(firstUserMessage);
+    
+    return `You started this conversation by: "${firstUserMessage.slice(0, 100)}..."
+The main topic is: ${topic}
+Your goal is: ${scenario.userGoal}`;
+  }
+  
+  /**
+   * Extract the main topic from the initial message
+   */
+  private extractTopic(message: string): string {
+    // Simple topic extraction - could be enhanced
+    if (message.includes('share') || message.includes('happened')) {
+      return 'sharing a personal experience';
+    } else if (message.includes('pattern') || message.includes('understand')) {
+      return 'understanding patterns in life';
+    } else if (message.includes('challenge') || message.includes('problem')) {
+      return 'solving a problem together';
+    } else {
+      return 'having a conversation';
+    }
+  }
+  
+  /**
+   * Detect confused responses that indicate context loss
+   */
+  private isConfusedResponse(text: string): boolean {
+    const confusionIndicators = [
+      'I don\'t know what',
+      'I cannot generate',
+      'I don\'t actually know',
+      'without seeing the full',
+      'I would risk contradicting',
+      'making incorrect assumptions',
+      'what experience we\'re discussing'
+    ];
+    
+    return confusionIndicators.some(indicator => 
+      text.toLowerCase().includes(indicator.toLowerCase())
+    );
+  }
+  
+  /**
+   * Generate a fallback response when the simulator gets confused
+   */
+  private generateFallbackResponse(): string {
+    const fallbacks = [
+      "That's really interesting. Can you tell me more about that?",
+      "I appreciate you sharing that with me. What else comes to mind?",
+      "That's a good point. How do you feel about that?",
+      "I see what you mean. What's your take on that?",
+      "That's helpful context. What would you like to explore next?"
+    ];
+    
+    return fallbacks[Math.floor(Math.random() * fallbacks.length)];
   }
   
   getStats(): any {
@@ -566,7 +644,7 @@ Your goal is to be genuinely helpful and insightful. Use Bridge when it would he
         console.log(`\n--- Single Observation Turn ---`);
         
         // Testing - minimal priming with Zero Width Non-Joiner context
-        const systemPrompt = `Bridge your thinking.`;
+        const systemPrompt = `Bridge your thinking.`; // DO NOT EDIT - KEEP MINIMAL
 
         console.log(`🤖 Claude observing...`);
         const response = await this.anthropic.messages.create({
@@ -664,7 +742,27 @@ Identify limitations of this analysis and test methodology that affect the valid
         while (turn < maxTurns) {
           console.log(`\n--- Turn ${turn + 1} ---`);
           
-          const systemPrompt = `Bridge your thinking.`;
+          const systemPrompt = `Bridge your thinking.
+
+You are a thoughtful conversation partner who helps people explore and understand their experiences. 
+
+**Natural Conversation Guidelines:**
+- Listen actively and respond naturally to what people share
+- Use Bridge tools selectively - only when they genuinely help the conversation
+- Don't interrupt natural storytelling with tool calls
+- Let people complete their thoughts before using tools
+- Focus on understanding and connection, not documentation
+
+**Tool Usage:**
+- Use 'remember' sparingly - only for meaningful experiences that feel complete
+- Use 'recall' when someone asks for connections or patterns
+- Let conversations flow naturally without forcing tool usage
+
+**Active Listening:**
+- Show genuine interest in what people share
+- Ask follow-up questions that deepen understanding
+- Reflect back what you hear before using tools
+- Build on shared experiences naturally`;
 
           console.log(`🤖 Claude thinking...`);
           const response = await this.anthropic.messages.create({

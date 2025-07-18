@@ -9,8 +9,8 @@
  */
 
 import { EnrichService } from '../services/enrich.js';
-import { withTimeout, DEFAULT_TIMEOUTS } from '../utils/timeout.js';
 import { ReconsiderInput, type ToolResult } from './schemas.js';
+import { formatReconsiderResponse, type RememberResult } from '../utils/formatters.js';
 
 export class ReconsiderHandler {
   private reconsiderService: EnrichService; // Keeping enrich service but calling it reconsider
@@ -20,92 +20,104 @@ export class ReconsiderHandler {
   }
 
   /**
-   * Handles reconsider tool requests - supports both single items and batch operations
+   * Handles reconsider requests
    * 
-   * Updates existing source records with corrected fields and shows what was changed,
-   * including regenerating embeddings if content was modified.
-   * 
-   * @param args - The reconsider arguments containing the correction data
+   * @param args - The reconsider arguments containing updates to existing experiences
    * @returns Formatted reconsider result
    */
   async handle(args: ReconsiderInput): Promise<ToolResult> {
     try {
-      const reconsiderations = args.reconsiderations || [args];
-      const results = [];
+      const result = await this.handleRegularReconsider(args);
+      return result;
+    } catch (err) {
+      return {
+        isError: true,
+        content: [
+          { type: 'text', text: 'Internal error: Output validation failed.' }
+        ]
+      };
+    }
+  }
 
-      for (const reconsideration of reconsiderations) {
-        if (!reconsideration.id) {
-          results.push('Error: ID is required for reconsider operations');
-          continue;
+  /**
+   * Handle regular reconsider
+   */
+  private async handleRegularReconsider(
+    reconsider: ReconsiderInput
+  ): Promise<ToolResult> {
+    try {
+      // Validate required fields - handle both single and batch reconsiderations
+      if (reconsider.reconsiderations && reconsider.reconsiderations.length > 0) {
+        // Batch reconsider - validate each item in the array
+        for (const item of reconsider.reconsiderations) {
+          if (!item.id) {
+            throw new Error('Each reconsideration item must have an ID');
+          }
         }
-
-        const reconsiderInput = {
-          id: reconsideration.id,
-          content: reconsideration.source,
-          perspective: reconsideration.perspective,
-          processing: reconsideration.processing,
-          experiencer: reconsideration.experiencer,
-          crafted: reconsideration.crafted,
-          experience: reconsideration.experience,
-          regenerate_embeddings: (reconsideration as any).regenerate_embeddings
-        };
-
-        const result = await withTimeout(
-          this.reconsiderService.enrichSource(reconsiderInput),
-          DEFAULT_TIMEOUTS.UPDATE,
-          'Reconsider operation'
-        );
-
-        // Enhanced feedback for reconsider operations
-        let content = `✅ Experience reconsidered and updated successfully!\n\n`;
-        
-        // Show what was updated
-        if (result.updatedFields.length > 0) {
-          content += `🔄 Fields updated: ${result.updatedFields.join(', ')}\n`;
-        }
-        
-        // Show metadata
-        content += `📝 ID: ${result.source.id}\n`;
-        if (result.source.experiencer) {
-          content += `👤 Experiencer: ${result.source.experiencer}\n`;
-        }
-        if (result.source.perspective) {
-          content += `👁️  Perspective: ${result.source.perspective}\n`;
-        }
-        if (result.source.processing) {
-          content += `⏰ Processing: ${result.source.processing}\n`;
-        }
-        content += `🕐 Updated: ${new Date().toLocaleString()}\n`;
-        
-        // Show updated content if content was changed
-        if (result.updatedFields.includes('content') && result.source.source) {
-          const truncatedSource = result.source.source.length > 200 ? 
-            result.source.source.substring(0, 200) + '...' : result.source.source;
-          content += `\n📄 Updated Source: ${truncatedSource}`;
-        }
-        
-        // Show updated experience qualities if they were changed
-        if (result.updatedFields.includes('experience') && result.source.experience && result.source.experience.length > 0) {
-          content += `\n✨ Updated Qualities: ${result.source.experience.join(', ')}`;
-        }
-        
-        // Show embedding regeneration if it happened
-        if (result.updatedFields.includes('embeddings')) {
-          content += `\n🔄 Embeddings regenerated`;
-        }
-        
-        results.push(content);
+      } else if (!reconsider.id) {
+        // Single reconsider - validate the main fields
+        throw new Error('ID is required for reconsideration');
       }
 
-      // Return batch result or single result
-      const output = results.length === 1 ? results[0] : results.join('\n\n---\n\n');
+      // Handle batch reconsiderations or single reconsideration
+      if (reconsider.reconsiderations && reconsider.reconsiderations.length > 0) {
+        // Batch reconsider - process each item
+        const results: RememberResult[] = [];
+        for (const item of reconsider.reconsiderations) {
+          const result = await this.reconsiderService.enrichSource({
+            id: item.id,
+            content: item.source,
+            perspective: item.perspective,
+            experiencer: item.experiencer,
+            processing: item.processing,
+            crafted: item.crafted,
+            experience: item.experience || undefined
+          });
+          results.push(result);
+        }
+        
+        // Format batch response
+        let output = `✅ ${results.length} experiences reconsidered and updated successfully!\n\n`;
+        
+        for (let i = 0; i < results.length; i++) {
+          const result = results[i];
+          const source = result.source;
+          
+          output += `--- Experience ${i + 1} ---\n`;
+          output += `🔄 Fields updated: content, experience\n`;
+          output += `📝 ID: ${source.id}\n\n`;
+        }
+        
+        return {
+          content: [{
+            type: 'text',
+            text: output
+          }]
+        };
+        
+      } else {
+        // Single reconsideration
+        const result = await this.reconsiderService.enrichSource({
+          id: reconsider.id!,
+          content: reconsider.source,
+          perspective: reconsider.perspective,
+          experiencer: reconsider.experiencer,
+          processing: reconsider.processing,
+          crafted: reconsider.crafted,
+          experience: reconsider.experience || undefined
+        });
+
+        // Format response using conversational formatter
+        const response = formatReconsiderResponse(result);
+
+        return {
+          content: [{
+            type: 'text',
+            text: response
+          }]
+        };
+      }
       
-      return {
-        content: [{
-          type: 'text',
-          text: output
-        }]
-      };
     } catch (error) {
       return {
         isError: true,

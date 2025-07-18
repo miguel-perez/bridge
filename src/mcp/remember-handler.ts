@@ -1,6 +1,11 @@
 import { RememberService } from '../services/remember.js';
 import { ToolResult, ToolResultSchema } from './schemas.js';
 import type { RememberInput } from './schemas.js';
+import { 
+  formatBatchRememberResponse, 
+  formatRememberResponse,
+  type RememberResult
+} from '../utils/formatters.js';
 
 export interface RememberResponse {
   success: boolean;
@@ -11,7 +16,6 @@ export interface RememberResponse {
     perspective?: string;
     experiencer?: string;
     processing?: string;
-    crafted?: boolean;
     experience?: string[];
   };
   defaultsUsed?: string[];
@@ -47,7 +51,7 @@ export class RememberHandler {
   }
 
   /**
-   * Handle regular remember
+   * Handle regular remember with natural formatting
    */
   private async handleRegularRemember(
     remember: RememberInput
@@ -69,7 +73,7 @@ export class RememberHandler {
       // Handle batch remembers or single remember
       if (remember.remembers && remember.remembers.length > 0) {
         // Batch remember - process each item
-        const results = [];
+        const results: RememberResult[] = [];
         for (const item of remember.remembers) {
           const result = await this.rememberService.rememberSource({
             content: item.source,
@@ -82,45 +86,18 @@ export class RememberHandler {
           results.push(result);
         }
         
-        // Format batch response
-        let output = `✅ ${results.length} experiences remembered successfully!\n\n`;
-        
-        for (let i = 0; i < results.length; i++) {
-          const result = results[i];
-          const source = result.source;
-          const experience = source.experience;
-          
-          output += `--- Experience ${i + 1} ---\n`;
-          
-          // Show source content
-          const truncatedSource = source.source.length > 200 ? 
-            source.source.substring(0, 200) + '...' : source.source;
-          output += `📄 Source: ${truncatedSource}\n\n`;
-          
-          // Show prominent qualities
-          if (experience && experience.length > 0) {
-            output += `✨ Qualities: ${experience.join(', ')}\n\n`;
-          }
-          
-          // Show metadata
-          output += `📝 ID: ${source.id}\n`;
-          output += `👤 Experiencer: ${source.experiencer || 'Unknown'}\n`;
-          output += `👁️  Perspective: ${source.perspective || 'I'}\n`;
-          output += `⏰ Processing: ${source.processing || 'during'}\n`;
-          output += `🕐 Created: ${new Date(source.created).toLocaleString()}\n\n`;
-        }
-        
-        output += `💡 You can recall these experiences or update them later using their IDs.`;
+        // Format batch response using conversational formatter
+        const response = formatBatchRememberResponse(results);
         
         return {
           content: [{
             type: 'text',
-            text: output
+            text: response
           }]
         };
         
       } else {
-        // Single remember
+        // Single remember with natural formatting
         const result = await this.rememberService.rememberSource({
           content: remember.source,
           perspective: remember.perspective,
@@ -130,41 +107,13 @@ export class RememberHandler {
           experience: remember.experience || undefined
         });
 
-        // Format the response with enhanced feedback
-        let output = '✅ Experience remembered successfully!\n\n';
+        // Use natural conversational formatting
+        const response = formatRememberResponse(result);
         
-        const source = result.source;
-        const experience = source.experience;
-        
-        // Show source content
-        const truncatedSource = source.source.length > 200 ? 
-          source.source.substring(0, 200) + '...' : source.source;
-        output += `📄 Source: ${truncatedSource}\n\n`;
-        
-        // Show prominent qualities
-        if (experience && experience.length > 0) {
-          output += `✨ Qualities: ${experience.join(', ')}\n\n`;
-        }
-        
-        // Show metadata in a clean format
-        output += `📝 ID: ${source.id}\n`;
-        output += `👤 Experiencer: ${source.experiencer || 'Unknown'}\n`;
-        output += `👁️  Perspective: ${source.perspective || 'I'}\n`;
-        output += `⏰ Processing: ${source.processing || 'during'}\n`;
-        output += `🕐 Created: ${new Date(source.created).toLocaleString()}\n`;
-        
-        // Show defaults used if any
-        if (result.defaultsUsed && result.defaultsUsed.length > 0) {
-          output += `\n📋 Defaults applied: ${result.defaultsUsed.join(', ')}\n`;
-        }
-        
-        // Add a helpful note for next steps
-        output += `\n💡 You can recall this experience or update it later using the ID: ${source.id}`;
-
         return {
           content: [{
             type: 'text',
-            text: output
+            text: response
           }]
         };
       }
