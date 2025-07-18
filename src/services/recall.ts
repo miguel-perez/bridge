@@ -4,7 +4,7 @@ import { embeddingService } from './embeddings.js';
 import { findSimilarByEmbedding } from './embedding-search.js';
 
 // Debug mode configuration
-const DEBUG_MODE = process.env.BRIDGE_SEARCH_DEBUG === 'true' || process.env.BRIDGE_DEBUG === 'true';
+const DEBUG_MODE = process.env.BRIDGE_RECALL_DEBUG === 'true' || process.env.BRIDGE_DEBUG === 'true';
 
 // Debug logging utility - silent in MCP context
 function debugLog(message: string, data?: unknown): { timestamp: string; message: string; data?: unknown } | null {
@@ -22,8 +22,8 @@ function debugLog(message: string, data?: unknown): { timestamp: string; message
 }
 
 // Error logging utility with MCP-compliant formatting
-function logSearchError(context: string, error: unknown, details?: unknown): { error: boolean; message: string; context: string; details?: unknown } {
-  const errorMessage = `Search error in ${context}: ${error instanceof Error ? error.message : error}`;
+function logRecallError(context: string, error: unknown, details?: unknown): { error: boolean; message: string; context: string; details?: unknown } {
+  const errorMessage = `Recall error in ${context}: ${error instanceof Error ? error.message : error}`;
   
   // Return MCP-compliant error structure
   return {
@@ -34,7 +34,7 @@ function logSearchError(context: string, error: unknown, details?: unknown): { e
   };
 }
 
-export interface SearchInput {
+export interface RecallInput {
   query?: string;
   limit?: number;
   offset?: number;
@@ -45,40 +45,19 @@ export interface SearchInput {
   crafted?: boolean;
   created?: string | { start: string; end: string };
   sort?: 'relevance' | 'created';
-  // Experiential qualities min/max
-  min_embodied?: number;
-  max_embodied?: number;
-  min_attentional?: number;
-  max_attentional?: number;
-  min_affective?: number;
-  max_affective?: number;
-  min_purposive?: number;
-  max_purposive?: number;
-  min_spatial?: number;
-  max_spatial?: number;
-  min_temporal?: number;
-  max_temporal?: number;
-  min_intersubjective?: number;
-  max_intersubjective?: number;
-  // Vector similarity search (deprecated - use semantic search instead)
-  vector?: {
-    embodied: number;
-    attentional: number;
-    affective: number;
-    purposive: number;
-    spatial: number;
-    temporal: number;
-    intersubjective: number;
-  };
+  // NOTE: Quality filtering now uses prominent_qualities (simple array), not min/max per theoretical dimension.
+  // For legacy support, you may implement mapping if needed.
+  // Vector similarity recall (deprecated - use semantic recall instead)
+  vector?: any;
   vector_similarity_threshold?: number;
-  // Semantic search
+  // Semantic recall
   semantic_query?: string;
   semantic_threshold?: number;
-  // ID search
+  // ID recall
   id?: string;
 }
 
-export interface SearchServiceResult {
+export interface RecallServiceResult {
   id: string;
   type: string;
   snippet: string;
@@ -93,17 +72,17 @@ export interface SearchServiceResult {
   };
 }
 
-export interface SearchServiceResponse {
-  results: SearchServiceResult[];
+export interface RecallServiceResponse {
+  results: RecallServiceResult[];
   total: number;
   query: string;
   filters: Record<string, any>;
   debug?: {
-    search_started: string;
+    recall_started: string;
     total_records: number;
     filtered_records: number;
-    vector_search_performed: boolean;
-    semantic_search_performed: boolean;
+    vector_recall_performed: boolean;
+    semantic_recall_performed: boolean;
     query_embedding_dimension?: number;
     similarity_scores?: Array<{
       id: string;
@@ -146,10 +125,9 @@ function calculateTextRelevance(record: SourceRecord, query: string | undefined)
   
   const queryLower = query.toLowerCase();
   const contentLower = record.source.toLowerCase();
-  const narrativeLower = record.experience?.narrative?.toLowerCase() || '';
   
-  // Check for exact phrase match in content or narrative (highest score)
-  if (contentLower.includes(queryLower) || narrativeLower.includes(queryLower)) {
+  // Check for exact phrase match in content (highest score)
+  if (contentLower.includes(queryLower)) {
     return 0.9;
   }
   
@@ -159,7 +137,7 @@ function calculateTextRelevance(record: SourceRecord, query: string | undefined)
   
   let matchedWords = 0;
   for (const word of queryWords) {
-    if (contentLower.includes(word) || narrativeLower.includes(word)) {
+    if (contentLower.includes(word)) {
       matchedWords++;
     }
   }
@@ -171,11 +149,9 @@ function calculateTextRelevance(record: SourceRecord, query: string | undefined)
   let partialMatches = 0;
   for (const word of queryWords) {
     if (word.length > 3) {
-      // Check if any word in content or narrative contains this query word as a substring
+      // Check if any word in content contains this query word as a substring
       const contentWords = contentLower.split(/\s+/);
-      const narrativeWords = narrativeLower.split(/\s+/);
-      const allWords = [...contentWords, ...narrativeWords];
-      for (const contentWord of allWords) {
+      for (const contentWord of contentWords) {
         if (contentWord.includes(word)) {
           partialMatches++;
           break;
@@ -191,7 +167,7 @@ function calculateTextRelevance(record: SourceRecord, query: string | undefined)
 }
 
 // Calculate filter relevance score
-function calculateFilterRelevance(record: SourceRecord, input: SearchInput): number {
+function calculateFilterRelevance(record: SourceRecord, input: RecallInput): number {
   const relevance = 1.0; // Start with full relevance
   
   // Check if record matches all applied filters
@@ -214,31 +190,9 @@ function calculateFilterRelevance(record: SourceRecord, input: SearchInput): num
   }
   
   // Check experiential qualities filters
-  if (record.experience?.qualities) {
-    const qualities = record.experience.qualities;
-    
-    // Check min/max filters for each quality type
-    const qualityChecks = [
-      { type: 'embodied', min: input.min_embodied, max: input.max_embodied },
-      { type: 'attentional', min: input.min_attentional, max: input.max_attentional },
-      { type: 'affective', min: input.min_affective, max: input.max_affective },
-      { type: 'purposive', min: input.min_purposive, max: input.max_purposive },
-      { type: 'spatial', min: input.min_spatial, max: input.max_spatial },
-      { type: 'temporal', min: input.min_temporal, max: input.max_temporal },
-      { type: 'intersubjective', min: input.min_intersubjective, max: input.max_intersubjective }
-    ];
-    
-    for (const check of qualityChecks) {
-      const quality = qualities.find((q: any) => q.type === check.type);
-      if (quality) {
-        if (check.min !== undefined && quality.prominence < check.min) {
-          return 0;
-        }
-        if (check.max !== undefined && quality.prominence > check.max) {
-          return 0;
-        }
-      }
-    }
+  if (record.experience) {
+    // TODO: Implement filtering based on experience array if needed.
+    // Legacy min/max filter logic for theoretical types removed.
   }
   
   return relevance;
@@ -247,7 +201,7 @@ function calculateFilterRelevance(record: SourceRecord, input: SearchInput): num
 // Calculate overall relevance score
 function calculateRelevanceScore(
   record: SourceRecord, 
-  input: SearchInput, 
+  input: RecallInput, 
   semanticSimilarity?: number
 ): { score: number; breakdown: any } {
   const textMatch = calculateTextRelevance(record, input.query || '');
@@ -312,13 +266,13 @@ async function applyTemporalFilter(records: SourceRecord[], filter: string | { s
 }
 
 // Main search function
-export async function search(input: SearchInput): Promise<SearchServiceResponse> {
-  const debugInfo: SearchServiceResponse['debug'] = {
-    search_started: new Date().toISOString(),
+export async function search(input: RecallInput): Promise<RecallServiceResponse> {
+  const debugInfo: RecallServiceResponse['debug'] = {
+    recall_started: new Date().toISOString(),
     total_records: 0,
     filtered_records: 0,
-    vector_search_performed: false,
-    semantic_search_performed: false,
+    vector_recall_performed: false,
+    semantic_recall_performed: false,
     filter_breakdown: {},
     errors: [],
     debug_logs: []
@@ -338,7 +292,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
     addDebugLog(`Retrieved ${allRecords.length} total records`);
     
     // Log the input for debugging
-    addDebugLog('Search input', {
+    addDebugLog('Recall input', {
       query: input.query,
       hasQuery: !!input.query,
       queryLength: input.query?.length,
@@ -394,22 +348,22 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
     }
     
     if (input.vector) {
-      debugInfo.vector_search_performed = true;
-      addDebugLog('Starting vector similarity search (deprecated)', { 
+      debugInfo.vector_recall_performed = true;
+      addDebugLog('Starting vector similarity recall (deprecated)', { 
         vector: input.vector, 
         threshold: input.vector_similarity_threshold 
       });
       
-      // Note: Vector similarity search is deprecated since we removed QualityVector
+      // Note: Vector similarity recall is deprecated since we removed QualityVector
       // This is kept for backward compatibility but will not work properly
-      addDebugLog('Vector similarity search is deprecated - use semantic search instead');
+      addDebugLog('Vector similarity recall is deprecated - use semantic recall instead');
     }
 
-    // Semantic search
+    // Semantic recall
     const semanticSimilarityMap: Record<string, number> = {};
     if (input.semantic_query) {
-      debugInfo.semantic_search_performed = true;
-      addDebugLog('Starting semantic search', { 
+      debugInfo.semantic_recall_performed = true;
+      addDebugLog('Starting semantic recall', { 
         query: input.semantic_query, 
         threshold: input.semantic_threshold 
       });
@@ -449,12 +403,12 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
         debugInfo.similarity_scores.push(...topSemanticScores.map(s => ({ ...s, type: 'semantic' as const })));
         
       } catch (error) {
-        const errorInfo = logSearchError('semantic_search', error as Error, { 
+        const errorInfo = logRecallError('semantic_recall', error as Error, { 
           query: input.semantic_query, 
           threshold: input.semantic_threshold 
         });
         debugInfo.errors!.push(errorInfo);
-        addDebugLog('Semantic search failed, continuing without semantic filtering');
+        addDebugLog('Semantic recall failed, continuing without semantic filtering');
         // Continue without semantic filtering if it fails
       }
     }
@@ -522,10 +476,10 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
     }
 
     debugInfo.filtered_records = finalRecords.length;
-    addDebugLog(`Search completed: ${finalRecords.length} final results`);
+    addDebugLog(`Recall completed: ${finalRecords.length} final results`);
 
     // Format results for return
-    const results: SearchServiceResult[] = finalRecords.map(record => ({
+    const results: RecallServiceResult[] = finalRecords.map(record => ({
       id: record.id,
       type: 'source', // All records are sources
       content: record.source,
@@ -550,7 +504,7 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
     };
     
   } catch (error) {
-    const errorInfo = logSearchError('search_execution', error as Error, { input });
+    const errorInfo = logRecallError('recall_execution', error as Error, { input });
     debugInfo.errors!.push(errorInfo);
     
     // Return error response with debug info
@@ -565,13 +519,13 @@ export async function search(input: SearchInput): Promise<SearchServiceResponse>
 }
 
 // Determine why no results were found
-function determineNoResultsReason(input: SearchInput, debugInfo: SearchServiceResponse['debug']): string {
+function determineNoResultsReason(input: RecallInput, debugInfo: RecallServiceResponse['debug']): string {
   if (debugInfo?.total_records === 0) {
     return 'No records available';
   }
   
-  if (input.semantic_query && !debugInfo?.semantic_search_performed) {
-    return 'Semantic search not available';
+  if (input.semantic_query && !debugInfo?.semantic_recall_performed) {
+    return 'Semantic recall not available';
   }
   
   if (input.semantic_threshold && input.semantic_threshold > 0.9) {
@@ -609,14 +563,14 @@ function determineNoResultsReason(input: SearchInput, debugInfo: SearchServiceRe
 //   return dot / (Math.sqrt(normA) * Math.sqrt(normB));
 // }
 
-export class SearchService {
-  async search(input: SearchInput): Promise<{ results: SearchServiceResult[], stats?: any }> {
+export class RecallService {
+  async search(input: RecallInput): Promise<{ results: RecallServiceResult[], stats?: any }> {
     // Use the comprehensive search function that includes all filtering logic
     const searchResponse = await search(input);
     
-    // Convert SearchServiceResponse to the expected format
+          // Convert RecallServiceResponse to the expected format
     return { 
-      results: searchResponse.results as SearchServiceResult[], 
+      results: searchResponse.results as RecallServiceResult[], 
       stats: { 
         total: searchResponse.total,
         query: searchResponse.query,

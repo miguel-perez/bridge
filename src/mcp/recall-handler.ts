@@ -1,16 +1,16 @@
 /**
- * MCP Search Tool Handler
+ * MCP Recall Tool Handler
  * 
- * Implements basic Bridge Search API for source retrieval.
+ * Implements basic Bridge Recall API for source retrieval.
  * 
- * @module mcp/search-handler
+ * @module mcp/recall-handler
  */
 
-import { SearchService } from '../services/search.js';
+import { RecallService } from '../services/recall.js';
 import { withTimeout, DEFAULT_TIMEOUTS } from '../utils/timeout.js';
 import { SearchInput, ToolResultSchema, type ToolResult } from './schemas.js';
 
-export interface SearchResponse {
+export interface RecallResponse {
   success: boolean;
   results?: Array<{
     id: string;
@@ -22,11 +22,7 @@ export interface SearchResponse {
       perspective?: string;
       experiencer?: string;
       processing?: string;
-      experience?: {
-        qualities: Array<{ type: string; prominence: number; manifestation: string }>;
-        emoji: string;
-        narrative: string;
-      };
+      experience?: string[];
     };
     relevance_score: number;
     relevance_breakdown: any;
@@ -35,22 +31,22 @@ export interface SearchResponse {
   error?: string;
 }
 
-export class SearchHandler {
-  private searchService: SearchService;
+export class RecallHandler {
+  private recallService: RecallService;
 
   constructor() {
-    this.searchService = new SearchService();
+    this.recallService = new RecallService();
   }
 
   /**
-   * Handles search requests
+   * Handles recall requests
    * 
-   * @param args - The search arguments containing queries and filters
-   * @returns Formatted search results
+   * @param args - The recall arguments containing queries and filters
+   * @returns Formatted recall results
    */
   async handle(args: SearchInput): Promise<ToolResult> {
     try {
-      const result = await this.handleRegularSearch(args);
+      const result = await this.handleRegularRecall(args);
       ToolResultSchema.parse(result);
       return result;
     } catch (err) {
@@ -64,33 +60,33 @@ export class SearchHandler {
   }
 
   /**
-   * Handle regular search
+   * Handle regular recall
    */
-  private async handleRegularSearch(
-    search: SearchInput
+  private async handleRegularRecall(
+    recall: SearchInput
   ): Promise<ToolResult> {
     try {
-      const query = search.query || '';
-      const limit = search.limit || 10;
+      const query = recall.query || '';
+      const limit = recall.limit || 10;
       
-      // Perform search
+      // Perform recall
       const { results } = await withTimeout(
-        this.searchService.search({
+        this.recallService.search({
           query,
           limit,
-          // If query is provided, also use it for semantic search
+          // If query is provided, also use it for semantic recall
           semantic_query: query,
           semantic_threshold: 0.7
         }),
         DEFAULT_TIMEOUTS.SEARCH,
-        'Search operation'
+        'Recall operation'
       );
       
       // Format results with enhanced feedback
       let output = '';
       
       if (query.trim()) {
-        output += `🔍 Search: "${query}"\n`;
+        output += `🔍 Recall: "${query}"\n`;
         output += `📊 Found ${results.length} experience${results.length === 1 ? '' : 's'}\n\n`;
       } else {
         output += `📚 Recent Experiences (${results.length} total)\n\n`;
@@ -98,58 +94,41 @@ export class SearchHandler {
       
       if (results.length === 0) {
         output += '❌ No experiences found matching your criteria.\n';
-        output += '💡 Try a different search term or check your filters.\n';
+        output += '💡 Try a different recall term or check your filters.\n';
       } else {
         for (let i = 0; i < results.length; i++) {
           const result = results[i];
           const metadata = result.metadata || {};
-          const experience = metadata.experience || {};
+          const experience = metadata.experience || [];
           
-          // Get top qualities for display (sorted by prominence)
-          const qualities = experience.qualities || [];
-          const topQualities = qualities
-            .sort((a: any, b: any) => b.prominence - a.prominence)
-            .slice(0, 3)
-            .map((q: any) => `${q.type}: ${Math.round(q.prominence * 100)}%`);
+          // Get prominent qualities for display
+          const topQualities = experience.slice(0, 3);
           
-          // Format with emoji and narrative  
-          const emoji = experience.emoji || '📝';
-          const narrative = experience.narrative || '';
-          
-          // Main content - show narrative prominently
-          if (narrative) {
-            output += `${emoji} ${narrative}\n\n`;
-          }
-          
-          // Show source content if different from narrative (truncated for readability)
+          // Show source content (truncated for readability)
           const content = result.content || result.snippet || '';
-          if (content && content !== narrative) {
-            const displayContent = content.length > 250 ? 
-              content.substring(0, 250) + '...' : content;
-            output += `📄 ${displayContent}\n\n`;
+          if (content) {
+            const displayContent = content.length > 200 ? 
+              content.substring(0, 200) + '...' : content;
+            output += `"${displayContent}"\n`;
           }
           
-          // Show top qualities if available
+          // Show top qualities if available (simplified)
           if (topQualities.length > 0) {
-            output += `✨ Qualities: ${topQualities.join(', ')}\n`;
+            output += `Key aspects: ${topQualities.join(', ')}\n`;
           }
           
-          // Metadata line - clean and informative
+          // Simplified metadata line
           const timeAgo = this.formatTimeAgo(metadata.created || '');
-          const experiencer = metadata.experiencer || 'Unknown';
-          const perspective = metadata.perspective || 'I';
-          const processing = metadata.processing || 'during';
-          
-          output += `📝 ${result.id} • 👤 ${experiencer} • 👁️ ${perspective} • ⏰ ${processing} • 🕐 ${timeAgo}\n`;
+          output += `From ${timeAgo} • ID: ${result.id}\n`;
           
           if (i < results.length - 1) {
-            output += '\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
+            output += '\n---\n\n';
           }
         }
         
         // Add helpful summary
         if (query.trim()) {
-          output += `\n💡 Found ${results.length} experience${results.length === 1 ? '' : 's'} matching "${query}". Use the ID to update or release experiences.`;
+          output += `\n💡 Found ${results.length} experience${results.length === 1 ? '' : 's'} that might help with your question.`;
         }
       }
       

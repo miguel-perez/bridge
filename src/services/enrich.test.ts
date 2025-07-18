@@ -8,8 +8,8 @@ import { v4 as uuidv4 } from 'uuid';
 jest.mock('./embeddings.js', () => ({
   embeddingService: {
     initialize: jest.fn().mockResolvedValue(undefined),
-    generateEmbedding: jest.fn().mockResolvedValue(new Array(384).fill(0.1) as number[]),
-    generateEmbeddings: jest.fn().mockResolvedValue([new Array(384).fill(0.1)] as number[][]),
+    generateEmbedding: jest.fn().mockResolvedValue(new Array(384).fill(0.1)),
+    generateEmbeddings: jest.fn().mockResolvedValue([new Array(384).fill(0.1)]),
     clearCache: jest.fn(),
     getExpectedDimension: jest.fn().mockReturnValue(384)
   }
@@ -27,13 +27,7 @@ function makeSource(overrides: Partial<Source> = {}): Source {
     experiencer: overrides.experiencer || 'self',
     processing: overrides.processing || 'during',
     crafted: overrides.crafted ?? false,
-    experience: {
-      qualities: [
-        { type: 'affective', prominence: 0.5, manifestation: 'neutral' }
-      ],
-      emoji: '🌧️',
-      narrative: 'Original narrative'
-    },
+    experience: overrides.experience || ['emotion', 'body'],
     ...overrides
   };
 }
@@ -51,12 +45,12 @@ describe('EnrichService', () => {
   });
 
   test('enriches an existing record with new content', async () => {
-          const result = await enrichService.enrichSource({
-        id: baseSource.id,
-        content: 'Updated content',
-      });
-      expect(result.source.source).toBe('Updated content');
-      expect(result.updatedFields).toContain('content');
+    const result = await enrichService.enrichSource({
+      id: baseSource.id,
+      content: 'Updated content',
+    });
+    expect(result.source.source).toBe('Updated content');
+    expect(result.updatedFields).toContain('content');
   });
 
   test('partial update: only updates provided fields', async () => {
@@ -69,62 +63,46 @@ describe('EnrichService', () => {
     expect(result.source.source).toBe(baseSource.source);
   });
 
-  test('updates experience and generates vector', async () => {
+  test('updates experience', async () => {
     const result = await enrichService.enrichSource({
       id: baseSource.id,
-      experience: {
-        qualities: [
-          { type: 'spatial', prominence: 0.8, manifestation: 'open space' },
-          { type: 'affective', prominence: 0.2, manifestation: 'calm' }
-        ],
-        emoji: '🌧️',
-        narrative: 'Updated narrative'
-      }
+      experience: ['space', 'emotion', 'purpose']
     });
-    expect(result.source.experience?.qualities.length).toBe(2);
-    expect(result.source.experience?.qualities[0].type).toBe('spatial');
-    expect(result.source.experience?.qualities[1].type).toBe('affective');
-    expect(result.updatedFields).toContain('experience.qualities');
+    expect(result.source.experience).toEqual(['space', 'emotion', 'purpose']);
+    expect(result.updatedFields).toContain('experience');
   });
 
   test('throws if record does not exist', async () => {
-          await expect(enrichService.enrichSource({
-        id: 'nonexistent-id',
-        content: 'Should fail'
-      })).rejects.toThrow(/not found/);
+    await expect(enrichService.enrichSource({
+      id: 'nonexistent-id',
+      content: 'Should fail'
+    })).rejects.toThrow(/not found/);
   });
 
-      test('accepts any perspective string', async () => {
-      const input = { id: 'test', content: 'test', created: new Date().toISOString(), perspective: 'invalid' };
-      expect(() => enrichSchema.parse(input)).not.toThrow();
-    });
-
-  test('accepts any prominence value', async () => {
-    const input = {
-      id: 'test',
-      source: 'test',
-      created: new Date().toISOString(),
-      experience: {
-        qualities: [
-          { type: 'affective', prominence: 1.5, manifestation: 'too high' }
-        ],
-        emoji: '🌧️',
-        narrative: 'test'
-      }
+  test('accepts any perspective string', async () => {
+    const input = { 
+      id: 'test', 
+      content: 'test', 
+      perspective: 'invalid' 
     };
     expect(() => enrichSchema.parse(input)).not.toThrow();
   });
 
-  test('enrich with only a vector, no qualities', async () => {
+  test('accepts valid experience array', async () => {
+    const input = {
+      id: 'test',
+      content: 'test',
+      experience: ['emotion', 'body', 'purpose']
+    };
+    expect(() => enrichSchema.parse(input)).not.toThrow();
+  });
+
+  test('enrich with empty experience array', async () => {
     const result = await enrichService.enrichSource({
       id: baseSource.id,
-      experience: {
-        qualities: [],
-        emoji: '🌧️',
-        narrative: 'test'
-      }
+      experience: []
     });
-    expect(result.source.experience?.qualities.length).toBe(0);
+    expect(result.source.experience).toEqual([]);
   });
 
   test('enrich with no changes does not update fields', async () => {

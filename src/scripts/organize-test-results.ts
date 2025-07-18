@@ -39,7 +39,7 @@ class TestResultsOrganizer {
       'current',
       'scenarios',
       'scenarios/bridge-exploration',
-      'scenarios/natural-capture', 
+      'scenarios/natural-remember', 
       'scenarios/pattern-discovery',
       'scenarios/claude-thinking',
       'reports',
@@ -80,7 +80,7 @@ class TestResultsOrganizer {
         return;
       } else {
         // Scenario test results
-        const scenarios = ['bridge-exploration', 'natural-capture', 'pattern-discovery', 'claude-thinking'];
+        const scenarios = ['bridge-exploration', 'natural-remember', 'pattern-discovery', 'claude-thinking'];
         for (const scenario of scenarios) {
           if (file.startsWith(scenario)) {
             targetDir = `scenarios/${scenario}`;
@@ -103,7 +103,7 @@ class TestResultsOrganizer {
   archiveOldFiles(daysOld: number = 30): void {
     console.log(`\n📦 Archiving files older than ${daysOld} days...\n`);
     
-    const scenarios = ['bridge-exploration', 'natural-capture', 'pattern-discovery', 'claude-thinking'];
+    const scenarios = ['bridge-exploration', 'natural-remember', 'pattern-discovery', 'claude-thinking'];
     const now = Date.now();
     const ageLimit = daysOld * 24 * 60 * 60 * 1000;
     

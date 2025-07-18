@@ -10,29 +10,21 @@ import {
   QUALITY_TYPES,
   DEFAULTS,
 
-  type QualityEvidence,
   type Experience,
   type Source,
-  type EmbeddingRecord,
   type StorageData,
-  type SourceRecord,
-  isValidQualityScore,
   isValidQualityType,
   isValidPerspective,
   isValidProcessingLevel,
   isValidSource,
   createSource,
   createSourceRecord,
-  // New Zod schemas and validation functions
-  QualityEvidenceSchema,
+  // Zod schemas and validation functions
   ExperienceSchema,
   SourceSchema,
-  EmbeddingRecordSchema,
   StorageDataSchema,
-  SourceRecordSchema,
   validateSource,
   validateExperience,
-  validateQualityEvidence,
   validateStorageData
 } from './types.js';
 
@@ -42,13 +34,12 @@ describe('Constants', () => {
   });
 
   it('should have valid processing levels', () => {
-    expect(PROCESSING_LEVELS).toEqual(['during', 'right-after', 'long-after', 'crafted']);
+    expect(PROCESSING_LEVELS).toEqual(['during', 'right-after', 'long-after']);
   });
 
   it('should have valid quality types', () => {
     expect(QUALITY_TYPES).toEqual([
-      'embodied', 'attentional', 'affective', 'purposive', 
-      'spatial', 'temporal', 'intersubjective'
+      'emotion', 'space', 'body', 'others', 'time', 'focus', 'purpose'
     ]);
   });
 
@@ -56,43 +47,25 @@ describe('Constants', () => {
     expect(DEFAULTS.PERSPECTIVE).toBe('I');
     expect(DEFAULTS.EXPERIENCER).toBe('self');
     expect(DEFAULTS.PROCESSING).toBe('during');
-    expect(DEFAULTS.CONTENT_TYPE).toBe('text');
     expect(DEFAULTS.CRAFTED).toBe(false);
-    expect(DEFAULTS.QUALITY_PROMINENCE).toBe(0.5);
   });
 });
 
 describe('Type Validation Functions', () => {
-  describe('isValidQualityScore', () => {
-    it('should accept valid quality scores', () => {
-      expect(isValidQualityScore(0.0)).toBe(true);
-      expect(isValidQualityScore(0.5)).toBe(true);
-      expect(isValidQualityScore(1.0)).toBe(true);
-    });
-
-    it('should reject invalid quality scores', () => {
-      expect(isValidQualityScore(-0.1)).toBe(false);
-      expect(isValidQualityScore(1.1)).toBe(false);
-      expect(isValidQualityScore(NaN)).toBe(false);
-      expect(isValidQualityScore(Infinity)).toBe(false);
-    });
-  });
-
   describe('isValidQualityType', () => {
-    it('should accept valid quality types', () => {
-      expect(isValidQualityType('embodied')).toBe(true);
-      expect(isValidQualityType('attentional')).toBe(true);
-      expect(isValidQualityType('affective')).toBe(true);
-      expect(isValidQualityType('purposive')).toBe(true);
-      expect(isValidQualityType('spatial')).toBe(true);
-      expect(isValidQualityType('temporal')).toBe(true);
-      expect(isValidQualityType('intersubjective')).toBe(true);
+    it('should return true for valid quality types', () => {
+      expect(isValidQualityType('emotion')).toBe(true);
+      expect(isValidQualityType('space')).toBe(true);
+      expect(isValidQualityType('body')).toBe(true);
+      expect(isValidQualityType('others')).toBe(true);
+      expect(isValidQualityType('time')).toBe(true);
+      expect(isValidQualityType('focus')).toBe(true);
+      expect(isValidQualityType('purpose')).toBe(true);
     });
-
-    it('should reject invalid quality types', () => {
-      expect(isValidQualityType('invalid')).toBe(false);
-      expect(isValidQualityType('')).toBe(false);
+    it('should return false for invalid quality types', () => {
       expect(isValidQualityType('EMBODIED')).toBe(false);
+      expect(isValidQualityType('foo')).toBe(false);
+      expect(isValidQualityType('attentional')).toBe(false);
     });
   });
 
@@ -116,7 +89,6 @@ describe('Type Validation Functions', () => {
       expect(isValidProcessingLevel('during')).toBe(true);
       expect(isValidProcessingLevel('right-after')).toBe(true);
       expect(isValidProcessingLevel('long-after')).toBe(true);
-      expect(isValidProcessingLevel('crafted')).toBe(true);
     });
 
     it('should reject invalid processing levels', () => {
@@ -136,11 +108,7 @@ describe('Type Validation Functions', () => {
         experiencer: 'test',
         processing: 'during',
         crafted: false,
-        experience: {
-          qualities: [],
-          emoji: '📝',
-          narrative: 'Test narrative'
-        }
+        experience: ['emotion', 'body']
       };
       expect(isValidSource(validSource)).toBe(true);
     });
@@ -161,7 +129,7 @@ describe('Factory Functions', () => {
       const source = createSource('Test source');
       
       expect(source.source).toBe('Test source');
-      expect(source.id).toMatch(/^exp_\d+_[a-z0-9]+$/);
+      expect(source.id).toMatch(/^src_\d+$/);
       expect(source.created).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
       expect(source.perspective).toBe('I');
       expect(source.experiencer).toBe('self');
@@ -181,60 +149,22 @@ describe('Factory Functions', () => {
       
       expect(record.source).toBe('Test source');
       expect(record.type).toBe('source');
-      expect(record.id).toMatch(/^exp_\d+_[a-z0-9]+$/);
+      expect(record.id).toMatch(/^src_\d+$/);
     });
   });
 });
 
 describe('Zod Schema Validation', () => {
-  describe('QualityEvidenceSchema', () => {
-    it('should validate valid quality evidence', () => {
-      const validQuality: QualityEvidence = {
-        type: 'embodied',
-        prominence: 0.8,
-        manifestation: 'fingers trembling with excitement'
-      };
-      
-      const result = QualityEvidenceSchema.safeParse(validQuality);
-      expect(result.success).toBe(true);
-    });
-
-    it('should reject invalid quality evidence', () => {
-      const invalidQuality = {
-        type: 'invalid',
-        prominence: 1.5,
-        manifestation: ''
-      };
-      
-      const result = QualityEvidenceSchema.safeParse(invalidQuality);
-      expect(result.success).toBe(false);
-    });
-  });
-
   describe('ExperienceSchema', () => {
     it('should validate valid experience', () => {
-      const validExperience: Experience = {
-        qualities: [
-          {
-            type: 'affective',
-            prominence: 0.9,
-            manifestation: 'overwhelming joy'
-          }
-        ],
-        emoji: '😊',
-        narrative: 'Feeling overwhelming joy in this moment.'
-      };
+      const validExperience: Experience = ['emotion', 'body', 'purpose'];
       
       const result = ExperienceSchema.safeParse(validExperience);
       expect(result.success).toBe(true);
     });
 
-    it('should reject experience with invalid narrative length', () => {
-      const invalidExperience = {
-        qualities: [],
-        emoji: '😊',
-        narrative: 'A'.repeat(201) // Too long
-      };
+    it('should reject experience with invalid quality types', () => {
+      const invalidExperience = ['invalid_quality', 'body'];
       
       const result = ExperienceSchema.safeParse(invalidExperience);
       expect(result.success).toBe(false);
@@ -245,17 +175,13 @@ describe('Zod Schema Validation', () => {
     it('should validate valid source', () => {
       const validSource: Source = {
         id: 'test-123',
-        source: 'Test source',
+        source: 'Test source content',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'I',
         experiencer: 'test',
         processing: 'during',
         crafted: false,
-        experience: {
-          qualities: [],
-          emoji: '📝',
-          narrative: 'Test narrative'
-        }
+        experience: ['emotion', 'body']
       };
       
       const result = SourceSchema.safeParse(validSource);
@@ -263,38 +189,29 @@ describe('Zod Schema Validation', () => {
     });
 
     it('should validate source with custom perspective', () => {
-      const sourceWithCustomPerspective: Source = {
+      const validSource: Source = {
         id: 'test-123',
-        source: 'Test source',
+        source: 'Test source content',
         created: '2024-01-01T00:00:00.000Z',
-        perspective: 'custom-perspective'
+        perspective: 'custom-perspective',
+        experiencer: 'test',
+        processing: 'during',
+        crafted: false,
+        experience: ['emotion', 'body']
       };
       
-      const result = SourceSchema.safeParse(sourceWithCustomPerspective);
-      expect(result.success).toBe(true);
-    });
-  });
-
-  describe('EmbeddingRecordSchema', () => {
-    it('should validate valid embedding record', () => {
-      const validEmbedding: EmbeddingRecord = {
-        sourceId: 'test-123',
-        vector: [0.1, 0.2, 0.3, 0.4, 0.5],
-        generated: '2024-01-01T00:00:00.000Z'
-      };
-      
-      const result = EmbeddingRecordSchema.safeParse(validEmbedding);
+      const result = SourceSchema.safeParse(validSource);
       expect(result.success).toBe(true);
     });
 
-    it('should reject invalid embedding record', () => {
-      const invalidEmbedding = {
-        sourceId: '',
-        vector: 'not-an-array',
-        generated: 'invalid-date'
+    it('should reject source with missing required fields', () => {
+      const invalidSource = {
+        id: 'test-123',
+        // missing source
+        created: '2024-01-01T00:00:00.000Z'
       };
       
-      const result = EmbeddingRecordSchema.safeParse(invalidEmbedding);
+      const result = SourceSchema.safeParse(invalidSource);
       expect(result.success).toBe(false);
     });
   });
@@ -305,8 +222,13 @@ describe('Zod Schema Validation', () => {
         sources: [
           {
             id: 'test-123',
-            source: 'Test source',
-            created: '2024-01-01T00:00:00.000Z'
+            source: 'Test source content',
+            created: '2024-01-01T00:00:00.000Z',
+            perspective: 'I',
+            experiencer: 'test',
+            processing: 'during',
+            crafted: false,
+            experience: ['emotion', 'body']
           }
         ],
         embeddings: [
@@ -322,33 +244,14 @@ describe('Zod Schema Validation', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should validate storage data without embeddings', () => {
-      const storageDataWithoutEmbeddings: StorageData = {
-        sources: [
-          {
-            id: 'test-123',
-            source: 'Test source',
-            created: '2024-01-01T00:00:00.000Z'
-          }
-        ]
+    it('should reject invalid storage data', () => {
+      const invalidStorageData = {
+        sources: 'not an array',
+        embeddings: 'not an array'
       };
       
-      const result = StorageDataSchema.safeParse(storageDataWithoutEmbeddings);
-      expect(result.success).toBe(true);
-    });
-  });
-
-  describe('SourceRecordSchema', () => {
-    it('should validate valid source record', () => {
-      const validSourceRecord: SourceRecord = {
-        id: 'test-123',
-        source: 'Test source',
-        created: '2024-01-01T00:00:00.000Z',
-        type: 'source'
-      };
-      
-      const result = SourceRecordSchema.safeParse(validSourceRecord);
-      expect(result.success).toBe(true);
+      const result = StorageDataSchema.safeParse(invalidStorageData);
+      expect(result.success).toBe(false);
     });
   });
 });
@@ -358,71 +261,43 @@ describe('Zod-based Validation Functions', () => {
     it('should return success for valid source', () => {
       const validSource: Source = {
         id: 'test-123',
-        source: 'Test source',
-        created: '2024-01-01T00:00:00.000Z'
+        source: 'Test source content',
+        created: '2024-01-01T00:00:00.000Z',
+        perspective: 'I',
+        experiencer: 'test',
+        processing: 'during',
+        crafted: false,
+        experience: ['emotion', 'body']
       };
       
       const result = validateSource(validSource);
-      expect(result.success).toBe(true);
+      expect(result).toBeDefined();
     });
 
     it('should return error for invalid source', () => {
       const invalidSource = {
         id: '',
-        source: '',
-        created: 'invalid-date'
+        source: ''
       };
       
-      const result = validateSource(invalidSource);
-      expect(result.success).toBe(false);
+      expect(() => validateSource(invalidSource)).toThrow();
     });
   });
 
   describe('validateExperience', () => {
     it('should return success for valid experience', () => {
-      const validExperience: Experience = {
-        qualities: [],
-        emoji: '📝',
-        narrative: 'Test narrative'
-      };
+      const validExperience: Experience = ['emotion', 'body', 'purpose'];
       
       const result = validateExperience(validExperience);
-      expect(result.success).toBe(true);
+      expect(result).toBeDefined();
     });
 
     it('should return error for invalid experience', () => {
       const invalidExperience = {
-        qualities: 'not-an-array',
-        emoji: '',
-        narrative: 'A'.repeat(201)
+        qualities: ['emotion', 'body']
       };
       
-      const result = validateExperience(invalidExperience);
-      expect(result.success).toBe(false);
-    });
-  });
-
-  describe('validateQualityEvidence', () => {
-    it('should return success for valid quality evidence', () => {
-      const validQuality: QualityEvidence = {
-        type: 'embodied',
-        prominence: 0.8,
-        manifestation: 'fingers trembling'
-      };
-      
-      const result = validateQualityEvidence(validQuality);
-      expect(result.success).toBe(true);
-    });
-
-    it('should return error for invalid quality evidence', () => {
-      const invalidQuality = {
-        type: 'invalid',
-        prominence: 1.5,
-        manifestation: ''
-      };
-      
-      const result = validateQualityEvidence(invalidQuality);
-      expect(result.success).toBe(false);
+      expect(() => validateExperience(invalidExperience)).toThrow();
     });
   });
 
@@ -432,24 +307,28 @@ describe('Zod-based Validation Functions', () => {
         sources: [
           {
             id: 'test-123',
-            source: 'Test source',
-            created: '2024-01-01T00:00:00.000Z'
+            source: 'Test source content',
+            created: '2024-01-01T00:00:00.000Z',
+            perspective: 'I',
+            experiencer: 'test',
+            processing: 'during',
+            crafted: false,
+            experience: ['emotion', 'body']
           }
         ]
       };
       
       const result = validateStorageData(validStorageData);
-      expect(result.success).toBe(true);
+      expect(result).toBeDefined();
     });
 
     it('should return error for invalid storage data', () => {
       const invalidStorageData = {
-        sources: 'not-an-array',
-        embeddings: 'not-an-array'
+        sources: 'not an array',
+        embeddings: 'not an array'
       };
       
-      const result = validateStorageData(invalidStorageData);
-      expect(result.success).toBe(false);
+      expect(() => validateStorageData(invalidStorageData)).toThrow();
     });
   });
 }); 

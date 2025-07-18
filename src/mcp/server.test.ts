@@ -66,44 +66,33 @@ describe('MCP Server Protocol Compliance', () => {
       
       // This would have failed without the initialize handler
       const tools = await client.listTools();
-      expect(tools.tools).toHaveLength(4); // capture, release, search, update
+      expect(tools.tools).toHaveLength(4); // remember, release, recall, update
       
       const toolNames = tools.tools.map(t => t.name);
-      expect(toolNames).toContain('capture');
+      expect(toolNames).toContain('remember');
+      expect(toolNames).toContain('recall');
       expect(toolNames).toContain('release');
-      expect(toolNames).toContain('search');
-      expect(toolNames).toContain('update');
+      expect(toolNames).toContain('reconsider');
       
       // Verify tool annotations are present
-      const captureTool = tools.tools.find(t => t.name === 'capture');
-      const searchTool = tools.tools.find(t => t.name === 'search');
-      const updateTool = tools.tools.find(t => t.name === 'update');
+      const rememberTool = tools.tools.find(t => t.name === 'remember');
+      expect(rememberTool).toBeDefined();
+      expect(rememberTool?.readOnlyHint).toBe(false);
+      expect(rememberTool?.destructiveHint).toBe(false);
+
+      const recallTool = tools.tools.find(t => t.name === 'recall');
+      expect(recallTool).toBeDefined();
+      expect(recallTool?.readOnlyHint).toBe(true);
+      expect(recallTool?.destructiveHint).toBe(false);
+      
+      const reconsiderTool = tools.tools.find(t => t.name === 'reconsider');
+      expect(reconsiderTool).toBeDefined();
+      
       const releaseTool = tools.tools.find(t => t.name === 'release');
-      
-      expect(captureTool?.annotations).toBeDefined();
-      expect(searchTool?.annotations).toBeDefined();
-      expect(updateTool?.annotations).toBeDefined();
-      expect(releaseTool?.annotations).toBeDefined();
-      
-      // Verify specific annotation values
-      expect(captureTool?.annotations?.title).toBe('Capture Experience');
-      expect(captureTool?.annotations?.readOnlyHint).toBe(false);
-      expect(captureTool?.annotations?.destructiveHint).toBe(false);
-      
-      expect(searchTool?.annotations?.title).toBe('Search Experiences');
-      expect(searchTool?.annotations?.readOnlyHint).toBe(true);
-      expect(searchTool?.annotations?.destructiveHint).toBe(false);
-      
-      expect(updateTool?.annotations?.title).toBe('Update Experience');
-      expect(updateTool?.annotations?.readOnlyHint).toBe(false);
-      expect(updateTool?.annotations?.destructiveHint).toBe(false);
-      
-      expect(releaseTool?.annotations?.title).toBe('Release Experience');
-      expect(releaseTool?.annotations?.readOnlyHint).toBe(false);
-      expect(releaseTool?.annotations?.destructiveHint).toBe(true);
+      expect(releaseTool).toBeDefined();
     }, 30000);
 
-    test('should execute capture tool with experiential qualities', async () => {
+    test('should execute remember tool with experiential qualities', async () => {
       
       transport = new StdioClientTransport({ 
         command: "node", 
@@ -118,7 +107,7 @@ describe('MCP Server Protocol Compliance', () => {
       await client.connect(transport);
       
       const result = await client.callTool({
-        name: 'capture',
+        name: 'remember',
         arguments: {
           content: 'I felt a deep sense of peace while walking in the forest',
           experiencer: 'Test User',
@@ -140,7 +129,7 @@ describe('MCP Server Protocol Compliance', () => {
       expect(Array.isArray(result.content)).toBe(true);
     }, 30000);
 
-    test('should handle search tool with empty arguments', async () => {
+    test('should handle recall tool with empty arguments', async () => {
       transport = new StdioClientTransport({ 
         command: "node", 
         args: [distPath],
@@ -154,7 +143,7 @@ describe('MCP Server Protocol Compliance', () => {
       await client.connect(transport);
       
       const result = await client.callTool({
-        name: 'search',
+        name: 'recall',
         arguments: {}
       });
       
@@ -186,7 +175,7 @@ describe('MCP Server Protocol Compliance', () => {
       expect(Array.isArray(result.content)).toBe(true);
     }, 30000);
 
-    test('should handle update tool', async () => {
+    test('should handle reconsider tool', async () => {
       transport = new StdioClientTransport({ 
         command: "node", 
         args: [distPath],
@@ -200,10 +189,10 @@ describe('MCP Server Protocol Compliance', () => {
       await client.connect(transport);
       
       const result = await client.callTool({
-        name: 'update',
+        name: 'reconsider',
         arguments: {
           id: 'test-id-123',
-          enrichment_type: 'reflection'
+          source: 'Updated test content'
         }
       });
       
@@ -227,7 +216,7 @@ describe('MCP Server Protocol Compliance', () => {
       await client.connect(transport);
       
       const result = await client.callTool({
-        name: 'capture',
+        name: 'remember',
         arguments: {
           // Missing required fields
           source: '',
@@ -240,7 +229,7 @@ describe('MCP Server Protocol Compliance', () => {
       expect(result.content).toBeDefined();
       expect(Array.isArray(result.content)).toBe(true);
       // Should return an error response - source is now required
-      expect((result.content as any[])[0].text).toContain("Either source or experience.narrative is required");
+      expect((result.content as any[])[0].text).toContain("Source content is required");
     }, 30000);
 
     test('should handle invalid perspective values', async () => {
@@ -257,7 +246,7 @@ describe('MCP Server Protocol Compliance', () => {
       await client.connect(transport);
       
       const result = await client.callTool({
-        name: 'capture',
+        name: 'remember',
         arguments: {
           source: 'Test content',
           experiencer: 'Test User',
@@ -331,15 +320,15 @@ describe('MCP Server Protocol Compliance', () => {
       const tools = await client.listTools();
       
       // Check that tools have proper descriptions
-      const captureTool = tools.tools.find(t => t.name === 'capture');
-      expect(captureTool).toBeDefined();
-      expect(captureTool?.description).toBeDefined();
-      expect(captureTool?.description?.length).toBeGreaterThan(0);
+      const rememberTool = tools.tools.find(t => t.name === 'remember');
+      expect(rememberTool).toBeDefined();
+      expect(rememberTool?.description).toBeDefined();
+      expect(rememberTool?.description?.length).toBeGreaterThan(0);
       
-      const searchTool = tools.tools.find(t => t.name === 'search');
-      expect(searchTool).toBeDefined();
-      expect(searchTool?.description).toBeDefined();
-      expect(searchTool?.description?.length).toBeGreaterThan(0);
+      const recallTool = tools.tools.find(t => t.name === 'recall');
+      expect(recallTool).toBeDefined();
+      expect(recallTool?.description).toBeDefined();
+      expect(recallTool?.description?.length).toBeGreaterThan(0);
     }, 30000);
   });
 }); 

@@ -27,15 +27,13 @@ export const RELEVANCE_PERCENT_PRECISION = 0;
  * @returns Formatted string representation of the experience
  */
 export function formatExperience(experience: Experience | undefined): string {
-  if (!experience || !experience.qualities || experience.qualities.length === 0) {
+  if (!experience || experience.length === 0) {
     return 'No experiential qualities analyzed';
   }
-  const emoji = experience.emoji ? `${experience.emoji} ` : '';
-  const qualityLines = experience.qualities.map(q => {
-    const score = (q.prominence * 100).toFixed(RELEVANCE_PERCENT_PRECISION);
-    return `• ${q.type} (${score}%): ${q.manifestation}`;
+  const qualityLines = experience.map(q => {
+    return `• ${q}`;
   });
-  return `${emoji}\n${qualityLines.join('\n')}`;
+  return `${qualityLines.join('\n')}`;
 }
 
 /**

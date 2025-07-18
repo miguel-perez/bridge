@@ -29,7 +29,7 @@ qualities: [{
 
 **Simple Solution**:
 ```typescript
-prominent_qualities: ["embodied", "purposive", "intersubjective"]
+experience: ["body", "purpose", "others"]
 ```
 
 ### Implementation:
@@ -52,7 +52,7 @@ prominent_qualities: ["embodied", "purposive", "intersubjective"]
 
 ### Transform Technical → Human:
 
-**Current**: 
+**Natural**: 
 ```
 ✅ Experience captured successfully!
 📝 ID: exp_123abc...
@@ -60,8 +60,12 @@ prominent_qualities: ["embodied", "purposive", "intersubjective"]
 
 **Natural**:
 ```
-I'll remember that tension between breakthrough and exhaustion. 
-It reminds me of last Tuesday when you had a similar pattern.
+✅ I'll remember that: 
+// appear same formatting as recall result
+📝 ID: exp_123abc...
+💭 Recalling similar experiences:
+// Recall results based on search of experience 
+
 ```
 
 ### Principles:

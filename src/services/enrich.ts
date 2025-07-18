@@ -1,11 +1,11 @@
 /**
  * Enrich service for Bridge experiential data.
- * Handles partial updates, narrative updates, and embedding regeneration for experiential sources.
+ * Handles partial updates and embedding regeneration for experiential sources.
  */
 
 import { z } from 'zod';
 import { getSource, saveSource, deleteSource, saveEmbedding, deleteEmbedding } from '../core/storage.js';
-import type { SourceRecord, Source, QualityEvidence, ProcessingLevel, EmbeddingRecord } from '../core/types.js';
+import { Source, Experience, ProcessingLevel, EmbeddingRecord } from '../core/types.js';
 import { embeddingService } from './embeddings.js';
 
 // ============================================================================
@@ -25,7 +25,7 @@ export const ENRICH_DEFAULTS = {
 
 /**
  * Zod schema for validating enrich input.
- * Allows partial updates to existing captures.
+ * Allows partial updates to existing remembers.
  */
 export const enrichSchema = z.object({
   id: z.string().describe('ID of the source to enrich'),
@@ -34,15 +34,7 @@ export const enrichSchema = z.object({
   experiencer: z.string().optional().describe('Updated experiencer'),
   processing: z.string().optional().describe('Updated processing level'),
   crafted: z.boolean().optional().describe('Updated crafted flag'),
-  experience: z.object({
-    qualities: z.array(z.object({
-      type: z.string(),
-      prominence: z.number(),
-      manifestation: z.string()
-    })).optional(),
-    emoji: z.string().optional(),
-    narrative: z.string().optional()
-  }).optional().describe('Updated experience analysis')
+  experience: z.array(z.string()).optional().describe('Updated experience analysis')
 });
 
 /**
@@ -55,18 +47,14 @@ export interface EnrichInput {
   experiencer?: string;
   processing?: ProcessingLevel;
   crafted?: boolean;
-  experience?: {
-    qualities?: QualityEvidence[];
-    emoji?: string;
-    narrative?: string;
-  };
+  experience?: string[];
 }
 
 /**
  * Result of an enrich operation.
  */
 export interface EnrichResult {
-  source: SourceRecord;
+  source: Source;
   updatedFields: string[];
   embeddingsRegenerated: boolean;
 }
@@ -92,15 +80,10 @@ export class EnrichService {
       throw new Error(`Source with ID '${input.id}' not found`);
     }
 
-    // Process experience - merge with existing if present
-    let processedExperience: import('../core/types.js').Experience | undefined = undefined;
+    // Process experience - use input or existing
+    let processedExperience: Experience | undefined = undefined;
     if (input.experience) {
-      const prev = existingSource.experience || { qualities: [], emoji: '', narrative: '' };
-      processedExperience = {
-        qualities: input.experience.qualities ?? prev.qualities,
-        emoji: input.experience.emoji ?? prev.emoji,
-        narrative: input.experience.narrative ?? prev.narrative,
-      };
+      processedExperience = input.experience;
     } else if (existingSource.experience) {
       processedExperience = existingSource.experience;
     }
@@ -108,21 +91,23 @@ export class EnrichService {
     // Determine if we need to regenerate embeddings
     const shouldRegenerateEmbeddings = 
       (input.content && input.content !== existingSource.source) ||
-      (input.experience?.narrative && input.experience.narrative !== existingSource.experience?.narrative);
+      (input.experience && 
+       JSON.stringify(input.experience) !== 
+       JSON.stringify(existingSource.experience));
 
     // Generate new embedding if needed
     let embedding: number[] | undefined;
     if (shouldRegenerateEmbeddings) {
-      // Create the new embedding text format: [emoji] + [narrative] "[content]" {qualities[array]}
+      // Create the new embedding text format: "[content]" [prominent_qualities]
       const experience = processedExperience || existingSource.experience;
       const content = input.content || existingSource.source;
       
       if (experience) {
-        const qualitiesText = experience.qualities.length > 0 
-          ? `{${experience.qualities.map(q => q.type).join(', ')}}`
-          : '{}';
+        const qualitiesText = experience.length > 0 
+          ? `[${experience.join(', ')}]`
+          : '[]';
         
-        const embeddingText = `${experience.emoji} ${experience.narrative} "${content}" ${qualitiesText}`;
+        const embeddingText = `"${content}" ${qualitiesText}`;
         
         try {
           embedding = await embeddingService.generateEmbedding(embeddingText);
@@ -140,11 +125,7 @@ export class EnrichService {
       experiencer: input.experiencer ?? existingSource.experiencer,
       processing: input.processing ?? existingSource.processing,
       crafted: input.crafted ?? existingSource.crafted,
-      experience: input.experience ? {
-        qualities: input.experience.qualities ?? existingSource.experience?.qualities ?? [],
-        emoji: input.experience.emoji ?? existingSource.experience?.emoji ?? '',
-        narrative: input.experience.narrative ?? existingSource.experience?.narrative ?? ''
-      } : existingSource.experience
+      experience: input.experience ?? existingSource.experience
     };
 
     // Delete the old record and save the new one
@@ -173,7 +154,7 @@ export class EnrichService {
     const updatedFields = this.getUpdatedFields(existingSource, source);
     
     return { 
-      source: { ...source, type: 'source' as const }, 
+      source, 
       updatedFields,
       embeddingsRegenerated: shouldRegenerateEmbeddings || false,
     };
@@ -192,9 +173,10 @@ export class EnrichService {
     if (original.experiencer !== updated.experiencer) fields.push('experiencer');
     if (original.processing !== updated.processing) fields.push('processing');
     if (original.crafted !== updated.crafted) fields.push('crafted');
-    if (original.experience?.emoji !== updated.experience?.emoji) fields.push('experience.emoji');
-    if (original.experience?.narrative !== updated.experience?.narrative) fields.push('experience.narrative');
-    if (original.experience?.qualities !== updated.experience?.qualities) fields.push('experience.qualities');
+    if (JSON.stringify(original.experience) !== 
+        JSON.stringify(updated.experience)) {
+      fields.push('experience');
+    }
     return fields;
   }
 } 

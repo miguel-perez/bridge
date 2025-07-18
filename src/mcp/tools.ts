@@ -33,17 +33,17 @@
 // Zod-based schemas for MCP tools
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import {
-  CaptureInputSchema,
+  RememberInputSchema,
   SearchInputSchema,
-  UpdateInputSchema,
+  ReconsiderInputSchema,
   ReleaseInputSchema
 } from './schemas.js';
 
 
 // JSON Schemas for MCP tool registration - generate without $ref structure
-export const CaptureInputJsonSchema = zodToJsonSchema(CaptureInputSchema);
+export const RememberInputJsonSchema = zodToJsonSchema(RememberInputSchema);
 export const SearchInputJsonSchema = zodToJsonSchema(SearchInputSchema);
-export const UpdateInputJsonSchema = zodToJsonSchema(UpdateInputSchema);
+export const ReconsiderInputJsonSchema = zodToJsonSchema(ReconsiderInputSchema);
 export const ReleaseInputJsonSchema = zodToJsonSchema(ReleaseInputSchema);
 
 // Utility to post-process schema for MCP compatibility
@@ -57,142 +57,61 @@ function makeDraft202012Schema(schema: any) {
 export async function getTools() {
   return [
     {
-      name: 'capture',
-      description: 'Capture experiences. The source field must contain the experiencer\'s exact words as written or spoken - without summarizing, interpreting, or modifying. Process this raw source material into framed moments with seven-dimensional analysis (embodied, attentional, affective, purposive, spatial, temporal, intersubjective). Each capture requires an emoji and narrative summary written in present tense. Supports both single captures and batch operations. Use the experiencer field and batch operations to capture experiences from each perspective, including your own.',
-      inputSchema: makeDraft202012Schema(CaptureInputJsonSchema),
-      annotations: {
-        title: 'Capture Experience',
-        readOnlyHint: false,
-        destructiveHint: false,
-        idempotentHint: false,
-        openWorldHint: false
-      },
-      examples: [
-        {
-          id: 'basic-capture',
-          description: 'Capture a simple experience with narrative and emoji',
-          input: {
-            source: 'I\'m walking through the rain and feeling completely alive. The water is cold but invigorating.',
-            perspective: 'I',
-            experiencer: 'Alex',
-            processing: 'during',
-            experience: {
-              qualities: [
-                {
-                  type: 'embodied',
-                  prominence: 0.9,
-                  manifestation: 'cold water invigorating the body'
-                },
-                {
-                  type: 'affective',
-                  prominence: 0.8,
-                  manifestation: 'feeling completely alive'
-                }
-              ],
-              emoji: '🌧️',
-              narrative: 'Step through cold rain, body tingles with life'
-            }
-          },
-          output: {
-            content: [
-              {
-                type: 'text',
-                text: '✅ Experience captured successfully!\n\n🌧️ Step through cold rain, body tingles with life\n\n✨ Qualities: embodied: 90%, affective: 80%\n\n📝 ID: exp_1234567890\n👤 Experiencer: Alex\n👁️  Perspective: I\n⏰ Processing: during\n🕐 Created: 2025-01-15T10:30:00.000Z'
-              }
-            ]
-          }
-        },
-        {
-          id: 'capture-with-defaults',
-          description: 'Capture with minimal input, using system defaults',
-          input: {
-            source: 'Just had a breakthrough moment with the code.',
-            experiencer: 'Developer'
-          },
-          output: {
-            content: [
-              {
-                type: 'text',
-                text: '✅ Experience captured successfully!\n\n💡 Fidget with pen, heart thuds hard\n\n✨ Qualities: purposive: 85%, affective: 75%\n\n📝 ID: exp_9876543210\n👤 Experiencer: Developer\n👁️  Perspective: I\n⏰ Processing: during\n🕐 Created: 2025-01-15T10:30:00.000Z\n\n📋 Defaults applied: perspective, processing, experience'
-              }
-            ]
-          }
-        }
-      ]
+      name: 'remember',
+      description: `Remember experiences as framed moments. Based on FRAMED_MOMENTS.md theoretical framework.
+
+THEORETICAL FOUNDATION:
+A framed moment is a practical unit for capturing experience - what consciousness apprehends in a single, held attention. Like a photograph taken from continuous movement, it creates a useful representation that is complete enough to stand alone yet naturally implies its temporal flow.
+
+SEVEN DIMENSIONAL ANALYSIS:
+- body: Embodied presence - how physicality textures this moment (Merleau-Ponty's embodied consciousness)
+- focus: Attentional flow - the direction and quality of awareness  
+- emotions: Affective atmosphere - the emotional coloring of experience (Heidegger's Stimmung/attunement)
+- purpose: Purposive momentum - the directedness or drift of the moment
+- environment: Spatial situation - the lived sense of place and position
+- time: Temporal flow - how past and future inhabit the present
+- others: Intersubjective field - how others' presence or absence matters
+
+PRINCIPLES:
+- Source must contain experiencer's exact words - no summarizing or interpreting
+- Choose qualities that emerge prominently (dimensions either emerge prominently or recede)
+- Experience should be present-tense, experientially complete, and preserve authentic voice`,
+      inputSchema: RememberInputJsonSchema,
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false
     },
     {
-      name: 'search',
-      description: 'Search framed moments using semantic matching and metadata filters. Returns sources with their qualities, emoji, narrative, and metadata. Empty queries show recent framed moments. Supports filtering by experiencer, perspective, processing level, and date ranges. Supports both single searches and batch operations.',
-      inputSchema: makeDraft202012Schema(SearchInputJsonSchema),
-      annotations: {
-        title: 'Search Experiences',
-        readOnlyHint: true,
-        destructiveHint: false,
-        idempotentHint: true,
-        openWorldHint: false
-      },
-      examples: [
-        {
-          id: 'semantic-search',
-          description: 'Search for experiences using natural language',
-          input: {
-            query: 'creative breakthrough moments',
-            limit: 5,
-            experiencer: 'Alex'
-          },
-          output: {
-            content: [
-              {
-                type: 'text',
-                text: '🔍 Search: "creative breakthrough moments"\n📊 Found 3 experiences\n\n💡 Hover over keyboard, afternoon light streams in, excitement and uncertainty bubble up about this project that feels special but unclear.\n\n✨ Qualities: purposive: 85%, affective: 80%\n\nexp_1234567890 • Alex • I • during • 2h ago\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n🎨 Focus deep on the creative challenge, breakthrough clarity hits.\n\n✨ Qualities: attentional: 90%\n\nexp_2345678901 • Alex • I • during • 1d ago'
-              }
-            ]
-          }
-        },
-        {
-          id: 'recent-experiences',
-          description: 'Show recent experiences without a specific query',
-          input: {
-            limit: 3
-          },
-          output: {
-            content: [
-              {
-                type: 'text',
-                text: '📚 Recent Experiences (3 total)\n\n🌧️ Step through cold rain, body tingles with life\n\n✨ Qualities: embodied: 90%, affective: 80%\n\nexp_1234567890 • Alex • I • during • 2h ago\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n💡 Hover over keyboard, afternoon light streams in, excitement and uncertainty bubble up about this project that feels special but unclear.\n\n✨ Qualities: purposive: 85%, affective: 80%\n\nexp_2345678901 • Alex • I • during • 1d ago'
-              }
-            ]
-          }
-        }
-      ]
+      name: 'recall',
+      description: `Recall experiences using natural language or quality-based queries. Returns relevant shared memories or patterns.`,
+      inputSchema: SearchInputJsonSchema,
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false
     },
     {
-      name: 'update',
-      description: 'Update existing framed moments. Can modify content, perspective, experiencer, processing level, crafted status, and the seven-dimensional experiential qualities. Useful for correcting mistakes or refining experiential analysis to ensure moments remain visually anchorable, experientially complete, and preserve authentic voice. Supports both single updates and batch operations.',
-      inputSchema: makeDraft202012Schema(UpdateInputJsonSchema),
-      annotations: {
-        title: 'Update Experience',
-        readOnlyHint: false,
-        destructiveHint: false,
-        idempotentHint: false,
-        openWorldHint: false
-      },
+      name: 'reconsider',
+      description: 'Reconsider and update existing framed moments. Can modify content, perspective, experiencer, processing level, crafted status, and experiential qualities. Useful for correcting mistakes or refining experiential analysis to ensure moments remain visually anchorable, experientially complete, and preserve authentic voice. Supports both single updates and batch operations.',
+      inputSchema: makeDraft202012Schema(ReconsiderInputJsonSchema),
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
       examples: [
         {
-          id: 'update-narrative',
-          description: 'Update the narrative and emoji of an experience',
+          id: 'reconsider-experience',
+          description: 'Reconsider and update the experience qualities of an experience',
           input: {
             id: 'exp_1234567890',
-            experience: {
-              emoji: '🎯',
-              narrative: 'Focus intently on keyboard, afternoon light streams in, excitement and uncertainty bubble up about this project that feels special but unclear.'
-            }
+            experience: ['body', 'focus', 'purpose']
           },
           output: {
             content: [
               {
                 type: 'text',
-                text: '✅ Experience updated successfully!\n\n🎯 Focus intently on keyboard, afternoon light streams in, excitement and uncertainty bubble up about this project that feels special but unclear.\n\n📝 ID: exp_1234567890\n🔄 Fields updated: emoji, narrative\n🕐 Updated: 2025-01-15T10:30:00.000Z'
+                text: '✅ Experience reconsidered and updated successfully!\n\n📝 ID: exp_1234567890\n🔄 Fields updated: experience\n🕐 Updated: 2025-01-15T10:30:00.000Z'
               }
             ]
           }
@@ -203,13 +122,10 @@ export async function getTools() {
       name: 'release',
       description: 'Release framed moments by ID. Removes experiences from the system with gratitude and reasoning. Useful for letting go of moments that no longer need to be held, acknowledging that significance emerges through accumulation and connection rather than through permanent retention. Supports both single releases and batch operations.',
       inputSchema: makeDraft202012Schema(ReleaseInputJsonSchema),
-      annotations: {
-        title: 'Release Experience',
-        readOnlyHint: false,
-        destructiveHint: true,
-        idempotentHint: true,
-        openWorldHint: false
-      },
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
       examples: [
         {
           id: 'single-release',

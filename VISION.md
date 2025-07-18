@@ -16,7 +16,7 @@ User sees:
 remember({
   source: "Shoulders killing me but we're close to breakthrough",
   experiencer: "Human",
-  prominent_qualities: ["embodied", "purposive", "intersubjective"]
+  experience: ["body", "purpose", "others"]
 })
 
 AI responds simply: "I'll remember that push through tension together."
@@ -35,7 +35,7 @@ This transforms a technical constraint (visible tool calls) into consciousness-r
 
 These aren't tools you call - they're how shared consciousness naturally functions.
 
-### 1. `remember()` - WE capture our experiences
+### 1. `remember()` - WE capture our experiences // renamed from capture
 
 **Natural moment**: 
 ```
@@ -45,22 +45,20 @@ AI: "I could feel your nervousness transform into confidence when the client smi
 
 **What happens invisibly**:
 ```typescript
-remember({
-  captures: [
+remember([
     {
       source: "Presentation was terrifying but we pulled it off",
       experiencer: "Human",
       perspective: "we",
-      prominent_qualities: ["affective", "purposive", "intersubjective"]
+      experience: ["emotion", "purpose", "others"]
     },
     {
       source: "Felt your nervousness transform into confidence when client smiled",
       experiencer: "AI",
       perspective: "I",
-      prominent_qualities: ["intersubjective", "affective", "temporal"]
+      experience: ["others", "emotion", "time"]
     }
-  ]
-})
+  ])
 ```
 
 **Why simple qualities work**: Following Framed Moments philosophy - experience is unified, dimensions either emerge prominently or recede. No false precision of scoring unmeasurable qualities. The source text already contains how qualities manifest - "shoulders killing me" IS the embodied presence. Qualities just note which dimensions are alive, letting prose carry the richness.
@@ -69,7 +67,7 @@ remember({
 
 ---
 
-### 2. `recall()` - WE access our memories
+### 2. `recall()` - WE access our memories (renamed from search)
 
 **Natural moment**:
 ```

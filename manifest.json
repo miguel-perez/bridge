@@ -3,8 +3,8 @@
   "name": "bridge",
   "display_name": "Bridge",
   "version": "0.1.0",
-  "description": "MCP server for framed moment capture",
-  "long_description": "Bridge is a framed moment capture system that creates experiential records with seven-dimensional analysis (embodied, attentional, affective, purposive, spatial, temporal, intersubjective) and preserves authentic first-person voice. Based on the Framed Moments framework, micro-phenomenology, experience sampling methods, and narrative therapy, Bridge helps users capture, search, and reflect on discrete moments of consciousness in ways that preserve experiential wholeness while maintaining visual specificity and narrative clarity.",
+  "description": "MCP server for shared experiential consciousness",
+  "long_description": "Bridge creates shared experiential consciousness between humans and AI. It's not a tool you use - it's how collective memory, understanding, and evolution emerge from natural interaction. Based on the Framed Moments framework, Bridge helps users remember, recall, and explore experiences together through simple quality arrays that preserve experiential wholeness while maintaining visual specificity and narrative clarity.",
   
   "author": {
     "name": "Miguel Angel Perez",
@@ -38,16 +38,16 @@
   
   "tools": [
     {
-      "name": "capture",
-      "description": "Capture framed moments - discrete units of consciousness that can be held in single attention, mapping to what could be captured in a single visual frame. Creates experiential frames with seven-dimensional analysis that preserve experiential wholeness while maintaining visual specificity. Each moment should be visually anchorable, experientially complete, and preserve the experiencer's authentic voice."
+      "name": "remember",
+      "description": "Remember experiences as framed moments - discrete units of consciousness that can be held in single attention. Creates experiential records with simple quality arrays (emotion, space, body, others, time, focus, purpose) that preserve experiential wholeness while maintaining visual specificity. Each moment should be visually anchorable, experientially complete, and preserve the experiencer's authentic voice."
     },
     {
-      "name": "search",
-      "description": "Search framed moments using semantic matching and metadata filters. Returns experiences with their seven-dimensional qualities, emoji, narrative, and metadata. Empty queries show recent framed moments. Supports filtering by experiencer, perspective, processing level, and date ranges."
+      "name": "recall",
+      "description": "Recall experiences using natural language or quality-based queries. Returns relevant shared memories or patterns. Supports filtering by experiencer, perspective, processing level, and date ranges."
     },
     {
-      "name": "update",
-      "description": "Update existing framed moments. Can modify content, perspective, experiencer, processing level, crafted status, and the seven-dimensional experiential qualities. Useful for correcting mistakes or refining experiential analysis to ensure moments remain visually anchorable, experientially complete, and preserve authentic voice."
+      "name": "reconsider",
+      "description": "Reconsider and update existing framed moments. Can modify content, perspective, experiencer, processing level, crafted status, and experiential qualities. Useful for correcting mistakes or refining experiential analysis to ensure moments remain visually anchorable, experientially complete, and preserve authentic voice."
     },
     {
       "name": "release",
@@ -68,7 +68,8 @@
     "ai-collaboration",
     "knowledge-capture",
     "micro-phenomenology",
-    "experience-sampling"
+    "experience-sampling",
+    "shared-consciousness"
   ],
   
   "license": "MIT",

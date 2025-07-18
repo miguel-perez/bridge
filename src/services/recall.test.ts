@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, beforeAll } from '@jest/globals';
-import { search, type SearchInput } from './search.js';
+import { search, type RecallInput } from './recall.js';
 import { saveSource, setStorageConfig, clearTestStorage } from '../core/storage.js';
 import { SourceRecord } from '../core/types.js';
 import path from 'path';
@@ -9,12 +9,12 @@ beforeAll(() => {
   setStorageConfig({ dataFile: path.join(process.cwd(), 'data', 'bridge-test.json') });
 });
 
-describe('Search Relevance Scoring', () => {
+describe('Recall Relevance Scoring', () => {
   beforeEach(async () => {
     await clearTestStorage();
   });
 
-  it('should calculate text relevance scores correctly', async () => {
+  it('should calculate text relevance correctly', async () => {
     // Create test records
     const record1: Omit<SourceRecord, 'type'> = {
       id: 'text_test_1',
@@ -48,7 +48,7 @@ describe('Search Relevance Scoring', () => {
     expect(results.results[0].relevance_breakdown?.text_match).toBeGreaterThan(0.5);
   });
 
-  it('should calculate filter relevance scores correctly', async () => {
+  it('should filter by experiencer correctly', async () => {
     // Create test records with different experiencers
     const record1: Omit<SourceRecord, 'type'> = {
       id: 'filter_test_1',
@@ -97,7 +97,7 @@ describe('Search Relevance Scoring', () => {
     await saveSource(record);
 
     // Search with both text query and vector similarity
-    const searchInput: SearchInput = {
+    const searchInput: RecallInput = {
       query: 'anxious',
       experiencer: 'vector_test',
       vector: {
@@ -352,10 +352,10 @@ describe('Date Range Filtering', () => {
 });
 
 describe('GroupBy Parameter Removal', () => {
-  it('should not have groupBy parameter in SearchInput interface', () => {
+  it('should not have groupBy parameter in RecallInput interface', () => {
     // This test verifies that the groupBy parameter has been completely removed
     // TypeScript compilation will fail if groupBy is still present
-    const searchInput: SearchInput = {
+    const searchInput: RecallInput = {
       query: 'test',
       experiencer: 'test',
       // groupBy: 'type' // This should cause a TypeScript error if uncommented

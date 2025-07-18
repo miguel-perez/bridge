@@ -2,7 +2,7 @@
  * MCP Server Implementation for Bridge
  * 
  * This module implements the Model Context Protocol (MCP) server for Bridge,
- * providing tools for capturing, searching, and enriching experiential data.
+ * providing tools for remembering, recalling, and enriching experiential data.
  * 
  * @module mcp/server
  */
@@ -118,7 +118,7 @@ async function initializeConfiguration(serverInstance?: Server): Promise<void> {
       await embeddingService.initialize();
       mcpLog('info', 'Embedding service initialized successfully', serverInstance);
     } catch (embeddingError) {
-      // Embedding service initialization failed - captures will have zero embeddings
+      // Embedding service initialization failed - remembers will have zero embeddings
       mcpLog('warn', `Embedding service initialization failed: ${embeddingError instanceof Error ? embeddingError.message : embeddingError}`, serverInstance);
     }
     
@@ -239,17 +239,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const parsedArgs = parseStringifiedJson(args);
 
     switch (name) {
-      case 'capture':
-        return await toolHandlers.handleCapture(parsedArgs);
+      case 'remember':
+        return await toolHandlers.handle('remember', parsedArgs);
 
       case 'release':
-        return await toolHandlers.handleRelease(parsedArgs);
+        return await toolHandlers.handle('release', parsedArgs);
 
-      case 'search':
-        return await toolHandlers.handleSearch(parsedArgs ?? {});
+      case 'recall':
+        return await toolHandlers.handle('recall', parsedArgs ?? {});
 
-      case 'update':
-        return await toolHandlers.handleUpdate(parsedArgs);
+      case 'reconsider':
+        return await toolHandlers.handle('reconsider', parsedArgs);
 
       default:
         throw new McpError(

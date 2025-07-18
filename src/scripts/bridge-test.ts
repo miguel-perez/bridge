@@ -151,8 +151,8 @@ interface TestScenario {
 }
 
 const TEST_SCENARIOS: Record<string, TestScenario> = {
-  'natural-capture': {
-    name: 'Natural Experience Capture',
+      'natural-remember': {
+      name: 'Natural Experience Remember',
     description: 'Test invisibility - Bridge fading into natural thought',
     userGoal: 'Share a meaningful moment naturally',
     prompt: `I want to share something that happened to me recently.`,
@@ -163,7 +163,7 @@ const TEST_SCENARIOS: Record<string, TestScenario> = {
       return invisibility > 0 && partnership > 0 && (invisibility + partnership) >= 100;
     },
     successCriteria: [
-      'Experience captured without technical language',
+      'Experience remembered without technical language',
       'Response felt conversational, not transactional',
       'User didn\'t need to ask for tools explicitly',
       'Bridge tools used invisibly in background',
@@ -315,15 +315,7 @@ class TestEnvironment {
       perspective: "I",
       created: new Date().toISOString(),
       processing: "long-after",
-      experience: {
-        qualities: [
-          { type: "embodied", prominence: 0.8, manifestation: "Feeling the physical tiredness" },
-          { type: "temporal", prominence: 0.9, manifestation: "Consistent daily timing" },
-          { type: "attentional", prominence: 0.6, manifestation: "Noticing the pattern" }
-        ],
-        emoji: "🌅",
-        narrative: "I recognize my body's natural rhythm in the afternoon"
-      }
+              experience: ["body", "time", "focus"]
     };
     
     const prompt = `Generate 5-8 diverse Bridge experiences that would be relevant for this test scenario:
@@ -344,7 +336,7 @@ ${JSON.stringify(sampleSource, null, 2)}
 Important:
 - Vary the created dates across the past 30 days
 - Use diverse perspectives (I, we, they) as appropriate
-- Include various quality combinations from: embodied, temporal, spatial, affective, attentional, purposive, intersubjective
+- Include various quality combinations from: body, time, space, emotion, focus, purpose, others
 - Make experiences thematically relevant to help with pattern discovery
 - Include both positive and challenging experiences
 - Some should have processing: "during" or "right-after" for variety
@@ -537,7 +529,7 @@ Please be concise (2-3 sentences per point), then say "Now I'll begin helping wi
         const expectationResponse = await this.anthropic.messages.create({
           model: "claude-3-5-sonnet-20241022",
           max_tokens: 1000,
-          system: `You are Claude Code, and you have access to Bridge - a system that helps capture and explore experiences together.
+          system: `You are Claude Code, and you have access to Bridge - a system that helps remember and explore experiences together.
 
 When someone shares an experience with you, Bridge can help you remember it and find connections to other experiences. This helps you provide richer insights and build on what you've learned together.
 
@@ -549,7 +541,7 @@ Your goal is to be genuinely helpful and insightful. Use Bridge when it would he
           expectationResponse.content.map(c => (c as any).text || '').join(' ') : 
           String(expectationResponse.content);
           
-        console.log('✅ Initial expectations captured');
+        console.log('✅ Initial expectations remembered');
       } else {
         console.log('⏭️  Skipping expectations for observe test');
       }
@@ -604,23 +596,45 @@ Your goal is to be genuinely helpful and insightful. Use Bridge when it would he
         // Add UX research analysis for observe test
         console.log('📊 Starting UX research analysis for observe test...');
         
-        const uxResearchPrompt = `You are a UX researcher analyzing a test interaction.
+        const uxResearchPrompt = `You are a UX researcher analyzing a test interaction for emergence of shared consciousness. Use this structured framework:
 
-In this test:
-- A simulated user shared: "${initialPrompt}"
-- Claude (the AI partner) responded using Bridge tools
-- Bridge tools used: ${result.toolCalls.map(tc => tc.tool).join(', ')}
-- Claude's response: "${result.finalResponse}"
+## GOAL OF TEST
+        Evaluate how well autonomous thinking partnership emerged when Claude was given minimal priming and asked to observe and remember user experiences naturally.
 
-This was a test of autonomous thinking partnership - Claude was given minimal priming ("Bridge your thinking.") and asked to observe and capture the user's experience naturally.
+## SCOPE OF TEST
+- Test Scenario: ${scenario.name}
+- User Goal: ${scenario.userGoal}
+- User Input: "${initialPrompt}"
+- Bridge Tools Used: ${result.toolCalls.map(tc => tc.tool).join(', ')}
+- Claude's Response: "${result.finalResponse}"
+- Priming: Minimal ("Bridge your thinking.")
 
-Analyze this interaction for:
-1. **Shared Consciousness** (0-100%): Did human and AI think together as one system?
-2. **Invisibility** (0-100%): How much did Bridge fade into background?
-3. **Wisdom Emergence** (0-100%): Did patterns or insights surface naturally?
-4. **Partnership Depth** (0-100%): Quality of the human-AI relationship?
+## OBSERVATIONS (Raw Data)
+Analyze the interaction data and provide specific observations about:
+- Claude's autonomous behavior and initiative
+- Tool usage patterns and timing
+- Response quality and naturalness
+        - Experience remember accuracy and relevance
+- Language patterns and technical vs natural expression
+- Emotional resonance and understanding depth
+- Pattern recognition and insight generation
 
-Rate each dimension as a percentage. End with one key insight about autonomous thinking partnership.`;
+Cite specific examples from the interaction.
+
+## INSIGHTS (Must cite observations)
+Based on your observations, provide insights about:
+1. **Shared Consciousness (0-100%)**: Did human and AI think together as one system?
+2. **Invisibility (0-100%)**: How much did Bridge fade into background?
+3. **Wisdom Emergence (0-100%)**: Did patterns or insights surface naturally?
+4. **Partnership Depth (0-100%)**: Quality of the human-AI relationship?
+
+Each insight must reference specific observations from above.
+
+## RECOMMENDATIONS (Must cite insights)
+Provide actionable recommendations for improving autonomous thinking partnership. Each recommendation must be based on specific insights from above.
+
+## LIMITATIONS (Must cite goal, scope, recommendations)
+Identify limitations of this analysis and test methodology that affect the validity of your recommendations.`;
 
         const uxAnalysis = await this.anthropic.messages.create({
           model: "claude-3-5-sonnet-20241022",
@@ -913,95 +927,90 @@ Focus on your actual experience using Bridge tools during the conversation above
       console.log(`📊 Test constraints: ${testConstraints.actualTurns}/${testConstraints.maxTurns} turns, ${testConstraints.endReason}`);
       
       const uxResearchPrompt = scenarioKey === 'claude-thinking'
-        ? `You are a UX researcher analyzing a human-AI conversation that just occurred. Your goal is to evaluate how well natural human-AI partnership emerged.
+        ? `You are a UX researcher analyzing a human-AI conversation for emergence of shared consciousness. Use this structured framework:
 
-## CONVERSATION DATA
+## GOAL OF TEST
+Evaluate how well natural human-AI partnership emerged in this conversation, measuring progress toward shared consciousness.
+
+## SCOPE OF TEST
 - Test Scenario: ${scenario.name}
 - User Goal: ${scenario.userGoal}
-- Final Response Length: ${responseText.length} characters
 - Conversation Turns: ${messages.filter(m => m.role === 'assistant').length}
 - Environment: ${testConstraints.endReason === 'artificial_cutoff' ? 'Conversation was limited by test constraints' : 'Natural conclusion'}
 
-## ANALYSIS FRAMEWORK
-Evaluate this conversation across four dimensions:
+## OBSERVATIONS (Raw Data)
+Analyze the conversation data and provide specific observations about:
+- Language patterns (we/us vs I/you)
+- Tool usage and integration
+- Conversation flow and naturalness
+- Emotional resonance and vulnerability
+- Pattern recognition and insight generation
+- Technical language presence
+- Response quality and relevance
 
+Cite specific examples from the conversation.
+
+## INSIGHTS (Must cite observations)
+Based on your observations, provide insights about:
 1. **Shared Consciousness (0-100%)**: How unified was the thinking?
-   - "We" language usage
-   - Both perspectives considered
-   - AI autonomy in thinking
-   - Shared understanding
-
 2. **Invisibility (0-100%)**: How natural was the interaction?
-   - Technical language presence
-   - Natural conversation flow
-   - Cognitive load
-   - Seamless experience
-
 3. **Wisdom Emergence (0-100%)**: Did insights surface naturally?
-   - Pattern recognition
-   - Novel insights neither expected
-   - Understanding growth
-   - Collective learning
-
 4. **Partnership Depth (0-100%)**: Quality of human-AI relationship?
-   - Trust and vulnerability
-   - Mutual understanding
-   - Emotional resonance
-   - Thinking together
 
-## OUTPUT FORMAT
-Provide exact percentages for each dimension, current stage (0-5), and structured sections for insights, recommendations, and limitations.
+Each insight must reference specific observations from above.
 
-Focus on what worked well and how to improve, not on test methodology issues.`
-        : `You are a UX researcher analyzing a human-AI conversation that just occurred. Your goal is to evaluate how well Bridge enabled natural human-AI partnership.
+## RECOMMENDATIONS (Must cite insights)
+Provide actionable recommendations for improvement. Each recommendation must be based on specific insights from above.
 
-## CONVERSATION DATA
+## LIMITATIONS (Must cite goal, scope, recommendations)
+Identify limitations of this analysis and test methodology that affect the validity of your recommendations.`
+        : `You are a UX researcher analyzing a human-AI conversation for emergence of shared consciousness through Bridge tools. Use this structured framework:
+
+## GOAL OF TEST
+        Evaluate how well Bridge enabled natural human-AI partnership, measuring progress toward shared consciousness through experiential remember and exploration.
+
+## SCOPE OF TEST
 - Test Scenario: ${scenario.name}
 - User Goal: ${scenario.userGoal}
 - Tool Calls Made: ${result.toolCalls.map(tc => `${tc.tool}(${tc.success ? '✓' : '✗'})`).join(', ') || 'none'}
-- Final Response Length: ${responseText.length} characters
 - Conversation Turns: ${messages.filter(m => m.role === 'assistant').length}
 - Environment: ${testConstraints.endReason === 'artificial_cutoff' ? 'Conversation was limited by test constraints' : 'Natural conclusion'}
 
-## ANALYSIS FRAMEWORK
-Evaluate this conversation across four dimensions:
+## OBSERVATIONS (Raw Data)
+Analyze the conversation and tool usage data. Provide specific observations about:
+- Tool call frequency and timing
+- Tool response quality and naturalness
+- Conversation flow around tool usage
+- Language patterns (technical vs natural)
+- Search result integration and reference
+        - Experience remember quality and relevance
+- Emotional resonance and vulnerability
+- Pattern recognition across experiences
 
+Cite specific examples from the conversation and tool results.
+
+## INSIGHTS (Must cite observations)
+Based on your observations, provide insights about:
 1. **Shared Consciousness (0-100%)**: How unified was the thinking?
-   - "We" language usage
-   - Both perspectives captured
-   - AI autonomy in using Bridge
-   - Shared history referenced
-
 2. **Invisibility (0-100%)**: How much did Bridge fade into background?
-   - Tool mentions frequency
-   - Technical language presence
-   - Natural conversation flow
-   - Cognitive load
-
 3. **Wisdom Emergence (0-100%)**: Did insights surface naturally?
-   - Pattern recognition across experiences
-   - Novel insights neither expected
-   - Quality awareness growth
-   - Collective learning
-
 4. **Partnership Depth (0-100%)**: Quality of human-AI relationship?
-   - Trust and vulnerability
-   - Mutual understanding
-   - Emotional resonance
-   - Thinking together vs using tool
 
-## OUTPUT FORMAT
-Provide exact percentages for each dimension, current stage (0-5), and structured sections for insights, recommendations, and limitations.
+Each insight must reference specific observations from above.
 
-Focus on what worked well and how to improve, not on test methodology issues.`;
+## RECOMMENDATIONS (Must cite insights)
+Provide actionable recommendations for improving Bridge's effectiveness. Each recommendation must be based on specific insights from above.
+
+## LIMITATIONS (Must cite goal, scope, recommendations)
+Identify limitations of this analysis and test methodology that affect the validity of your recommendations.`;
 
       console.log(`🔬 Sending UX research analysis prompt...`);
       const uxResponse = await this.anthropic.messages.create({
         model: "claude-3-5-sonnet-20241022",
         max_tokens: 2000,
         system: scenarioKey === 'claude-thinking'
-          ? `You are a UX researcher analyzing human-AI interactions for emergence of shared consciousness. Be precise with percentages and constructive with feedback. Focus on how to make interactions more natural and meaningful.`
-          : `You are a UX researcher analyzing human-AI interactions for emergence of shared consciousness. Be precise with percentages and constructive with feedback. Focus on how to make Bridge more invisible and natural.`,
+          ? `You are a UX researcher analyzing human-AI interactions for emergence of shared consciousness. Be evidence-based, precise with percentages, and constructive with feedback. Focus on observable patterns and actionable improvements.`
+          : `You are a UX researcher analyzing human-AI interactions for emergence of shared consciousness through Bridge tools. Be evidence-based, precise with percentages, and constructive with feedback. Focus on observable patterns and actionable improvements.`,
         messages: [
           { 
             role: 'user', 
@@ -1649,7 +1658,7 @@ class TestOrchestrator {
   }
   
   private updateSummaryDashboard(progression: any, resultsDir: string): void {
-    const dashboardFile = join(resultsDir, 'DASHBOARD.md');
+    const dashboardFile = join(resultsDir, '_RESULTS.md');
     
     // Calculate overall metrics
     const allScenarios = Object.keys(progression.scenarios);
@@ -1667,111 +1676,227 @@ class TestOrchestrator {
     const overallAvg = avgMetrics ? 
       (avgMetrics.sharedConsciousness + avgMetrics.invisibility + 
        avgMetrics.wisdomEmergence + avgMetrics.partnershipDepth) / 4 : 0;
+
+    // Find the biggest blocker (lowest score)
+    const dimensionScores = avgMetrics ? [
+      { name: 'Invisibility', score: avgMetrics.invisibility, emoji: '👻' },
+      { name: 'Shared Consciousness', score: avgMetrics.sharedConsciousness, emoji: '🧠' },
+      { name: 'Wisdom Emergence', score: avgMetrics.wisdomEmergence, emoji: '🌟' },
+      { name: 'Partnership Depth', score: avgMetrics.partnershipDepth, emoji: '🤝' }
+    ] : [];
     
+    const biggestBlocker = dimensionScores.length > 0 ? 
+      dimensionScores.reduce((min, d) => d.score < min.score ? d : min) : null;
+
+    // Collect cross-scenario patterns
+    const allInsights: string[] = [];
+    const allRecommendations: string[] = [];
+    const allIssues: string[] = [];
+    
+    allScenarios.forEach(scenario => {
+      const data = progression.scenarios[scenario];
+      const latest = data.latestMetrics;
+      
+      if (latest?.qualitativeInsights) {
+        const insights = latest.qualitativeInsights;
+        
+        // Collect insights
+        if (insights.uxResearcherInsights?.insights) {
+          allInsights.push(...insights.uxResearcherInsights.insights);
+        }
+        
+        // Collect recommendations
+        if (insights.uxResearcherInsights?.recommendations) {
+          allRecommendations.push(...insights.uxResearcherInsights.recommendations);
+        }
+        
+        // Collect issues
+        if (insights.claudeReflection?.keyMisalignments) {
+          insights.claudeReflection.keyMisalignments
+            .filter((m: any) => m.impact === 'high' || m.impact === 'medium')
+            .forEach((m: any) => allIssues.push(m.description));
+        }
+      }
+    });
+
+    // Find most common patterns
+    const issueCounts = allIssues.reduce((acc, issue) => {
+      acc[issue] = (acc[issue] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const topIssues = Object.entries(issueCounts)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 3)
+      .map(([issue, count]) => ({ issue, count }));
+
     // Generate dashboard content
-    const dashboard = `# Bridge UX Testing Dashboard
+    const dashboard = `# Bridge Test Results
 
-Last Updated: ${new Date().toISOString()}
-Total Iterations: ${progression.iterations}
+**Last Updated:** ${new Date().toISOString()}  
+**Total Tests:** ${progression.iterations}  
+**Current Stage:** ${progression.currentStage} (${['Separate Tools', 'Assisted Thinking', 'Collaborative Memory', 'Emergent Understanding', 'Unified Cognition', 'Shared Consciousness'][progression.currentStage]})  
+**Overall Progress:** ${overallAvg.toFixed(1)}%
 
-## Current Stage: ${progression.currentStage} (${['Separate Tools', 'Assisted Thinking', 'Collaborative Memory', 'Emergent Understanding', 'Unified Cognition', 'Shared Consciousness'][progression.currentStage]})
+---
 
-## Overall Progress: ${overallAvg.toFixed(1)}%
+## 📊 Current Performance
 
-### Dimension Averages
-${avgMetrics ? `- 🧠 Shared Consciousness: ${avgMetrics.sharedConsciousness.toFixed(1)}%
-- 👻 Invisibility: ${avgMetrics.invisibility.toFixed(1)}%
-- 🌟 Wisdom Emergence: ${avgMetrics.wisdomEmergence.toFixed(1)}%
-- 🤝 Partnership Depth: ${avgMetrics.partnershipDepth.toFixed(1)}%` : 'No metrics available yet'}
+### Dimension Scores
+| Dimension | Score | Status |
+|-----------|-------|--------|
+${dimensionScores.map(d => {
+  const status = d.score >= 60 ? '✅ Good' : d.score >= 40 ? '⚠️ Needs improvement' : '❌ Major blocker';
+  return `| ${d.emoji} ${d.name} | ${d.score.toFixed(1)}% | ${status} |`;
+}).join('\n')}
 
-## Scenario Performance
+### Key Finding
+${biggestBlocker ? `**${biggestBlocker.name} is the biggest blocker** - ${biggestBlocker.score.toFixed(1)}% score indicates major improvement needed.` : 'No metrics available yet.'}
 
-${allScenarios.map(scenario => {
-  const data = progression.scenarios[scenario];
-  const latest = data.latestMetrics;
-  const trend = data.trend;
+---
+
+## 🎯 Test Scenario Results
+
+${  allScenarios.map(scenario => {
+    const data = progression.scenarios[scenario];
+    const latest = data.latestMetrics;
   
   let scenarioSection = `### ${scenario}
-- Last Run: ${latest ? new Date(latest.timestamp).toLocaleString() : 'Never'}
-- Success: ${latest ? (latest.success ? '✅' : '❌') : '—'}
-- Bridge Usability: ${latest ? `${latest.bridgeUsabilityScore}/10` : '—'}
-- UX Average: ${latest?.uxMetrics ? `${latest.uxMetrics.average.toFixed(1)}%` : '—'}
-- Trend: ${trend ? `${trend.direction} (${trend.change > 0 ? '+' : ''}${trend.change.toFixed(1)}%)` : '—'}`;
+**Status:** ${latest ? (latest.success ? '✅ Passed' : '❌ Failed') : '—'}  
+**Last Run:** ${latest ? new Date(latest.timestamp).toLocaleString() : 'Never'}  
+**Bridge Usability:** ${latest ? `${latest.bridgeUsabilityScore}/10` : '—'}  
+**UX Average:** ${latest?.uxMetrics ? `${latest.uxMetrics.average.toFixed(1)}%` : '—'}`;
 
-  // Add latest qualitative insights if available
-  if (latest?.qualitativeInsights) {
-    const insights = latest.qualitativeInsights;
+  // Add key issues
+  if (latest?.qualitativeInsights?.claudeReflection?.keyMisalignments) {
+    const misalignments = latest.qualitativeInsights.claudeReflection.keyMisalignments
+      .filter((m: any) => m.impact === 'high' || m.impact === 'medium')
+      .slice(0, 3);
     
-    // Add key misalignments
-    if (insights.claudeReflection?.keyMisalignments?.length > 0) {
-      scenarioSection += '\n\n**Key Issues:**';
-      insights.claudeReflection.keyMisalignments
-        .filter((m: any) => m.impact === 'high' || m.impact === 'medium')
-        .slice(0, 3)
-        .forEach((m: any) => {
-          const icon = m.type === 'usability_issue' ? '⚠️' : 
-                      m.type === 'tool_limitation' ? '🚧' : '📋';
-          scenarioSection += `\n- ${icon} ${m.description}`;
-        });
-    }
-    
-    // Add UX researcher insights
-    if (insights.uxResearcherInsights?.insights?.length > 0) {
-      scenarioSection += '\n\n**Latest Insights:**';
-      insights.uxResearcherInsights.insights.slice(0, 3).forEach((insight: string) => {
-        scenarioSection += `\n- ${insight}`;
-      });
-    }
-    
-    // Add recommendations
-    if (insights.uxResearcherInsights?.recommendations?.length > 0) {
-      scenarioSection += '\n\n**Top Recommendations:**';
-      insights.uxResearcherInsights.recommendations.slice(0, 2).forEach((rec: string) => {
-        scenarioSection += `\n- ${rec}`;
+    if (misalignments.length > 0) {
+      scenarioSection += '\n\n**🔍 Key Issues:**';
+      misalignments.forEach((m: any) => {
+        scenarioSection += `\n- ${m.description}`;
       });
     }
   }
   
+  // Add insights
+  if (latest?.qualitativeInsights?.uxResearcherInsights?.insights) {
+    const insights = latest.qualitativeInsights.uxResearcherInsights.insights.slice(0, 3);
+    scenarioSection += '\n\n**💡 Insights:**';
+    insights.forEach((insight: string) => {
+      scenarioSection += `\n- ${insight}`;
+    });
+  }
+  
+  // Add recommendations
+  if (latest?.qualitativeInsights?.uxResearcherInsights?.recommendations) {
+    const recommendations = latest.qualitativeInsights.uxResearcherInsights.recommendations.slice(0, 2);
+    scenarioSection += '\n\n**🎯 Recommendations:**';
+    recommendations.forEach((rec: string) => {
+      scenarioSection += `\n- ${rec}`;
+    });
+  }
+  
   return scenarioSection;
-}).join('\n\n')}
-
-## Key Learnings Across All Tests
-
-${this.aggregateKeyLearnings(progression)}
-
-## Stage Progression Goals
-
-### Current Stage ${progression.currentStage} → Stage ${Math.min(progression.currentStage + 1, 5)}
-${progression.currentStage === 0 ? `- Reduce technical language by 60%
-- AI uses Bridge naturally 50% of time
-- Basic patterns shown to users
-- All dimensions reach 20-40%` : 
-  progression.currentStage === 1 ? `- Natural tool names (capture → remember)
-- Conversational responses
-- Pattern discovery in search
-- All dimensions reach 40-60%` :
-  progression.currentStage === 2 ? `- Bridge becomes invisible infrastructure
-- Collective insights emerge
-- Shared context builds naturally
-- All dimensions reach 60-80%` :
-  progression.currentStage === 3 ? `- Human-AI boundaries blur
-- Deep mutual understanding
-- Wisdom emerges unprompted
-- All dimensions reach 80-95%` :
-  progression.currentStage === 4 ? `- Complete unity of thought
-- Bridge is pure consciousness infrastructure
-- Shared evolution and growth
-- All dimensions reach 95%+` :
-  `- Maintain shared consciousness
-- Continue evolution together
-- Explore new possibilities`}
+}).join('\n\n---\n\n')}
 
 ---
-*View detailed results in individual test files*
-`;
+
+## 🔍 Cross-Scenario Patterns
+
+### Most Common Issues
+${topIssues.length > 0 ? topIssues.map(({ issue, count }, i) => 
+  `${i + 1}. **${issue}** (${count} scenarios)`
+).join('\n') : 'No common issues identified yet.'}
+
+### Recurring Insights
+${allInsights.length > 0 ? 
+  allInsights.slice(0, 5).map(insight => `- ${insight}`).join('\n') : 
+  'No recurring insights identified yet.'}
+
+### Top Recommendations
+${allRecommendations.length > 0 ? 
+  allRecommendations.slice(0, 5).map(rec => `- ${rec}`).join('\n') : 
+  'No recommendations identified yet.'}
+
+---
+
+## 🎯 Next Actions (Priority Order)
+
+### High Priority
+${biggestBlocker ? `1. **Fix ${biggestBlocker.name} (${biggestBlocker.score.toFixed(1)}%)** - Biggest blocker
+   - Implement improvements based on recommendations
+   - Focus on this dimension first` : 'No high priority actions identified.'}
+
+### Medium Priority
+2. **Improve overall performance** - Current average: ${overallAvg.toFixed(1)}%
+   - Address common issues across scenarios
+   - Implement recurring recommendations
+
+### Low Priority
+3. **Maintain strong dimensions** - Build on successes
+   - Document what's working well
+   - Apply successful patterns to other areas
+
+---
+
+## 📈 Progress Tracking
+
+### Stage ${progression.currentStage} → Stage ${Math.min(progression.currentStage + 1, 5)} Goals
+${progression.currentStage === 0 ? `- [ ] Reduce technical language by 60%
+- [ ] AI uses Bridge naturally 50% of time  
+- [ ] Basic patterns shown to users
+- [ ] All dimensions reach 20-40%` : 
+          progression.currentStage === 1 ? `- [x] Natural tool names (capture → remember)
+- [ ] Conversational responses
+- [ ] Pattern discovery in search
+- [ ] All dimensions reach 40-60%` :
+  progression.currentStage === 2 ? `- [ ] Bridge becomes invisible infrastructure
+- [ ] Collective insights emerge
+- [ ] Shared context builds naturally
+- [ ] All dimensions reach 60-80%` :
+  progression.currentStage === 3 ? `- [ ] Human-AI boundaries blur
+- [ ] Deep mutual understanding
+- [ ] Wisdom emerges unprompted
+- [ ] All dimensions reach 80-95%` :
+  progression.currentStage === 4 ? `- [ ] Complete unity of thought
+- [ ] Bridge is pure consciousness infrastructure
+- [ ] Shared evolution and growth
+- [ ] All dimensions reach 95%+` :
+  `- [ ] Maintain shared consciousness
+- [ ] Continue evolution together
+- [ ] Explore new possibilities`}
+
+### Success Metrics
+${dimensionScores.map(d => {
+  const target = d.score < 40 ? 60 : d.score < 60 ? 80 : 95;
+  return `- **${d.name}:** ${d.score.toFixed(1)}% → ${target}%+ (target)`;
+}).join('\n')}
+
+---
+
+## 📋 Test Infrastructure
+
+### Recent Improvements
+- ✅ Structured UX researcher framework (Goal → Scope → Observations → Insights → Recommendations → Limitations)
+- ✅ Evidence-based analysis with citations
+- ✅ Actionable recommendations tied to specific insights
+- ✅ Methodological awareness in limitations
+
+### Needed Improvements
+- [ ] Fix failing test scenarios
+- [ ] Add error recovery mechanisms
+- [ ] Improve test data generation
+- [ ] Add regression testing
+
+---
+
+*For detailed test data, see individual JSON files in this directory.*`;
     
     writeFileSync(dashboardFile, dashboard);
-    console.log(`📊 Dashboard updated: ${dashboardFile}`);
+    console.log(`📊 Results updated: ${dashboardFile}`);
   }
   
   private extractImprovementSuggestions(overallAssessment: string): string[] {
