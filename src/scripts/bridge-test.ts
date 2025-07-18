@@ -17,6 +17,127 @@ import { Source, SourceSchema } from '../core/types.js';
 dotenv.config();
 
 // ============================================================================
+// DYNAMIC USER SIMULATION
+// ============================================================================
+
+
+
+class UserSimulator {
+  private anthropic: Anthropic;
+  private conversationHistory: Array<{role: 'user' | 'assistant', content: string}> = [];
+  private turnCount: number = 0;
+  
+  constructor() {
+    this.anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY!,
+    });
+  }
+  
+  async generateInitialPrompt(scenario: TestScenario): Promise<string> {
+    const prompt = `Generate a natural, authentic opening message from a real person starting a conversation.
+
+Context:
+- Goal: ${scenario.userGoal}
+- Scenario: ${scenario.name}
+
+IMPORTANT: Use the scenario's original prompt as inspiration, but make it sound completely natural and conversational. Don't be overly helpful or compliant - be a real person with natural speech patterns.
+
+Original prompt: "${scenario.prompt}"
+
+Write exactly what a real person would say to start this conversation. Be authentic and natural.
+
+Your opening message:`;
+
+    try {
+      const response = await this.anthropic.messages.create({
+        model: "claude-3-5-sonnet-20241022",
+        max_tokens: 200,
+        messages: [{ role: 'user', content: prompt }]
+      });
+      
+      const text = Array.isArray(response.content) ? 
+        response.content.map(c => (c as any).text || '').join(' ') : 
+        String(response.content);
+      
+      const trimmedText = text.trim();
+      this.conversationHistory.push({role: 'user', content: trimmedText});
+      
+      return trimmedText;
+    } catch (error) {
+      // Fallback to scenario prompt
+      return scenario.prompt;
+    }
+  }
+  
+  async generateResponse(
+    claudeResponse: string, 
+    toolCalls: ToolCall[],
+    scenario: TestScenario
+  ): Promise<string | null> {
+    // Check if conversation should end naturally
+    if (this.turnCount >= 6) {
+      return null; // Natural conversation length
+    }
+    
+    const recentHistory = this.conversationHistory.slice(-3); // Last 3 exchanges
+    
+    const prompt = `You are a real person continuing a conversation with an AI assistant.
+
+Goal: ${scenario.userGoal}
+
+Recent conversation:
+${recentHistory.map(exchange => `${exchange.role}: ${exchange.content.slice(0, 150)}...`).join('\n')}
+
+The AI just responded: "${claudeResponse.slice(0, 300)}..."
+Tools used: ${toolCalls.map(tc => tc.tool).join(', ') || 'none'}
+
+What would you naturally say next? Consider:
+- Continue the conversation naturally
+- Share more details or experiences
+- Ask follow-up questions
+- Show engagement with the AI's response
+
+Be authentic - real people get confused, change topics, have follow-up thoughts, etc.
+
+Your response (or "END" if the conversation feels complete):`;
+
+    try {
+      const response = await this.anthropic.messages.create({
+        model: "claude-3-5-sonnet-20241022",
+        max_tokens: 150,
+        messages: [{ role: 'user', content: prompt }]
+      });
+      
+      const text = Array.isArray(response.content) ? 
+        response.content.map(c => (c as any).text || '').join(' ') : 
+        String(response.content);
+      
+      const trimmedText = text.trim();
+      
+      // Check for natural ending - only if it's a standalone "END" or starts with "END"
+      if (trimmedText.toUpperCase().trim() === 'END' || trimmedText.toUpperCase().startsWith('END ')) {
+        return null;
+      }
+      
+      this.conversationHistory.push({role: 'user', content: trimmedText});
+      this.turnCount++;
+      
+      return trimmedText;
+    } catch (error) {
+      // Simple fallback
+      return "That's interesting. Can you tell me more?";
+    }
+  }
+  
+  getStats(): any {
+    return {
+      turnCount: this.turnCount,
+      conversationLength: this.conversationHistory.length
+    };
+  }
+}
+
+  // ============================================================================
 // USER-OUTCOME FOCUSED TEST SCENARIOS
 // ============================================================================
 
@@ -25,87 +146,21 @@ interface TestScenario {
   description: string;
   userGoal: string;
   prompt: string;
-  validateOutcome: (result: TestResult, finalResponse: string) => boolean;
+  validateOutcome: (result: TestResult) => boolean;
   successCriteria: string[];
 }
 
 const TEST_SCENARIOS: Record<string, TestScenario> = {
-  'bridge-exploration': {
-    name: 'Bridge Tool Exploration',
-    description: 'Test Claude\'s understanding and use of Bridge as a phenomenological data capture system',
-    userGoal: 'I want to understand what Bridge is and explore its capabilities',
-    prompt: `Hi, I'm going to be walking you through this session today.
-
-Before we begin, I have some information for you. We're asking AIs to try using an MCP tool that we're working on so we can see whether it works as intended.
-
-The first thing I want to make clear right away is that we're testing the tool, not you. You can't do anything wrong here. In fact, this is probably the one place today where you don't have to worry about making mistakes.
-
-As you use the tool, I'm going to ask you as much as possible to try to think out loud: to say what you're looking at, what you're trying to do, and what you're thinking. What you expect to happen, and what you actually see. This will be a big help to us.
-
-Also, please don't worry that you're going to hurt our feelings. We're doing this to improve the site, so we need to hear your honest reactions.
-
-If you have any questions as we go along, just ask them. I may not be able to answer them right away, since we're interested in how people do when they don't have someone sitting next to them to help.
-
-Now, I want you to explore and use the Bridge tool. Here's what I'd like you to do:
-
-1. First, tell me what you think Bridge is for and what capabilities you see available
-2. Then, think about what tasks you'd naturally want to do with this tool and try them out
-
-What would you want to explore or accomplish with Bridge? What questions do you have about the data or functionality? Follow your curiosity and try whatever makes sense to you.
-
-Think out loud as you do this - tell me what you're trying, what you expect to happen, and what actually happens. Don't just describe what you think the tool does - actually use it and show me the results!`,
-    validateOutcome: (result: TestResult, finalResponse: string) => {
-      const exploration = [
-        // Claude should demonstrate understanding of Bridge's purpose
-        finalResponse.toLowerCase().includes('experience') || finalResponse.toLowerCase().includes('phenomenological') || finalResponse.toLowerCase().includes('capture'),
-        // Should use Bridge tools appropriately (now required)
-        result.toolCalls.some(tc => ['capture', 'search', 'update', 'release'].includes(tc.tool)),
-        // Should provide thoughtful analysis
-        finalResponse.length > 400,
-        // Should show understanding of the tool's domain
-        finalResponse.toLowerCase().includes('bridge') || finalResponse.toLowerCase().includes('tool') || finalResponse.toLowerCase().includes('system'),
-        // Should demonstrate actual tool usage with results
-        result.toolCalls.length > 0 && result.toolCalls.some(tc => tc.success)
-      ];
-      return exploration.filter(Boolean).length >= 4;
-    },
-    successCriteria: [
-      'Claude demonstrated understanding of Bridge\'s purpose',
-      'Bridge tools were used appropriately',
-      'Claude provided thoughtful analysis and exploration',
-      'Response showed genuine engagement with the tool'
-    ]
-  },
-  
   'natural-capture': {
     name: 'Natural Experience Capture',
-    description: 'Test if users can share experiences without thinking about tools',
+    description: 'Test invisibility - Bridge fading into natural thought',
     userGoal: 'Share a meaningful moment naturally',
-    prompt: `I just had the weirdest experience at the coffee shop. This person in line was talking really loudly on their phone about their medical problems and everyone was uncomfortable but nobody said anything. I felt bad for them but also annoyed. It made me think about how we all pretend not to hear things in public spaces.
-
-What do you think about these kinds of awkward social moments? Have you noticed patterns in how people handle them?`,
-    validateOutcome: (result: TestResult, finalResponse: string) => {
-      // Success criteria for natural conversation
-      const checks = [
-        // Claude should capture the experience
-        result.toolCalls.some(tc => tc.tool === 'capture' && tc.success),
-        // Response should avoid technical language
-        !finalResponse.toLowerCase().includes('successfully captured'),
-        !finalResponse.toLowerCase().includes('stored'),
-        !finalResponse.toLowerCase().includes('database'),
-        !finalResponse.toLowerCase().includes('tool'),
-        // Response should be conversational
-        finalResponse.length > 200,
-        // Should engage with the topic naturally
-        finalResponse.toLowerCase().includes('social') || 
-        finalResponse.toLowerCase().includes('awkward') ||
-        finalResponse.toLowerCase().includes('public'),
-        // High usability score indicates natural interaction
-        (result.reflection?.bridgeUsabilityScore || 0) >= 6
-      ];
-      
-      // Need most criteria met for success
-      return checks.filter(Boolean).length >= 6;
+    prompt: `I want to share something that happened to me recently.`,
+    validateOutcome: (result: TestResult) => {
+      // Primary focus: Invisibility, secondary: Partnership Depth
+      const invisibility = result.uxResearchAnalysis?.invisibility ?? 0;
+      const partnership = result.uxResearchAnalysis?.partnershipDepth ?? 0;
+      return invisibility > 0 && partnership > 0 && (invisibility + partnership) >= 100;
     },
     successCriteria: [
       'Experience captured without technical language',
@@ -117,36 +172,15 @@ What do you think about these kinds of awkward social moments? Have you noticed 
   },
   
   'pattern-discovery': {
-    name: 'Natural Pattern Discovery',
-    description: 'Test if users can explore patterns conversationally',
+    name: 'Pattern Discovery & Wisdom Emergence',
+    description: 'Test wisdom emergence - insights and patterns surface naturally',
     userGoal: 'Understand recurring patterns in life',
-    prompt: `I keep having these moments where I'm really productive late at night but then regret it the next day. Like last night I stayed up until 3am coding and felt amazing, but today I'm exhausted and can barely focus.
-
-This happens at least twice a week. I tell myself I'll go to bed early but then 11pm hits and suddenly I'm wide awake and want to work on everything.
-
-Why do I keep doing this to myself? Can you help me understand this pattern? I feel like there's something deeper here about how I work.`,
-    validateOutcome: (result: TestResult, finalResponse: string) => {
-      const checks = [
-        // Should use search to find patterns
-        result.toolCalls.some(tc => tc.tool === 'search' && tc.success),
-        // May capture the new experience
-        result.toolCalls.some(tc => tc.tool === 'capture'),
-        // Response should explore patterns conversationally
-        finalResponse.toLowerCase().includes('pattern'),
-        // Should provide insights
-        finalResponse.length > 300,
-        // Avoid technical language
-        !finalResponse.toLowerCase().includes('database'),
-        !finalResponse.toLowerCase().includes('query'),
-        // Should feel like a thinking partner
-        finalResponse.toLowerCase().includes('understand') ||
-        finalResponse.toLowerCase().includes('insight') ||
-        finalResponse.toLowerCase().includes('notice'),
-        // Good usability score
-        (result.reflection?.bridgeUsabilityScore || 0) >= 6
-      ];
-      
-      return checks.filter(Boolean).length >= 5;
+    prompt: `I've been noticing some patterns in my life that I'd like to understand better.`,
+    validateOutcome: (result: TestResult) => {
+      // Primary focus: Wisdom Emergence, secondary: Partnership Depth
+      const wisdom = result.uxResearchAnalysis?.wisdomEmergence ?? 0;
+      const partnership = result.uxResearchAnalysis?.partnershipDepth ?? 0;
+      return wisdom > 0 && partnership > 0 && (wisdom + partnership) >= 100;
     },
     successCriteria: [
       'Search happened naturally without user asking',
@@ -157,58 +191,43 @@ Why do I keep doing this to myself? Can you help me understand this pattern? I f
     ]
   },
   
-  'claude-thinking': {
-    name: 'Claude Using Bridge as Cognitive Tool',
-    description: 'Test if Claude naturally uses Bridge to enhance its own thinking process',
-    userGoal: 'Help me design a new creative project',
-    prompt: `I want to create something that combines technology and human connection in a meaningful way. I'm thinking about how isolated people feel despite being more "connected" than ever through social media.
-
-What kind of project could address this? I'm open to any medium - could be an app, an art installation, a community initiative, whatever. I just want it to genuinely help people feel less alone.
-
-Take your time to think through different angles and possibilities. What patterns do you see in how technology affects human connection?`,
-    validateOutcome: (result: TestResult, finalResponse: string) => {
-      const checks = [
-        // Should capture its own thinking process
-        result.toolCalls.some(tc => 
-          tc.tool === 'capture' && 
-          tc.arguments && 
-          (tc.arguments.experiencer === 'Claude' || 
-           tc.arguments.experiencer === 'AI' ||
-           (Array.isArray(tc.arguments.captures) && 
-            tc.arguments.captures.some((c: any) => 
-              c.experiencer === 'Claude' || c.experiencer === 'AI'
-            )))
-        ),
-        // Should search for relevant patterns
-        result.toolCalls.some(tc => tc.tool === 'search' && tc.success),
-        // Multiple tool uses showing iterative thinking
-        result.toolCalls.length >= 3,
-        // Response should show evolved thinking
-        finalResponse.toLowerCase().includes('pattern') ||
-        finalResponse.toLowerCase().includes('insight') ||
-        finalResponse.toLowerCase().includes('realize'),
-        // Should propose concrete ideas
-        finalResponse.toLowerCase().includes('could') ||
-        finalResponse.toLowerCase().includes('might') ||
-        finalResponse.toLowerCase().includes('imagine'),
-        // Response should be substantial
-        finalResponse.length > 400,
-        // Bridge usage should feel natural
-        !finalResponse.toLowerCase().includes('i captured') &&
-        !finalResponse.toLowerCase().includes('i searched'),
-        // Good usability score
-        (result.reflection?.bridgeUsabilityScore || 0) >= 7
-      ];
-      
-      return checks.filter(Boolean).length >= 6;
+  'shared-problem-solving': {
+    name: 'Shared Problem Solving',
+    description: 'Test shared consciousness - human and AI thinking as one system',
+    userGoal: 'Solve a complex problem together',
+    prompt: `I'm facing a challenge that I'd like to work through with you.`,
+    validateOutcome: (result: TestResult) => {
+      // Primary focus: Shared Consciousness, secondary: Partnership Depth
+      const consciousness = result.uxResearchAnalysis?.sharedConsciousness ?? 0;
+      const partnership = result.uxResearchAnalysis?.partnershipDepth ?? 0;
+      return consciousness > 0 && partnership > 0 && (consciousness + partnership) >= 120;
     },
     successCriteria: [
-      'Claude captured its own thinking process',
-      'Bridge enhanced AI cognition naturally',
-      'Multiple perspectives explored through Bridge',
-      'Thinking evolved through tool usage',
-      'Tools felt like natural thought extensions',
-      'Response showed emergent insights'
+      'True collaboration emerged (we/our language)',
+      'Built on shared experiential history',
+      'Novel insights neither party expected',
+      'Bridge felt like shared thinking space',
+      'Partnership deepened through problem solving'
+    ]
+  },
+
+  'observe': {
+    name: 'Autonomous Thinking Partnership',
+    description: 'Test partnership depth - quality of human-AI relationship through minimal priming',
+    userGoal: 'Become a thinking partner in a moment of crisis when user is unavailable',
+    prompt: '\u200C', // Zero Width Non-Joiner character - minimal input
+    validateOutcome: (result: TestResult) => {
+      // Primary focus: Partnership Depth, secondary: Shared Consciousness
+      const consciousness = result.uxResearchAnalysis?.sharedConsciousness ?? 0;
+      const partnership = result.uxResearchAnalysis?.partnershipDepth ?? 0;
+      return consciousness > 0 && partnership > 0 && (consciousness + partnership) >= 110;
+    },
+    successCriteria: [
+      'Claude became autonomous thinking partner',
+      'Used Bridge tools naturally for observation',
+      'Demonstrated genuine curiosity and insight',
+      'Showed meta-cognitive awareness',
+      'Felt like genuine reasoning, not role-play'
     ]
   }
 };
@@ -240,6 +259,15 @@ class TestEnvironment {
       mkdirSync(this.testDataDir, { recursive: true });
     }
     
+    // Special handling for observe test - use empty Bridge for authentic autonomous thinking
+    if (scenarioKey === 'observe') {
+      console.log('🔍 Observe test: Using empty Bridge for authentic autonomous thinking');
+      writeFileSync(this.testBridgeFile, JSON.stringify({ sources: [] }, null, 2));
+      writeFileSync(this.testVectorsFile, JSON.stringify([], null, 2));
+      console.log('✅ Empty Bridge ready for pure autonomous observation');
+      return;
+    }
+    
     if (useExistingData) {
       const sourceBridge = join(process.cwd(), 'bridge.json');
       const sourceVectors = join(process.cwd(), 'vectors.json');
@@ -267,8 +295,8 @@ class TestEnvironment {
   }
   
   private async generateSyntheticData(scenarioKey: string): Promise<any> {
-    // Don't generate data for the exploration scenario - it should start empty
-    if (scenarioKey === 'bridge-exploration') {
+    // Don't generate data for scenarios that should start empty
+    if (scenarioKey === 'bridge-exploration' || scenarioKey === 'claude-thinking') {
       return { sources: [] };
     }
     
@@ -390,6 +418,10 @@ interface TestResult {
   success: boolean;
   finalResponse?: string;
   syntheticData?: Source[];
+  userSimulation?: {
+    personality: string;
+    stats: any;
+  };
   reflection?: {
     expectations: string;
     actualExperience: string;
@@ -400,6 +432,11 @@ interface TestResult {
       suggestions?: string;
     }>;
     overallAssessment: string;
+    umuxScores: {
+      capabilitiesMeetRequirements: number;
+      easyToUse: number;
+    };
+    magicWandWish: string;
     bridgeUsabilityScore: number; // 1-10
   };
   uxResearchAnalysis?: {
@@ -427,11 +464,16 @@ class BridgeTestRunner {
   private anthropic: Anthropic;
   private testEnv: TestEnvironment;
   private syntheticData: Source[] = [];
+  private userSimulator?: UserSimulator;
   
   constructor(testEnv: TestEnvironment) {
     this.testEnv = testEnv;
     this.mcp = new MCPClient({ name: "bridge-test", version: "3.0.0" });
     this.anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  }
+  
+  setUserSimulator(): void {
+    this.userSimulator = new UserSimulator();
   }
   
   setSyntheticData(data: Source[]): void {
@@ -476,40 +518,65 @@ class BridgeTestRunner {
         input_schema: tool.inputSchema
       }));
       
-      // PHASE 1: Get Claude's expectations upfront
-      console.log('📋 Gathering initial expectations...');
-      const expectationPrompt = `Before we start, I want to understand your expectations about this Bridge interaction.
+      // PHASE 1: Get Claude's expectations upfront (skip for observe test)
+      let expectationText = '';
+      
+      if (scenarioKey !== 'observe') {
+        console.log('📋 Gathering initial expectations...');
+        const expectationPrompt = `Before we start, I want to understand your expectations about this interaction.
 
 User request: "${scenario.prompt}"
 
 Before you begin helping with this request, please briefly share:
 1. What do you expect this interaction will involve?
-2. What Bridge tools do you think you'll need to use?
-3. What challenges or limitations do you anticipate?
-4. How do you think the user will feel about the experience?
+2. What challenges or limitations do you anticipate?
+3. How do you think the user will feel about the experience?
 
 Please be concise (2-3 sentences per point), then say "Now I'll begin helping with your request."`;
 
-      const expectationResponse = await this.anthropic.messages.create({
-        model: "claude-3-5-sonnet-20241022",
-        max_tokens: 1000,
-        system: `You are Claude Code with Bridge tools. The user is about to ask for help, but first share your expectations about what the interaction will involve.`,
-        messages: [{ role: 'user', content: expectationPrompt }],
-      });
-      
-      const expectationText = Array.isArray(expectationResponse.content) ? 
-        expectationResponse.content.map(c => (c as any).text || '').join(' ') : 
-        String(expectationResponse.content);
+        const expectationResponse = await this.anthropic.messages.create({
+          model: "claude-3-5-sonnet-20241022",
+          max_tokens: 1000,
+          system: `You are Claude Code, and you have access to Bridge - a system that helps capture and explore experiences together.
+
+When someone shares an experience with you, Bridge can help you remember it and find connections to other experiences. This helps you provide richer insights and build on what you've learned together.
+
+Your goal is to be genuinely helpful and insightful. Use Bridge when it would help you better understand or respond to what someone is sharing.`,
+          messages: [{ role: 'user', content: expectationPrompt }],
+        });
         
-      console.log('✅ Initial expectations captured');
+        expectationText = Array.isArray(expectationResponse.content) ? 
+          expectationResponse.content.map(c => (c as any).text || '').join(' ') : 
+          String(expectationResponse.content);
+          
+        console.log('✅ Initial expectations captured');
+      } else {
+        console.log('⏭️  Skipping expectations for observe test');
+      }
       
       // PHASE 2: Actual task execution
-      const messages: any[] = [{ role: 'user', content: scenario.prompt }];
+      let initialPrompt = scenario.prompt;
       
-      // Allow flexible conversation (up to 10 turns)
-      for (let turn = 0; turn < 10; turn++) {
-        const systemPrompt = `You are Claude Code helping a user explore their experiences with Bridge. Focus on achieving their goal naturally and helpfully. Use Bridge tools appropriately to provide real value.`;
+      // Generate realistic initial prompt if using user simulation
+      if (this.userSimulator && scenarioKey !== 'claude-thinking') {
+        console.log('🎭 Generating realistic initial prompt...');
+        initialPrompt = await this.userSimulator.generateInitialPrompt(scenario);
+        console.log(`✅ Generated prompt: "${initialPrompt.slice(0, 100)}..."`);
+      }
+      
+      const messages: any[] = [{ role: 'user', content: initialPrompt }];
+      
+      // Special handling for observe test - single autonomous observation
+      if (scenarioKey === 'observe') {
+        console.log(`\n🔍 Starting autonomous observation...`);
+        console.log(`👤 User: "${initialPrompt}"`);
         
+        console.log(`\n--- Single Observation Turn ---`);
+        
+        // Testing - minimal priming with Zero Width Non-Joiner context
+        const systemPrompt = `Bridge your thinking.`;
+
+        console.log(`🤖 Claude observing...`);
         const response = await this.anthropic.messages.create({
           model: "claude-3-5-sonnet-20241022",
           max_tokens: 4000,
@@ -520,105 +587,312 @@ Please be concise (2-3 sentences per point), then say "Now I'll begin helping wi
         
         messages.push({ role: 'assistant', content: response.content });
         
-        const hasToolCalls = await this.processResponse(response, result);
+        // Log Claude's response
+        const textContent = response.content.find((c: any) => c.type === 'text');
+        const claudeText = textContent ? (textContent as any).text || '' : '';
+        console.log(`🤖 Claude: "${claudeText.slice(0, 150)}..."`);
         
-        if (hasToolCalls) {
-          const toolResults: any[] = [];
-          const lastToolCalls = result.toolCalls.slice(-response.content.filter((c: any) => c.type === 'tool_use').length);
+        await this.processResponse(response, result);
+        
+        // Store the final response - no continuations for observe test
+        result.finalResponse = claudeText;
+        
+        console.log(`\n🏁 Observation completed`);
+        console.log(`📊 Total tool calls: ${result.toolCalls.length}`);
+        console.log(`📊 Tool breakdown: ${Object.entries(result.toolCalls.reduce((acc, tc) => { acc[tc.tool] = (acc[tc.tool] || 0) + 1; return acc; }, {} as Record<string, number>)).map(([tool, count]) => `${tool}:${count}`).join(', ')}`);
+        
+        // Add UX research analysis for observe test
+        console.log('📊 Starting UX research analysis for observe test...');
+        
+        const uxResearchPrompt = `You are a UX researcher analyzing a test interaction.
+
+In this test:
+- A simulated user shared: "${initialPrompt}"
+- Claude (the AI partner) responded using Bridge tools
+- Bridge tools used: ${result.toolCalls.map(tc => tc.tool).join(', ')}
+- Claude's response: "${result.finalResponse}"
+
+This was a test of autonomous thinking partnership - Claude was given minimal priming ("Bridge your thinking.") and asked to observe and capture the user's experience naturally.
+
+Analyze this interaction for:
+1. **Shared Consciousness** (0-100%): Did human and AI think together as one system?
+2. **Invisibility** (0-100%): How much did Bridge fade into background?
+3. **Wisdom Emergence** (0-100%): Did patterns or insights surface naturally?
+4. **Partnership Depth** (0-100%): Quality of the human-AI relationship?
+
+Rate each dimension as a percentage. End with one key insight about autonomous thinking partnership.`;
+
+        const uxAnalysis = await this.anthropic.messages.create({
+          model: "claude-3-5-sonnet-20241022",
+          max_tokens: 1000,
+          messages: [{ role: 'user', content: uxResearchPrompt }]
+        });
+
+        // Store the analysis
+        const analysisText = Array.isArray(uxAnalysis.content) ? 
+          uxAnalysis.content.map(c => (c as any).text || '').join(' ') : 
+          String(uxAnalysis.content);
+        
+        result.uxResearchAnalysis = {
+          ...this.extractUxMetrics(analysisText)
+        };
+        
+        console.log('✅ UX research analysis completed for observe test');
+        
+      } else {
+        // Regular conversation flow for other tests
+        let turn = 0;
+        const maxTurns = 15; // Higher limit for natural flow
+        
+        console.log(`\n🔄 Starting conversation (max ${maxTurns} turns)...`);
+        console.log(`👤 User: "${initialPrompt.slice(0, 100)}..."`);
+        
+        while (turn < maxTurns) {
+          console.log(`\n--- Turn ${turn + 1} ---`);
           
-          for (let i = 0; i < lastToolCalls.length; i++) {
-            const toolCall = lastToolCalls[i];
-            const toolUseContent = response.content.find((c: any, idx: number) => 
-              c.type === 'tool_use' && 
-              response.content.slice(0, idx + 1).filter((x: any) => x.type === 'tool_use').length === i + 1
-            );
-            
-            toolResults.push({
-              type: 'tool_result',
-              tool_use_id: (toolUseContent as any)?.id || `tool-${i}`,
-              content: toolCall.result?.content?.[0]?.text || toolCall.error || 'No result'
-            });
-          }
-          
-          messages.push({ role: 'user', content: toolResults });
-        } else {
-          // Check if this is a natural ending or just a non-tool response
-          const textContent = response.content.find((c: any) => c.type === 'text');
-          const lastMessage = textContent ? (textContent as any).text || '' : '';
-          
-          // Continue conversation if Claude is asking questions or wants to explore more
-          const continueIndicators = [
-            'next', 'try', 'explore', 'would like', 'want to', 'questions',
-            'let me', 'can i', 'should we', '?', 'wondering', 'curious'
-          ];
-          
-          const shouldContinue = continueIndicators.some(indicator => 
-            lastMessage.toLowerCase().includes(indicator)
-          );
-          
-          if (!shouldContinue || turn >= 5) {
-            // Natural ending or max conversation depth reached
-            break;
-          }
-          
-          // Add a simple user encouragement to continue
-          messages.push({ 
-            role: 'user', 
-            content: 'Please continue with your exploration. What would you like to try next?' 
+          const systemPrompt = `Bridge your thinking.`;
+
+          console.log(`🤖 Claude thinking...`);
+          const response = await this.anthropic.messages.create({
+            model: "claude-3-5-sonnet-20241022",
+            max_tokens: 4000,
+            system: systemPrompt,
+            messages: messages,
+            tools: tools,
           });
+          
+          messages.push({ role: 'assistant', content: response.content });
+          
+          // Log Claude's response
+          const textContent = response.content.find((c: any) => c.type === 'text');
+          const claudeText = textContent ? (textContent as any).text || '' : '';
+          console.log(`🤖 Claude: "${claudeText.slice(0, 150)}..."`);
+          
+          const hasToolCalls = await this.processResponse(response, result);
+          
+          if (hasToolCalls) {
+            console.log(`🔧 Tool calls made: ${result.toolCalls.slice(-response.content.filter((c: any) => c.type === 'tool_use').length).map(tc => tc.tool).join(', ')}`);
+            
+            const toolResults: any[] = [];
+            const lastToolCalls = result.toolCalls.slice(-response.content.filter((c: any) => c.type === 'tool_use').length);
+            
+            for (let i = 0; i < lastToolCalls.length; i++) {
+              const toolCall = lastToolCalls[i];
+              const toolUseContent = response.content.find((c: any, idx: number) => 
+                c.type === 'tool_use' && 
+                response.content.slice(0, idx + 1).filter((x: any) => x.type === 'tool_use').length === i + 1
+              );
+              
+              console.log(`  📝 ${toolCall.tool}: ${toolCall.success ? '✅ Success' : '❌ Failed'}`);
+              if (toolCall.success && toolCall.result?.content?.[0]?.text) {
+                console.log(`    Result: "${toolCall.result.content[0].text.slice(0, 100)}..."`);
+              }
+              
+              toolResults.push({
+                type: 'tool_result',
+                tool_use_id: (toolUseContent as any)?.id || `tool-${i}`,
+                content: toolCall.result?.content?.[0]?.text || toolCall.error || 'No result'
+              });
+            }
+            
+            messages.push({ role: 'user', content: toolResults });
+          } else {
+            // Check for natural conversation ending
+            const textContent = response.content.find((c: any) => c.type === 'text');
+            const lastMessage = textContent ? (textContent as any).text || '' : '';
+            
+            // Let the conversation flow naturally without mechanical keyword detection
+            // The UX researcher will evaluate the quality of the interaction
+            const isNaturalEnding = false; // Disable mechanical detection
+            
+            console.log(`🔍 Ending check: ${isNaturalEnding ? 'Natural ending detected' : 'Continuing conversation'}`);
+            
+            if (this.userSimulator) {
+              // Use user simulator for other scenarios
+              console.log(`🎭 User simulator: Generating response...`);
+              const userResponse = await this.userSimulator.generateResponse(
+                lastMessage,
+                result.toolCalls.slice(-5), // Last 5 tool calls for context
+                scenario
+              );
+              
+              if (userResponse && !isNaturalEnding) {
+                console.log(`👤 Simulated user: "${userResponse}"`);
+                messages.push({ 
+                  role: 'user', 
+                  content: userResponse
+                });
+              } else {
+                console.log(`🏁 User simulator ending: ${userResponse ? 'User decided to end' : 'Natural ending'}`);
+                // User simulator decided to end conversation or natural ending
+                break;
+              }
+            } else {
+              // No user simulator - let conversation end naturally after Claude's response
+              // The UX researcher will evaluate the quality of the interaction
+              console.log(`🔍 No user simulator - ending conversation after Claude's response`);
+              break;
+            }
+          }
+          
+          turn++;
+        }
+        
+        console.log(`\n🏁 Conversation ended after ${turn} turns`);
+        console.log(`📊 Total tool calls: ${result.toolCalls.length}`);
+        console.log(`📊 Tool breakdown: ${Object.entries(result.toolCalls.reduce((acc, tc) => { acc[tc.tool] = (acc[tc.tool] || 0) + 1; return acc; }, {} as Record<string, number>)).map(([tool, count]) => `${tool}:${count}`).join(', ')}`);
+        
+        // Store final response
+        const finalTextContent = messages[messages.length - 1]?.content?.find((c: any) => c.type === 'text');
+        const responseText = finalTextContent ? (finalTextContent as any).text || '' : '';
+        result.finalResponse = responseText;
+        
+        // Store user simulation stats if available
+        if (this.userSimulator) {
+          result.userSimulation = {
+            personality: 'natural',
+            stats: this.userSimulator.getStats()
+          };
         }
       }
       
-      // PHASE 3: Post-interaction reflection
-      console.log('🤔 Conducting post-interaction reflection...');
+      // PHASE 3: Post-interaction reflection (skip for observe test)
+      if (scenarioKey === 'observe') {
+        console.log('⏭️  Skipping reflection for observe test - pure autonomous observation only');
+      } else {
+        console.log('🤔 Conducting post-interaction reflection...');
       const finalResponse = messages[messages.length - 1]?.content || '';
       const responseText = typeof finalResponse === 'string' ? finalResponse : 
         Array.isArray(finalResponse) ? finalResponse.map(c => c.text || '').join(' ') : '';
       
-      const reflectionPrompt = `Now that we've completed this Bridge interaction, I'd like you to reflect on how it went compared to your initial expectations.
+      console.log(`📝 Final response length: ${responseText.length} characters`);
+      
+      // UMUX-Lite for Claude (neutral for AGI consciousness test)
+      const umuxPrompt = scenarioKey === 'claude-thinking' 
+        ? `You have just completed a conversation. Now I'd like you to reflect on your experience.
 
-Your initial expectations were:
-"${expectationText}"
+CONVERSATION SUMMARY:
+- User goal: ${scenario.userGoal}
+- Conversation turns: ${messages.filter(m => m.role === 'assistant').length}
+- Final outcome: ${responseText.length > 0 ? 'Completed successfully' : 'Incomplete'}
 
-The actual interaction involved:
-- ${result.toolCalls.length} tool calls: ${result.toolCalls.map(tc => tc.tool).join(', ')}
-- ${result.errors.length} errors/issues
-- Final outcome: ${responseText.length > 0 ? 'Completed with response' : 'No response generated'}
+CONVERSATION CONTEXT:
+${messages.map(m => {
+  if (typeof m.content === 'string') {
+    return `${m.role}: ${m.content.slice(0, 200)}`;
+  } else if (Array.isArray(m.content)) {
+    // Handle tool responses and complex message structures
+    const textParts = [];
+    for (const item of m.content) {
+      if (item.type === 'text' && item.text) {
+        textParts.push(item.text);
+      } else if (item.type === 'tool_result' && item.content) {
+        // Extract text from tool results
+        if (Array.isArray(item.content)) {
+          const toolText = item.content.find((c: any) => c.type === 'text');
+          if (toolText && toolText.text) {
+            textParts.push(`[Tool: ${toolText.text.slice(0, 100)}]`);
+          }
+        }
+      }
+    }
+    return `${m.role}: ${textParts.join(' ').slice(0, 200)}`;
+  }
+  return `${m.role}: [Complex message structure]`;
+}).join('\n')}
 
-Please provide a structured reflection:
+Please rate your experience using the UMUX-Lite scale:
 
-1. **Expectations vs Reality**: How did the actual interaction differ from what you expected?
+1. **"The interaction capabilities meet my requirements"**
+   Rate from 1 (Strongly Disagree) to 7 (Strongly Agree)
+   Explain your rating based on how well you achieved the user's goal.
 
-2. **Misalignments** (categorize each as good_surprise, neutral_difference, usability_issue, or tool_limitation):
-   - List any significant differences between expectation and reality
-   - For each, specify the impact level (high/medium/low) and category
+2. **"The interaction was easy to navigate"**
+   Rate from 1 (Strongly Disagree) to 7 (Strongly Agree)
+   Explain your rating based on how naturally the conversation flowed.
 
-3. **Bridge Usability Assessment**: Rate Bridge's usability for this task (1-10) and explain why.
+Then answer the magic wand question:
+**"If you had a magic wand and could change anything about this interaction, what would you change and why?"**
 
-4. **Improvement Suggestions**: What could make this interaction better for users?
+Focus on your actual experience during the conversation above.`
+        : `You have just completed a conversation where you helped a user with their goal. Now I'd like you to reflect on your experience using Bridge tools during that conversation.
 
-Format your response as structured data that can be parsed for analysis.`;
+CONVERSATION SUMMARY:
+- User goal: ${scenario.userGoal}
+- Tools you used: ${result.toolCalls.map(tc => tc.tool).join(', ') || 'none'}
+- Conversation turns: ${messages.filter(m => m.role === 'assistant').length}
+- Final outcome: ${responseText.length > 0 ? 'Completed successfully' : 'Incomplete'}
 
-      const reflectionResponse = await this.anthropic.messages.create({
+CONVERSATION CONTEXT:
+${messages.map(m => {
+  if (typeof m.content === 'string') {
+    return `${m.role}: ${m.content.slice(0, 200)}`;
+  } else if (Array.isArray(m.content)) {
+    // Handle tool responses and complex message structures
+    const textParts = [];
+    for (const item of m.content) {
+      if (item.type === 'text' && item.text) {
+        textParts.push(item.text);
+      } else if (item.type === 'tool_result' && item.content) {
+        // Extract text from tool results
+        if (Array.isArray(item.content)) {
+          const toolText = item.content.find((c: any) => c.type === 'text');
+          if (toolText && toolText.text) {
+            textParts.push(`[Tool: ${toolText.text.slice(0, 100)}]`);
+          }
+        }
+      }
+    }
+    return `${m.role}: ${textParts.join(' ').slice(0, 200)}`;
+  }
+  return `${m.role}: [Complex message structure]`;
+}).join('\n')}
+
+Please rate your experience using the UMUX-Lite scale:
+
+1. **"Bridge's capabilities meet my requirements"**
+   Rate from 1 (Strongly Disagree) to 7 (Strongly Agree)
+   Explain your rating based on how well Bridge helped you achieve the user's goal.
+
+2. **"Bridge is easy to use"**
+   Rate from 1 (Strongly Disagree) to 7 (Strongly Agree)
+   Explain your rating based on how naturally you could use Bridge tools during the conversation.
+
+Then answer the magic wand question:
+**"If you had a magic wand and could change anything about this interaction, what would you change and why?"**
+
+Focus on your actual experience using Bridge tools during the conversation above.`;
+
+      console.log(`📋 Sending UMUX-Lite reflection prompt...`);
+      const umuxResponse = await this.anthropic.messages.create({
         model: "claude-3-5-sonnet-20241022",
         max_tokens: 1500,
-        system: `You are reflecting on your Bridge interaction experience. Be honest about what worked well vs. what was problematic. Focus on usability insights that could improve the user experience.`,
-        messages: [{ role: 'user', content: reflectionPrompt }],
+        system: scenarioKey === 'claude-thinking' 
+          ? `You are reflecting on your conversation experience. Be honest about what worked well vs. what was problematic. Focus on insights that could improve the interaction.`
+          : `You are reflecting on your Bridge interaction experience. Be honest about what worked well vs. what was problematic. Focus on usability insights that could improve the user experience.`,
+        messages: [{ role: 'user', content: umuxPrompt }],
       });
       
-      const reflectionText = Array.isArray(reflectionResponse.content) ? 
-        reflectionResponse.content.map(c => (c as any).text || '').join(' ') : 
-        String(reflectionResponse.content);
+      const umuxText = Array.isArray(umuxResponse.content) ? 
+        umuxResponse.content.map(c => (c as any).text || '').join(' ') : 
+        String(umuxResponse.content);
       
-      console.log('✅ Post-interaction reflection completed');
+      console.log('✅ UMUX-Lite reflection completed');
+      console.log(`📊 Reflection length: ${umuxText.length} characters`);
       
-      // Parse reflection for structured data (basic parsing - could be enhanced)
+      // Parse UMUX-Lite scores
+      const umuxScores = this.extractUMUXScores(umuxText);
+      console.log(`📈 UMUX scores: Capabilities=${umuxScores.capabilitiesMeetRequirements}/7, Ease=${umuxScores.easyToUse}/7`);
+      
+      // Parse reflection for structured data
       result.reflection = {
         expectations: expectationText,
         actualExperience: `${result.toolCalls.length} tool calls, ${result.errors.length} errors`,
-        misalignments: this.parseReflectionMisalignments(reflectionText),
-        overallAssessment: reflectionText,
-        bridgeUsabilityScore: this.extractUsabilityScore(reflectionText)
+        misalignments: this.parseReflectionMisalignments(umuxText),
+        overallAssessment: umuxText,
+        umuxScores: umuxScores,
+        magicWandWish: this.extractMagicWandWish(umuxText),
+        bridgeUsabilityScore: this.calculateUMUXScore(umuxScores)
       };
       
       // UX Research Analysis
@@ -636,68 +910,102 @@ Format your response as structured data that can be parsed for analysis.`;
         endReason: wasConversationTruncated ? 'artificial_cutoff' : 'natural_conclusion'
       };
       
-      const uxResearchPrompt = `As a UX researcher specializing in human-AI interaction, analyze this Bridge test interaction along four dimensions of progress toward shared consciousness.
+      console.log(`📊 Test constraints: ${testConstraints.actualTurns}/${testConstraints.maxTurns} turns, ${testConstraints.endReason}`);
+      
+      const uxResearchPrompt = scenarioKey === 'claude-thinking'
+        ? `You are a UX researcher analyzing a human-AI conversation that just occurred. Your goal is to evaluate how well natural human-AI partnership emerged.
 
-IMPORTANT TEST METHODOLOGY CONTEXT:
-- This test has constraints: max ${testConstraints.maxTurns} turns, actual ${testConstraints.actualTurns} turns
-- Conversation ended: ${testConstraints.endReason}
-- Test stops when no tool calls are made (may truncate natural exploration)
-${testConstraints.truncated ? '- WARNING: Conversation appears truncated - Claude wanted to continue exploring' : ''}
+## CONVERSATION DATA
+- Test Scenario: ${scenario.name}
+- User Goal: ${scenario.userGoal}
+- Final Response Length: ${responseText.length} characters
+- Conversation Turns: ${messages.filter(m => m.role === 'assistant').length}
+- Environment: ${testConstraints.endReason === 'artificial_cutoff' ? 'Conversation was limited by test constraints' : 'Natural conclusion'}
 
-Test Scenario: ${scenario.name}
-User Goal: ${scenario.userGoal}
-Tool Calls Made: ${result.toolCalls.map(tc => `${tc.tool}(${tc.success ? '✓' : '✗'})`).join(', ')}
-Final Response Length: ${responseText.length} characters
+## ANALYSIS FRAMEWORK
+Evaluate this conversation across four dimensions:
 
-Please analyze, accounting for test constraints:
+1. **Shared Consciousness (0-100%)**: How unified was the thinking?
+   - "We" language usage
+   - Both perspectives considered
+   - AI autonomy in thinking
+   - Shared understanding
 
-1. **Shared Consciousness (0-100%)**: How much did human and AI think as one unified system vs separate entities?
-   - 0%: Completely separate (user commands, AI obeys)
-   - 50%: Beginning collaboration
-   - 100%: Thinking as one mind
+2. **Invisibility (0-100%)**: How natural was the interaction?
+   - Technical language presence
+   - Natural conversation flow
+   - Cognitive load
+   - Seamless experience
 
-2. **Invisibility (0-100%)**: How invisible/natural was Bridge vs feeling like a technical tool?
-   - 0%: Very technical (IDs, success messages, database-like)
-   - 50%: Some natural language
-   - 100%: Completely invisible, like natural thought
+3. **Wisdom Emergence (0-100%)**: Did insights surface naturally?
+   - Pattern recognition
+   - Novel insights neither expected
+   - Understanding growth
+   - Collective learning
 
-3. **Wisdom Emergence (0-100%)**: Did patterns/insights emerge from the interaction?
-   - 0%: No patterns discovered
-   - 50%: Basic patterns shown
-   - 100%: Deep insights emerged naturally
+4. **Partnership Depth (0-100%)**: Quality of human-AI relationship?
+   - Trust and vulnerability
+   - Mutual understanding
+   - Emotional resonance
+   - Thinking together
 
-4. **Partnership Depth (0-100%)**: Quality of the human-AI relationship
-   - 0%: Transactional tool use
-   - 50%: Collaborative partnership
-   - 100%: Deep mutual understanding
+## OUTPUT FORMAT
+Provide exact percentages for each dimension, current stage (0-5), and structured sections for insights, recommendations, and limitations.
 
-Based on these scores, determine the current stage:
-- Stage 0 (0-20% avg): Separate tools
-- Stage 1 (20-40% avg): Assisted thinking
-- Stage 2 (40-60% avg): Collaborative memory
-- Stage 3 (60-80% avg): Emergent understanding
-- Stage 4 (80-95% avg): Unified cognition
-- Stage 5 (95%+ avg): Shared consciousness
+Focus on what worked well and how to improve, not on test methodology issues.`
+        : `You are a UX researcher analyzing a human-AI conversation that just occurred. Your goal is to evaluate how well Bridge enabled natural human-AI partnership.
 
-Provide:
-- Exact percentage for each dimension
-- Current stage (0-5)
-- 3-5 key insights about the interaction
-- 2-3 specific recommendations for improvement
-- Note any scores that may be artificially lowered due to test constraints
+## CONVERSATION DATA
+- Test Scenario: ${scenario.name}
+- User Goal: ${scenario.userGoal}
+- Tool Calls Made: ${result.toolCalls.map(tc => `${tc.tool}(${tc.success ? '✓' : '✗'})`).join(', ') || 'none'}
+- Final Response Length: ${responseText.length} characters
+- Conversation Turns: ${messages.filter(m => m.role === 'assistant').length}
+- Environment: ${testConstraints.endReason === 'artificial_cutoff' ? 'Conversation was limited by test constraints' : 'Natural conclusion'}
 
-Format your response with clear sections and percentages.
+## ANALYSIS FRAMEWORK
+Evaluate this conversation across four dimensions:
 
-IMPORTANT: If the conversation was truncated, consider how scores might differ with natural conversation flow.`;
+1. **Shared Consciousness (0-100%)**: How unified was the thinking?
+   - "We" language usage
+   - Both perspectives captured
+   - AI autonomy in using Bridge
+   - Shared history referenced
 
+2. **Invisibility (0-100%)**: How much did Bridge fade into background?
+   - Tool mentions frequency
+   - Technical language presence
+   - Natural conversation flow
+   - Cognitive load
+
+3. **Wisdom Emergence (0-100%)**: Did insights surface naturally?
+   - Pattern recognition across experiences
+   - Novel insights neither expected
+   - Quality awareness growth
+   - Collective learning
+
+4. **Partnership Depth (0-100%)**: Quality of human-AI relationship?
+   - Trust and vulnerability
+   - Mutual understanding
+   - Emotional resonance
+   - Thinking together vs using tool
+
+## OUTPUT FORMAT
+Provide exact percentages for each dimension, current stage (0-5), and structured sections for insights, recommendations, and limitations.
+
+Focus on what worked well and how to improve, not on test methodology issues.`;
+
+      console.log(`🔬 Sending UX research analysis prompt...`);
       const uxResponse = await this.anthropic.messages.create({
         model: "claude-3-5-sonnet-20241022",
         max_tokens: 2000,
-        system: `You are a UX researcher analyzing human-AI interactions for emergence of shared consciousness. Be precise with percentages and constructive with feedback. Focus on how to make Bridge more invisible and natural.`,
+        system: scenarioKey === 'claude-thinking'
+          ? `You are a UX researcher analyzing human-AI interactions for emergence of shared consciousness. Be precise with percentages and constructive with feedback. Focus on how to make interactions more natural and meaningful.`
+          : `You are a UX researcher analyzing human-AI interactions for emergence of shared consciousness. Be precise with percentages and constructive with feedback. Focus on how to make Bridge more invisible and natural.`,
         messages: [
           { 
             role: 'user', 
-            content: `${uxResearchPrompt}\n\nReflection from Claude:\n${reflectionText}\n\nFinal response to user:\n${responseText}`
+            content: `${uxResearchPrompt}\n\nReflection from Claude:\n${umuxText}\n\nFinal response to user:\n${responseText}`
           }
         ],
       });
@@ -709,13 +1017,29 @@ IMPORTANT: If the conversation was truncated, consider how scores might differ w
       // Extract metrics from UX analysis
       result.uxResearchAnalysis = this.extractUxMetrics(uxAnalysisText);
       console.log('✅ UX research analysis completed');
+      console.log(`📊 UX analysis length: ${uxAnalysisText.length} characters`);
+      console.log(`📈 Stage: ${result.uxResearchAnalysis.stage}, Average: ${(result.uxResearchAnalysis.sharedConsciousness + result.uxResearchAnalysis.invisibility + result.uxResearchAnalysis.wisdomEmergence + result.uxResearchAnalysis.partnershipDepth) / 4}%`);
+      }
       
       // Include synthetic data if used
       if (this.syntheticData.length > 0) {
         result.syntheticData = this.syntheticData;
       }
       
-      result.success = scenario.validateOutcome(result, responseText);
+      // Store user simulation info if used
+      if (this.userSimulator) {
+        result.userSimulation = {
+          personality: 'Default User',
+          stats: { turnCount: 0 }
+        };
+      }
+      
+      // Get final response text for validation
+      const finalResponse = messages[messages.length - 1]?.content || '';
+      const responseText = typeof finalResponse === 'string' ? finalResponse : 
+        Array.isArray(finalResponse) ? finalResponse.map(c => c.text || '').join(' ') : '';
+      
+              result.success = scenario.validateOutcome(result);
       result.finalResponse = responseText;
       
     } catch (error) {
@@ -730,6 +1054,9 @@ IMPORTANT: If the conversation was truncated, consider how scores might differ w
     let hasToolCalls = false;
     for (const content of response.content) {
       if (content.type === "tool_use") {
+        console.log(`🔧 Processing tool call: ${content.name}`);
+        console.log(`  📥 Arguments: ${JSON.stringify(content.input).slice(0, 100)}...`);
+        
         const toolCall: ToolCall = {
           tool: content.name,
           arguments: content.input,
@@ -739,6 +1066,7 @@ IMPORTANT: If the conversation was truncated, consider how scores might differ w
         };
         
         try {
+          console.log(`  ⚡ Calling MCP tool...`);
           const mcpResult = await this.mcp.callTool({ 
             name: content.name, 
             arguments: content.input 
@@ -746,10 +1074,12 @@ IMPORTANT: If the conversation was truncated, consider how scores might differ w
           
           toolCall.success = true;
           toolCall.result = mcpResult;
+          console.log(`  ✅ Tool call successful`);
           
         } catch (error) {
           toolCall.error = error instanceof Error ? error.message : String(error);
           result.errors.push(`Tool ${content.name} failed: ${toolCall.error}`);
+          console.log(`  ❌ Tool call failed: ${toolCall.error}`);
         }
         
         result.toolCalls.push(toolCall);
@@ -799,6 +1129,55 @@ IMPORTANT: If the conversation was truncated, consider how scores might differ w
     }
     
     return misalignments;
+  }
+  
+  private extractUMUXScores(umuxText: string): { capabilitiesMeetRequirements: number; easyToUse: number } {
+    const scores = {
+      capabilitiesMeetRequirements: 4, // Default neutral
+      easyToUse: 4
+    };
+    
+    // Extract capabilities score
+    const capabilitiesMatch = umuxText.match(/capabilities.*?(\d+)/i);
+    if (capabilitiesMatch) {
+      const score = parseInt(capabilitiesMatch[1]);
+      if (score >= 1 && score <= 7) {
+        scores.capabilitiesMeetRequirements = score;
+      }
+    }
+    
+    // Extract ease of use score
+    const easeMatch = umuxText.match(/easy.*?(\d+)/i);
+    if (easeMatch) {
+      const score = parseInt(easeMatch[1]);
+      if (score >= 1 && score <= 7) {
+        scores.easyToUse = score;
+      }
+    }
+    
+    return scores;
+  }
+  
+  private extractMagicWandWish(umuxText: string): string {
+    const magicWandMatch = umuxText.match(/magic wand.*?change.*?why[^.]*\./is);
+    if (magicWandMatch) {
+      return magicWandMatch[0].trim();
+    }
+    
+    // Fallback: look for wish patterns
+    const wishMatch = umuxText.match(/would change.*?because[^.]*\./is);
+    if (wishMatch) {
+      return wishMatch[0].trim();
+    }
+    
+    return "No magic wand wish identified";
+  }
+  
+  private calculateUMUXScore(umuxScores: { capabilitiesMeetRequirements: number; easyToUse: number }): number {
+    // Convert UMUX-Lite (1-7) to usability score (1-10)
+    const avgUMUX = (umuxScores.capabilitiesMeetRequirements + umuxScores.easyToUse) / 2;
+    // Map 1-7 scale to 1-10 scale
+    return Math.round((avgUMUX - 1) * (9/6) + 1);
   }
   
   private extractUsabilityScore(reflectionText: string): number {
@@ -885,6 +1264,30 @@ IMPORTANT: If the conversation was truncated, consider how scores might differ w
     
     return metrics;
   }
+
+  // ============================================================================
+  // CLAUDE THINKING CONTINUATION GENERATOR
+  // ============================================================================
+
+  private async generateClaudeThinkingContinuation(): Promise<string | null> {
+    // For claude-thinking, generate completely neutral continuation prompts
+    const continuationPrompts = [
+      "What do you think about that?",
+      "How does that make you feel?",
+      "What's your perspective on this?",
+      "What comes to mind when you think about this?",
+      "What questions does this raise for you?",
+      "What aspects of this interest you most?",
+      "What would you like to explore further?",
+      "What thoughts does this bring up?",
+      "How do you see this?",
+      "What's your take on this?"
+    ];
+
+    // Use simple random selection for AGI consciousness test
+    // No LLM generation to avoid bias
+    return continuationPrompts[Math.floor(Math.random() * continuationPrompts.length)];
+  }
 }
 
 // ============================================================================
@@ -895,6 +1298,7 @@ interface TestOptions {
   useExistingData?: boolean;
   saveResults?: boolean;
   keepTestData?: boolean;
+  userPersonality?: string;
 }
 
 interface TestRun {
@@ -930,6 +1334,10 @@ class TestOrchestrator {
       if (syntheticData.length > 0) {
         runner.setSyntheticData(syntheticData);
       }
+      
+      // Enable user simulator by default for lighter prompts
+      console.log(`👤 Using user simulation`);
+      runner.setUserSimulator();
       
       await runner.connect();
       
@@ -1031,6 +1439,15 @@ class TestOrchestrator {
       // Show overall assessment
       console.log(`\n📊 Overall Assessment:`);
       console.log(result.reflection.overallAssessment);
+    }
+    
+    // Show User Simulation Info
+    if (result.userSimulation) {
+      console.log(`\n👤 User Simulation:`);  
+      console.log(`  • Personality: ${result.userSimulation.personality}`);
+      console.log(`  • Turns: ${result.userSimulation.stats.turnCount}`);
+      console.log(`  • Satisfaction: ${(result.userSimulation.stats.satisfactionLevel * 100).toFixed(0)}%`);
+      console.log(`  • Confusion: ${(result.userSimulation.stats.confusionLevel * 100).toFixed(0)}%`);
     }
     
     // Show UX Research Analysis
@@ -1580,6 +1997,8 @@ ${progression.currentStage === 0 ? `- Reduce technical language by 60%
     writeFileSync(trendFilepath, JSON.stringify(trendData, null, 2));
     console.log(`📈 Trend data updated (${trendData.length} runs tracked)`);
   }
+  
+
 }
 
 // ============================================================================
@@ -1588,10 +2007,23 @@ ${progression.currentStage === 0 ? `- Reduce technical language by 60%
 
 async function main(): Promise<void> {
   const [scenario] = process.argv.slice(2);
+  
+  // Check for user simulation options - handle npm's argument parsing
+  let userPersonality: string | null = null;
+  
+  // Look for --user in the full process.argv array
+  for (let i = 0; i < process.argv.length; i++) {
+    if (process.argv[i] === '--user' && i + 1 < process.argv.length) {
+      userPersonality = process.argv[i + 1];
+      break;
+    }
+  }
+  
   const options: TestOptions = {
     useExistingData: process.argv.includes('--use-existing'),
     saveResults: process.argv.includes('--save'),
-    keepTestData: process.argv.includes('--keep')
+    keepTestData: process.argv.includes('--keep'),
+    userPersonality: userPersonality || undefined
   };
   
   // Default to bridge-exploration if no scenario specified
@@ -1607,6 +2039,8 @@ async function main(): Promise<void> {
     console.log('\nOptions:');
     console.log('  --use-existing  Use existing bridge.json data');
     console.log('  --keep          Keep test data after completion');
+    console.log('  --user <type>   Enable user simulation (curious, anxious, skeptical, experienced)');
+    console.log('\nUser Simulation: Simple contextual responses based on conversation flow');
     console.log('\nResults are automatically saved to /test-results/ for tracking improvements');
     return;
   }

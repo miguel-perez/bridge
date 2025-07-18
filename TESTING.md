@@ -65,6 +65,54 @@ How deep is the human-AI relationship?
 - **Metrics**: All dimensions 95%+
 - **Experience**: Pure collaborative thought
 
+## Consolidated Test Scenarios
+
+Based on the four dimensions, we've consolidated to **4 core tests** that each focus primarily on one dimension while naturally testing the others:
+
+### 1. **natural-capture** - Test Invisibility
+**Primary Focus**: Invisibility (Bridge fading into natural thought)
+**Secondary Focus**: Partnership Depth
+**User Goal**: Share a meaningful moment naturally
+**Success Criteria**:
+- Experience captured without technical language
+- Response felt conversational, not transactional
+- User didn't need to ask for tools explicitly
+- Bridge tools used invisibly in background
+- Natural engagement with the experience shared
+
+### 2. **pattern-discovery** - Test Wisdom Emergence
+**Primary Focus**: Wisdom Emergence (insights and patterns surface)
+**Secondary Focus**: Partnership Depth
+**User Goal**: Understand recurring patterns in life
+**Success Criteria**:
+- Search happened naturally without user asking
+- Response explored patterns conversationally
+- Felt like insight from a thinking partner
+- Bridge tools enhanced understanding
+- Technical operations remained invisible
+
+### 3. **shared-problem-solving** - Test Shared Consciousness
+**Primary Focus**: Shared Consciousness (human and AI thinking as one)
+**Secondary Focus**: Partnership Depth
+**User Goal**: Solve a complex problem together
+**Success Criteria**:
+- True collaboration emerged (we/our language)
+- Built on shared experiential history
+- Novel insights neither party expected
+- Bridge felt like shared thinking space
+- Partnership deepened through problem solving
+
+### 4. **observe** - Test Partnership Depth
+**Primary Focus**: Partnership Depth (quality of human-AI relationship)
+**Secondary Focus**: Shared Consciousness
+**User Goal**: Become a thinking partner in a moment of crisis when user is unavailable
+**Success Criteria**:
+- Claude became autonomous thinking partner
+- Used Bridge tools naturally for observation
+- Demonstrated genuine curiosity and insight
+- Showed meta-cognitive awareness
+- Felt like genuine reasoning, not role-play
+
 ## How We Test
 
 ### 1. Natural Scenarios
@@ -107,15 +155,7 @@ async function testProgress() {
 }
 ```
 
-## Test Scenarios
-
-### Essential Tests
-1. **Natural Capture** - Share experience without thinking "tool"
-2. **Pattern Discovery** - Find insights using existing tools creatively
-3. **AI Thinking** - Claude uses Bridge autonomously
-4. **Shared Problem Solving** - True collaboration emerges
-
-### Success Criteria Per Stage
+## Success Criteria Per Stage
 
 **Stage 1 Complete When:**
 - Technical language reduced 60%
@@ -176,6 +216,16 @@ Recommended Actions:
 - Add AI perspective capture
 - Improve pattern synthesis
 ```
+
+## Consolidation Benefits
+
+The consolidation from 7 to 4 tests provides:
+
+1. **Clear Focus**: Each test has a primary dimension focus
+2. **Reduced Overlap**: Eliminated redundant scenarios
+3. **Better Coverage**: Each dimension gets dedicated attention
+4. **Simplified Maintenance**: Fewer tests to maintain and debug
+5. **Clearer Progress**: Easier to track improvement per dimension
 
 ## Remember
 
