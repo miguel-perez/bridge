@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 // Enums
-export const PerspectiveEnum = z.enum(['I', 'we', 'you', 'they']).describe('Perspective from which experience is remembered: I (first person), we (collective), you (second person), they (third person)');
+export const PerspectiveEnum = z.enum(['I', 'we', 'you', 'they']).describe('Perspective from which experience is experienceed: I (first person), we (collective), you (second person), they (third person)');
 export const ProcessingEnum = z.enum(['during', 'right-after', 'long-after']).describe('When processing occurred: during (real-time), right-after (immediate), long-after (retrospective)');
 // Remove 'crafted' from ProcessingEnumWithCrafted
 export const ProcessingEnumWithCrafted = ProcessingEnum; // For compatibility, but no 'crafted'
@@ -22,7 +22,7 @@ Choose qualities that emerge prominently in this moment. Following the principle
 export const SortEnum = z.enum(['relevance', 'created']).describe('Sort order for results');
 
 // Perspective field - avoid union to prevent anyOf with $ref issues
-export const PerspectiveField = z.string().min(1).describe('Perspective from which experience is remembered (e.g., I, we, you, they, or custom perspectives)');
+export const PerspectiveField = z.string().min(1).describe('Perspective from which experience is experienceed (e.g., I, we, you, they, or custom perspectives)');
 
 
 
@@ -50,7 +50,7 @@ Quality detection guide:
 - space.there: "thinking about home" → spatially displaced
 - space: When spatial experience doesn't clearly fit here/there subtypes
 
-- time.past: "remembering", "used to" → historical orientation
+- time.past: "experienceing", "used to" → historical orientation
 - time.future: "planning", "worried about" → anticipatory orientation
 - time: When temporal flow doesn't clearly fit past/future subtypes
 
@@ -77,20 +77,20 @@ export const ExperienceInputSchema = z.object({
   perspective: PerspectiveField.optional(),
   experiencer: z.string().describe('Who experienced this moment - "Human" for their experiences, "Claude" for your experiences, or their name if provided').optional(),
   processing: ProcessingEnum.optional(),
-  crafted: z.boolean().describe('Whether this is crafted content (blog/refined for an audience) vs raw remember (journal/immediate)').optional(),
+  crafted: z.boolean().describe('Whether this is crafted content (blog/refined for an audience) vs raw experience (journal/immediate)').optional(),
   experience: ExperienceObject.optional(),
-  remembers: z.array(z.object({
+  experiences: z.array(z.object({
     source: z.string().min(1).describe("Raw, exact words from the experiencer - their actual text/voice as written or spoken. Do not summarize, interpret, or modify. This is the source material that will be processed into a framed moment."),
     perspective: PerspectiveField.optional(),
     experiencer: z.string().describe('Who experienced this moment (person, group, or entity)').optional(),
     processing: ProcessingEnum.optional(),
-    crafted: z.boolean().describe('Whether this is crafted content (blog/refined for an audience) vs raw remember (journal/immediate)').optional(),
+    crafted: z.boolean().describe('Whether this is crafted content (blog/refined for an audience) vs raw experience (journal/immediate)').optional(),
     experience: ExperienceObject
-  })).describe('Array of experiences to remember (for batch operations)').optional()
+  })).describe('Array of experiences to experience (for batch operations)').optional()
 }).strict().refine(
-  (data) => data.source || (data.remembers && data.remembers.length > 0),
+  (data) => data.source || (data.experiences && data.experiences.length > 0),
   {
-    message: "Either 'source' or 'remembers' must be provided",
+    message: "Either 'source' or 'experiences' must be provided",
     path: ["source"]
   }
 );
@@ -213,7 +213,7 @@ export function generateReleaseExample(): ReleaseInput {
 
 export function generateBatchExperienceExample(): ExperienceInput {
   return {
-    remembers: [
+    experiences: [
       {
         source: "The first moment of clarity when the solution finally clicks into place.",
         perspective: 'I',
@@ -287,8 +287,8 @@ export function isSingleExperienceInput(value: ExperienceInput): value is Experi
   return 'source' in value && typeof value.source === 'string';
 }
 
-export function isBatchExperienceInput(value: ExperienceInput): value is ExperienceInput & { remembers: NonNullable<ExperienceInput['remembers']> } {
-  return 'remembers' in value && Array.isArray(value.remembers) && value.remembers.length > 0;
+export function isBatchExperienceInput(value: ExperienceInput): value is ExperienceInput & { experiences: NonNullable<ExperienceInput['experiences']> } {
+  return 'experiences' in value && Array.isArray(value.experiences) && value.experiences.length > 0;
 }
 
 export function isSingleSearchInput(value: SearchInput): value is SearchInput & { query?: string } {

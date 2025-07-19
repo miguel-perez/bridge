@@ -1,5 +1,5 @@
 /**
- * Core types for the Bridge experiential data remember system.
+ * Core types for the Bridge experiential data experience system.
  * Defines the data structures for capturing and analyzing human experience
  * through simplified quality arrays.
  */
@@ -38,7 +38,7 @@ export const DEFAULTS = {
 // TYPE DEFINITIONS
 // ============================================================================
 
-/** Perspective from which experience is remembered */
+/** Perspective from which experience is experienceed */
 export type Perspective = typeof PERSPECTIVES[number] | string;
 
 /** When the processing occurred relative to the experience */
@@ -48,28 +48,28 @@ export type ProcessingLevel = typeof PROCESSING_LEVELS[number];
 export type QualityType = typeof QUALITY_TYPES[number];
 
 /**
- * Complete experiential analysis of remembered data.
+ * Complete experiential analysis of experienceed data.
  * Array of qualities that emerge prominently in this moment.
  */
 export type Experience = string[];
 
-/** A remembered experiential moment */
+/** A experienceed experiential moment */
 export interface Source {
   /** Unique identifier for this source */
   id: string;
-  /** The remembered source (text, audio transcript, etc.) */
+  /** The experienceed source (text, audio transcript, etc.) */
   source: string;
-  /** When the experience was remembered (auto-generated) */
+  /** When the experience was experienceed (auto-generated) */
   created: string;
   
   // Context fields
-  /** Perspective from which experience is remembered */
+  /** Perspective from which experience is experienceed */
   perspective?: Perspective;
   /** Who experienced this (default: "self") */
   experiencer?: string;
   /** When processing occurred relative to experience */
   processing?: ProcessingLevel;
-  /** Whether this is crafted content (blog) vs raw remember (journal) */
+  /** Whether this is crafted content (blog) vs raw experience (journal) */
   crafted?: boolean;
   
   // Analysis fields
@@ -133,18 +133,18 @@ export const ExperienceSchema = z.array(z.string().refine(val => {
 /** Zod schema for Source */
 export const SourceSchema = z.object({
   id: z.string().min(1).describe('Unique identifier for this source'),
-  source: z.string().min(1).describe('The remembered source (text, audio transcript, etc.)'),
-  created: z.string().describe('When the experience was remembered (auto-generated)'),
-  perspective: z.string().optional().describe('Perspective from which experience is remembered'),
+  source: z.string().min(1).describe('The experienceed source (text, audio transcript, etc.)'),
+  created: z.string().describe('When the experience was experienceed (auto-generated)'),
+  perspective: z.string().optional().describe('Perspective from which experience is experienceed'),
   experiencer: z.string().optional().describe('Who experienced this'),
   processing: z.enum(PROCESSING_LEVELS).optional().describe('When processing occurred relative to experience'),
-  crafted: z.boolean().optional().describe('Whether this is crafted content vs raw remember'),
+  crafted: z.boolean().optional().describe('Whether this is crafted content vs raw experience'),
   experience: ExperienceSchema.optional().describe('Experience analysis results')
 });
 
 /** Zod schema for StorageData */
 export const StorageDataSchema = z.object({
-  sources: z.array(SourceSchema).describe('Array of remembered experiential sources'),
+  sources: z.array(SourceSchema).describe('Array of experienceed experiential sources'),
   embeddings: z.array(z.object({
     sourceId: z.string().describe('Source ID this embedding belongs to'),
     vector: z.array(z.number()).describe('Vector embedding for semantic search'),

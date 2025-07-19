@@ -45,9 +45,9 @@ async function testMCPConnection() {
       console.log(`  - ${tool.name}: ${tool.description?.substring(0, 50)}...`);
     });
     
-    console.log('\n🧪 Testing remember tool...');
+    console.log('\n🧪 Testing experience tool...');
     const result = await client.callTool({
-      name: 'remember',
+      name: 'experience',
       arguments: {
         source: 'Test connection successful',
         experiencer: 'Test Client',

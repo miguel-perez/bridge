@@ -250,7 +250,7 @@ async function callOpusWithSequentialThinking(docs: {
 
   // Test mode configuration
   const TEST_MODE = process.argv.includes('--test-mode');
-  const MAX_THOUGHTS = TEST_MODE ? 3 : 15;  // Reasonable limit to prevent timeouts
+  const MAX_THOUGHTS = TEST_MODE ? 3 : 100;  // Increased limit for deeper analysis
   const MODEL = TEST_MODE ? 'claude-3-5-sonnet-20241022' : 'claude-opus-4-20250514';
   const MAX_TOKENS = TEST_MODE ? 500 : 1000;  // Balanced for good thoughts without excessive length
 
@@ -421,8 +421,11 @@ IMPORTANT: Structure your response with clear update sections using this exact f
 The actual content to add or update goes here...
 
 You can include multiple updates. Each update will be applied to the specified file.
-For EXPERIMENTS.md status updates, use "Section: Status Update [EXP-XXX]" format.
-For VISION.md updates, only use "Section: Critical Drift Update" when core assumptions change.
+
+REFACTORING RULES:
+- For OPPORTUNITIES.md, LEARNINGS.md, EXPERIMENTS.md: Use "Section: Full Refactor" to completely rewrite the file
+- For VISION.md: Append-only mode. Use "Section: Critical Drift Update" only when core assumptions change
+- You can fully redesign the structure of OPPORTUNITIES, LEARNINGS, and EXPERIMENTS files as needed
 
 Current documents:
 === PHILOSOPHY.md (Core Foundation) ===
@@ -622,49 +625,45 @@ function parseAndApplyUpdates(analysis: string): DocumentUpdate[] {
     const currentContent = readFileSync(filePath, 'utf-8');
     let newContent = currentContent;
     
-    // Apply update based on section type
-    if (section.includes('Status Update')) {
-      // For experiment status updates, check if experiment exists
-      const expId = section.match(/\[(.+?)\]/)?.[1];
-      if (expId) {
-        const experimentExists = newContent.includes(`### ${expId}`);
-        
-        if (experimentExists) {
-          // Update existing experiment status
-          const statusRegex = new RegExp(`(### ${expId}[\\s\\S]*?)\\*\\*Status\\*\\*: .+`, 'm');
-          if (statusRegex.test(newContent)) {
-            newContent = newContent.replace(statusRegex, `$1**Status**: ${content.trim()}`);
-          }
+    // Apply update based on file type
+    if (fileName === 'VISION') {
+      // VISION.md remains append-only
+      if (section.includes('Critical Drift Update')) {
+        // Find the section or append at end
+        const sectionRegex = new RegExp(`^#+\\s*${section}`, 'im');
+        if (sectionRegex.test(newContent)) {
+          // Insert after the section header
+          newContent = newContent.replace(sectionRegex, (match) => {
+            return match + '\n\n' + content.trim();
+          });
         } else {
-          // Add new experiment
-          // Find "Active Experiments" section or append at end
-          const activeExperimentsRegex = /## Active Experiments\s*$/m;
-          if (activeExperimentsRegex.test(newContent)) {
-            newContent = newContent.replace(activeExperimentsRegex, (match) => {
-              return match + '\n\n' + content.trim();
-            });
-          } else {
-            newContent = currentContent.trimEnd() + '\n\n' + content.trim() + '\n';
-          }
+          // Append to end of file
+          newContent = currentContent.trimEnd() + '\n\n## ' + section + '\n\n' + content.trim() + '\n';
+        }
+      } else {
+        // Regular append
+        newContent = currentContent.trimEnd() + '\n\n' + content.trim() + '\n';
+      }
+    } else if (fileName === 'OPPORTUNITIES' || fileName === 'LEARNINGS' || fileName === 'EXPERIMENTS') {
+      // These files can be fully refactored
+      if (section === 'Full Refactor') {
+        // Replace entire file content
+        newContent = content.trim() + '\n';
+      } else {
+        // Section-based update (backward compatibility)
+        const sectionRegex = new RegExp(`^#+\\s*${section}`, 'im');
+        if (sectionRegex.test(newContent)) {
+          // Replace section content
+          const sectionEndRegex = new RegExp(`(^#+\\s*${section}[^\\n]*\\n)([\\s\\S]*?)(?=^#+\\s|$)`, 'im');
+          newContent = newContent.replace(sectionEndRegex, `$1\n${content.trim()}\n\n`);
+        } else {
+          // Add new section
+          newContent = currentContent.trimEnd() + '\n\n## ' + section + '\n\n' + content.trim() + '\n';
         }
       }
     } else {
-      // For other updates, append to the file or section
-      // Remove duplicate headers if they exist in the content
-      const cleanContent = content.trim()
-        .replace(new RegExp(`^#+\\s*${section}\\s*\\n`, 'im'), '');
-      
-      // Find the section or append at end
-      const sectionRegex = new RegExp(`^#+\\s*${section}`, 'im');
-      if (sectionRegex.test(newContent)) {
-        // Insert after the section header
-        newContent = newContent.replace(sectionRegex, (match) => {
-          return match + '\n\n' + cleanContent;
-        });
-      } else {
-        // Append to end of file
-        newContent = currentContent.trimEnd() + '\n\n## ' + section + '\n\n' + cleanContent + '\n';
-      }
+      // Other files remain append-only
+      newContent = currentContent.trimEnd() + '\n\n' + content.trim() + '\n';
     }
     
     writeFileSync(filePath, newContent);

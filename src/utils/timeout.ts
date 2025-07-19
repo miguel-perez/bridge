@@ -11,7 +11,7 @@ import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
  * Default timeout values for different operations (in milliseconds)
  */
 export const DEFAULT_TIMEOUTS = {
-  REMEMBER: 30000,     // 30 seconds for experience remember
+  EXPERIENCE: 30000,     // 30 seconds for experience capture
   SEARCH: 15000,      // 15 seconds for search operations  
   UPDATE: 20000,      // 20 seconds for update operations
   RELEASE: 10000,     // 10 seconds for release operations

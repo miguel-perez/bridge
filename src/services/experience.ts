@@ -1,5 +1,5 @@
 /**
- * Remember service for Bridge experiential data.
+ * Experience service for Bridge experiential data.
  * Handles validation, narrative embedding, and storage of experiential sources.
  */
 
@@ -15,8 +15,8 @@ import { EmbeddingService } from './embeddings.js';
 // CONSTANTS
 // ============================================================================
 
-/** Default values for remember fields */
-export const REMEMBER_DEFAULTS = {
+/** Default values for experience fields */
+export const EXPERIENCE_DEFAULTS = {
   CONTENT_TYPE: 'text',
   PERSPECTIVE: 'I',
   PROCESSING: 'during',
@@ -28,7 +28,7 @@ export const REMEMBER_DEFAULTS = {
 // ============================================================================
 
 /**
- * Zod schema for validating remember input.
+ * Zod schema for validating experience input.
  * Content is optional - if not provided, a default will be used.
  */
 export const experienceSchema = z.object({
@@ -43,7 +43,7 @@ export const experienceSchema = z.object({
 });
 
 /**
- * Input type for remembering experiential data.
+ * Input type for experienceing experiential data.
  */
 export interface ExperienceInput {
   content?: string;
@@ -55,7 +55,7 @@ export interface ExperienceInput {
 }
 
 /**
- * Result of a remember operation.
+ * Result of a experience operation.
  */
 export interface ExperienceResult {
   source: Source;
@@ -63,11 +63,11 @@ export interface ExperienceResult {
 }
 
 // ============================================================================
-// REMEMBER SERVICE
+// EXPERIENCE SERVICE
 // ============================================================================
 
 /**
- * Service for remembering and storing experiential sources.
+ * Service for experienceing and storing experiential sources.
  */
 export class ExperienceService {
   // private enhancedEmbeddingService: EnhancedEmbeddingService;
@@ -77,12 +77,12 @@ export class ExperienceService {
   }
 
   /**
-   * Remembers a new experiential source, validates input, generates embeddings, and stores it.
-   * @param input - Remember input data
-   * @returns Remember result with source record and defaults used
+   * Experiences a new experiential source, validates input, generates embeddings, and stores it.
+   * @param input - Experience input data
+   * @returns Experience result with source record and defaults used
    * @throws Error if validation fails or required fields are missing
    */
-  async rememberSource(input: ExperienceInput): Promise<ExperienceResult> {
+  async captureExperience(input: ExperienceInput): Promise<ExperienceResult> {
     // Validate input
     const validatedInput = experienceSchema.parse(input);
     
@@ -93,7 +93,7 @@ export class ExperienceService {
     const created = new Date().toISOString();
     
     // Use content or default
-    const source = validatedInput.content || 'Experience remembered';
+    const source = validatedInput.content || 'Experience experienceed';
     
     // Create experience with prominent qualities
     let experience: Experience | undefined;
@@ -143,7 +143,7 @@ export class ExperienceService {
       const defaultsUsed = this.getDefaultsUsed(input);
       return { source: savedSource, defaultsUsed };
     } catch (error) {
-      // Don't fail remember if embedding generation fails
+      // Don't fail experience if embedding generation fails
       bridgeLogger.warn('Embedding generation failed:', error);
       const defaultsUsed = this.getDefaultsUsed(input);
       return { source: savedSource, defaultsUsed };
@@ -151,7 +151,7 @@ export class ExperienceService {
   }
 
   /**
-   * Returns a list of which defaults were used for the remember input.
+   * Returns a list of which defaults were used for the experience input.
    * @param originalInput - Original input data
    * @returns Array of default field descriptions
    */
@@ -160,7 +160,7 @@ export class ExperienceService {
     if (!originalInput.perspective) defaultsUsed.push('perspective="I"');
     if (!originalInput.experiencer) defaultsUsed.push('experiencer="self"');
     if (!originalInput.processing) defaultsUsed.push('processing="during"');
-    if (!originalInput.content) defaultsUsed.push('content="Experience remembered"');
+    if (!originalInput.content) defaultsUsed.push('content="Experience experienceed"');
     return defaultsUsed;
   }
 } 

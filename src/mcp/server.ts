@@ -2,7 +2,7 @@
  * MCP Server Implementation for Bridge
  * 
  * This module implements the Model Context Protocol (MCP) server for Bridge,
- * providing tools for remembering, recalling, and enriching experiential data.
+ * providing tools for experiencing, recalling, and enriching experiential data.
  * 
  * @module mcp/server
  */
@@ -118,7 +118,7 @@ async function initializeConfiguration(serverInstance?: Server): Promise<void> {
       await embeddingService.initialize();
       mcpLog('info', 'Embedding service initialized successfully', serverInstance);
     } catch (embeddingError) {
-      // Embedding service initialization failed - remembers will have zero embeddings
+      // Embedding service initialization failed - experiences will have zero embeddings
       mcpLog('warn', `Embedding service initialization failed: ${embeddingError instanceof Error ? embeddingError.message : embeddingError}`, serverInstance);
     }
     

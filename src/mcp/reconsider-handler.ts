@@ -3,7 +3,7 @@
  * 
  * Handles reconsider tool requests for correcting or updating existing experiences.
  * Supports partial updates to any field including content, experience analysis, metadata,
- * and experiential qualities. Useful for refining how we remember shared moments.
+ * and experiential qualities. Useful for refining how we capture shared moments.
  * 
  * @module mcp/reconsider-handler
  */

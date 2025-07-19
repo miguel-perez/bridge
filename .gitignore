@@ -54,3 +54,8 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp 
+
+# Learning loop generated files
+OPPORTUNITIES.md
+LEARNINGS.md
+EXPERIMENTS.md

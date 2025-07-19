@@ -25,7 +25,7 @@ export const ENRICH_DEFAULTS = {
 
 /**
  * Zod schema for validating enrich input.
- * Allows partial updates to existing remembers.
+ * Allows partial updates to existing experiences.
  */
 export const enrichSchema = z.object({
   id: z.string().describe('ID of the source to enrich'),

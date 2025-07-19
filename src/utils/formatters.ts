@@ -134,7 +134,7 @@ export function formatStructuredSearchResult(result: SearchResult): any {
 // ============================================================================
 
 /**
- * Interface for remember operation results
+ * Interface for experience operation results
  */
 export interface ExperienceResult {
   source: {
@@ -168,12 +168,12 @@ export interface RecallResult {
 
 
 /**
- * Format a remember response with natural language
+ * Format a experience response with natural language
  * 
- * Transforms technical remember results into conversational responses
+ * Transforms technical experience results into conversational responses
  * while preserving all technical data.
  * 
- * @param result - The remember operation result
+ * @param result - The experience operation result
  * @param showId - Whether to show the ID (default: false)
  * @returns Natural language response string
  */
@@ -183,11 +183,11 @@ export function formatExperienceResponse(result: ExperienceResult, showId: boole
   // Simple response based on whether we have qualities
   let response: string;
   if (qualities.length > 0) {
-    response = formatMessage(Messages.remember.successWithQualities, {
+    response = formatMessage(Messages.experience.successWithQualities, {
       qualities: formatQualityList(qualities)
     });
   } else {
-    response = Messages.remember.success;
+    response = Messages.experience.success;
   }
   
   return [
@@ -198,9 +198,9 @@ export function formatExperienceResponse(result: ExperienceResult, showId: boole
 }
 
 /**
- * Format a batch remember response with natural language
+ * Format a batch experience response with natural language
  * 
- * @param results - Array of remember operation results
+ * @param results - Array of experience operation results
  * @param showIds - Whether to show IDs (default: false)
  * @returns Natural language response string
  */
@@ -208,7 +208,7 @@ export function formatBatchExperienceResponse(results: ExperienceResult[], showI
   const count = results.length;
   
   const output = [
-    formatMessage(Messages.remember.batch, { count }),
+    formatMessage(Messages.experience.batch, { count }),
     ''
   ];
 
@@ -219,11 +219,11 @@ export function formatBatchExperienceResponse(results: ExperienceResult[], showI
     output.push(`--- ${i + 1} ---`);
     
     if (qualities.length > 0) {
-      output.push(formatMessage(Messages.remember.successWithQualities, {
+      output.push(formatMessage(Messages.experience.successWithQualities, {
         qualities: formatQualityList(qualities)
       }));
     } else {
-      output.push(Messages.remember.success);
+      output.push(Messages.experience.success);
     }
     
     output.push('');
@@ -308,10 +308,10 @@ function formatMetadata(source: any, showId: boolean = false): string {
   }
   
   lines.push(
-    formatMessage(Messages.remember.from, { experiencer: source.experiencer || 'me' }),
-    formatMessage(Messages.remember.as, { perspective: source.perspective || 'I' }),
-    formatMessage(Messages.remember.when, { processing: formatProcessing(source.processing) }),
-    formatMessage(Messages.remember.captured, { timeAgo: formatTimeAgo(source.created) })
+    formatMessage(Messages.experience.from, { experiencer: source.experiencer || 'me' }),
+    formatMessage(Messages.experience.as, { perspective: source.perspective || 'I' }),
+    formatMessage(Messages.experience.when, { processing: formatProcessing(source.processing) }),
+    formatMessage(Messages.experience.captured, { timeAgo: formatTimeAgo(source.created) })
   );
   
   return lines.join('\n');

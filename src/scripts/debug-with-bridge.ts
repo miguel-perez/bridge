@@ -15,7 +15,7 @@ dotenv.config();
 const BRIDGE_SYSTEM_PROMPT = `You have access to Bridge - a tool for shared experiential memory between humans and AI.
 
 Bridge helps capture and search experiences using these tools:
-- remember: Capture an experience with its qualities
+- experience: Capture an experience with its qualities
 - recall: Search for relevant experiences
 - reconsider: Update existing experiences
 - release: Remove experiences

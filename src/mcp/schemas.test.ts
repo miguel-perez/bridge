@@ -38,7 +38,7 @@ describe('Schema Validation', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should reject input with neither source nor remembers', () => {
+    it('should reject input with neither source nor experiences', () => {
       const input = {
         perspective: 'I',
         experiencer: 'Alex'
@@ -46,7 +46,7 @@ describe('Schema Validation', () => {
       const result = ExperienceInputSchema.safeParse(input);
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues[0].message).toBe("Either 'source' or 'remembers' must be provided");
+        expect(result.error.issues[0].message).toBe("Either 'source' or 'experiences' must be provided");
       }
     });
 
@@ -59,9 +59,9 @@ describe('Schema Validation', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should validate with only remembers', () => {
+    it('should validate with only experiences', () => {
       const input = {
-        remembers: [{
+        experiences: [{
           source: 'Test experience',
           perspective: 'I',
           experience: ['mood.open']

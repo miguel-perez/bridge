@@ -6,11 +6,11 @@
  */
 
 export const Messages = {
-  // Remember operation messages
-  remember: {
-    success: 'Remembered',
-    successWithQualities: 'Remembered ({qualities})',
-    batch: 'Remembered {count} experiences',
+  // Experience operation messages
+  experience: {
+    success: 'Experienceed',
+    successWithQualities: 'Experienceed ({qualities})',
+    batch: 'Experienceed {count} experiences',
     similar: 'Similar: {content}',
     from: 'From: {experiencer}',
     as: 'As: {perspective}',

@@ -78,7 +78,7 @@ export async function getTools(): Promise<any[]> {
           output: {
             content: [{
               type: 'text',
-              text: 'Remembered (embodied.sensing, time.future, mood.closed)\n\nFrom: Human\nAs: I\nWhen: during conversation\nCaptured: just now'
+              text: 'Experienced (embodied.sensing, time.future, mood.closed)\n\nFrom: Human\nAs: I\nWhen: during conversation\nCaptured: just now'
             }]
           }
         },
@@ -95,7 +95,7 @@ export async function getTools(): Promise<any[]> {
           output: {
             content: [{
               type: 'text',
-              text: 'Remembered (presence.collective, embodied.sensing)\n\nFrom: Claude\nAs: I\nWhen: during conversation\nCaptured: just now'
+              text: 'Experienced (presence.collective, embodied.sensing)\n\nFrom: Claude\nAs: I\nWhen: during conversation\nCaptured: just now'
             }]
           }
         },
@@ -112,7 +112,7 @@ export async function getTools(): Promise<any[]> {
           output: {
             content: [{
               type: 'text',
-              text: 'Remembered (embodied.thinking, presence.collective, purpose.goal, time.past)\n\nFrom: Human\nAs: we\nWhen: right after\nCaptured: just now'
+              text: 'Experienced (embodied.thinking, presence.collective, purpose.goal, time.past)\n\nFrom: Human\nAs: we\nWhen: right after\nCaptured: just now'
             }]
           }
         },
@@ -129,15 +129,15 @@ export async function getTools(): Promise<any[]> {
           output: {
             content: [{
               type: 'text',
-              text: 'Remembered (embodied, purpose, focus.narrow)\n\nFrom: Human\nAs: I\nWhen: during conversation\nCaptured: just now'
+              text: 'Experienced (embodied, purpose, focus.narrow)\n\nFrom: Human\nAs: I\nWhen: during conversation\nCaptured: just now'
             }]
           }
         },
         {
-          id: 'batch-remember',
+          id: 'batch-experience',
           description: 'Capture multiple experiences at once',
           input: {
-            remembers: [
+            experiences: [
               {
                 source: 'The code suddenly clicked into place',
                 experiencer: 'Human',

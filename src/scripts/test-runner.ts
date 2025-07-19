@@ -442,7 +442,7 @@ Response guidelines:
 - Tone: Match the emotional register of the conversation
 - Content: Stay engaged with the topic while allowing natural evolution
 
-Remember: Real conversations often continue for several exchanges before reaching natural conclusions.`;
+Note: Real conversations often continue for several exchanges before reaching natural conclusions.`;
 
     // Get last few messages for context
     const recentMessages = messages.slice(-4);

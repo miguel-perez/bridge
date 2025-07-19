@@ -9,7 +9,7 @@ import {
 } from '../utils/formatters.js';
 import { Messages, formatMessage } from '../utils/messages.js';
 
-export interface RememberResponse {
+export interface ExperienceResponse {
   success: boolean;
   source?: {
     id: string;
@@ -34,14 +34,14 @@ export class ExperienceHandler {
   }
 
   /**
-   * Handles remember requests
+   * Handles experience requests
    * 
-   * @param args - The remember arguments containing the experiential data
-   * @returns Formatted remember result
+   * @param args - The experience arguments containing the experiential data
+   * @returns Formatted experience result
    */
   async handle(args: ExperienceInput): Promise<ToolResult> {
     try {
-      const result = await this.handleRegularRemember(args);
+      const result = await this.handleRegularExperience(args);
       ToolResultSchema.parse(result);
       return result;
     } catch (err) {
@@ -55,31 +55,31 @@ export class ExperienceHandler {
   }
 
   /**
-   * Handle regular remember with natural formatting
+   * Handle regular experience with natural formatting
    */
-  private async handleRegularRemember(
-    remember: ExperienceInput
+  private async handleRegularExperience(
+    experience: ExperienceInput
   ): Promise<ToolResult> {
     try {
-      // Validate required fields - handle both single and batch remembers
-      if (remember.remembers && remember.remembers.length > 0) {
-        // Batch remember - validate each item in the array
-        for (const item of remember.remembers) {
+      // Validate required fields - handle both single and batch experiences
+      if (experience.experiences && experience.experiences.length > 0) {
+        // Batch experience - validate each item in the array
+        for (const item of experience.experiences) {
           if (!item.source) {
-            throw new Error('Each remember item must have source content');
+            throw new Error('Each experience item must have source content');
           }
         }
-      } else if (!remember.source) {
-        // Single remember - validate the main fields
+      } else if (!experience.source) {
+        // Single experience - validate the main fields
         throw new Error('Source content is required');
       }
 
-      // Handle batch remembers or single remember
-      if (remember.remembers && remember.remembers.length > 0) {
-        // Batch remember - process each item
+      // Handle batch experiences or single experience
+      if (experience.experiences && experience.experiences.length > 0) {
+        // Batch experience - process each item
         const results: ExperienceResult[] = [];
-        for (const item of remember.remembers) {
-          const result = await this.experienceService.rememberSource({
+        for (const item of experience.experiences) {
+          const result = await this.experienceService.captureExperience({
             content: item.source,
             perspective: item.perspective,
             experiencer: item.experiencer,
@@ -101,22 +101,22 @@ export class ExperienceHandler {
         };
         
       } else {
-        // Single remember with natural formatting
-        const result = await this.experienceService.rememberSource({
-          content: remember.source,
-          perspective: remember.perspective,
-          experiencer: remember.experiencer,
-          processing: remember.processing,
-          crafted: remember.crafted,
-          experience: remember.experience || undefined
+        // Single experience with natural formatting
+        const result = await this.experienceService.captureExperience({
+          content: experience.source,
+          perspective: experience.perspective,
+          experiencer: experience.experiencer,
+          processing: experience.processing,
+          crafted: experience.crafted,
+          experience: experience.experience || undefined
         });
 
         // Use natural conversational formatting
         let response = formatExperienceResponse(result);
         
         // Find similar experience if any
-        const similarText = remember.source ? 
-          await this.findSimilarExperience(remember.source, result.source.id) : 
+        const similarText = experience.source ? 
+          await this.findSimilarExperience(experience.source, result.source.id) : 
           null;
         if (similarText) {
           response += '\n\n' + similarText;
@@ -150,10 +150,10 @@ export class ExperienceHandler {
       const { results } = await this.recallService.search({
         semantic_query: content,
         semantic_threshold: 0.8, // High threshold for relevant matches
-        limit: 2 // Get 2 in case the first is the same one we just remembered
+        limit: 2 // Get 2 in case the first is the same one we just experienceed
       });
       
-      // Filter out the experience we just remembered and get the most similar
+      // Filter out the experience we just experienceed and get the most similar
       const similar = results.find(r => r.id !== excludeId);
       
       if (similar && similar.relevance_score > 0.8) {
@@ -161,7 +161,7 @@ export class ExperienceHandler {
         const snippet = similar.snippet || similar.content || '';
         const truncated = snippet.length > 100 ? snippet.substring(0, 100) + '...' : snippet;
         
-        return formatMessage(Messages.remember.similar, { content: truncated });
+        return formatMessage(Messages.experience.similar, { content: truncated });
       }
       
       return null;
