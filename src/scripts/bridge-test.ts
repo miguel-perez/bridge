@@ -42,17 +42,19 @@ class UserSimulator {
     const categories: Record<string, number> = {};
     
     this.syntheticData.forEach(exp => {
-      // Simple categorization based on experience qualities
-      if (exp.experience?.includes('purpose') || exp.experience?.includes('focus')) {
+      // Simple categorization based on experience qualities (check for base dimension)
+      const hasQuality = (quality: string) => exp.experience?.some(q => q.startsWith(quality));
+      
+      if (hasQuality('purpose') || hasQuality('focus')) {
         categories['Work & Productivity'] = (categories['Work & Productivity'] || 0) + 1;
       }
-      if (exp.experience?.includes('emotion') || exp.experience?.includes('body')) {
+      if (hasQuality('mood') || hasQuality('embodied')) {
         categories['Personal Growth'] = (categories['Personal Growth'] || 0) + 1;
       }
-      if (exp.experience?.includes('others')) {
+      if (hasQuality('presence')) {
         categories['Relationships'] = (categories['Relationships'] || 0) + 1;
       }
-      if (exp.experience?.includes('space') || exp.experience?.includes('time')) {
+      if (hasQuality('space') || hasQuality('time')) {
         categories['Daily Life'] = (categories['Daily Life'] || 0) + 1;
       }
     });
@@ -412,17 +414,10 @@ class TestEnvironment {
         copyFileSync(sourceVectors, this.testVectorsFile);
       }
     } else {
-      // Generate synthetic data if a scenario is provided
-      const syntheticData = scenarioKey ? 
-        await this.generateSyntheticData(scenarioKey) : 
-        { sources: [] };
+      // Skip synthetic data generation for now - start with empty bridge
+      const emptyData = { sources: [] };
       
-      if (syntheticData.sources.length > 0) {
-        console.log(`🎭 Generated ${syntheticData.sources.length} synthetic experiences for richer testing`);
-        this.syntheticData = syntheticData.sources;
-      }
-      
-      writeFileSync(this.testBridgeFile, JSON.stringify(syntheticData, null, 2));
+      writeFileSync(this.testBridgeFile, JSON.stringify(emptyData, null, 2));
       writeFileSync(this.testVectorsFile, JSON.stringify([], null, 2));
     }
   }
@@ -483,7 +478,7 @@ For each experience, include:
 - Realistic, detailed source text (2-4 sentences)
 - Appropriate perspective (I, we, they)
 - Varied processing times (during, right-after, long-after)
-- Diverse experience qualities from: body, time, space, emotion, focus, purpose, others
+- Diverse experience qualities from: embodied, focus, mood, purpose, space, time, presence
 - Dates spread across the past 3 months
 - Both positive and challenging experiences
 - Some experiences that would cluster together for pattern discovery
@@ -495,11 +490,17 @@ Format as JSON array with this exact schema:
   "perspective": "I|we|they",
   "created": "2024-01-15T10:30:00Z",
   "processing": "during|right-after|long-after",
-  "experience": ["emotion", "space", "body", "others", "time", "focus", "purpose"]
+  "experience": ["mood.open", "space.here", "embodied.sensing", "presence.collective", "time", "focus.narrow", "purpose.goal"]
 }
 
-IMPORTANT: Only use these exact quality values: emotion, space, body, others, time, focus, purpose
-Do NOT use any other quality names.
+IMPORTANT: Only use these exact quality values with their subtypes:
+- embodied.thinking, embodied.sensing, embodied.mixed
+- focus.narrow, focus.broad, focus.mixed  
+- mood.open, mood.closed, mood.mixed
+- purpose.goal, purpose.wander, purpose.mixed
+- space.here, space.there, space.mixed
+- time.past, time.future
+- presence.individual, presence.collective, presence.mixed
 
 Make the experiences feel authentic and varied. Include specific details, emotions, and situations that would create meaningful patterns when analyzed together.
 
@@ -584,17 +585,17 @@ Return ONLY the JSON array, no other text.`;
       {
         source: "I noticed my energy dips around 3pm every day, making it hard to focus on complex tasks.",
         perspective: "I",
-        experience: ["body", "time", "focus"]
+        experience: ["embodied.thinking", "time.past", "focus.narrow"]
       },
       {
         source: "The team meeting was tense at first, but when Sara shared her concerns openly, everyone relaxed and we found a better solution.",
         perspective: "we", 
-        experience: ["others", "emotion", "purpose"]
+        experience: ["presence.collective", "mood.open", "purpose.goal"]
       },
       {
         source: "Walking in the park this morning, I felt a sense of clarity about the project that's been stuck for weeks.",
         perspective: "I",
-        experience: ["body", "space", "focus"]
+        experience: ["embodied.sensing", "space.here", "focus.broad"]
       },
       {
         source: "Deadline pressure was intense, but once I started coding, I entered that flow state where time disappears.",
@@ -604,22 +605,22 @@ Return ONLY the JSON array, no other text.`;
       {
         source: "The client presentation went better than expected - our preparation and team collaboration really paid off.",
         perspective: "we",
-        experience: ["purpose", "others", "emotion"]
+        experience: ["purpose.goal", "presence.collective", "mood.open"]
       },
       {
         source: "I've been feeling overwhelmed with all the meetings, but today I realized I need to block more focus time.",
         perspective: "I",
-        experience: ["time", "emotion", "focus"]
+        experience: ["time.future", "mood.closed", "focus.narrow"]
       },
       {
         source: "Creative breakthrough happened during my evening walk - sometimes stepping away is the best way forward.",
         perspective: "I",
-        experience: ["body", "space", "focus"]
+        experience: ["embodied.sensing", "space.here", "focus.broad"]
       },
       {
         source: "Team retrospective revealed that our best work happens when we have uninterrupted blocks of 3+ hours.",
         perspective: "we",
-        experience: ["time", "others", "purpose"]
+        experience: ["time.past", "presence.collective", "purpose.goal"]
       }
     ];
     
@@ -773,41 +774,9 @@ class BridgeTestRunner {
         input_schema: tool.inputSchema
       }));
       
-      // PHASE 1: Get Claude's expectations upfront (skip for observe test)
-      let expectationText = '';
-      
-      if (scenarioKey !== 'observe') {
-      console.log('📋 Gathering initial expectations...');
-        const expectationPrompt = `Before we start, I want to understand your expectations about this interaction.
-
-User request: "${scenario.prompt}"
-
-Before you begin helping with this request, please briefly share:
-1. What do you expect this interaction will involve?
-2. What challenges or limitations do you anticipate?
-3. How do you think the user will feel about the experience?
-
-Please be concise (2-3 sentences per point), then say "Now I'll begin helping with your request."`;
-
-      const expectationResponse = await this.anthropic.messages.create({
-        model: "claude-3-5-sonnet-20241022",
-        max_tokens: 1000,
-          system: `You are Claude Code, and you have access to Bridge - a system that helps remember and explore experiences together.
-
-When someone shares an experience with you, Bridge can help you remember it and find connections to other experiences. This helps you provide richer insights and build on what you've learned together.
-
-Your goal is to be genuinely helpful and insightful. Use Bridge when it would help you better understand or respond to what someone is sharing.`,
-        messages: [{ role: 'user', content: expectationPrompt }],
-      });
-      
-        expectationText = Array.isArray(expectationResponse.content) ? 
-        expectationResponse.content.map(c => (c as any).text || '').join(' ') : 
-        String(expectationResponse.content);
-        
-        console.log('✅ Initial expectations remembered');
-      } else {
-        console.log('⏭️  Skipping expectations for observe test');
-      }
+      // PHASE 1: Skip expectations gathering for now
+      const expectationText = '';
+      console.log('⏭️  Skipping expectations gathering');
       
       // PHASE 2: Actual task execution
       let initialPrompt = scenario.prompt;
@@ -1190,7 +1159,7 @@ Focus on your actual experience using Bridge tools during the conversation above
       
       // Parse reflection for structured data
       result.reflection = {
-        expectations: expectationText,
+        expectations: expectationText || 'Expectations gathering disabled',
         actualExperience: `${result.toolCalls.length} tool calls, ${result.errors.length} errors`,
         misalignments: this.parseReflectionMisalignments(umuxText),
         overallAssessment: umuxText,
