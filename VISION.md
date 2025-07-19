@@ -150,16 +150,6 @@ AI: "Looking at our breakthrough moments... they happen when you're walking or p
      'this is stupid but...' - and that means we could be close to a breakthrough!"
 ```
 
-**Analysis approach**:
-```typescript
-understand("breakthrough patterns")
-// Finds experiences tagged "breakthrough", analyzes quality signatures:
-// 87% have embodied.sensing
-// 73% have purpose.wander  
-// 65% have time.future
-// Pattern: Breakthroughs cluster around sensing + wandering + future focus
-```
-
 ### 4. `imagine()` - WE explore possibilities together
 
 Finds transformation moments across perspectives, identifies when possibilities opened before.
@@ -258,62 +248,16 @@ understand("time")
 ```typescript
 // OODA Loop: Decision-making cycle analysis
 understand(["focus", "time"])
-
-// Claude analyzes quality signature clusters:
-// "Your focus-time patterns show distinct decision-making phases:
-//  
-//  **Observing (focus.narrow + time.past)**: Heavy concentration here - 
-//  'noticed exact tension in shoulders during yesterday's meeting'
-//  You're precisely focused on immediate data from recent experiences.
-//  
-//  **Orienting (focus.broad + time.past)**: Good representation -
-//  'thinking about how all these interactions connect to larger patterns'
-//  This is synthesis - broad awareness applied to past experience.
-//  
-//  **Deciding (focus.broad + time.future)**: Some activity -
-//  'considering all the different ways tomorrow could unfold'  
-//  Broad evaluation of future possibilities.
-//  
-//  **Acting (focus.narrow + time.future)**: Sparse area -
-//  'executing the specific action plan we decided on'
-//  This suggests you excel at observation and orientation, but may 
-//  avoid the narrow future space where decisions become specific actions."
-
-// Natural quadrant recognition without coordinates:
 // - Observe: experiences with focus.narrow + time.past
 // - Orient: experiences with focus.broad + time.past  
 // - Decide: experiences with focus.broad + time.future
 // - Act: experiences with focus.narrow + time.future
 ```
 
-### Three-Dimensional Analysis: Complete Frameworks
-
+### Three-Dimensional Analysis: Human-centered Design
 ```typescript
 // Human-Centered Design Process Mapping
 understand(["time", "focus", "presence"])
-
-// Claude reveals complete UX methodology patterns:
-// "Your design thinking shows clear patterns across eight distinct phases:
-//  
-//  **Research Phase (time.past + focus.narrow + presence.individual)**:
-//  └── 'Deep conversation with single user about pain points'
-//  └── 'Detailed analysis of individual user behaviors'  
-//  └── 'Tracing specific user's step-by-step experience'
-//  
-//  **Market Analysis (time.past + focus.broad + presence.individual)**:
-//  └── 'Broad survey of existing solutions for individual users'
-//  └── 'Understanding user behavior patterns over time'
-//  
-//  **User Testing (time.past + focus.narrow + presence.collective)**:
-//  └── 'Detailed observation of group user sessions'
-//  └── 'Precise measurement of collective responses'
-//  
-//  **Strategic UX (time.future + focus.broad + presence.collective)**:
-//  └── 'Broad future vision for user communities'
-//  └── 'Comprehensive future state for user populations'
-//  
-//  This shows you operate across the complete human-centered design spectrum,
-//  with particular strength in past analysis and individual user focus."
 ```
 
 ### Content Embedding Refinement
@@ -322,27 +266,6 @@ understand(["time", "focus", "presence"])
 1. **Quality Clustering**: Group experiences by similar quality signatures
 2. **Content Subdivision**: Within each cluster, embedding similarity creates content themes
 3. **Pattern Synthesis**: Claude presents both phenomenological structure and semantic themes
-
-**Example Process:**
-```typescript
-// 1. Experiences with similar signatures cluster together:
-"purpose.goal + mood.open" cluster contains:
-- "Guitar practice session flowing beautifully" 
-- "Writing breakthrough after struggling"
-- "Presenting ideas and feeling heard"
-- "Leading meeting with clear vision"
-
-// 2. Embedding similarity reveals content themes:
-→ Creative Flow: Guitar, writing sessions
-→ Professional Expression: Presenting, leadership  
-→ Skill Development: Practice, technique building
-
-// 3. Claude synthesizes both layers:
-"Your purpose.goal + mood.open experiences show two main patterns:
-Creative Flow (when practicing skills in flow state) and 
-Professional Expression (when sharing ideas with confidence).
-Both share the same phenomenological signature but different content themes."
-```
 
 ### Advanced Analysis Parameters
 
@@ -383,9 +306,6 @@ understand("mood") // How emotional experiences cluster
 
 // Reflections only  
 understand("mood", {filter: {reflects: true}}) // How insights about emotions develop
-
-// Combined analysis
-understand("mood", {filter: {reflects: "all"}}) // How experiences and insights interact
 ```
 
 ### Complete Experiential Overview
@@ -397,7 +317,6 @@ understand()
 // 1. Quality signature clusters (phenomenological groupings)
 // 2. Content themes within each cluster (semantic purposes)  
 // 3. Specific experiences within each theme
-// 4. Temporal patterns and reflection chains
 ```
 
 ## Implementation Details
