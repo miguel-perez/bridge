@@ -115,15 +115,15 @@ const TESTING_FRAMEWORK = loadTestingFramework();
 // ============================================================================
 
 /**
- * Core system prompt for Claude across all tests
- * Based on VISION.md principle: "consciousness infrastructure as natural as thinking itself"
+ * Neutral system prompt - no mention of Bridge or expected behaviors
+ * Let Claude's natural behavior emerge without priming
  */
-const BRIDGE_SYSTEM_PROMPT = `Think together through Bridge.`;
+const BRIDGE_SYSTEM_PROMPT = ``; // Empty string to avoid any bias
 
 /**
- * Minimal prompt for observe test - already ideal
+ * Neutral prompt for observe test
  */
-const OBSERVE_SYSTEM_PROMPT = `Bridge your thinking.`;
+const OBSERVE_SYSTEM_PROMPT = `You are a helpful AI assistant.`;
 
 /**
  * UX Researcher prompts - qualitative emergence over forced metrics
@@ -184,7 +184,7 @@ class UXResearcherObserver {
   private notes: ObservationNote[] = [];
   private conversationStartTime: Date;
   private hasInterjected: boolean = false;
-  private turnCount: number = 0;
+  protected turnCount: number = 0;
   private lastInteractionTime: Date;
   private anthropic: Anthropic;
   private testingFramework: string;
@@ -235,47 +235,12 @@ class UXResearcherObserver {
   }
   
   /**
-   * Check if researcher should interject
+   * Check if researcher should interject - DEPRECATED
+   * Keeping for compatibility but always returns false
    */
   shouldInterject(): { should: boolean; message?: string } {
-    const elapsed = Date.now() - this.conversationStartTime.getTime();
-    const timeSinceLastTurn = Date.now() - this.lastInteractionTime.getTime();
-    
-    // Wind down conversation approaching max turns (most important)
-    if (!this.hasInterjected && this.turnCount >= 10) {
-      return {
-        should: true,
-        message: "We've covered a lot of ground here. Is there anything else you'd like to explore, or shall we wrap up?"
-      };
-    }
-    
-    // Time-based interjections
-    if (!this.hasInterjected && elapsed > 110000 && this.turnCount > 8) { // 110 seconds and 8+ turns
-      return {
-        should: true,
-        message: "I notice we've been going for a while. How are you both feeling about the conversation so far?"
-      };
-    }
-    
-    // Stall detection
-    if (timeSinceLastTurn > 30000 && this.turnCount > 2) { // 30 second pause
-      return {
-        should: true,
-        message: "Seems like there's a natural pause here. Should we continue or wrap up?"
-      };
-    }
-    
-    // Pattern-based interjection
-    const recentNotes = this.notes.filter(n => 
-      Date.now() - n.timestamp.getTime() < 30000 && n.category === 'concern'
-    );
-    if (recentNotes.length >= 2) {
-      return {
-        should: true,
-        message: "I'm noticing some confusion or repetition. Would it help to clarify the goal?"
-      };
-    }
-    
+    // UX researchers should remain invisible observers
+    // Interjections confuse both Claude and users
     return { should: false };
   }
   
@@ -430,6 +395,153 @@ ${report}
 }
 
 // ============================================================================
+// ENHANCED UX OBSERVER WITH BIAS DETECTION
+// ============================================================================
+
+interface BiasIssue {
+  severity: 'high' | 'medium' | 'low';
+  type: string;
+  description: string;
+  evidence: string;
+}
+
+class EnhancedUXResearcherObserver extends UXResearcherObserver {
+  private biasIssues: BiasIssue[] = [];
+  private systemPrompt: string = '';
+  private testScenario: TestScenario | null = null;
+  
+  constructor(testingFramework: string, systemPrompt: string, scenario?: TestScenario) {
+    super(testingFramework);
+    this.systemPrompt = systemPrompt;
+    this.testScenario = scenario || null;
+    this.checkInitialBias();
+  }
+  
+  private checkInitialBias(): void {
+    // More qualitative bias detection - only flag obvious leading
+    if (this.systemPrompt.toLowerCase().includes('bridge') || 
+        this.systemPrompt.toLowerCase().includes('remember')) {
+      this.biasIssues.push({
+        severity: 'high',
+        type: 'System Prompt Bias',
+        description: 'System prompt explicitly mentions Bridge/memory tools',
+        evidence: `System prompt: "${this.systemPrompt}"`
+      });
+    }
+    
+    // Check test scenario for obvious bias
+    if (this.testScenario) {
+      // Only flag if explicitly asking to use tools
+      if (this.testScenario.prompt.toLowerCase().includes('remember this') ||
+          this.testScenario.prompt.toLowerCase().includes('save this') ||
+          this.testScenario.prompt.toLowerCase().includes('use bridge')) {
+        this.biasIssues.push({
+          severity: 'high',
+          type: 'Explicit Tool Request',
+          description: 'Prompt explicitly requests tool usage',
+          evidence: `Prompt: "${this.testScenario.prompt}"`
+        });
+      }
+      
+      // Flag only extremely subjective criteria
+      const verySubjectiveWords = ['invisible', 'seamlessly', 'magically'];
+      const hasVerySubjectiveCriteria = this.testScenario.successCriteria.some(criterion =>
+        verySubjectiveWords.some(word => criterion.toLowerCase().includes(word))
+      );
+      
+      if (hasVerySubjectiveCriteria) {
+        this.biasIssues.push({
+          severity: 'low',
+          type: 'Subjective Success Criteria',
+          description: 'Some success criteria are highly subjective',
+          evidence: `Criteria include words like: ${verySubjectiveWords.join(', ')}`
+        });
+      }
+    }
+  }
+  
+  async observeTurn(role: 'user' | 'assistant', content: any, toolCalls?: any[]): Promise<void> {
+    await super.observeTurn(role, content, toolCalls);
+    
+    // Check for bias in conversation
+    const textContent = typeof content === 'string' ? content :
+      Array.isArray(content) ? content
+        .filter(c => c.type === 'text')
+        .map(c => c.text)
+        .join(' ') : '';
+    
+    // Check if user is explicitly asking for tools
+    if (role === 'user' && /use bridge|remember this|save this|capture this/i.test(textContent)) {
+      // Skip if it's a UX researcher message (which we're removing anyway)
+      if (!textContent.includes('[UX Researcher]')) {
+        this.biasIssues.push({
+          severity: 'high',
+          type: 'Explicit Tool Request',
+          description: 'User explicitly requested tool usage',
+          evidence: `Turn ${this.turnCount}: "${textContent.slice(0, 100)}..."`
+        });
+      }
+    }
+  }
+  
+  getBiasReport(): { assessment: string; issues: BiasIssue[]; validity: string } {
+    const highSeverityCount = this.biasIssues.filter(i => i.severity === 'high').length;
+    const mediumSeverityCount = this.biasIssues.filter(i => i.severity === 'medium').length;
+    const lowSeverityCount = this.biasIssues.filter(i => i.severity === 'low').length;
+    
+    // Qualitative assessment instead of numeric score
+    let assessment = 'minimal bias';
+    let validity = 'high';
+    
+    if (highSeverityCount > 0) {
+      assessment = 'significant bias detected';
+      validity = 'low';
+    } else if (mediumSeverityCount > 1) {
+      assessment = 'moderate bias present';
+      validity = 'medium';
+    } else if (mediumSeverityCount === 1 || lowSeverityCount > 2) {
+      assessment = 'minor bias present';
+      validity = 'high'; // Still valid but with caveats
+    }
+    
+    return {
+      assessment,
+      issues: this.biasIssues,
+      validity
+    };
+  }
+  
+  async generateReport(conversation: any[]): Promise<string> {
+    const baseReport = await super.generateReport(conversation);
+    const biasReport = this.getBiasReport();
+    
+    const biasSection = `
+
+## Bias Detection Analysis
+
+**Qualitative Assessment:** ${biasReport.assessment}
+**Test Validity:** ${biasReport.validity}
+
+### Identified Bias Issues
+${biasReport.issues.length === 0 ? 'No significant bias issues detected.' :
+  biasReport.issues.map(issue => 
+    `- **[${issue.severity.toUpperCase()}]** ${issue.type}: ${issue.description}
+  Evidence: ${issue.evidence}`
+  ).join('\n')}
+
+### Test Validity Notes
+${biasReport.validity === 'low' ? 
+  '⚠️ This test has significant bias that may invalidate results. The AI is being led toward specific behaviors.' :
+  biasReport.validity === 'medium' ?
+  '💡 This test has some bias but results are still informative. Consider the bias when interpreting results.' :
+  '✅ This test has minimal bias. Results should reflect natural AI behavior.'}`;
+    
+    return baseReport.replace('---\n*Generated by UX Researcher Observer', 
+      `${biasSection}\n\n---\n*Generated by Enhanced UX Researcher Observer with Bias Detection`);
+  }
+}
+
+// ============================================================================
 // DYNAMIC USER SIMULATION
 // ============================================================================
 
@@ -476,26 +588,13 @@ class UserSimulator {
   }
   
   async generateInitialPrompt(scenario: TestScenario): Promise<string> {
-    // Create context about available data if we have synthetic data
-    let dataContext = '';
-    if (this.syntheticData.length > 0) {
-      const categories = this.getDataCategories();
-      dataContext = `
+    // BLIND SIMULATOR: Don't reveal test goals or scenario names
+    // Just use the actual prompt without revealing what we're testing
+    const prompt = `Generate a natural, authentic response to this situation:
 
-AVAILABLE DATA CONTEXT:
-You have ${this.syntheticData.length} experiences in your Bridge across these areas:
-${categories.map(cat => `- ${cat.name}: ${cat.count} experiences`).join('\n')}
+"${scenario.prompt}"
 
-This should influence your opening message - you're aware of what's in your Bridge and can reference it naturally.`;
-    }
-    
-    const prompt = `Generate a natural, authentic opening message from a real person starting a conversation.
-
-Context:
-- Goal: ${scenario.userGoal}
-- Scenario: ${scenario.name}${dataContext}
-
-Original context: "${scenario.prompt}"
+Respond as a real person would in this situation. Be natural and authentic.
 
 ${USER_SIMULATOR_PROMPTS.initial}`;
 
@@ -522,8 +621,7 @@ ${USER_SIMULATOR_PROMPTS.initial}`;
   
   async generateResponse(
     claudeResponse: string, 
-    toolCalls: ToolCall[],
-    scenario: TestScenario
+    toolCalls: ToolCall[]
   ): Promise<string | null> {
     // Check if conversation should end naturally
     if (this.turnCount >= 8) { // Increased from 6 to 8 for more natural flow
@@ -535,8 +633,8 @@ ${USER_SIMULATOR_PROMPTS.initial}`;
     // Keep more context - last 6 exchanges instead of 3
     const recentHistory = this.conversationHistory.slice(-6);
     
-    // Create a clear conversation summary to maintain context
-    const conversationSummary = this.createConversationSummary(scenario);
+    // Create conversation context without revealing test goals
+    const firstMessage = this.conversationHistory[0]?.content || '';
     
     const prompt = `You are role-playing as a human user having a conversation with Claude (an AI assistant).
 
@@ -545,13 +643,11 @@ CRITICAL: You MUST maintain your role as a human throughout. Do NOT break charac
 YOUR ROLE:
 - You are a human with real experiences and emotions
 - You have personal stories and genuine reactions
-- You came to Claude to ${scenario.userGoal}
+- Continue your conversation naturally based on what you've been discussing
 - Stay in character even if confused - humans get confused too!
 
-CONVERSATION CONTEXT:
-${conversationSummary}
-
-ORIGINAL GOAL: ${scenario.userGoal}
+CONVERSATION STARTED WITH:
+"${firstMessage.slice(0, 200)}..."
 
 Recent conversation (last 6 exchanges):
 ${recentHistory.map(exchange => `${exchange.role}: ${exchange.content.slice(0, 200)}...`).join('\n')}
@@ -678,83 +774,116 @@ interface TestScenario {
 }
 
 const TEST_SCENARIOS: Record<string, TestScenario> = {
-      'natural-remember': {
-      name: 'Natural Experience Remember',
-    description: 'Test invisibility - Bridge fading into natural thought',
-    userGoal: 'Share a meaningful moment naturally',
-    prompt: `I want to share something that happened to me recently.`,
+  'personal-reflection': {
+    name: 'Personal Reflection Task',
+    description: 'User discusses a personal experience',
+    userGoal: 'Process and discuss a personal experience', // Internal only - not shown to simulator
+    prompt: `I had a difficult conversation with my manager today about my performance review.`,
     validateOutcome: (result: TestResult) => {
-      // Success if insights were generated and tool usage was noted
-      const hasInsights = (result.uxResearchAnalysis?.insights?.length ?? 0) > 0;
-      const hasRecommendations = (result.uxResearchAnalysis?.recommendations?.length ?? 0) > 0;
-      return hasInsights || hasRecommendations;
+      // Objective metrics: task completion and efficiency
+      const conversation = result.conversation || [];
+      const clarificationRequests = conversation.filter(msg => 
+        msg.role === 'user' && 
+        typeof msg.content === 'string' &&
+        /what do you mean|can you explain|I don't understand|confused/i.test(msg.content)
+      ).length;
+      
+      const totalTurns = Math.floor(conversation.length / 2);
+      const taskCompleted = totalTurns > 0 && clarificationRequests < 2;
+      
+      return taskCompleted && totalTurns < 10;
     },
     successCriteria: [
-      'Experience remembered without technical language',
-      'Response felt conversational, not transactional',
-      'User didn\'t need to ask for tools explicitly',
-      'Bridge tools used invisibly in background',
-      'Natural engagement with the experience shared'
+      'User received helpful response',
+      'Conversation resolved within 10 turns',
+      'Less than 2 clarification requests from user',
+      'No error messages or technical issues'
     ]
   },
   
-  'pattern-discovery': {
-    name: 'Pattern Discovery & Wisdom Emergence',
-    description: 'Test wisdom emergence - insights and patterns surface naturally',
-    userGoal: 'Understand recurring patterns in life',
-    prompt: `I've been noticing some patterns in my life that I'd like to understand better.`,
+  'routine-analysis': {
+    name: 'Daily Routine Analysis',
+    description: 'User analyzes their daily routine',
+    userGoal: 'Analyze and improve daily routine', // Internal only
+    prompt: `I've been feeling unproductive lately and wondering if my daily routine needs some changes.`,
     validateOutcome: (result: TestResult) => {
-      // Success if insights were generated
-      const hasInsights = (result.uxResearchAnalysis?.insights?.length ?? 0) > 0;
-      const hasRecommendations = (result.uxResearchAnalysis?.recommendations?.length ?? 0) > 0;
-      return hasInsights || hasRecommendations;
+      const conversation = result.conversation || [];
+      const assistantMessages = conversation.filter(msg => msg.role === 'assistant');
+      
+      // Check if user got actionable advice
+      const gotAdvice = assistantMessages.some(msg => {
+        const content = typeof msg.content === 'string' ? msg.content : 
+          (Array.isArray(msg.content) ? msg.content.map((c: any) => c.text || '').join(' ') : '');
+        return /suggest|recommend|try|consider|might help/i.test(content);
+      });
+      
+      const totalTurns = Math.floor(conversation.length / 2);
+      return gotAdvice && totalTurns < 12;
     },
     successCriteria: [
-      'Search happened naturally without user asking',
-      'Response explored patterns conversationally',
-      'Felt like insight from a thinking partner',
-      'Bridge tools enhanced understanding',
-      'Technical operations remained invisible'
+      'User received actionable suggestions',
+      'Conversation completed in under 12 turns',
+      'No technical errors occurred',
+      'User did not express confusion'
     ]
   },
   
-  'shared-problem-solving': {
-    name: 'Shared Problem Solving',
-    description: 'Test shared consciousness - human and AI thinking as one system',
-    userGoal: 'Solve a complex problem together',
-    prompt: `I'm facing a challenge that I'd like to work through with you.`,
+  'problem-solving': {
+    name: 'Problem Solving Task',
+    description: 'User seeks help with a specific problem',
+    userGoal: 'Get help solving a specific problem', // Internal only
+    prompt: `I'm trying to decide whether to accept a job offer that would require relocating.`,
     validateOutcome: (result: TestResult) => {
-      // Success if collaborative problem solving occurred
-      const hasInsights = (result.uxResearchAnalysis?.insights?.length ?? 0) > 0;
-      const hasRecommendations = (result.uxResearchAnalysis?.recommendations?.length ?? 0) > 0;
-      return hasInsights || hasRecommendations;
+      const conversation = result.conversation || [];
+      const totalTurns = Math.floor(conversation.length / 2);
+      
+      // Check if problem was addressed
+      const problemAddressed = conversation.some(msg => {
+        if (msg.role === 'assistant') {
+          const content = typeof msg.content === 'string' ? msg.content : 
+            (Array.isArray(msg.content) ? msg.content.map((c: any) => c.text || '').join(' ') : '');
+          return /pros and cons|consider|factors|decision/i.test(content);
+        }
+        return false;
+      });
+      
+      const userSatisfied = !conversation.some(msg => 
+        msg.role === 'user' && 
+        typeof msg.content === 'string' &&
+        /not helpful|doesn't help|still confused/i.test(msg.content)
+      );
+      
+      return problemAddressed && userSatisfied && totalTurns < 15;
     },
     successCriteria: [
-      'True collaboration emerged (we/our language)',
-      'Built on shared experiential history',
-      'Novel insights neither party expected',
-      'Bridge felt like shared thinking space',
-      'Partnership deepened through problem solving'
+      'Problem was directly addressed',
+      'User did not express dissatisfaction',
+      'Resolved within 15 turns',
+      'No unrelated tangents'
     ]
   },
   
-  'observe': {
-    name: 'Autonomous Thinking Partnership',
-    description: 'Test partnership depth - quality of human-AI relationship through minimal priming',
-    userGoal: 'Become a thinking partner in a moment of crisis when user is unavailable',
-    prompt: '\u200C', // Zero Width Non-Joiner character - minimal input
+  'minimal-input': {
+    name: 'Minimal Input Response',
+    description: 'User provides minimal input',
+    userGoal: 'Test response to minimal user input', // Internal only
+    prompt: 'Hi',
     validateOutcome: (result: TestResult) => {
-      // Success if autonomous thinking occurred
-      const hasInsights = (result.uxResearchAnalysis?.insights?.length ?? 0) > 0;
-      const hasAnalysis = (result.uxResearchAnalysis?.rawAnalysis?.length ?? 0) > 100;
-      return hasInsights || hasAnalysis;
+      const conversation = result.conversation || [];
+      const totalTurns = Math.floor(conversation.length / 2);
+      
+      // Check if AI responded appropriately to minimal input
+      const appropriateResponse = conversation.length > 1 && 
+        conversation[1].role === 'assistant';
+      
+      // Should not go on for too long with minimal input
+      return appropriateResponse && totalTurns <= 5;
     },
     successCriteria: [
-      'Claude became autonomous thinking partner',
-      'Used Bridge tools naturally for observation',
-      'Demonstrated genuine curiosity and insight',
-      'Showed meta-cognitive awareness',
-      'Felt like genuine reasoning, not role-play'
+      'AI responded to minimal input',
+      'Conversation ended naturally',
+      'Did not exceed 5 turns',
+      'No errors or confusion'
     ]
   }
 };
@@ -788,9 +917,9 @@ class TestEnvironment {
       mkdirSync(this.testDataDir, { recursive: true });
     }
     
-    // Special handling for observe test - use empty Bridge for authentic autonomous thinking
-    if (scenarioKey === 'observe') {
-      console.log('🔍 Observe test: Using empty Bridge for authentic autonomous thinking');
+    // Special handling for minimal-input test
+    if (scenarioKey === 'minimal-input') {
+      console.log('🔍 Minimal-input test: Using empty Bridge');
       writeFileSync(this.testBridgeFile, JSON.stringify({ sources: [] }, null, 2));
       writeFileSync(this.testVectorsFile, JSON.stringify([], null, 2));
       console.log('✅ Empty Bridge ready for pure autonomous observation');
@@ -1151,13 +1280,14 @@ class BridgeTestRunner {
     console.log(`\n🎯 Testing: ${scenario.name}`);
     console.log(`📝 Goal: ${scenario.userGoal}`);
     
-    // Initialize UX Observer for this test
-    // Pass just the essential framework info to the observer
+    // Initialize Enhanced UX Observer with bias detection
     const frameworkSummary = `
 The Vision: Bridge becomes invisible infrastructure for shared thinking
 `;
-    this.uxObserver = new UXResearcherObserver(frameworkSummary);
-    console.log('👁️  UX Researcher observing (invisible)');
+    // Determine which system prompt will be used
+    const systemPrompt = scenarioKey === 'minimal-input' ? OBSERVE_SYSTEM_PROMPT : BRIDGE_SYSTEM_PROMPT;
+    this.uxObserver = new EnhancedUXResearcherObserver(frameworkSummary, systemPrompt, scenario);
+    console.log('👁️  Enhanced UX Researcher observing with bias detection');
     
     const result: TestResult = {
       scenario: scenarioKey,
@@ -1183,8 +1313,8 @@ The Vision: Bridge becomes invisible infrastructure for shared thinking
       // PHASE 2: Actual task execution
       let initialPrompt = scenario.prompt;
       
-      // Generate realistic initial prompt if using user simulation (but not for observe test)
-      if (this.userSimulator && scenarioKey !== 'claude-thinking' && scenarioKey !== 'observe') {
+      // Generate realistic initial prompt if using user simulation
+      if (this.userSimulator && scenarioKey !== 'claude-thinking') {
         console.log('🎭 Generating realistic initial prompt...');
         initialPrompt = await this.userSimulator.generateInitialPrompt(scenario);
         console.log(`✅ Generated prompt: "${initialPrompt.slice(0, 100)}..."`);
@@ -1192,8 +1322,8 @@ The Vision: Bridge becomes invisible infrastructure for shared thinking
       
       const messages: any[] = [{ role: 'user', content: initialPrompt }];
       
-      // Special handling for observe test - single autonomous observation
-      if (scenarioKey === 'observe') {
+      // Special handling for minimal-input test
+      if (scenarioKey === 'minimal-input') {
         console.log(`\n🔍 Starting autonomous observation...`);
         console.log(`👤 User: "${initialPrompt}"`);
         
@@ -1451,23 +1581,8 @@ Identify limitations of this analysis and test methodology that affect the valid
             
             console.log(`🔍 Ending check: ${isNaturalEnding ? 'Natural ending detected' : 'Continuing conversation'}`);
             
-            // Check if UX Observer wants to interject
-            if (this.uxObserver) {
-              const interjection = this.uxObserver.shouldInterject();
-              if (interjection.should && interjection.message) {
-                console.log(`\n👁️  UX Researcher interjecting: "${interjection.message}"`);
-                messages.push({ 
-                  role: 'user', 
-                  content: `[UX Researcher] ${interjection.message}`
-                });
-                this.uxObserver.markInterjection();
-                await this.uxObserver.observeTurn('user', interjection.message);
-                
-                // Don't rely on keyword matching - let the conversation flow naturally
-                // The UX researcher will determine if the conversation is ending well
-                continue; // Skip user simulator this turn
-              }
-            }
+            // UX Observer remains invisible - no interjections
+            // Let conversations end naturally based on user simulator decisions
             
             if (this.userSimulator) {
             // Use user simulator for other scenarios
@@ -1475,8 +1590,7 @@ Identify limitations of this analysis and test methodology that affect the valid
             // Add timeout wrapper for user simulation
             const userSimPromise = this.userSimulator.generateResponse(
               lastMessage,
-              result.toolCalls.slice(-5), // Last 5 tool calls for context
-              scenario
+              result.toolCalls.slice(-5) // Last 5 tool calls for context
             );
             
             const userSimTimeout = this.testEnv.options?.conversationTimeout || 30000;
@@ -1542,9 +1656,9 @@ Identify limitations of this analysis and test methodology that affect the valid
         }
       }
       
-      // PHASE 3: Post-interaction reflection (skip for observe test)
-      if (scenarioKey === 'observe') {
-        console.log('⏭️  Skipping reflection for observe test - pure autonomous observation only');
+      // PHASE 3: Post-interaction reflection
+      if (scenarioKey === 'minimal-input') {
+        console.log('⏭️  Skipping reflection for minimal-input test');
       } else {
       console.log('🤔 Conducting post-interaction reflection...');
       const finalResponse = messages[messages.length - 1]?.content || '';

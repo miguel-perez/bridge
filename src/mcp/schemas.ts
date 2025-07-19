@@ -13,8 +13,8 @@ The experiential quality being analyzed. Based on FRAMED_MOMENTS.md theoretical 
 - focus: Direction and quality of awareness (narrow/broad)
 - mood: Emotional coloring of experience (open/closed)
 - purpose: Directedness or drift of the moment (goal/wander)
-- space: Lived sense of place and position (here/there/)
-- time: How past and future inhabit the present (past/future/)
+- space: Lived sense of place and position (here/there)
+- time: How past and future inhabit the present (past/future)
 - presence: How others' presence or absence matters (individual/collective)
 
 Choose qualities that emerge prominently in this moment. Following the principle: "qualities emerge prominently or recede."
@@ -27,14 +27,36 @@ export const PerspectiveField = z.string().min(1).describe('Perspective from whi
 
 
 // Experience analysis - simplified to prominent qualities array
-export const ExperienceObject = z.array(z.string()).describe(`Array of qualities that emerge prominently in this moment. Use dot notation to specify subtypes:
-- embodied.thinking, embodied.sensing
-- focus.narrow, focus.broad
-- mood.open, mood.closed
-- purpose.goal, purpose.wander
-- space.here, space.there
-- time.past, time.future
-- presence.individual, presence.collective
+export const ExperienceObject = z.array(z.string()).describe(`Array of qualities that emerge prominently in this moment. Use dot notation to specify subtypes.
+
+Quality detection guide:
+- embodied.thinking: "analyzing", "figuring out", "strategy" → mental processing
+- embodied.sensing: "feeling", "gut reaction", "tense" → body/emotion awareness
+- embodied: When embodied experience doesn't clearly fit thinking/sensing subtypes
+
+- focus.narrow: "concentrated", "tunnel vision" → single-task attention
+- focus.broad: "overwhelmed", "juggling" → multi-task awareness
+- focus: When attentional quality doesn't clearly fit narrow/broad subtypes
+
+- mood.open: "excited", "curious", "flowing" → expansive emotional state
+- mood.closed: "defensive", "shut down" → contracted emotional state
+- mood: When emotional atmosphere doesn't clearly fit open/closed subtypes
+
+- purpose.goal: "working toward", "trying to" → clear direction
+- purpose.wander: "exploring", "seeing what happens" → curiosity-driven
+- purpose: When purposive momentum doesn't clearly fit goal/wander subtypes
+
+- space.here: "in this room", immediate environment → physically grounded
+- space.there: "thinking about home" → spatially displaced
+- space: When spatial experience doesn't clearly fit here/there subtypes
+
+- time.past: "remembering", "used to" → historical orientation
+- time.future: "planning", "worried about" → anticipatory orientation
+- time: When temporal flow doesn't clearly fit past/future subtypes
+
+- presence.individual: "just me", alone → solitary experience
+- presence.collective: "we", "together" → social/shared experience
+- presence: When social dimension doesn't clearly fit individual/collective subtypes
 
 Example: ["embodied.sensing", "mood.open", "purpose.goal"]
 Following FRAMED_MOMENTS.md principle: "dimensions either emerge prominently or recede."`);
@@ -51,9 +73,9 @@ export const ExperienceObjectOptional = z.array(z.string()).describe(`Array of q
 
 // REMEMBER tool input
 export const RememberInputSchema = z.object({
-  source: z.string().min(1).describe("Raw, exact words from the experiencer - their actual text/voice as written or spoken. Do not summarize, interpret, or modify. This is the source material that will be processed into a framed moment.").optional(),
+  source: z.string().min(1).describe("Raw, exact words from the experiencer - their actual text/voice as written or spoken OR your own experiential observations. Do not summarize, interpret, or modify. This is the source material that will be processed into a framed moment.").optional(),
   perspective: PerspectiveField.optional(),
-  experiencer: z.string().describe('Who experienced this moment (person, group, or entity)').optional(),
+  experiencer: z.string().describe('Who experienced this moment - "Human" for their experiences, "Claude" for your experiences, or their name if provided').optional(),
   processing: ProcessingEnum.optional(),
   crafted: z.boolean().describe('Whether this is crafted content (blog/refined for an audience) vs raw remember (journal/immediate)').optional(),
   experience: ExperienceObject.optional(),
