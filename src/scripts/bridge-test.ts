@@ -1729,8 +1729,12 @@ class TestOrchestrator {
     
     // Show UX Research Analysis
     if (result.uxResearchAnalysis) {
-      console.log(`\n🔬 UX Research Analysis:`);
-      console.log(`📊 Current Stage: ${result.uxResearchAnalysis.stage} (${['Separate Tools', 'Assisted Thinking', 'Collaborative Memory', 'Emergent Understanding', 'Unified Cognition', 'Shared Consciousness'][result.uxResearchAnalysis.stage]})`);
+      console.log(`\n${'='.repeat(80)}`);
+      console.log(`🔬 FULL UX RESEARCH ANALYSIS`);
+      console.log(`${'='.repeat(80)}`);
+      
+      console.log(`\n📊 Current Stage: ${result.uxResearchAnalysis.stage} (${['Separate Tools', 'Assisted Thinking', 'Collaborative Memory', 'Emergent Understanding', 'Unified Cognition', 'Shared Consciousness'][result.uxResearchAnalysis.stage]})`);
+      
       console.log(`\n📈 Progress Dimensions:`);
       console.log(`  • Shared Consciousness: ${result.uxResearchAnalysis.sharedConsciousness}%`);
       console.log(`  • Invisibility: ${result.uxResearchAnalysis.invisibility}%`);
@@ -1758,6 +1762,13 @@ class TestOrchestrator {
           console.log(`  • ${rec}`);
         });
       }
+      
+      // Show the full raw analysis
+      console.log(`\n${'─'.repeat(80)}`);
+      console.log(`📝 DETAILED ANALYSIS:`);
+      console.log(`${'─'.repeat(80)}`);
+      console.log(result.uxResearchAnalysis.rawAnalysis);
+      console.log(`${'─'.repeat(80)}`);
     }
     
     if (scenario.successCriteria) {
@@ -1770,6 +1781,37 @@ class TestOrchestrator {
     if (result.errors.length > 0) {
       console.log(`\n🚨 Errors:`);
       result.errors.forEach(err => console.log(`  - ${err}`));
+    }
+    
+    // Show full conversation as appendix
+    if (result.conversation && result.conversation.length > 0) {
+      console.log(`\n${'='.repeat(80)}`);
+      console.log(`💬 FULL CONVERSATION TRANSCRIPT`);
+      console.log(`${'='.repeat(80)}\n`);
+      
+      result.conversation.forEach((msg, index) => {
+        if (msg.role === 'user') {
+          console.log(`👤 USER (Turn ${Math.floor((index + 1) / 2)}):`);
+          const content = Array.isArray(msg.content) ? 
+            msg.content.map((c: any) => c.type === 'text' ? c.text : '[Tool Result]').join('\n') :
+            msg.content;
+          console.log(content);
+          console.log();
+        } else if (msg.role === 'assistant') {
+          console.log(`🤖 CLAUDE (Turn ${Math.floor(index / 2) + 1}):`);
+          const content = Array.isArray(msg.content) ?
+            msg.content.map((c: any) => {
+              if (c.type === 'text') return c.text;
+              if (c.type === 'tool_use') return `[Tool: ${c.name}]`;
+              return '[Other]';
+            }).join('\n') :
+            msg.content;
+          console.log(content);
+          console.log();
+        }
+      });
+      
+      console.log(`${'='.repeat(80)}`);
     }
   }
   
@@ -2049,19 +2091,19 @@ ${  allScenarios.map(scenario => {
     }
   }
   
-  // Add insights
+  // Add ALL insights
   if (latest?.qualitativeInsights?.uxResearcherInsights?.insights) {
-    const insights = latest.qualitativeInsights.uxResearcherInsights.insights.slice(0, 3);
-    scenarioSection += '\n\n**💡 Insights:**';
+    const insights = latest.qualitativeInsights.uxResearcherInsights.insights;
+    scenarioSection += '\n\n**💡 All Insights:**';
     insights.forEach((insight: string) => {
         scenarioSection += `\n- ${insight}`;
       });
     }
     
-    // Add recommendations
+    // Add ALL recommendations
   if (latest?.qualitativeInsights?.uxResearcherInsights?.recommendations) {
-    const recommendations = latest.qualitativeInsights.uxResearcherInsights.recommendations.slice(0, 2);
-    scenarioSection += '\n\n**🎯 Recommendations:**';
+    const recommendations = latest.qualitativeInsights.uxResearcherInsights.recommendations;
+    scenarioSection += '\n\n**🎯 All Recommendations:**';
     recommendations.forEach((rec: string) => {
         scenarioSection += `\n- ${rec}`;
       });
@@ -2161,7 +2203,22 @@ ${dimensionScores.map(d => {
 
 ---
 
-*For detailed test data, see individual JSON files in this directory.*`;
+## 📝 Detailed UX Research Analysis
+
+${latestMetrics.map(m => {
+  const scenario = allScenarios.find(s => progression.scenarios[s].latestMetrics === m);
+  const analysis = m.qualitativeInsights?.uxResearcherInsights;
+  if (!analysis || !analysis.rawAnalysis) return '';
+  
+  return `### ${scenario} - Full Analysis
+
+${analysis.rawAnalysis}
+
+---
+`;
+}).filter(Boolean).join('\n')}
+
+*For detailed test data and full conversation transcripts, see individual JSON files in this directory.*`;
     
     writeFileSync(dashboardFile, dashboard);
     console.log(`📊 Results updated: ${dashboardFile}`);
