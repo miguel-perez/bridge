@@ -1,4 +1,5 @@
 import { RememberService } from '../services/remember.js';
+import { RecallService } from '../services/recall.js';
 import { ToolResult, ToolResultSchema } from './schemas.js';
 import type { RememberInput } from './schemas.js';
 import { 
@@ -6,6 +7,7 @@ import {
   formatRememberResponse,
   type RememberResult
 } from '../utils/formatters.js';
+import { Messages, formatMessage } from '../utils/messages.js';
 
 export interface RememberResponse {
   success: boolean;
@@ -24,9 +26,11 @@ export interface RememberResponse {
 
 export class RememberHandler {
   private rememberService: RememberService;
+  private recallService: RecallService;
 
   constructor() {
     this.rememberService = new RememberService();
+    this.recallService = new RecallService();
   }
 
   /**
@@ -108,7 +112,13 @@ export class RememberHandler {
         });
 
         // Use natural conversational formatting
-        const response = formatRememberResponse(result);
+        let response = formatRememberResponse(result);
+        
+        // Find similar experience if any
+        const similarText = await this.findSimilarExperience(remember.source, result.source.id);
+        if (similarText) {
+          response += '\n\n' + similarText;
+        }
         
         return {
           content: [{
@@ -126,6 +136,36 @@ export class RememberHandler {
           text: error instanceof Error ? error.message : 'Unknown error'
         }]
       };
+    }
+  }
+  
+  /**
+   * Find a similar experience to show connection
+   */
+  private async findSimilarExperience(content: string, excludeId: string): Promise<string | null> {
+    try {
+      // Use semantic search to find similar experiences
+      const { results } = await this.recallService.search({
+        semantic_query: content,
+        semantic_threshold: 0.8, // High threshold for relevant matches
+        limit: 2 // Get 2 in case the first is the same one we just remembered
+      });
+      
+      // Filter out the experience we just remembered and get the most similar
+      const similar = results.find(r => r.id !== excludeId);
+      
+      if (similar && similar.relevance_score > 0.8) {
+        // Format the similar experience reference
+        const snippet = similar.snippet || similar.content || '';
+        const truncated = snippet.length > 100 ? snippet.substring(0, 100) + '...' : snippet;
+        
+        return formatMessage(Messages.remember.similar, { content: truncated });
+      }
+      
+      return null;
+    } catch (error) {
+      // Silently fail - similarity is nice to have but not critical
+      return null;
     }
   }
 } 

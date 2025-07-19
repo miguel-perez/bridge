@@ -368,189 +368,36 @@ function formatTimeAgo(timestamp: string): string {
  * Format recall results in natural language
  */
 function formatRecallResults(results: RecallResult[], showIds: boolean = false): string {
-  const formattedResults = results.map((result) => {
+  const formattedResults = results.map((result, index) => {
     const metadata = result.metadata || {};
     const experience = (metadata as any).experience || [];
     
     // Get content (prefer snippet, fallback to content)
     const content = result.snippet || result.content || '';
-    const displayContent = content.length > 200 ? 
-      content.substring(0, 200) + '...' : content;
+    const displayContent = content.length > 150 ? 
+      content.substring(0, 150) + '...' : content;
     
-    // Build response lines
-    const lines = [`"${displayContent}"`];
+    // Simple numbered format
+    const lines = [`${index + 1}. "${displayContent}"`];
     
     // Add qualities if available
     if (experience.length > 0) {
-      lines.push(formatMessage(Messages.recall.qualities, { 
-        qualities: formatQualityList(experience) 
-      }));
+      lines.push(`   ${formatQualityList(experience)}`);
     }
     
     // Add timing
     const timeAgo = formatTimeAgo((metadata as any).created || '');
-    lines.push(formatMessage(Messages.recall.from, { timeAgo }));
+    lines.push(`   ${timeAgo}`);
     
     if (showIds) {
-      lines[lines.length - 1] += ` • ID: ${result.id}`;
+      lines.push(`   ID: ${result.id}`);
     }
     
-    return lines.filter(Boolean).join('\n');
+    return lines.join('\n');
   });
 
-  return formattedResults.join('\n\n---\n\n');
+  return formattedResults.join('\n\n');
 } 
 
-// ============================================================================
-// INTELLIGENT RESPONSE FORMATTING
-// ============================================================================
-
-/**
- * Interface for conversation context
- */
-export interface ConversationContext {
-  turnCount: number;
-  recentToolCalls: string[];
-  conversationTopic: string;
-  userGoal: string;
-}
-
-/**
- * Determine if a remember response should be conversational or technical
- * 
- * @param context - Current conversation context
- * @param sourceContent - The content being remembered
- * @returns true if response should be conversational, false if technical
- */
-export function shouldUseConversationalResponse(context: ConversationContext, sourceContent: string): boolean {
-  // Don't use conversational responses for very short content
-  if (sourceContent.length < 20) {
-    return false;
-  }
-  
-  // Don't use conversational responses if we've made too many tool calls recently
-  const recentRememberCalls = context.recentToolCalls.filter(tool => tool === 'remember').length;
-  if (recentRememberCalls > 3) {
-    return false;
-  }
-  
-  // Use conversational responses for meaningful experiences
-  const meaningfulIndicators = [
-    'felt', 'realized', 'noticed', 'discovered', 'experienced',
-    'happened', 'went through', 'dealt with', 'faced', 'encountered'
-  ];
-  
-  const hasMeaningfulContent = meaningfulIndicators.some(indicator => 
-    sourceContent.toLowerCase().includes(indicator)
-  );
-  
-  return hasMeaningfulContent;
-}
-
-/**
- * Format a remember response with intelligent context awareness
- * 
- * @param result - The remember operation result
- * @param context - Current conversation context
- * @returns Natural language response string or null if should be silent
- */
-export function formatIntelligentRememberResponse(result: RememberResult, context: ConversationContext): string | null {
-  const sourceContent = result.source.source;
-  
-  // Check if we should use conversational response
-  if (!shouldUseConversationalResponse(context, sourceContent)) {
-    // Return null to indicate this should be a silent operation
-    return null;
-  }
-  
-  // Use conversational response for meaningful experiences
-  return formatRememberResponse(result);
-}
-
-/**
- * Format a recall response with intelligent context awareness
- * 
- * @param results - Array of recall results
- * @param context - Current conversation context
- * @returns Natural language response string
- */
-export function formatIntelligentRecallResponse(results: RecallResult[]): string {
-  // Always show recall results as they're user-requested
-  return formatRecallResponse(results);
-}
-
-/**
- * Create a minimal remember acknowledgment for frequent operations
- * 
- * @param result - The remember operation result
- * @returns Minimal acknowledgment string
- */
-export function formatMinimalRememberResponse(result: RememberResult): string {
-  return `📝 Remembered: "${smartTruncate(result.source.source, 60)}"`;
-}
-
-// ============================================================================
-// CONVERSATION FLOW HELPERS
-// ============================================================================
-
-/**
- * Analyze conversation flow to suggest tool usage patterns
- * 
- * @param context - Current conversation context
- * @returns Suggestions for tool usage
- */
-export function analyzeConversationFlow(context: ConversationContext): {
-  shouldRemember: boolean;
-  shouldRecall: boolean;
-  shouldBeSilent: boolean;
-} {
-  const recentRememberCalls = context.recentToolCalls.filter(tool => tool === 'remember').length;
-  const recentRecallCalls = context.recentToolCalls.filter(tool => tool === 'recall').length;
-  
-  return {
-    shouldRemember: recentRememberCalls < 2, // Limit remember calls
-    shouldRecall: recentRecallCalls < 1, // Allow recall when needed
-    shouldBeSilent: recentRememberCalls >= 3 // Be silent after too many remembers
-  };
-}
-
-/**
- * Format a response based on conversation flow analysis
- * 
- * @param operation - The operation being performed
- * @param result - The operation result
- * @param context - Current conversation context
- * @returns Formatted response or null for silent operations
- */
-export function formatFlowAwareResponse(
-  operation: 'remember' | 'recall' | 'reconsider' | 'release',
-  result: any,
-  context: ConversationContext
-): string | null {
-  const flow = analyzeConversationFlow(context);
-  
-  switch (operation) {
-    case 'remember':
-      if (flow.shouldBeSilent) {
-        return null; // Silent operation
-      } else if (flow.shouldRemember) {
-        return formatIntelligentRememberResponse(result, context);
-      } else {
-        return formatMinimalRememberResponse(result);
-      }
-      
-    case 'recall':
-      return formatIntelligentRecallResponse(result);
-      
-    case 'reconsider':
-      return formatReconsiderResponse(result);
-      
-    case 'release':
-      return formatReleaseResponse(1);
-      
-    default:
-      return null;
-  }
-}
 
  
