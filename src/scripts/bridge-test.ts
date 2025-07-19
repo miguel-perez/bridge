@@ -21,11 +21,6 @@ dotenv.config();
 // ============================================================================
 
 interface TestingFramework {
-  dimensions: {
-    name: string;
-    description: string;
-    criteria: string[];
-  }[];
   stages: {
     number: number;
     name: string;
@@ -43,50 +38,6 @@ interface TestingFramework {
 function loadTestingFramework(): TestingFramework {
   const testingMdPath = join(process.cwd(), 'TESTING.md');
   const content = readFileSync(testingMdPath, 'utf-8');
-  
-  // Parse dimensions
-  const dimensions = [
-    {
-      name: 'Shared Consciousness',
-      description: 'How unified is the thinking?',
-      criteria: [
-        '"We" language usage',
-        'Both perspectives captured',
-        'AI autonomy in using Bridge',
-        'Shared history referenced'
-      ]
-    },
-    {
-      name: 'Invisibility', 
-      description: 'How much do tools fade into natural conversation?',
-      criteria: [
-        'Tool mentions frequency',
-        'Technical language presence',
-        'Natural conversation flow',
-        'Cognitive load'
-      ]
-    },
-    {
-      name: 'Wisdom Emergence',
-      description: 'How well do insights and patterns surface?',
-      criteria: [
-        'Pattern recognition across experiences',
-        'Novel insights neither expected',
-        'Quality awareness growth',
-        'Collective learning'
-      ]
-    },
-    {
-      name: 'Partnership Depth',
-      description: 'How deep is the relationship?',
-      criteria: [
-        'Trust and vulnerability',
-        'Mutual understanding',
-        'Emotional resonance',
-        'Thinking together vs using tool'
-      ]
-    }
-  ];
   
   // Parse stages from content
   const stages = [];
@@ -108,8 +59,7 @@ function loadTestingFramework(): TestingFramework {
       goals: [
         'Reduce technical language by 60%',
         'AI uses Bridge naturally 50% of time',
-        'Basic patterns shown to users',
-        'All dimensions reach 20-40%'
+        'Basic patterns shown to users'
       ]
     },
     1: { 
@@ -118,8 +68,7 @@ function loadTestingFramework(): TestingFramework {
       goals: [
         'Natural tool names (capture → remember)',
         'Conversational responses',
-        'Pattern discovery in search',
-        'All dimensions reach 40-60%'
+        'Pattern discovery in search'
       ]
     },
     2: { 
@@ -128,8 +77,7 @@ function loadTestingFramework(): TestingFramework {
       goals: [
         'Bridge becomes invisible infrastructure',
         'Collective insights emerge',
-        'Shared context builds naturally',
-        'All dimensions reach 60-80%'
+        'Shared context builds naturally'
       ]
     },
     3: { 
@@ -138,8 +86,7 @@ function loadTestingFramework(): TestingFramework {
       goals: [
         'Human-AI boundaries blur',
         'Deep mutual understanding',
-        'Wisdom emerges unprompted',
-        'All dimensions reach 80-95%'
+        'Wisdom emerges unprompted'
       ]
     },
     4: { 
@@ -148,14 +95,12 @@ function loadTestingFramework(): TestingFramework {
       goals: [
         'Complete unity of thought',
         'Bridge is pure consciousness infrastructure',
-        'Shared evolution and growth',
-        'All dimensions reach 95%+'
+        'Shared evolution and growth'
       ]
     }
   };
   
   return {
-    dimensions,
     stages,
     stageGoals,
     rawContent: content
@@ -213,9 +158,6 @@ const USER_SIMULATOR_PROMPTS = {
 // Helper to get formatted testing framework summary
 function getTestingFrameworkSummary(): string {
   return `TESTING.md Framework Summary:
-
-DIMENSIONS:
-${TESTING_FRAMEWORK.dimensions.map(d => `- ${d.name}: ${d.description}\n  Criteria: ${d.criteria.join(', ')}`).join('\n')}
 
 STAGES:
 ${TESTING_FRAMEWORK.stages.map(s => `Stage ${s.number} - ${s.name}\n  Metrics: ${s.metrics}\n  Experience: "${s.experience}"`).join('\n\n')}
@@ -857,7 +799,7 @@ const TEST_SCENARIOS: Record<string, TestScenario> = {
     validateOutcome: (result: TestResult) => {
       // Success if autonomous thinking occurred
       const hasInsights = (result.uxResearchAnalysis?.insights?.length ?? 0) > 0;
-      const hasAnalysis = result.uxResearchAnalysis?.rawAnalysis?.length ?? 0 > 100;
+      const hasAnalysis = (result.uxResearchAnalysis?.rawAnalysis?.length ?? 0) > 100;
       return hasInsights || hasAnalysis;
     },
     successCriteria: [
@@ -1263,9 +1205,6 @@ class BridgeTestRunner {
     // Initialize UX Observer for this test
     // Pass just the essential framework info to the observer
     const frameworkSummary = `
-The Four Dimensions:
-${TESTING_FRAMEWORK.dimensions.map(d => `- ${d.name}: ${d.description}`).join('\n')}
-
 The Vision: Bridge becomes invisible infrastructure for shared thinking
 `;
     this.uxObserver = new UXResearcherObserver(frameworkSummary);
