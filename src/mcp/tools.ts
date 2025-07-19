@@ -64,13 +64,13 @@ THEORETICAL FOUNDATION:
 A framed moment is a practical unit for capturing experience - what consciousness apprehends in a single, held attention. Like a photograph taken from continuous movement, it creates a useful representation that is complete enough to stand alone yet naturally implies its temporal flow.
 
 SEVEN DIMENSIONAL ANALYSIS:
-- body: Embodied presence - how physicality textures this moment (Merleau-Ponty's embodied consciousness)
-- focus: Attentional flow - the direction and quality of awareness  
-- emotions: Affective atmosphere - the emotional coloring of experience (Heidegger's Stimmung/attunement)
-- purpose: Purposive momentum - the directedness or drift of the moment
-- environment: Spatial situation - the lived sense of place and position
-- time: Temporal flow - how past and future inhabit the present
-- others: Intersubjective field - how others' presence or absence matters
+- embodied: How consciousness textures through physicality (thinking/sensing/mixed)
+- focus: Direction and quality of awareness (narrow/broad/mixed)
+- mood: Emotional coloring of experience (open/closed/mixed)
+- purpose: Directedness or drift of the moment (goal/wander/mixed)
+- space: Lived sense of place and position (here/there/mixed)
+- time: How past and future inhabit the present (past/future/mixed)
+- presence: How others' presence or absence matters (individual/collective/mixed)
 
 PRINCIPLES:
 - Source must contain experiencer's exact words - no summarizing or interpreting
@@ -105,7 +105,7 @@ PRINCIPLES:
           description: 'Reconsider and update the experience qualities of an experience',
           input: {
             id: 'exp_1234567890',
-            experience: ['body', 'focus', 'purpose']
+            experience: ['embodied.sensing', 'focus.narrow', 'purpose.goal']
           },
           output: {
             content: [

@@ -6,16 +6,16 @@ export const ProcessingEnum = z.enum(['during', 'right-after', 'long-after']).de
 // Remove 'crafted' from ProcessingEnumWithCrafted
 export const ProcessingEnumWithCrafted = ProcessingEnum; // For compatibility, but no 'crafted'
 // Simplified quality types from README, mapped to theoretical concepts from FRAMED_MOMENTS.md
-export const QualityTypeEnum = z.enum(['body', 'focus', 'emotions', 'purpose', 'environment', 'time', 'others']).describe(`
+export const QualityTypeEnum = z.enum(['embodied', 'focus', 'mood', 'purpose', 'space', 'time', 'presence']).describe(`
 The experiential quality being analyzed. Based on FRAMED_MOMENTS.md theoretical framework:
 
-- body: Embodied presence - how physicality textures this moment (Merleau-Ponty's embodied consciousness)
-- focus: Attentional flow - the direction and quality of awareness  
-- emotions: Affective atmosphere - the emotional coloring of experience (Heidegger's Stimmung/attunement)
-- purpose: Purposive momentum - the directedness or drift of the moment
-- environment: Spatial situation - the lived sense of place and position
-- time: Temporal flow - how past and future inhabit the present
-- others: Intersubjective field - how others' presence or absence matters
+- embodied: How consciousness textures through physicality (thinking/sensing/mixed)
+- focus: Direction and quality of awareness (narrow/broad/mixed)
+- mood: Emotional coloring of experience (open/closed/mixed)
+- purpose: Directedness or drift of the moment (goal/wander/mixed)
+- space: Lived sense of place and position (here/there/mixed)
+- time: How past and future inhabit the present (past/future/mixed)
+- presence: How others' presence or absence matters (individual/collective/mixed)
 
 Choose qualities that emerge prominently in this moment. Following FRAMED_MOMENTS.md principle: "dimensions either emerge prominently or recede."
 `);
@@ -142,7 +142,7 @@ export function generateRememberExample(): RememberInput {
     experiencer: 'Alex',
     processing: 'during',
     crafted: false,
-    experience: ['body', 'emotion', 'purpose']
+    experience: ['embodied.sensing', 'mood.open', 'purpose.goal']
   };
 }
 
@@ -189,7 +189,7 @@ export function generateBatchRememberExample(): RememberInput {
         experiencer: 'Alex',
         processing: 'during',
         crafted: false,
-        experience: ['body', 'emotion']
+        experience: ['embodied.thinking', 'mood.closed']
       }
     ]
   };
