@@ -72,6 +72,7 @@ export const SearchInputSchema = z.object({
     }).describe('Date range')
   ]).describe('Filter by creation date').optional(),
   sort: SortEnum.optional(),
+  show_ids: z.boolean().describe('Whether to show experience IDs in results').optional(),
   searches: z.array(z.object({
     query: z.string().describe('Search query for semantic matching').optional(),
     limit: z.number().describe('Maximum number of results to return').optional(),

@@ -55,6 +55,8 @@ export interface RecallInput {
   semantic_threshold?: number;
   // ID recall
   id?: string;
+  // Display options
+  show_ids?: boolean;
 }
 
 export interface RecallServiceResult {
