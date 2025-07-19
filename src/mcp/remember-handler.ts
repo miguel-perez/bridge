@@ -115,7 +115,9 @@ export class RememberHandler {
         let response = formatRememberResponse(result);
         
         // Find similar experience if any
-        const similarText = await this.findSimilarExperience(remember.source, result.source.id);
+        const similarText = remember.source ? 
+          await this.findSimilarExperience(remember.source, result.source.id) : 
+          null;
         if (similarText) {
           response += '\n\n' + similarText;
         }

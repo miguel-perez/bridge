@@ -27,7 +27,7 @@ function makeSource(overrides: Partial<Source> = {}): Source {
     experiencer: overrides.experiencer || 'self',
     processing: overrides.processing || 'during',
     crafted: overrides.crafted ?? false,
-    experience: overrides.experience || ['emotion', 'body'],
+    experience: overrides.experience || ['mood.open', 'embodied.thinking'],
     ...overrides
   };
 }
@@ -66,9 +66,9 @@ describe('EnrichService', () => {
   test('updates experience', async () => {
     const result = await enrichService.enrichSource({
       id: baseSource.id,
-      experience: ['space', 'emotion', 'purpose']
+      experience: ['space.here', 'mood.open', 'purpose.goal']
     });
-    expect(result.source.experience).toEqual(['space', 'emotion', 'purpose']);
+    expect(result.source.experience).toEqual(['space.here', 'mood.open', 'purpose.goal']);
     expect(result.updatedFields).toContain('experience');
   });
 
@@ -92,7 +92,7 @@ describe('EnrichService', () => {
     const input = {
       id: 'test',
       content: 'test',
-      experience: ['emotion', 'body', 'purpose']
+      experience: ['mood.open', 'embodied.sensing', 'purpose.goal']
     };
     expect(() => enrichSchema.parse(input)).not.toThrow();
   });

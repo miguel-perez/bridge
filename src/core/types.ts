@@ -21,8 +21,8 @@ export const CONTENT_TYPES = ['text', 'audio'] as const;
 
 /** Valid experiential quality types - simplified names from README */
 export const QUALITY_TYPES = [
-  'emotion', 'space', 'body', 'others', 
-  'time', 'focus', 'purpose'
+  'embodied', 'focus', 'mood', 'purpose',
+  'space', 'time', 'presence'
 ] as const;
 
 /** Default values for experiential data */
@@ -122,7 +122,11 @@ export type StorageRecord = SourceRecord;
 // ============================================================================
 
 /** Zod schema for Experience */
-export const ExperienceSchema = z.array(z.string().refine(val => QUALITY_TYPES.includes(val as QualityType), {
+export const ExperienceSchema = z.array(z.string().refine(val => {
+  // Accept base quality types or dot notation variants
+  const baseDimension = val.split('.')[0];
+  return QUALITY_TYPES.includes(baseDimension as QualityType);
+}, {
   message: 'Invalid quality type'
 })).describe('Array of qualities that emerge prominently in this moment');
 
@@ -155,8 +159,10 @@ export const StorageDataSchema = z.object({
 /**
  * Validates if a value is a valid quality type
  */
-export function isValidQualityType(value: string): value is QualityType {
-  return QUALITY_TYPES.includes(value as QualityType);
+export function isValidQualityType(value: string): boolean {
+  // Accept base quality types or dot notation variants
+  const baseDimension = value.split('.')[0];
+  return QUALITY_TYPES.includes(baseDimension as QualityType);
 }
 
 /**

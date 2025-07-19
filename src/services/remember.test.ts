@@ -62,12 +62,12 @@ describe('RememberService', () => {
       const input = {
         content: 'Test experience',
         experiencer: 'test_user',
-        experience: ['emotion', 'body', 'purpose']
+        experience: ['mood.open', 'embodied.sensing', 'purpose.goal']
       };
 
       const result = await rememberService.rememberSource(input);
 
-      expect(result.source.experience).toEqual(['emotion', 'body', 'purpose']);
+      expect(result.source.experience).toEqual(['mood.open', 'embodied.sensing', 'purpose.goal']);
     });
 
     it('should handle empty experience array', async () => {
@@ -91,7 +91,7 @@ describe('RememberService', () => {
         perspective: 'I',
         processing: 'during',
         crafted: false,
-        experience: ['emotion', 'body']
+        experience: ['mood.open', 'embodied.thinking']
       };
 
       expect(() => rememberSchema.parse(input)).not.toThrow();

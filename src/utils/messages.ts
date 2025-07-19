@@ -80,7 +80,7 @@ export const Messages = {
     'presence': 'presence',
     'presence.individual': 'presence.individual',
     'presence.collective': 'presence.collective'
-  }
+  } as Record<string, string>
 };
 
 /**

@@ -39,7 +39,7 @@ describe('Constants', () => {
 
   it('should have valid quality types', () => {
     expect(QUALITY_TYPES).toEqual([
-      'emotion', 'space', 'body', 'others', 'time', 'focus', 'purpose'
+      'embodied', 'focus', 'mood', 'purpose', 'space', 'time', 'presence'
     ]);
   });
 
@@ -54,18 +54,26 @@ describe('Constants', () => {
 describe('Type Validation Functions', () => {
   describe('isValidQualityType', () => {
     it('should return true for valid quality types', () => {
-      expect(isValidQualityType('emotion')).toBe(true);
-      expect(isValidQualityType('space')).toBe(true);
-      expect(isValidQualityType('body')).toBe(true);
-      expect(isValidQualityType('others')).toBe(true);
-      expect(isValidQualityType('time')).toBe(true);
+      expect(isValidQualityType('embodied')).toBe(true);
       expect(isValidQualityType('focus')).toBe(true);
+      expect(isValidQualityType('mood')).toBe(true);
       expect(isValidQualityType('purpose')).toBe(true);
+      expect(isValidQualityType('space')).toBe(true);
+      expect(isValidQualityType('time')).toBe(true);
+      expect(isValidQualityType('presence')).toBe(true);
     });
+    it('should return true for dot notation quality types', () => {
+      expect(isValidQualityType('embodied.thinking')).toBe(true);
+      expect(isValidQualityType('mood.open')).toBe(true);
+      expect(isValidQualityType('purpose.goal')).toBe(true);
+    });
+    
     it('should return false for invalid quality types', () => {
       expect(isValidQualityType('EMBODIED')).toBe(false);
       expect(isValidQualityType('foo')).toBe(false);
       expect(isValidQualityType('attentional')).toBe(false);
+      expect(isValidQualityType('emotion')).toBe(false); // old name
+      expect(isValidQualityType('body')).toBe(false); // old name
     });
   });
 
@@ -108,7 +116,7 @@ describe('Type Validation Functions', () => {
         experiencer: 'test',
         processing: 'during',
         crafted: false,
-        experience: ['emotion', 'body']
+        experience: ['mood.open', 'embodied.thinking']
       };
       expect(isValidSource(validSource)).toBe(true);
     });
@@ -157,14 +165,14 @@ describe('Factory Functions', () => {
 describe('Zod Schema Validation', () => {
   describe('ExperienceSchema', () => {
     it('should validate valid experience', () => {
-      const validExperience: Experience = ['emotion', 'body', 'purpose'];
+      const validExperience: Experience = ['mood.open', 'embodied.thinking', 'purpose.goal'];
       
       const result = ExperienceSchema.safeParse(validExperience);
       expect(result.success).toBe(true);
     });
 
     it('should reject experience with invalid quality types', () => {
-      const invalidExperience = ['invalid_quality', 'body'];
+      const invalidExperience = ['invalid_quality', 'embodied'];
       
       const result = ExperienceSchema.safeParse(invalidExperience);
       expect(result.success).toBe(false);
@@ -181,7 +189,7 @@ describe('Zod Schema Validation', () => {
         experiencer: 'test',
         processing: 'during',
         crafted: false,
-        experience: ['emotion', 'body']
+        experience: ['mood.open', 'embodied.thinking']
       };
       
       const result = SourceSchema.safeParse(validSource);
@@ -197,7 +205,7 @@ describe('Zod Schema Validation', () => {
         experiencer: 'test',
         processing: 'during',
         crafted: false,
-        experience: ['emotion', 'body']
+        experience: ['mood.open', 'embodied.thinking']
       };
       
       const result = SourceSchema.safeParse(validSource);
@@ -228,7 +236,7 @@ describe('Zod Schema Validation', () => {
             experiencer: 'test',
             processing: 'during',
             crafted: false,
-            experience: ['emotion', 'body']
+            experience: ['mood.open', 'embodied.thinking']
           }
         ],
         embeddings: [
@@ -267,7 +275,7 @@ describe('Zod-based Validation Functions', () => {
         experiencer: 'test',
         processing: 'during',
         crafted: false,
-        experience: ['emotion', 'body']
+        experience: ['mood.open', 'embodied.thinking']
       };
       
       const result = validateSource(validSource);
@@ -286,7 +294,7 @@ describe('Zod-based Validation Functions', () => {
 
   describe('validateExperience', () => {
     it('should return success for valid experience', () => {
-      const validExperience: Experience = ['emotion', 'body', 'purpose'];
+      const validExperience: Experience = ['mood.open', 'embodied.thinking', 'purpose.goal'];
       
       const result = validateExperience(validExperience);
       expect(result).toBeDefined();
@@ -294,7 +302,7 @@ describe('Zod-based Validation Functions', () => {
 
     it('should return error for invalid experience', () => {
       const invalidExperience = {
-        qualities: ['emotion', 'body']
+        qualities: ['mood.open', 'embodied.thinking']
       };
       
       expect(() => validateExperience(invalidExperience)).toThrow();
@@ -313,7 +321,7 @@ describe('Zod-based Validation Functions', () => {
             experiencer: 'test',
             processing: 'during',
             crafted: false,
-            experience: ['emotion', 'body']
+            experience: ['mood.open', 'embodied.thinking']
           }
         ]
       };

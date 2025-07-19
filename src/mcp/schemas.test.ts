@@ -64,7 +64,7 @@ describe('Schema Validation', () => {
         remembers: [{
           source: 'Test experience',
           perspective: 'I',
-          experience: ['emotion']
+          experience: ['mood.open']
         }]
       };
       const result = RememberInputSchema.safeParse(input);
