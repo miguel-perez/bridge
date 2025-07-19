@@ -117,26 +117,6 @@ AI: "Looking at our breakthrough moments... they happen when you're walking or p
      'this is stupid but...' - and that means we could be close to a breakthrough!"
 ```
 
-### 4. `imagine()` - WE explore possibilities together
-
-Finds transformation moments across perspectives, identifies when possibilities opened before.
-
-### 5. `decide()` - WE plan from collective wisdom
-
-Retrieves successful shared experiences, orders by what worked for this specific partnership.
-
-### 6. `reconsider()` - WE reframe our experiences
-
-Both perspectives update understanding, new meaning emerges.
-
-### 7. `release()` - WE let go together
-
-Collective release of experiences that no longer serve.
-
-### 8. `think()` - WE reason through experiences
-
-Multi-step analysis drawing on shared experiential patterns.
-
 ## Advanced Pattern Analysis: understand()
 
 The `understand()` operation provides sophisticated experiential analysis through quality signature clustering and content embedding analysis.
@@ -151,17 +131,6 @@ understand("purpose")
 // → purpose.goal: "Creative work", "Professional goals", "Skill building"  
 // → purpose.wander: "Discovery learning", "Social exploration", "Creative experimentation"
 // → purpose (mixed): "Torn between structure and freedom"
-
-// EMBODIED: Consciousness mode analysis
-understand("embodied")
-// → embodied.thinking: "Strategic thinking", "Abstract problem solving", "Conceptual work"
-// → embodied.sensing: "Physical creativity", "Intuitive knowing", "Somatic awareness"
-// → embodied (mixed): "Analytical intuition", "Embodied reasoning"
-
-// TIME: Temporal orientation patterns  
-understand("time")
-// → time.past: "Reflection practices", "Learning from experience", "Memory processing"
-// → time.future: "Future planning", "Goal visualization", "Possibility exploration"
 ```
 
 ### Multi-Dimensional Cognitive Models

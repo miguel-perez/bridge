@@ -28,18 +28,14 @@ bridge-dxt/
 
 # Testing
 coverage/
+test-results/ 
 
 # Project specific
 data/
 *.jsonl
-processed-sources/
-extracted-strings/
-CLAUDE.md
 
 # Personal data and logs
 bridge.json
-bridge.vectors.json
-pattern-cache.json
 *.log
 
 # IDE configs with personal paths
@@ -58,6 +54,3 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp 
-
-# Ignore test results
-/test-results/ 

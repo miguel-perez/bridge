@@ -2,9 +2,6 @@
 // Entry point for the Bridge MCP server. Launches the server using Stdio transport for integration with MCP clients (e.g., Claude Desktop).
 // Handles startup errors gracefully and logs them for troubleshooting.
 
-// Set MCP mode to disable console logging in services
-process.env.MCP_MODE = 'true';
-
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { server, initializeBridgeConfiguration } from './mcp/server.js';
 
