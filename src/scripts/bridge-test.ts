@@ -57,8 +57,8 @@ function loadTestingFramework(): TestingFramework {
       name: 'Stage 0 → Stage 1', 
       target: 40, 
       goals: [
-        'Reduce technical language by 60%',
-        'AI uses Bridge naturally 50% of time',
+        'Reduce technical language',
+        'AI uses Bridge naturally',
         'Basic patterns shown to users'
       ]
     },
@@ -66,7 +66,7 @@ function loadTestingFramework(): TestingFramework {
       name: 'Stage 1 → Stage 2', 
       target: 60, 
       goals: [
-        'Natural tool names (capture → remember)',
+        'Natural tool names',
         'Conversational responses',
         'Pattern discovery in search'
       ]
@@ -75,7 +75,7 @@ function loadTestingFramework(): TestingFramework {
       name: 'Stage 2 → Stage 3', 
       target: 80, 
       goals: [
-        'Bridge becomes invisible infrastructure',
+        'Becomes "invisible" infrastructure',
         'Collective insights emerge',
         'Shared context builds naturally'
       ]
@@ -631,7 +631,9 @@ Your goal is: ${scenario.userGoal}`;
   /**
    * Detect confused responses that indicate context loss
    */
-  private isConfusedResponse(_text: string): boolean {
+  private isConfusedResponse(text: string): boolean {
+    // Keep parameter for API compatibility
+    void text;
     // Don't rely on keyword matching - let the LLM analyze context holistically
     // Return false and let the UX researcher determine if there's actual confusion
     return false;
@@ -767,12 +769,14 @@ class TestEnvironment {
   private testBridgeFile: string;
   private testVectorsFile: string;
   private syntheticData: Source[] = [];
+  public options?: TestOptions;
   
-  constructor(testName: string) {
+  constructor(testName: string, options?: TestOptions) {
     this.testId = `${testName}-${Date.now()}`;
     this.testDataDir = join(process.cwd(), 'data');
     this.testBridgeFile = join(this.testDataDir, `test-${this.testId}-bridge.json`);
     this.testVectorsFile = join(this.testDataDir, `test-${this.testId}-vectors.json`);
+    this.options = options;
   }
   
   getSyntheticData(): Source[] {
@@ -1202,13 +1206,22 @@ The Vision: Bridge becomes invisible infrastructure for shared thinking
         
         // Testing - minimal priming for observe test
         console.log(`🤖 Claude observing...`);
-        const response = await this.anthropic.messages.create({
+        
+        // Add timeout wrapper for observe test
+        const apiTimeout = this.testEnv.options?.conversationTimeout || 30000;
+        const observePromise = this.anthropic.messages.create({
           model: "claude-3-5-sonnet-20241022",
           max_tokens: 4000,
           system: OBSERVE_SYSTEM_PROMPT,
           messages: messages,
           tools: tools,
         });
+        
+        const observeTimeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error(`API call timed out after ${apiTimeout / 1000}s`)), apiTimeout);
+        });
+        
+        const response = await Promise.race([observePromise, observeTimeoutPromise]);
         
         messages.push({ role: 'assistant', content: response.content });
         
@@ -1241,7 +1254,7 @@ The Vision: Bridge becomes invisible infrastructure for shared thinking
         console.log('📊 Starting UX research analysis for observe test...');
         
         // Format the conversation for the UX researcher
-        const observeConversationText = messages.map((msg, index) => {
+        const observeConversationText = messages.map((msg) => {
           if (msg.role === 'user') {
             const content = Array.isArray(msg.content) ? 
               msg.content.map((c: any) => {
@@ -1304,7 +1317,9 @@ Provide actionable recommendations for improving autonomous thinking partnership
 ## LIMITATIONS (Must cite goal, scope, recommendations)
 Identify limitations of this analysis and test methodology that affect the validity of your recommendations.`;
 
-        const uxAnalysis = await this.anthropic.messages.create({
+        // Add timeout wrapper for UX analysis
+        const uxTimeout = this.testEnv.options?.conversationTimeout || 30000;
+        const uxPromise = this.anthropic.messages.create({
           model: "claude-3-5-sonnet-20241022",
           max_tokens: 1500,
           system: UX_RESEARCHER_PROMPTS.systemContext,
@@ -1313,6 +1328,12 @@ Identify limitations of this analysis and test methodology that affect the valid
             content: `${uxResearchPrompt}\n\n## FULL CONVERSATION:\n${observeConversationText}` 
           }]
         });
+        
+        const uxTimeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error(`UX analysis timed out after ${uxTimeout / 1000}s`)), uxTimeout);
+        });
+        
+        const uxAnalysis = await Promise.race([uxPromise, uxTimeoutPromise]);
 
         // Store the analysis from the old method for observe test
         const analysisText = Array.isArray(uxAnalysis.content) ? 
@@ -1344,6 +1365,12 @@ Identify limitations of this analysis and test methodology that affect the valid
           const elapsedMs = Date.now() - result.startTime.getTime();
           console.log(`⏱️  Elapsed time: ${elapsedMs}ms`);
           
+          // Check for timeout
+          const testTimeout = this.testEnv.options?.timeout || 600000; // Default 10 minutes
+          if (elapsedMs > testTimeout) {
+            throw new Error(`Test timed out after ${Math.floor(elapsedMs / 1000)}s (timeout: ${testTimeout / 1000}s)`);
+          }
+          
           // Warn if conversation is taking too long
           if (elapsedMs > 60000) { // 1 minute
             console.log(`⚠️  Warning: Conversation has been running for over ${Math.floor(elapsedMs / 1000)}s`);
@@ -1353,13 +1380,22 @@ Identify limitations of this analysis and test methodology that affect the valid
           const systemPrompt = BRIDGE_SYSTEM_PROMPT;
 
           console.log(`🤖 Claude thinking...`);
-          const response = await this.anthropic.messages.create({
+          
+          // Add timeout wrapper for API calls
+          const apiTimeout = this.testEnv.options?.conversationTimeout || 30000; // Default 30s per API call
+          const responsePromise = this.anthropic.messages.create({
             model: "claude-3-5-sonnet-20241022",
             max_tokens: 4000,
             system: systemPrompt,
             messages: messages,
             tools: tools,
           });
+          
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error(`API call timed out after ${apiTimeout / 1000}s`)), apiTimeout);
+          });
+          
+          const response = await Promise.race([responsePromise, timeoutPromise]);
           
           messages.push({ role: 'assistant', content: response.content });
           
@@ -1436,11 +1472,19 @@ Identify limitations of this analysis and test methodology that affect the valid
             if (this.userSimulator) {
             // Use user simulator for other scenarios
               console.log(`🎭 User simulator: Generating response...`);
-            const userResponse = await this.userSimulator.generateResponse(
+            // Add timeout wrapper for user simulation
+            const userSimPromise = this.userSimulator.generateResponse(
               lastMessage,
               result.toolCalls.slice(-5), // Last 5 tool calls for context
               scenario
             );
+            
+            const userSimTimeout = this.testEnv.options?.conversationTimeout || 30000;
+            const userTimeoutPromise = new Promise<string | null>((_, reject) => {
+              setTimeout(() => reject(new Error(`User simulation timed out after ${userSimTimeout / 1000}s`)), userSimTimeout);
+            });
+            
+            const userResponse = await Promise.race([userSimPromise, userTimeoutPromise]);
             
               if (userResponse && !isNaturalEnding) {
                 console.log(`👤 Simulated user: "${userResponse}"`);
@@ -1730,18 +1774,22 @@ Focus on your actual experience using Bridge tools during the conversation above
     await this.mcp.close();
   }
   
-  private parseReflectionMisalignments(_reflectionText: string): Array<{
+  private parseReflectionMisalignments(reflectionText: string): Array<{
     description: string;
     category: 'good_surprise' | 'neutral_difference' | 'usability_issue' | 'tool_limitation';
     impact: 'high' | 'medium' | 'low';
     suggestions?: string;
   }> {
+    // Keep parameter for API compatibility
+    void reflectionText;
     // Don't rely on keyword matching - return empty array
     // The LLM analysis should identify misalignments holistically
     return [];
   }
   
-  private extractUMUXScores(_umuxText: string): { capabilitiesMeetRequirements: number; easyToUse: number } {
+  private extractUMUXScores(umuxText: string): { capabilitiesMeetRequirements: number; easyToUse: number } {
+    // Keep parameter for API compatibility
+    void umuxText;
     // Don't rely on regex matching - return neutral defaults
     // The LLM will provide scores in the proper format if asked
     return {
@@ -1750,7 +1798,9 @@ Focus on your actual experience using Bridge tools during the conversation above
     };
   }
   
-  private extractMagicWandWish(_umuxText: string): string {
+  private extractMagicWandWish(umuxText: string): string {
+    // Keep parameter for API compatibility
+    void umuxText;
     // Don't rely on regex matching - return a default
     // The LLM will provide the wish in the proper format if asked
     return "No magic wand wish identified";
@@ -1812,6 +1862,8 @@ interface TestOptions {
   saveResults?: boolean;
   keepTestData?: boolean;
   userPersonality?: string;
+  timeout?: number; // Timeout in milliseconds for each test
+  conversationTimeout?: number; // Timeout for individual API calls
 }
 
 interface TestRun {
@@ -1890,7 +1942,7 @@ class TestOrchestrator {
   }
 
   async runTest(scenarioKey: string, options: TestOptions = {}): Promise<void> {
-    const testEnv = new TestEnvironment(scenarioKey);
+    const testEnv = new TestEnvironment(scenarioKey, options);
     const runner = new BridgeTestRunner(testEnv);
     
     try {
@@ -2702,11 +2754,26 @@ async function main(): Promise<void> {
     }
   }
   
+  // Parse timeout options
+  let timeout: number | undefined;
+  let conversationTimeout: number | undefined;
+  
+  for (let i = 0; i < process.argv.length; i++) {
+    if (process.argv[i] === '--timeout' && i + 1 < process.argv.length) {
+      timeout = parseInt(process.argv[i + 1]) * 1000; // Convert seconds to ms
+    }
+    if (process.argv[i] === '--api-timeout' && i + 1 < process.argv.length) {
+      conversationTimeout = parseInt(process.argv[i + 1]) * 1000; // Convert seconds to ms
+    }
+  }
+  
   const options: TestOptions = {
     useExistingData: process.argv.includes('--use-existing'),
     saveResults: process.argv.includes('--save'),
     keepTestData: process.argv.includes('--keep'),
-    userPersonality: userPersonality || undefined
+    userPersonality: userPersonality || undefined,
+    timeout: timeout,
+    conversationTimeout: conversationTimeout
   };
   
   // Default to bridge-exploration if no scenario specified
@@ -2728,6 +2795,8 @@ async function main(): Promise<void> {
     console.log('  --use-existing  Use existing bridge.json data');
     console.log('  --keep          Keep test data after completion');
     console.log('  --user <type>   Enable user simulation (curious, anxious, skeptical, experienced)');
+    console.log('  --timeout <seconds>      Overall test timeout (default: 600s)');
+    console.log('  --api-timeout <seconds>  Individual API call timeout (default: 30s)');
     console.log('\nUser Simulation: Simple contextual responses based on conversation flow');
     console.log('\nResults are automatically saved to /test-results/ for tracking improvements');
     return;
