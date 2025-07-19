@@ -27,10 +27,10 @@ export const PerspectiveField = z.string().min(1).describe('Perspective from whi
 
 
 // Experience analysis - simplified to prominent qualities array
-export const ExperienceObject = z.array(z.string()).describe('Array of qualities that emerge prominently in this moment. Choose from: emotion, space, body, others, time, focus, purpose. Following FRAMED_MOMENTS.md principle: "dimensions either emerge prominently or recede."');
+export const ExperienceObject = z.array(z.string()).describe('Array of qualities that emerge prominently in this moment. Choose from: embodied, focus, mood, purpose, space, time, presence. Following FRAMED_MOMENTS.md principle: "dimensions either emerge prominently or recede."');
 
 // Experience analysis (all fields optional for update)
-export const ExperienceObjectOptional = z.array(z.string()).describe('Array of qualities that emerge prominently in this moment. Choose from: emotion, space, body, others, time, focus, purpose.').optional();
+export const ExperienceObjectOptional = z.array(z.string()).describe('Array of qualities that emerge prominently in this moment. Choose from: embodied, focus, mood, purpose, space, time, presence.').optional();
 
 // REMEMBER tool input
 export const RememberInputSchema = z.object({

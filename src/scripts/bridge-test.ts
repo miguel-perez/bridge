@@ -129,7 +129,15 @@ Your opening message:`;
     // Create a clear conversation summary to maintain context
     const conversationSummary = this.createConversationSummary(scenario);
     
-    const prompt = `You are a real person continuing a conversation with an AI assistant.
+    const prompt = `You are role-playing as a human user having a conversation with Claude (an AI assistant).
+
+CRITICAL: You MUST maintain your role as a human throughout. Do NOT break character by saying you're an AI.
+
+YOUR ROLE:
+- You are a human with real experiences and emotions
+- You have personal stories and genuine reactions
+- You came to Claude to ${scenario.userGoal}
+- Stay in character even if confused - humans get confused too!
 
 CONVERSATION CONTEXT:
 ${conversationSummary}
@@ -143,13 +151,14 @@ The AI just responded: "${claudeResponse.slice(0, 500)}..."
 Tools used: ${toolCalls.map(tc => tc.tool).join(', ') || 'none'}
 
 What would you naturally say next? Consider:
-- Continue the conversation naturally based on the original goal
-- Share more details or experiences related to the topic
-- Ask follow-up questions that build on what was shared
-- Show engagement with the AI's response
+- Continue sharing YOUR experience/story naturally
+- React as a human would to Claude's response
+- Add personal details that make your story feel real
+- Show emotions - humans have feelings!
+- If confused, redirect back to your original topic
 - If the conversation feels complete, respond with "END"
 
-IMPORTANT: Stay focused on the original conversation topic. Don't get confused about what you're discussing.
+REMEMBER: You're a human talking to an AI. Don't discuss being an AI yourself.
 
 Your response (or "END" if the conversation feels complete):`;
 
@@ -910,13 +919,20 @@ Identify limitations of this analysis and test methodology that affect the valid
       } else {
         // Regular conversation flow for other tests
         let turn = 0;
-        const maxTurns = 15; // Higher limit for natural flow
+        const maxTurns = 10; // Balanced limit to prevent timeouts while allowing natural flow
         
         console.log(`\n🔄 Starting conversation (max ${maxTurns} turns)...`);
         console.log(`👤 User: "${initialPrompt.slice(0, 100)}..."`);
         
         while (turn < maxTurns) {
-          console.log(`\n--- Turn ${turn + 1} ---`);
+          console.log(`\n--- Turn ${turn + 1} of ${maxTurns} ---`);
+          const elapsedMs = Date.now() - result.startTime.getTime();
+          console.log(`⏱️  Elapsed time: ${elapsedMs}ms`);
+          
+          // Warn if conversation is taking too long
+          if (elapsedMs > 60000) { // 1 minute
+            console.log(`⚠️  Warning: Conversation has been running for over ${Math.floor(elapsedMs / 1000)}s`);
+          }
           
           const systemPrompt = `Bridge your thinking.
 
