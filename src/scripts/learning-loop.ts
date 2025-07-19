@@ -11,7 +11,7 @@
  */
 
 import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync } from 'fs';
-import { join, basename } from 'path';
+import { join } from 'path';
 import { execSync } from 'child_process';
 import { Anthropic } from "@anthropic-ai/sdk";
 import * as dotenv from 'dotenv';
@@ -39,6 +39,13 @@ Each test includes:
 - UX analysis evaluating conversation quality, goal achievement, and connection depth
 - Error information if tests fail
 
+KNOWN TEST RUNNER ISSUE:
+The test-runner.ts makes two API calls when tools are used:
+1. Initial call gets Claude's response with tool use
+2. After tool execution, a second call gets final response
+This often results in empty final responses, causing repetitive default messages.
+You have access to the test-runner.ts code to identify methodological issues.
+
 The goal is to see how Bridge changes the quality of human-AI interaction through empirical observation.
 
 IMPORTANT: Generate updates in a structured format that can be directly applied to the documentation files.
@@ -49,22 +56,18 @@ Each update should include:
 - Clear evidence trails for all learnings`;
 
 // Sequential thinking prompt for deeper analysis
-const SEQUENTIAL_THINKING_PROMPT = `You are using sequential thinking to analyze Bridge test results.
+const SEQUENTIAL_THINKING_PROMPT = `You are analyzing Bridge test results through sequential thinking. Simply think through the problem step by step, building understanding as you go.
 
-Sequential thinking approach:
-- Break down complex patterns into steps
-- Revise understanding as patterns emerge
-- Generate and verify hypotheses
-- Question your own assumptions
-- Build toward actionable insights
+Each thought should:
+- Focus on one aspect or insight
+- Build on previous thoughts naturally
+- Question assumptions when needed
+- Draw conclusions from evidence
 
-You can:
-- Adjust your total thought count as needed
-- Revise previous thoughts when you discover something new
-- Express uncertainty and explore alternatives
-- Mark thoughts as revisions of earlier thinking
+Keep your output simple:
+[Your analytical thought here]
 
-Focus on discovering genuine patterns in how Bridge affects conversations.`;
+Next thought needed: yes/no`;
 
 interface SequentialThought {
   thought: string;
@@ -73,16 +76,26 @@ interface SequentialThought {
   totalThoughts: number;
   isRevision?: boolean;
   revisesThought?: number;
+  branchFromThought?: number;
+  branchId?: string;
+  hypothesis?: string;
+  verification?: string;
+  needsMoreThoughts?: boolean;
 }
 
 async function runLearningLoop() {
+  // Check for test mode
+  const TEST_MODE = process.argv.includes('--test-mode');
+  if (TEST_MODE) {
+    console.log('🧪 Running in TEST MODE (faster, fewer thoughts)\n');
+  }
+  
   console.log('🔄 Starting Learning Loop Analysis...\n');
   
   // Check if tests were recently run
   const testResultsDir = join(process.cwd(), 'test-results');
-  const scenariosDir = join(testResultsDir, 'scenarios');
   
-  if (!existsSync(scenariosDir)) {
+  if (!existsSync(testResultsDir)) {
     console.log('🧪 No test results found. Running bridge tests...');
     console.log('This may take a few minutes...\n');
     
@@ -94,6 +107,32 @@ async function runLearningLoop() {
     // Run tests
     execSync('npm run test:suite', { stdio: 'inherit' });
     console.log('✅ Tests completed');
+  } else {
+    // Check if we have recent test results (within last hour)
+    const files = readdirSync(testResultsDir);
+    if (files.length > 0) {
+      const latestFile = files
+        .filter(f => f.startsWith('test-run-') && f.endsWith('.json'))
+        .map(f => {
+          const match = f.match(/test-run-(\d+)\.json$/);
+          return match ? { file: f, timestamp: parseInt(match[1]) } : null;
+        })
+        .filter(Boolean)
+        .sort((a, b) => b!.timestamp - a!.timestamp)[0];
+      
+      if (latestFile) {
+        const age = Date.now() - latestFile.timestamp;
+        const ageMinutes = Math.floor(age / 60000);
+        console.log(`📊 Found test results from ${ageMinutes} minutes ago`);
+        
+        if (ageMinutes < 60) {
+          console.log('✅ Using existing test results\n');
+        } else {
+          console.log('⚠️  Test results are old. Running new tests...\n');
+          execSync('npm run test:suite', { stdio: 'inherit' });
+        }
+      }
+    }
   }
   
   // Read test results
@@ -113,8 +152,10 @@ async function runLearningLoop() {
   
   // Read current documentation
   const docs = {
-    vision: readFileSync(join(process.cwd(), 'VISION.md'), 'utf-8'),
-    opportunities: readFileSync(join(process.cwd(), 'OPPORTUNITIES.md'), 'utf-8'),
+    vision: existsSync(join(process.cwd(), 'VISION.md')) ?
+      readFileSync(join(process.cwd(), 'VISION.md'), 'utf-8') : createVisionFile(),
+    opportunities: existsSync(join(process.cwd(), 'OPPORTUNITIES.md')) ? 
+      readFileSync(join(process.cwd(), 'OPPORTUNITIES.md'), 'utf-8') : createOpportunitiesFile(),
     experiments: existsSync(join(process.cwd(), 'EXPERIMENTS.md')) ? 
       readFileSync(join(process.cwd(), 'EXPERIMENTS.md'), 'utf-8') : createExperimentsFile(),
     learnings: existsSync(join(process.cwd(), 'LEARNINGS.md')) ? 
@@ -133,6 +174,14 @@ async function runLearningLoop() {
     commitHistory = 'Unable to get commit history';
   }
   
+  // Read test runner implementation for meta-analysis
+  let testRunnerCode = '';
+  try {
+    testRunnerCode = readFileSync(join(process.cwd(), 'src/scripts/test-runner.ts'), 'utf-8');
+  } catch (e) {
+    testRunnerCode = 'Unable to read test-runner.ts';
+  }
+  
   // Run Opus analysis with sequential thinking
   console.log('🤖 Calling Claude Opus 4 for sequential analysis...\n');
   const analysis = await callOpusWithSequentialThinking({
@@ -143,7 +192,8 @@ async function runLearningLoop() {
     philosophy: docs.philosophy,
     loop: docs.loop,
     commitHistory,
-    testResults
+    testResults,
+    testRunnerCode
   });
   
   // Parse and apply updates
@@ -168,11 +218,11 @@ async function runLearningLoop() {
   
   // Save analysis for review in test-results
   const timestamp = new Date().toISOString().split('T')[0];
-  const testResultsDir = join(process.cwd(), 'test-results');
-  if (!existsSync(testResultsDir)) {
-    mkdirSync(testResultsDir, { recursive: true });
+  const resultsDir = join(process.cwd(), 'test-results');
+  if (!existsSync(resultsDir)) {
+    mkdirSync(resultsDir, { recursive: true });
   }
-  const outputPath = join(testResultsDir, `learning-loop-${timestamp}.md`);
+  const outputPath = join(resultsDir, `learning-loop-${timestamp}.md`);
   writeFileSync(outputPath, analysis);
   console.log(`\n📄 Full analysis saved to: ${outputPath}`);
   
@@ -192,19 +242,27 @@ async function callOpusWithSequentialThinking(docs: {
   loop: string;
   commitHistory: string;
   testResults: string;
+  testRunnerCode: string;
 }): Promise<string> {
   const anthropic = new Anthropic({
     apiKey: process.env.ANTHROPIC_API_KEY
   });
 
-  let thoughts: SequentialThought[] = [];
+  // Test mode configuration
+  const TEST_MODE = process.argv.includes('--test-mode');
+  const MAX_THOUGHTS = TEST_MODE ? 3 : 15;  // Reasonable limit to prevent timeouts
+  const MODEL = TEST_MODE ? 'claude-3-5-sonnet-20241022' : 'claude-opus-4-20250514';
+  const MAX_TOKENS = TEST_MODE ? 500 : 1000;  // Balanced for good thoughts without excessive length
+
+  const thoughts: SequentialThought[] = [];
   let currentThought = 1;
-  let estimatedTotal = 8; // Initial estimate for analysis steps
+  let estimatedTotal = TEST_MODE ? 3 : 8; // Initial estimate for analysis steps
   
-  console.log('🧠 Opus is thinking step by step...\n');
+  console.log(`🧠 ${TEST_MODE ? 'Sonnet' : 'Opus'} is thinking step by step...\n`);
 
   // Sequential thinking loop
-  while (true) {
+  let continueThinking = true;
+  while (continueThinking) {
     const thoughtContext = thoughts.map((t, i) => 
       `Thought ${i + 1}${t.isRevision ? ` (revising thought ${t.revisesThought})` : ''}: ${t.thought}`
     ).join('\n\n');
@@ -212,25 +270,38 @@ async function callOpusWithSequentialThinking(docs: {
     const thoughtPrompt = `Current test results to analyze:
 ${docs.testResults}
 
+Test Runner Implementation (for meta-analysis):
+\`\`\`typescript
+${docs.testRunnerCode.substring(0, 3000)}... [truncated for context]
+\`\`\`
+
 Your previous thoughts:
 ${thoughtContext || 'None yet - this is your first thought'}
 
-Thought ${currentThought}/${estimatedTotal}
+Thought ${currentThought}
 
-Analyze the test results step by step. Focus on:
-1. What happened in each test scenario
-2. Patterns in tool usage and conversation quality
-3. Differences between with/without Bridge
-4. Evidence of AI self-awareness in autonomous test
-5. Surprises or unexpected behaviors
+Analyze the test results, focusing on:
+- What happened in each test scenario
+- Patterns in tool usage and conversation quality  
+- Differences between with/without Bridge
+- Evidence of AI self-awareness in autonomous test
+- Surprises or unexpected behaviors
+- Test methodology issues
 
-Provide your current thought and indicate if you need to continue thinking.
-End with either "Continue thinking: yes" or "Continue thinking: no"`;
+Provide your thought:
+[Your analytical thought here]
+
+Next thought needed: yes/no
+
+Note: If you find yourself repeating observations, move to deeper analysis or conclude.`;
 
     try {
+      console.log(`    🤔 Generating thought ${currentThought}...`);
+      const startTime = Date.now();
+      
       const response = await anthropic.messages.create({
-        model: "claude-opus-4-20250514",
-        max_tokens: 1000,
+        model: MODEL,
+        max_tokens: MAX_TOKENS,
         temperature: 0.7,
         system: SEQUENTIAL_THINKING_PROMPT,
         messages: [{
@@ -238,38 +309,96 @@ End with either "Continue thinking: yes" or "Continue thinking: no"`;
           content: thoughtPrompt
         }]
       });
+      
+      const duration = Date.now() - startTime;
+      console.log(`    ⏱️  Thought ${currentThought} generated in ${(duration/1000).toFixed(1)}s`);
 
       const responseText = Array.isArray(response.content) ? 
         response.content.find(c => c.type === 'text')?.text || '' : 
         String(response.content);
 
-      // Parse continue thinking decision
-      const continueThinking = responseText.toLowerCase().includes('continue thinking: yes');
+      // Parse the structured response
+      const lines = responseText.split('\n');
+      let thoughtContent = '';
+      let nextNeeded = false;
+      let revisesThought: number | undefined;
+      let hypothesis: string | undefined;
+      let verification: string | undefined;
+      
+      // Extract structured elements - simplified
+      let inThought = true;
+      for (const line of lines) {
+        if (line.toLowerCase().startsWith('next thought needed:')) {
+          nextNeeded = line.toLowerCase().includes('yes');
+          inThought = false;
+        } else if (inThought) {
+          thoughtContent += line + '\n';
+        }
+      }
       
       const thought: SequentialThought = {
-        thought: responseText.replace(/Continue thinking: (yes|no)/i, '').trim(),
+        thought: thoughtContent.trim(),
         thoughtNumber: currentThought,
         totalThoughts: estimatedTotal,
-        nextThoughtNeeded: continueThinking && currentThought < 12 // Safety limit
+        nextThoughtNeeded: nextNeeded && currentThought < MAX_THOUGHTS // Use configured max
       };
 
       thoughts.push(thought);
       
-      // Show abbreviated thought
-      const abbreviatedThought = thought.thought.split('\n')[0].substring(0, 80);
-      console.log(`  Step ${currentThought}: ${abbreviatedThought}...`);
+      // Show thought summary
+      const firstLine = thought.thought.split('\n')[0];
+      const preview = firstLine.length > 80 ? firstLine.substring(0, 77) + '...' : firstLine;
+      console.log(`  Step ${currentThought}: ${preview}`);
+      
+      // Save progress after each thought
+      const progressPath = join(process.cwd(), 'test-results', 'sequential-progress.json');
+      const thoughtsPath = join(process.cwd(), 'test-results', `sequential-thoughts-${new Date().toISOString().split('T')[0]}.json`);
+      
+      const progress = {
+        currentThought: thought.thoughtNumber,
+        totalThoughts: thoughts.length,
+        estimatedTotal,
+        lastUpdate: new Date().toISOString(),
+        testMode: TEST_MODE
+      };
+      
+      // Save both progress and full thoughts
+      if (!existsSync(join(process.cwd(), 'test-results'))) {
+        mkdirSync(join(process.cwd(), 'test-results'), { recursive: true });
+      }
+      
+      writeFileSync(progressPath, JSON.stringify(progress, null, 2));
+      
+      // Save complete thoughts array for recovery
+      writeFileSync(thoughtsPath, JSON.stringify({
+        timestamp: new Date().toISOString(),
+        testMode: TEST_MODE,
+        thoughts: thoughts,
+        progress: progress
+      }, null, 2));
 
       if (!thought.nextThoughtNeeded) {
         console.log('\n✅ Sequential analysis complete');
-        break;
+        continueThinking = false;
       }
 
       currentThought++;
+      
+      // Safety limits
+      if (currentThought > MAX_THOUGHTS) {
+        console.log(`\n⚠️  Reached maximum thoughts limit (${MAX_THOUGHTS}). Proceeding to analysis...`);
+        continueThinking = false;
+      }
+      
       if (currentThought > estimatedTotal) {
-        estimatedTotal = currentThought + 2; // Adjust estimate
+        estimatedTotal = Math.min(currentThought + 2, MAX_THOUGHTS); // Adjust estimate with cap
       }
     } catch (error) {
       console.error('❌ Error in sequential thinking:', error);
+      // Save partial results even on error
+      if (thoughts.length > 0) {
+        console.log(`\n⚠️  Sequential thinking interrupted after ${thoughts.length} thoughts. Proceeding with partial analysis...`);
+      }
       break;
     }
   }
@@ -277,9 +406,9 @@ End with either "Continue thinking: yes" or "Continue thinking: no"`;
   // Now generate final documentation updates based on sequential analysis
   console.log('\n📝 Generating documentation updates...');
 
-  const thoughtSummary = thoughts.map((t, i) => 
-    `Step ${i + 1}: ${t.thought}`
-  ).join('\n\n');
+  const thoughtSummary = thoughts.map((t, i) => {
+    return `Step ${i + 1}: ${t.thought}`;
+  }).join('\n\n');
 
   const finalPrompt = `${OPUS_PROMPT}
 
@@ -326,7 +455,7 @@ ${docs.testResults}
 Based on your sequential analysis, provide specific documentation updates.`;
     
   const finalResponse = await anthropic.messages.create({
-    model: "claude-opus-4-20250514",
+    model: MODEL,
     max_tokens: 4000,
     temperature: 0.5,
     system: OPUS_PROMPT,
@@ -340,80 +469,64 @@ Based on your sequential analysis, provide specific documentation updates.`;
     finalResponse.content.find(c => c.type === 'text')?.text || '' : 
     String(finalResponse.content);
 
-  // Save sequential thinking process
-  const sequentialPath = join(process.cwd(), 'test-results', `sequential-thinking-${new Date().toISOString()}.json`);
-  writeFileSync(sequentialPath, JSON.stringify({ thoughts, analysis: analysisText }, null, 2));
+  // Ensure test-results directory exists
+  const testResultsDir = join(process.cwd(), 'test-results');
+  if (!existsSync(testResultsDir)) {
+    mkdirSync(testResultsDir, { recursive: true });
+  }
+  
+  // Save sequential thinking process with metadata
+  const sequentialPath = join(testResultsDir, `sequential-thinking-${new Date().toISOString()}.json`);
+  const thinkingMetadata = {
+    timestamp: new Date().toISOString(),
+    totalThoughts: thoughts.length,
+    thoughts,
+    analysis: analysisText
+  };
+  writeFileSync(sequentialPath, JSON.stringify(thinkingMetadata, null, 2));
+  console.log(`\n💾 Sequential thinking saved to: ${sequentialPath}`);
 
   return analysisText;
 }
 
 function readBridgeTestResults(): string {
   const testResultsDir = join(process.cwd(), 'test-results');
-  const scenariosDir = join(testResultsDir, 'scenarios');
   
-  if (!existsSync(testResultsDir) || !existsSync(scenariosDir)) {
+  if (!existsSync(testResultsDir)) {
     return 'No test results directory found.';
   }
   
-  // Read all test results directly from JSON files
-  const testResults: any[] = [];
-  
   try {
-    // Get all test result JSON files
-    const testFiles = readdirSync(scenariosDir, { withFileTypes: true })
-      .filter(dirent => dirent.isFile() && dirent.name.endsWith('.json'))
-      .map(dirent => dirent.name);
+    // Get all test run files
+    const testRunFiles = readdirSync(testResultsDir, { withFileTypes: true })
+      .filter(dirent => dirent.isFile() && dirent.name.startsWith('test-run-') && dirent.name.endsWith('.json'))
+      .map(dirent => dirent.name)
+      .sort((a, b) => {
+        // Extract timestamps and sort descending (newest first)
+        const timestampA = parseInt(a.match(/test-run-(\d+)\.json/)?.[1] || '0');
+        const timestampB = parseInt(b.match(/test-run-(\d+)\.json/)?.[1] || '0');
+        return timestampB - timestampA;
+      });
     
-    console.log(`📊 Found ${testFiles.length} test result files`);
-    
-    // Group by scenario and get the latest for each
-    const latestByScenario = new Map<string, { file: string; timestamp: number }>();
-    
-    for (const file of testFiles) {
-      // Extract scenario name and timestamp from filename (e.g., "observe-1752945275187.json")
-      const match = file.match(/^(.+?)-(\d+)\.json$/);
-      if (match) {
-        const [, scenario, timestampStr] = match;
-        const timestamp = parseInt(timestampStr);
-        
-        const existing = latestByScenario.get(scenario);
-        if (!existing || timestamp > existing.timestamp) {
-          latestByScenario.set(scenario, { file, timestamp });
-        }
-      }
+    if (testRunFiles.length === 0) {
+      return 'No test run files found.';
     }
     
-    console.log(`📊 Processing ${latestByScenario.size} unique scenarios`);
+    // Use the most recent test run
+    const latestTestRunFile = testRunFiles[0];
+    const testRunPath = join(testResultsDir, latestTestRunFile);
+    console.log(`📊 Using latest test run: ${latestTestRunFile}`);
     
-    // Read the latest test for each scenario
-    for (const [scenario, { file }] of latestByScenario) {
-      const filePath = join(scenariosDir, file);
-      
-      try {
-        const testData = JSON.parse(readFileSync(filePath, 'utf-8'));
-        testResults.push({
-          scenario: testData.scenario,
-          scenarioName: testData.scenarioName,
-          startTime: testData.startTime,
-          endTime: testData.endTime,
-          duration: testData.duration,
-          messages: testData.messages,
-          toolCalls: testData.toolCalls,
-          uxAnalysis: testData.uxAnalysis,
-          error: testData.error
-        });
-        console.log(`  ✓ ${scenario}: ${testData.scenarioName}`);
-      } catch (error) {
-        console.log(`  ✗ ${scenario}: Failed to parse JSON`);
-      }
+    const testRunData = JSON.parse(readFileSync(testRunPath, 'utf-8'));
+    
+    if (!testRunData.results || testRunData.results.length === 0) {
+      return 'No test results found in test run file.';
     }
     
-    if (testResults.length === 0) {
-      return 'No test results found in scenarios directory.';
-    }
+    console.log(`📊 Found ${testRunData.results.length} test scenarios`);
     
     // Format test results for Opus analysis
-    return formatTestResultsForAnalysis(testResults);
+    return formatTestResultsForAnalysis(testRunData.results);
     
   } catch (error) {
     console.error('Error reading test results:', error);
@@ -434,17 +547,32 @@ function formatTestResultsForAnalysis(testResults: any[]): string {
     // Include conversation if available
     if (result.messages && result.messages.length > 0) {
       output += '### Conversation:\n';
+      let messageIndex = 0;
+      
       for (const msg of result.messages) {
+        messageIndex++;
+        const turnNumber = Math.ceil(messageIndex / 2);
+        
         if (msg.role === 'user') {
-          output += `User: ${msg.content}\n`;
+          output += `User: ${typeof msg.content === 'string' ? msg.content : '[complex content]'}\n`;
         } else if (msg.role === 'assistant') {
+          // Check if there was a tool call on this turn
+          const toolCall = result.toolCalls?.find((tc: any) => tc.turn === turnNumber);
+          
           if (typeof msg.content === 'string') {
             output += `Assistant: ${msg.content}\n`;
           } else if (Array.isArray(msg.content)) {
-            const textContent = msg.content.find((c: any) => c.type === 'text');
-            if (textContent) {
-              output += `Assistant: ${textContent.text}\n`;
-            }
+            const text = msg.content
+              .filter((c: any) => c.type === 'text')
+              .map((c: any) => c.text)
+              .join(' ');
+            output += `Assistant: ${text || '[no text response]'}\n`;
+          }
+          
+          // Add tool info if present
+          if (toolCall) {
+            const resultText = toolCall.result?.content?.[0]?.text?.split('\n')[0];
+            output += `  [Tool: ${toolCall.toolName} → ${resultText || 'completed'}]\n`;
           }
         }
       }
@@ -455,15 +583,6 @@ function formatTestResultsForAnalysis(testResults: any[]): string {
     if (result.uxAnalysis) {
       output += '### UX Analysis:\n';
       output += result.uxAnalysis + '\n\n';
-    }
-    
-    // Include tool calls detail
-    if (result.toolCalls && result.toolCalls.length > 0) {
-      output += '### Tool Calls:\n';
-      for (const tool of result.toolCalls) {
-        output += `- Turn ${tool.turn}: ${tool.toolName}${tool.error ? ' (failed)' : ''}\n`;
-      }
-      output += '\n';
     }
     
     output += '---\n\n';
@@ -508,12 +627,28 @@ function parseAndApplyUpdates(analysis: string): DocumentUpdate[] {
     
     // Apply update based on section type
     if (section.includes('Status Update')) {
-      // For experiment status updates, replace the status line
+      // For experiment status updates, check if experiment exists
       const expId = section.match(/\[(.+?)\]/)?.[1];
       if (expId) {
-        const statusRegex = new RegExp(`(### ${expId}[\\s\\S]*?)\\*\\*Status\\*\\*: .+`, 'm');
-        if (statusRegex.test(newContent)) {
-          newContent = newContent.replace(statusRegex, `$1**Status**: ${content.trim()}`);
+        const experimentExists = newContent.includes(`### ${expId}`);
+        
+        if (experimentExists) {
+          // Update existing experiment status
+          const statusRegex = new RegExp(`(### ${expId}[\\s\\S]*?)\\*\\*Status\\*\\*: .+`, 'm');
+          if (statusRegex.test(newContent)) {
+            newContent = newContent.replace(statusRegex, `$1**Status**: ${content.trim()}`);
+          }
+        } else {
+          // Add new experiment
+          // Find "Active Experiments" section or append at end
+          const activeExperimentsRegex = /## Active Experiments\s*$/m;
+          if (activeExperimentsRegex.test(newContent)) {
+            newContent = newContent.replace(activeExperimentsRegex, (match) => {
+              return match + '\n\n' + content.trim();
+            });
+          } else {
+            newContent = currentContent.trimEnd() + '\n\n' + content.trim() + '\n';
+          }
         }
       }
     } else {
@@ -544,6 +679,41 @@ function parseAndApplyUpdates(analysis: string): DocumentUpdate[] {
   }
   
   return updates;
+}
+
+function createVisionFile(): string {
+  const content = `**VISION** → OPPORTUNITIES → EXPERIMENTS → LEARNINGS → VISION
+
+# Project Vision
+
+This document describes the north star for your project.
+
+## How to use this document
+
+1. **Describe the future state** - What does success look like?
+2. **Define core principles** - What beliefs guide the project?
+3. **List key features** - What capabilities will exist?
+4. **Explain the why** - Why does this project matter?
+
+The learning loop will analyze test results against this vision and suggest updates when reality differs from expectations.
+
+## Template sections
+
+### Core Philosophy
+[What is the fundamental belief or approach?]
+
+### Key Features
+[What are the main capabilities?]
+
+### Success Metrics
+[How will you know when the vision is achieved?]
+
+---
+
+*The learning loop will help evolve this vision based on experimental evidence.*
+`;
+  writeFileSync(join(process.cwd(), 'VISION.md'), content);
+  return content;
 }
 
 function createExperimentsFile(): string {
@@ -596,10 +766,38 @@ Validated insights from our experiments that shape our understanding.
   return content;
 }
 
+function createOpportunitiesFile(): string {
+  const content = `VISION → **OPPORTUNITIES** → EXPERIMENTS → LEARNINGS → VISION
+
+# Bridge Opportunities
+
+Questions and assumptions to test about Bridge.
+
+## Opportunity Template
+
+### [Question]
+**Question**: What do we want to learn?
+- Sub-question: Specific aspect to explore
+- Sub-question: Another aspect
+
+**Impact**: 1-10 - Would the answer change our approach?
+**Certainty**: 1-10 - How likely are we to get a useful answer?
+**Urgency**: 1-10 - When does this opportunity expire?
+**Score**: Impact × Certainty × Urgency
+
+---
+
+## Active Opportunities
+
+`;
+  writeFileSync(join(process.cwd(), 'OPPORTUNITIES.md'), content);
+  return content;
+}
+
 function updateProgressionTracking(updateCount: number, timestamp: string) {
   const trackingPath = join(process.cwd(), 'test-results', 'progression-tracking.json');
   
-  let tracking = {
+  let tracking: any = {
     version: 1,
     iterations: 0,
     scenarios: {},

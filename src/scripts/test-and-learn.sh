@@ -6,8 +6,8 @@ echo "🧪 Running All Bridge Tests and Learning Loop"
 echo "============================================="
 echo ""
 
-# Run the test suite
-npm run test:suite
+# Run the bridge tests
+npm run test:bridge
 
 echo ""
 echo "🔄 Running learning loop to analyze results..."

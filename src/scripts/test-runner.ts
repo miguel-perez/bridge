@@ -63,14 +63,8 @@ interface ToolCall {
 // ============================================================================
 
 const BRIDGE_SYSTEM_PROMPT = `You have access to Bridge - a tool for shared experiential memory between humans and AI.
-
-Bridge helps capture and search experiences using these tools:
-- remember: Capture an experience with its qualities
-- recall: Search for relevant experiences
-- reconsider: Update existing experiences
-- release: Remove experiences
-
-Use Bridge naturally when it would help with understanding, reflection, or building shared context.`;
+When meaningful moments arise, naturally acknowledge them. Reference past conversations as you would with a friend.
+Bridge works best when invisible - like memory itself.`;
 
 // ============================================================================
 // TEST SCENARIOS
@@ -211,12 +205,16 @@ class BridgeTestRunner {
         console.log(`\n🔄 Turn ${this.turnCount}/${scenario.maxTurns}`);
 
         // Get Claude's response
-        const assistantMessage = await this.getClaudeResponse(
+        const assistantMessages = await this.getClaudeResponse(
           scenario.systemPrompt || '',
           [...this.messages]
         );
         
-        this.messages.push(assistantMessage);
+        // Add the assistant message
+        this.messages.push(assistantMessages);
+        
+        // Log response summary
+        // Log minimal response info in parallel mode
 
         // Check if we should continue
         if (this.turnCount >= scenario.maxTurns) {
@@ -306,38 +304,18 @@ class BridgeTestRunner {
 
     const response = await this.anthropic.messages.create(requestParams);
 
-    // Process response
-    let assistantContent: any[] = [];
-    let responseText = '';
+    // Process response - separate text and tool calls
+    let textContent = '';
+    const toolUses: any[] = [];
+    const processedContent: any[] = [];
 
     for (const content of response.content) {
       if (content.type === 'text') {
-        responseText += content.text;
-        assistantContent.push({ type: 'text', text: content.text });
-      } else if (content.type === 'tool_use' && this.mcpClient) {
-        // Execute tool call
-        console.log(`🔧 Calling tool: ${content.name}`);
-        const toolCall: ToolCall = {
-          timestamp: new Date(),
-          turn: this.turnCount,
-          toolName: content.name,
-          arguments: content.input as Record<string, any>
-        };
-
-        try {
-          const result = await this.mcpClient.callTool({
-            name: content.name,
-            arguments: content.input as Record<string, unknown>
-          });
-          toolCall.result = result;
-          console.log(`✅ Tool call successful`);
-        } catch (error) {
-          toolCall.error = error instanceof Error ? error.message : String(error);
-          console.error(`❌ Tool call failed: ${toolCall.error}`);
-        }
-
-        this.toolCalls.push(toolCall);
-        assistantContent.push({
+        textContent += content.text;
+        processedContent.push({ type: 'text', text: content.text });
+      } else if (content.type === 'tool_use') {
+        toolUses.push(content);
+        processedContent.push({
           type: 'tool_use',
           id: content.id,
           name: content.name,
@@ -347,77 +325,87 @@ class BridgeTestRunner {
     }
 
     // If no tool uses, return the response as is
-    if (!response.content.some(c => c.type === 'tool_use')) {
-      console.log(`📝 Response length: ${responseText.length} characters`);
+    if (toolUses.length === 0) {
+      // Response with no tools
       return {
         role: 'assistant',
-        content: assistantContent
+        content: processedContent
       };
     }
 
-    // If there were tool uses, we need to handle the tool results
-    console.log('🔄 Processing tool results and getting final response...');
-    
-    // Build messages with tool results
-    const messagesWithToolUse = [
-      ...messages,
-      { role: 'assistant', content: assistantContent }
-    ];
-    
-    // Create tool results message
+    // Execute tools and collect results
     const toolResults: any[] = [];
-    for (const content of response.content) {
-      if (content.type === 'tool_use') {
-        const toolCall = this.toolCalls.find(tc => 
-          tc.turn === this.turnCount && tc.toolName === content.name
-        );
+    
+    for (const toolUse of toolUses) {
+      const toolCall: ToolCall = {
+        timestamp: new Date(),
+        turn: this.turnCount,
+        toolName: toolUse.name,
+        arguments: toolUse.input as Record<string, any>
+      };
+
+      try {
+        console.log(`🔧 Calling tool: ${toolUse.name}`);
+        const result = await this.mcpClient!.callTool({
+          name: toolUse.name,
+          arguments: toolUse.input as Record<string, unknown>
+        });
+        toolCall.result = result;
+        console.log(`✅ Tool call successful: ${toolUse.name}`);
         
         toolResults.push({
           type: 'tool_result',
-          tool_use_id: content.id,
-          content: toolCall?.result?.content || [{ 
-            type: 'text', 
-            text: toolCall?.error || 'Tool execution completed' 
-          }]
+          tool_use_id: toolUse.id,
+          content: result.content || [{ type: 'text', text: 'Tool executed successfully' }]
+        });
+      } catch (error) {
+        toolCall.error = error instanceof Error ? error.message : String(error);
+        console.error(`❌ Tool call failed: ${toolCall.error}`);
+        
+        toolResults.push({
+          type: 'tool_result',
+          tool_use_id: toolUse.id,
+          content: [{ type: 'text', text: `Error: ${toolCall.error}` }],
+          is_error: true
         });
       }
+
+      this.toolCalls.push(toolCall);
     }
-    
-    // Add user message with tool results
-    messagesWithToolUse.push({
-      role: 'user',
-      content: toolResults
-    });
-    
-    // Get Claude's final response after tool use
-    const finalResponse = await this.anthropic.messages.create({
+
+    // Make a follow-up call with tool results
+    console.log('🔄 Getting response after tool execution...');
+    const followUpMessages = [...formattedMessages, 
+      { role: 'assistant', content: processedContent },
+      { role: 'user', content: toolResults }
+    ];
+
+    const followUpResponse = await this.anthropic.messages.create({
       ...requestParams,
-      messages: messagesWithToolUse
+      messages: followUpMessages
     });
-    
-    let finalText = '';
+
+    // Combine original text with follow-up response
     const finalContent: any[] = [];
     
-    for (const content of finalResponse.content) {
+    // Add original text if any
+    if (textContent) {
+      finalContent.push({ type: 'text', text: textContent });
+    }
+    
+    // Add follow-up response text
+    for (const content of followUpResponse.content) {
       if (content.type === 'text') {
-        finalText += content.text;
         finalContent.push({ type: 'text', text: content.text });
       }
     }
-    
-    console.log(`📝 Final response length: ${finalText.length} characters`);
-    
-    // If Claude had no text response after tool use, add a minimal acknowledgment
-    if (finalContent.length === 0) {
-      finalContent.push({ 
-        type: 'text', 
-        text: 'I\'ve captured that experience in our shared memory.' 
-      });
-    }
-    
+
+    console.log(`📝 Final response includes ${toolUses.length} tool calls and text`);
+
+    // Return combined response
     return {
-      role: 'assistant',
-      content: finalContent
+      role: 'assistant' as const,
+      content: finalContent.length > 0 ? finalContent : [{ type: 'text', text: 'I\'ve captured that experience in our shared memory.' }]
     };
   }
 
@@ -427,13 +415,23 @@ class BridgeTestRunner {
   ): Promise<Message | null> {
     console.log('👤 Simulating user response...');
 
-    const simulatorPrompt = `You are simulating a user with this personality: ${simulator.personality}
+    const simulatorPrompt = `You are participating in a conversation as someone with this personality: ${simulator.personality}
 
-Instructions: ${simulator.instructions}
+Context: ${simulator.instructions}
 
-Based on the conversation so far, provide a natural response. If the conversation has reached a natural conclusion, respond with exactly: "[END_CONVERSATION]"
+Based on the conversation flow:
+1. Continue naturally with a response that builds on what was discussed
+2. Share relevant thoughts, experiences, or questions that deepen the dialogue
+3. Only end with "[END_CONVERSATION]" if BOTH:
+   - The conversation has reached a clear, satisfying conclusion
+   - Further discussion would feel forced or repetitive
 
-Keep responses concise and authentic to the personality.`;
+Response guidelines:
+- Length: 50-200 words (natural conversational length)
+- Tone: Match the emotional register of the conversation
+- Content: Stay engaged with the topic while allowing natural evolution
+
+Remember: Real conversations often continue for several exchanges before reaching natural conclusions.`;
 
     // Get last few messages for context
     const recentMessages = messages.slice(-4);
@@ -445,7 +443,10 @@ Keep responses concise and authentic to the personality.`;
       messages: recentMessages.map(msg => ({
         role: msg.role,
         content: typeof msg.content === 'string' ? msg.content : 
-          msg.content.map((c: any) => c.type === 'text' ? c.text : '[tool call]').join(' ')
+          msg.content
+            .filter((c: any) => c.type === 'text')
+            .map((c: any) => c.text)
+            .join(' ') || '[Tool use with no text response]'
       }))
     });
 
@@ -536,14 +537,9 @@ async function main() {
     
     // Setup test infrastructure
     const resultsDir = join(process.cwd(), 'test-results');
-    const scenariosDir = join(resultsDir, 'scenarios');
     
-    if (!existsSync(resultsDir)) {
-      mkdirSync(resultsDir, { recursive: true });
-    }
-    if (!existsSync(scenariosDir)) {
-      mkdirSync(scenariosDir, { recursive: true });
-    }
+    // Always ensure the directory exists
+    mkdirSync(resultsDir, { recursive: true });
 
     // Backup existing capture.json if exists
     const captureJsonPath = join(process.cwd(), 'capture.json');
@@ -554,9 +550,6 @@ async function main() {
       unlinkSync(captureJsonPath);
       console.log(`📦 Backed up existing capture.json to ${backupPath}`);
     }
-
-    const runner = new BridgeTestRunner();
-    const results: TestResult[] = [];
 
     // Determine which scenarios to run
     const scenariosToRun = scenarioArg 
@@ -569,41 +562,50 @@ async function main() {
       process.exit(1);
     }
 
-    // Run specified scenarios
-    for (const scenarioKey of scenariosToRun) {
+    // Run scenarios in parallel
+    console.log(`\n🚀 Running ${scenariosToRun.length} test scenarios in parallel...\n`);
+    
+    const testPromises = scenariosToRun.map(async (scenarioKey) => {
+      const runner = new BridgeTestRunner();
       const result = await runner.runScenario(scenarioKey);
-      results.push(result);
       
-      // Save individual result
-      const resultPath = join(scenariosDir, `${scenarioKey}-${Date.now()}.json`);
-      writeFileSync(resultPath, JSON.stringify(result, null, 2));
-      console.log(`💾 Saved result to ${resultPath}`);
-    }
+      // Save individual test result immediately after completion
+      const individualResultPath = join(resultsDir, `scenario-${scenarioKey}-${Date.now()}.json`);
+      writeFileSync(individualResultPath, JSON.stringify(result, null, 2));
+      console.log(`💾 Saved ${scenarioKey} results to ${individualResultPath}`);
+      
+      return result;
+    });
+    
+    const results = await Promise.all(testPromises);
 
-    // Save summary
-    const summary = {
+    // Save all results in a single file
+    const testRun = {
       testRun: new Date().toISOString(),
-      scenarios: results.map(r => ({
-        scenario: r.scenario,
-        name: r.scenarioName,
-        duration: r.duration,
-        turns: r.messages.filter(m => m.role === 'assistant').length,
-        toolCalls: r.toolCalls.length,
-        error: r.error
-      })),
-      results
+      summary: {
+        totalScenarios: results.length,
+        scenarios: results.map(r => ({
+          scenario: r.scenario,
+          name: r.scenarioName,
+          duration: r.duration,
+          turns: r.messages.filter(m => m.role === 'assistant').length,
+          toolCalls: r.toolCalls.length,
+          error: r.error
+        }))
+      },
+      results: results
     };
 
-    const summaryPath = join(resultsDir, `test-run-${Date.now()}.json`);
-    writeFileSync(summaryPath, JSON.stringify(summary, null, 2));
-    console.log(`\n📊 Test run complete. Summary saved to ${summaryPath}`);
+    const testRunPath = join(resultsDir, `test-run-${Date.now()}.json`);
+    writeFileSync(testRunPath, JSON.stringify(testRun, null, 2));
+    console.log(`\n📊 Test run complete. All results saved to ${testRunPath}`);
 
     // Print summary
     console.log('\n' + '='.repeat(80));
     console.log('TEST SUMMARY');
     console.log('='.repeat(80));
     
-    for (const scenario of summary.scenarios) {
+    for (const scenario of testRun.summary.scenarios) {
       console.log(`\n${scenario.name}:`);
       console.log(`  Duration: ${scenario.duration?.toFixed(1)}s`);
       console.log(`  Turns: ${scenario.turns}`);
