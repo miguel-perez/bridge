@@ -98,8 +98,8 @@ export class RecallHandler {
         relevance_score: result.relevance_score
       }));
       
-      // Check if IDs should be shown (explicit parameter or query intent)
-      const showIds = recall.show_ids || this.shouldShowIds(recall.query);
+      // Show IDs only if explicitly requested
+      const showIds = recall.show_ids || false;
       
       // Format results using conversational formatter
       const response = formatRecallResponse(recallResults, showIds);
@@ -119,21 +119,5 @@ export class RecallHandler {
         }]
       };
     }
-  }
-  
-  /**
-   * Determine if IDs should be shown based on query intent
-   */
-  private shouldShowIds(query?: string): boolean {
-    if (!query) return false;
-    
-    const modificationKeywords = [
-      'update', 'modify', 'change', 'edit', 'reconsider',
-      'delete', 'remove', 'release', 'let go',
-      'fix', 'correct', 'revise', 'id', 'which'
-    ];
-    
-    const queryLower = query.toLowerCase();
-    return modificationKeywords.some(keyword => queryLower.includes(keyword));
   }
 }
