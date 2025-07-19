@@ -5,9 +5,9 @@ export const PerspectiveEnum = z.enum(['I', 'we', 'you', 'they']).describe('Pers
 export const ProcessingEnum = z.enum(['during', 'right-after', 'long-after']).describe('When processing occurred: during (real-time), right-after (immediate), long-after (retrospective)');
 // Remove 'crafted' from ProcessingEnumWithCrafted
 export const ProcessingEnumWithCrafted = ProcessingEnum; // For compatibility, but no 'crafted'
-// Simplified quality types from README, mapped to theoretical concepts from FRAMED_MOMENTS.md
+// Simplified quality types for experiential dimensions
 export const QualityTypeEnum = z.enum(['embodied', 'focus', 'mood', 'purpose', 'space', 'time', 'presence']).describe(`
-The experiential quality being analyzed. Based on FRAMED_MOMENTS.md theoretical framework:
+The experiential quality being analyzed:
 
 - embodied: How consciousness textures through physicality (thinking/sensing)
 - focus: Direction and quality of awareness (narrow/broad)
@@ -59,7 +59,7 @@ Quality detection guide:
 - presence: When social dimension doesn't clearly fit individual/collective subtypes
 
 Example: ["embodied.sensing", "mood.open", "purpose.goal"]
-Following FRAMED_MOMENTS.md principle: "dimensions either emerge prominently or recede."`);
+Dimensions either emerge prominently or recede - only include what stands out.`);
 
 // Experience analysis (all fields optional for update)
 export const ExperienceObjectOptional = z.array(z.string()).describe(`Array of qualities that emerge prominently in this moment. Use dot notation to specify subtypes:
@@ -73,14 +73,14 @@ export const ExperienceObjectOptional = z.array(z.string()).describe(`Array of q
 
 // EXPERIENCE tool input
 export const ExperienceInputSchema = z.object({
-  source: z.string().min(1).describe("Raw, exact words from the experiencer - their actual text/voice as written or spoken OR your own experiential observations. Do not summarize, interpret, or modify. This is the source material that will be processed into a framed moment.").optional(),
+  source: z.string().min(1).describe("Raw, exact words from the experiencer - their actual text/voice as written or spoken OR your own experiential observations. Do not summarize, interpret, or modify.").optional(),
   perspective: PerspectiveField.optional(),
   experiencer: z.string().describe('Who experienced this moment - "Human" for their experiences, "Claude" for your experiences, or their name if provided').optional(),
   processing: ProcessingEnum.optional(),
   crafted: z.boolean().describe('Whether this is crafted content (blog/refined for an audience) vs raw experience (journal/immediate)').optional(),
   experience: ExperienceObject.optional(),
   experiences: z.array(z.object({
-    source: z.string().min(1).describe("Raw, exact words from the experiencer - their actual text/voice as written or spoken. Do not summarize, interpret, or modify. This is the source material that will be processed into a framed moment."),
+    source: z.string().min(1).describe("Raw, exact words from the experiencer - their actual text/voice as written or spoken. Do not summarize, interpret, or modify."),
     perspective: PerspectiveField.optional(),
     experiencer: z.string().describe('Who experienced this moment (person, group, or entity)').optional(),
     processing: ProcessingEnum.optional(),

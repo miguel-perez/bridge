@@ -29,10 +29,10 @@ export const EXPERIENCE_DEFAULTS = {
 
 /**
  * Zod schema for validating experience input.
- * Content is optional - if not provided, a default will be used.
+ * Source is optional - if not provided, a default will be used.
  */
 export const experienceSchema = z.object({
-  content: z.string().optional(),
+  source: z.string().optional(),
   perspective: z.enum(['I', 'we', 'you', 'they']).optional(),
   experiencer: z.string().optional(),
   processing: z.enum(['during', 'right-after', 'long-after']).optional(),
@@ -46,7 +46,7 @@ export const experienceSchema = z.object({
  * Input type for experienceing experiential data.
  */
 export interface ExperienceInput {
-  content?: string;
+  source?: string;
   perspective?: string;
   experiencer?: string;
   processing?: string;
@@ -92,8 +92,8 @@ export class ExperienceService {
     // Auto-generate created timestamp
     const created = new Date().toISOString();
     
-    // Use content or default
-    const source = validatedInput.content || 'Experience experienceed';
+    // Use source or default
+    const source = validatedInput.source || 'Experience experienceed';
     
     // Create experience with prominent qualities
     let experience: Experience | undefined;
@@ -160,7 +160,7 @@ export class ExperienceService {
     if (!originalInput.perspective) defaultsUsed.push('perspective="I"');
     if (!originalInput.experiencer) defaultsUsed.push('experiencer="self"');
     if (!originalInput.processing) defaultsUsed.push('processing="during"');
-    if (!originalInput.content) defaultsUsed.push('content="Experience experienceed"');
+    if (!originalInput.source) defaultsUsed.push('source="Experience experienceed"');
     return defaultsUsed;
   }
 } 

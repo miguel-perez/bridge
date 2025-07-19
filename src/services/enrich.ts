@@ -29,7 +29,7 @@ export const ENRICH_DEFAULTS = {
  */
 export const enrichSchema = z.object({
   id: z.string().describe('ID of the source to enrich'),
-  content: z.string().optional().describe('Updated content'),
+  source: z.string().optional().describe('Updated source text'),
   perspective: z.string().optional().describe('Updated perspective'),
   experiencer: z.string().optional().describe('Updated experiencer'),
   processing: z.string().optional().describe('Updated processing level'),
@@ -42,7 +42,7 @@ export const enrichSchema = z.object({
  */
 export interface EnrichInput {
   id: string;
-  content?: string;
+  source?: string;
   perspective?: string;
   experiencer?: string;
   processing?: ProcessingLevel;
@@ -90,7 +90,7 @@ export class EnrichService {
 
     // Determine if we need to regenerate embeddings
     const shouldRegenerateEmbeddings = 
-      (input.content && input.content !== existingSource.source) ||
+      (input.source && input.source !== existingSource.source) ||
       (input.experience && 
        JSON.stringify(input.experience) !== 
        JSON.stringify(existingSource.experience));
@@ -98,16 +98,16 @@ export class EnrichService {
     // Generate new embedding if needed
     let embedding: number[] | undefined;
     if (shouldRegenerateEmbeddings) {
-      // Create the new embedding text format: "[content]" [prominent_qualities]
+      // Create the new embedding text format: "[source]" [prominent_qualities]
       const experience = processedExperience || existingSource.experience;
-      const content = input.content || existingSource.source;
+      const source = input.source || existingSource.source;
       
       if (experience) {
         const qualitiesText = experience.length > 0 
           ? `[${experience.join(', ')}]`
           : '[]';
         
-        const embeddingText = `"${content}" ${qualitiesText}`;
+        const embeddingText = `"${source}" ${qualitiesText}`;
         
         try {
           embedding = await embeddingService.generateEmbedding(embeddingText);
@@ -120,7 +120,7 @@ export class EnrichService {
     // Create updated source
     const updatedSource = {
       ...existingSource,
-      source: input.content ?? existingSource.source,
+      source: input.source ?? existingSource.source,
       perspective: input.perspective ?? existingSource.perspective,
       experiencer: input.experiencer ?? existingSource.experiencer,
       processing: input.processing ?? existingSource.processing,
@@ -168,7 +168,7 @@ export class EnrichService {
    */
   private getUpdatedFields(original: Source, updated: Source): string[] {
     const fields: string[] = [];
-    if (original.source !== updated.source) fields.push('content');
+    if (original.source !== updated.source) fields.push('source');
     if (original.perspective !== updated.perspective) fields.push('perspective');
     if (original.experiencer !== updated.experiencer) fields.push('experiencer');
     if (original.processing !== updated.processing) fields.push('processing');

@@ -21,7 +21,7 @@ jest.mock('./embeddings.js', () => ({
 function makeSource(overrides: Partial<Source> = {}): Source {
   return {
     id: overrides.id || uuidv4(),
-    source: overrides.source || 'Original content',
+    source: overrides.source || 'Original source text',
     created: overrides.created || new Date().toISOString(),
     perspective: overrides.perspective || 'I',
     experiencer: overrides.experiencer || 'self',
@@ -44,13 +44,13 @@ describe('EnrichService', () => {
     await saveSource(baseSource);
   });
 
-  test('enriches an existing record with new content', async () => {
+  test('enriches an existing record with new source', async () => {
     const result = await enrichService.enrichSource({
       id: baseSource.id,
-      content: 'Updated content',
+      source: 'Updated source',
     });
-    expect(result.source.source).toBe('Updated content');
-    expect(result.updatedFields).toContain('content');
+    expect(result.source.source).toBe('Updated source');
+    expect(result.updatedFields).toContain('source');
   });
 
   test('partial update: only updates provided fields', async () => {
@@ -75,14 +75,14 @@ describe('EnrichService', () => {
   test('throws if record does not exist', async () => {
     await expect(enrichService.enrichSource({
       id: 'nonexistent-id',
-      content: 'Should fail'
+      source: 'Should fail'
     })).rejects.toThrow(/not found/);
   });
 
   test('accepts any perspective string', async () => {
     const input = { 
       id: 'test', 
-      content: 'test', 
+      source: 'test', 
       perspective: 'invalid' 
     };
     expect(() => enrichSchema.parse(input)).not.toThrow();
@@ -91,7 +91,7 @@ describe('EnrichService', () => {
   test('accepts valid experience array', async () => {
     const input = {
       id: 'test',
-      content: 'test',
+      source: 'test',
       experience: ['mood.open', 'embodied.sensing', 'purpose.goal']
     };
     expect(() => enrichSchema.parse(input)).not.toThrow();

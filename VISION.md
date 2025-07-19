@@ -47,7 +47,7 @@ Each experience has a **quality signature** - which are genuinely prominent:
 
 ## The Eight Operations
 
-1. **remember()** - Capture experiences with qualities
+1. **experience()** - Remember experiences with qualities
 2. **recall()** - Access memories across perspectives
 3. **understand()** - Discover patterns in experiences
 4. **imagine()** - Explore transformation possibilities
@@ -73,7 +73,7 @@ Pattern: "Physical collaboration (space.here + presence.collective) precedes men
 
 # Bridge Operations Reference
 
-### 1. `remember()` - WE capture our experiences
+### 1. `experience()` - WE remember our experiences
 
 **Natural moment**: 
 ```
@@ -83,7 +83,7 @@ AI: "I could feel your nervousness transform into confidence when the client smi
 
 **What happens invisibly**:
 ```typescript
-remember([
+experience([
     {
       source: "Presentation was terrifying but we pulled it off",
       experiencer: "Human",

@@ -157,7 +157,7 @@ export async function getTools(): Promise<any[]> {
           output: {
             content: [{
               type: 'text',
-              text: '✅ Successfully captured 2 experiences'
+              text: '✅ Successfully remembered 2 experiences'
             }]
           }
         }

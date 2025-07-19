@@ -55,11 +55,11 @@ MCP Client (Claude) → MCP Server → Tool Handlers → Services → Storage
 1. **MCP Layer** (`src/mcp/`)
    - `server.ts` - MCP protocol implementation, routes tool calls
    - `handlers.ts` - Coordinates tool handlers
-   - `*-handler.ts` - Individual tool implementations (remember, recall, etc.)
+   - `*-handler.ts` - Individual tool implementations (experience, recall, etc.)
    - Tool handlers validate input and delegate to services
 
 2. **Services** (`src/services/`)
-   - `remember.ts` - Captures experiences with quality signatures
+   - `experience.ts` - Remembers experiences with quality signatures
    - `recall.ts` - Semantic search with multiple strategies
    - `reconsider.ts` - Updates existing experiences
    - `release.ts` - Removes experiences
@@ -87,7 +87,7 @@ experience({ source: "I feel anxious", experience: ["embodied.sensing", "mood.cl
 // 4. Service creates Source record, generates embedding
 // 5. Storage saves to JSON, returns result
 // 6. Handler formats user-friendly response
-// 7. Claude receives: "Remembered (embodied.sensing, mood.closed)"
+// 7. Claude receives: "Experienced (embodied.sensing, mood.closed)"
 ```
 
 ### Test Scenarios

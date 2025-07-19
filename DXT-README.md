@@ -31,8 +31,8 @@ After installation, you'll need to configure:
 
 Once installed, Bridge provides four MCP tools:
 
-### 1. Capture
-Preserve experiences with seven-dimensional phenomenological analysis:
+### 1. Experience
+Remember experiences with seven-dimensional phenomenological analysis:
 - **Embodied**: Physical sensations and somatic awareness
 - **Attentional**: Focus patterns and awareness distribution
 - **Affective**: Emotional qualities and feeling tones
@@ -42,14 +42,14 @@ Preserve experiences with seven-dimensional phenomenological analysis:
 - **Intersubjective**: Relational and social dimensions
 
 ### 2. Search
-Find captured experiences through:
+Find remembered experiences through:
 - Text matching (40%)
 - Vector similarity (30%)
 - Semantic relevance (20%)
 - Filter matches (10%)
 
 ### 3. Update
-Correct or enhance existing captures:
+Correct or enhance existing experiences:
 - Fix content errors
 - Update experiential analysis
 - Regenerate embeddings

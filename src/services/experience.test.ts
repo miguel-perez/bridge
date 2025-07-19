@@ -10,7 +10,7 @@ describe('ExperienceService', () => {
   describe('captureExperience', () => {
     it('should experience a basic experience successfully', async () => {
       const input = {
-        content: 'Test experience',
+        source: 'Test experience',
         experiencer: 'test_user'
       };
 
@@ -37,18 +37,18 @@ describe('ExperienceService', () => {
       expect(result.defaultsUsed).toContain('processing="during"');
     });
 
-    it('should use default content when not provided', async () => {
+    it('should use default source when not provided', async () => {
       const input = { experiencer: 'test_user' };
 
       const result = await experienceService.captureExperience(input);
 
       expect(result.source.source).toBe('Experience experienceed');
-      expect(result.defaultsUsed).toContain('content="Experience experienceed"');
+      expect(result.defaultsUsed).toContain('source="Experience experienceed"');
     });
 
     it('should generate embeddings for experienceed experiences', async () => {
       const input = {
-        content: 'Test experience for embedding',
+        source: 'Test experience for embedding',
         experiencer: 'test_user'
       };
 
@@ -60,7 +60,7 @@ describe('ExperienceService', () => {
 
     it('should handle experience qualities when provided', async () => {
       const input = {
-        content: 'Test experience',
+        source: 'Test experience',
         experiencer: 'test_user',
         experience: ['mood.open', 'embodied.sensing', 'purpose.goal']
       };
@@ -72,7 +72,7 @@ describe('ExperienceService', () => {
 
     it('should handle empty experience array', async () => {
       const input = {
-        content: 'Test experience',
+        source: 'Test experience',
         experiencer: 'test_user',
         experience: []
       };
@@ -86,7 +86,7 @@ describe('ExperienceService', () => {
   describe('experienceSchema', () => {
     it('should validate valid input', () => {
       const input = {
-        content: 'Test experience',
+        source: 'Test experience',
         experiencer: 'test_user',
         perspective: 'I',
         processing: 'during',
@@ -99,7 +99,7 @@ describe('ExperienceService', () => {
 
     it('should validate input with optional fields', () => {
       const input = {
-        content: 'Test experience'
+        source: 'Test experience'
       };
 
       expect(() => experienceSchema.parse(input)).not.toThrow();

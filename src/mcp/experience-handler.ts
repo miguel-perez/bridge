@@ -80,7 +80,7 @@ export class ExperienceHandler {
         const results: ExperienceResult[] = [];
         for (const item of experience.experiences) {
           const result = await this.experienceService.captureExperience({
-            content: item.source,
+            source: item.source,
             perspective: item.perspective,
             experiencer: item.experiencer,
             processing: item.processing,
@@ -103,7 +103,7 @@ export class ExperienceHandler {
       } else {
         // Single experience with natural formatting
         const result = await this.experienceService.captureExperience({
-          content: experience.source,
+          source: experience.source,
           perspective: experience.perspective,
           experiencer: experience.experiencer,
           processing: experience.processing,
