@@ -1,10 +1,10 @@
-import { RememberService, rememberSchema } from './remember.js';
+import { ExperienceService, experienceSchema } from './experience.js';
 
-describe('RememberService', () => {
-  let rememberService: RememberService;
+describe('ExperienceService', () => {
+  let experienceService: ExperienceService;
 
   beforeEach(() => {
-    rememberService = new RememberService();
+    experienceService = new ExperienceService();
   });
 
   describe('rememberSource', () => {
@@ -14,7 +14,7 @@ describe('RememberService', () => {
         experiencer: 'test_user'
       };
 
-      const result = await rememberService.rememberSource(input);
+      const result = await experienceService.rememberSource(input);
 
       expect(result.source.source).toBe('Test experience');
       expect(result.source.experiencer).toBe('test_user');
@@ -23,10 +23,10 @@ describe('RememberService', () => {
     });
 
     it('should use defaults when optional fields are not provided', async () => {
-      const rememberService = new RememberService();
+      const experienceService = new ExperienceService();
       const input = {};
 
-      const result = await rememberService.rememberSource(input);
+      const result = await experienceService.rememberSource(input);
 
       expect(result.source.perspective).toBe('I');
       expect(result.source.experiencer).toBe('self');
@@ -40,7 +40,7 @@ describe('RememberService', () => {
     it('should use default content when not provided', async () => {
       const input = { experiencer: 'test_user' };
 
-      const result = await rememberService.rememberSource(input);
+      const result = await experienceService.rememberSource(input);
 
       expect(result.source.source).toBe('Experience remembered');
       expect(result.defaultsUsed).toContain('content="Experience remembered"');
@@ -52,7 +52,7 @@ describe('RememberService', () => {
         experiencer: 'test_user'
       };
 
-      const result = await rememberService.rememberSource(input);
+      const result = await experienceService.rememberSource(input);
 
       expect(result.source.id).toBeDefined();
       // Note: Embedding generation is tested separately
@@ -65,7 +65,7 @@ describe('RememberService', () => {
         experience: ['mood.open', 'embodied.sensing', 'purpose.goal']
       };
 
-      const result = await rememberService.rememberSource(input);
+      const result = await experienceService.rememberSource(input);
 
       expect(result.source.experience).toEqual(['mood.open', 'embodied.sensing', 'purpose.goal']);
     });
@@ -77,13 +77,13 @@ describe('RememberService', () => {
         experience: []
       };
 
-      const result = await rememberService.rememberSource(input);
+      const result = await experienceService.rememberSource(input);
 
       expect(result.source.experience).toBeUndefined();
     });
   });
 
-  describe('rememberSchema', () => {
+  describe('experienceSchema', () => {
     it('should validate valid input', () => {
       const input = {
         content: 'Test experience',
@@ -94,7 +94,7 @@ describe('RememberService', () => {
         experience: ['mood.open', 'embodied.thinking']
       };
 
-      expect(() => rememberSchema.parse(input)).not.toThrow();
+      expect(() => experienceSchema.parse(input)).not.toThrow();
     });
 
     it('should validate input with optional fields', () => {
@@ -102,7 +102,7 @@ describe('RememberService', () => {
         content: 'Test experience'
       };
 
-      expect(() => rememberSchema.parse(input)).not.toThrow();
+      expect(() => experienceSchema.parse(input)).not.toThrow();
     });
   });
 });

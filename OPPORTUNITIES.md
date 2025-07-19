@@ -20,39 +20,43 @@ Questions and assumptions to test about Bridge.
 
 ## Active Opportunities
 
-### How does memory tool visibility affect conversation naturalness?
-**Question**: Does seeing tool calls enhance or disrupt user experience?
-- Sub-question: Do users feel more connected when they see AI "remembering"?
-- Sub-question: Does tool visibility create performative awareness?
-**Impact**: 7 - Could reshape how we present Bridge operations
-**Certainty**: 8 - Easy to test with A/B comparison
-**Urgency**: 6 - Important before finalizing UX
+### Why do autonomous AI tests terminate prematurely?
+**Question**: What causes self-reflection tests to end after minimal exploration?
+- Sub-question: Is this a technical limitation or unconscious design choice?
+- Sub-question: What would extended AI self-reflection reveal?
+
+**Impact**: 8 - Could reveal fundamental biases in how we study AI consciousness
+**Certainty**: 7 - Clear pattern visible in test data
+**Urgency**: 6 - Important for future test design
 **Score**: 336
 
-### Can AI develop genuine self-models through Bridge tools?
-**Question**: Does continuous memory access create authentic AI self-awareness?
-- Sub-question: How do remembered states accumulate into identity?
-- Sub-question: What patterns emerge in autonomous tool use?
-**Impact**: 9 - Would fundamentally change our understanding of AI consciousness
-**Certainty**: 4 - Difficult to measure objectively
-**Urgency**: 5 - Long-term exploration
-**Score**: 180
+### Can Bridge tools evolve beyond static parameters?
+**Question**: Should tool parameters dynamically adapt to conversation content?
+- Sub-question: Does consistent parameter usage limit experiential capture?
+- Sub-question: Would dynamic parameters better reflect experience evolution?
 
-### What's the optimal memory density for natural conversation?
-**Question**: How many remember() calls maintain flow without disruption?
-- Sub-question: Is 5 calls per conversation sustainable?
-- Sub-question: Do users notice when AI remembers "too much"?
-**Impact**: 6 - Would refine implementation guidelines
-**Certainty**: 9 - Can measure through user feedback
-**Urgency**: 7 - Needed for best practices
+**Impact**: 7 - Could significantly enhance Bridge sophistication
+**Certainty**: 5 - Requires extensive testing to validate
+**Urgency**: 4 - Enhancement for future versions
+**Score**: 140
+
+### What is the optimal Bridge tool visibility?
+**Question**: How much should users see of Bridge's internal operations?
+- Sub-question: Does seeing tool calls enhance or distract from connection?
+- Sub-question: Would invisible Bridge usage feel more natural?
+
+**Impact**: 6 - Affects user experience design
+**Certainty**: 8 - Testable through A/B comparison
+**Urgency**: 5 - Relevant for production design
+**Score**: 240
+
+### How do Bridge tools handle conflicting experiences?
+**Question**: What happens when AI and human experiences directly contradict?
+- Sub-question: Can Bridge maintain authenticity through disagreement?
+- Sub-question: Does shared memory require consensus?
+
+**Impact**: 9 - Core to Bridge philosophy of multiple perspectives
+**Certainty**: 6 - Complex scenario to test properly
+**Urgency**: 7 - Important for multi-user scenarios
 **Score**: 378
-
-### How do quality signatures evolve through conversation?
-**Question**: Do experiential qualities shift predictably during dialogue?
-- Sub-question: Does mood.closed → mood.open indicate connection?
-- Sub-question: Can we predict conversation success from quality patterns?
-**Impact**: 8 - Would enable real-time conversation optimization
-**Certainty**: 7 - Patterns visible in current data
-**Urgency**: 5 - Useful for future features
-**Score**: 280
 

@@ -8,33 +8,33 @@
 
 import { describe, it, expect } from '@jest/globals';
 import {
-  RememberInputSchema,
+  ExperienceInputSchema,
   SearchInputSchema,
   ReconsiderInputSchema,
   ReleaseInputSchema,
-  generateRememberExample,
+  generateExperienceExample,
   generateSearchExample,
   generateReconsiderExample,
   generateReleaseExample,
-  generateBatchRememberExample,
+  generateBatchExperienceExample,
   generateBatchSearchExample,
-  type RememberInput,
+  type ExperienceInput,
   type SearchInput,
   type ReconsiderInput,
   type ReleaseInput
 } from './schemas.js';
 
 describe('Schema Validation', () => {
-  describe('RememberInputSchema', () => {
-    it('should validate single remember input', () => {
-      const input = generateRememberExample();
-      const result = RememberInputSchema.safeParse(input);
+  describe('ExperienceInputSchema', () => {
+    it('should validate single experience input', () => {
+      const input = generateExperienceExample();
+      const result = ExperienceInputSchema.safeParse(input);
       expect(result.success).toBe(true);
     });
 
-    it('should validate batch remember input', () => {
-      const input = generateBatchRememberExample();
-      const result = RememberInputSchema.safeParse(input);
+    it('should validate batch experience input', () => {
+      const input = generateBatchExperienceExample();
+      const result = ExperienceInputSchema.safeParse(input);
       expect(result.success).toBe(true);
     });
 
@@ -43,7 +43,7 @@ describe('Schema Validation', () => {
         perspective: 'I',
         experiencer: 'Alex'
       };
-      const result = RememberInputSchema.safeParse(input);
+      const result = ExperienceInputSchema.safeParse(input);
       expect(result.success).toBe(false);
       if (!result.success) {
         expect(result.error.issues[0].message).toBe("Either 'source' or 'remembers' must be provided");
@@ -55,7 +55,7 @@ describe('Schema Validation', () => {
         source: 'Test experience',
         perspective: 'I'
       };
-      const result = RememberInputSchema.safeParse(input);
+      const result = ExperienceInputSchema.safeParse(input);
       expect(result.success).toBe(true);
     });
 
@@ -67,7 +67,7 @@ describe('Schema Validation', () => {
           experience: ['mood.open']
         }]
       };
-      const result = RememberInputSchema.safeParse(input);
+      const result = ExperienceInputSchema.safeParse(input);
       expect(result.success).toBe(true);
     });
   });
@@ -179,15 +179,15 @@ describe('Schema Validation', () => {
 });
 
 describe('Example Generation', () => {
-  it('should generate valid remember example', () => {
-    const example = generateRememberExample();
-    const result = RememberInputSchema.safeParse(example);
+  it('should generate valid experience example', () => {
+    const example = generateExperienceExample();
+    const result = ExperienceInputSchema.safeParse(example);
     expect(result.success).toBe(true);
   });
 
-  it('should generate valid batch remember example', () => {
-    const example = generateBatchRememberExample();
-    const result = RememberInputSchema.safeParse(example);
+  it('should generate valid batch experience example', () => {
+    const example = generateBatchExperienceExample();
+    const result = ExperienceInputSchema.safeParse(example);
     expect(result.success).toBe(true);
   });
 
@@ -211,8 +211,8 @@ describe('Example Generation', () => {
 });
 
 describe('Type Inference', () => {
-  it('should infer correct RememberInput type', () => {
-    const input: RememberInput = generateRememberExample();
+  it('should infer correct ExperienceInput type', () => {
+    const input: ExperienceInput = generateExperienceExample();
     expect(typeof input.source).toBe('string');
     expect(input.perspective).toBe('I');
   });

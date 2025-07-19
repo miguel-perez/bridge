@@ -1,11 +1,11 @@
-import { RememberService } from '../services/remember.js';
+import { ExperienceService } from '../services/experience.js';
 import { RecallService } from '../services/recall.js';
 import { ToolResult, ToolResultSchema } from './schemas.js';
-import type { RememberInput } from './schemas.js';
+import type { ExperienceInput } from './schemas.js';
 import { 
-  formatBatchRememberResponse, 
-  formatRememberResponse,
-  type RememberResult
+  formatBatchExperienceResponse, 
+  formatExperienceResponse,
+  type ExperienceResult
 } from '../utils/formatters.js';
 import { Messages, formatMessage } from '../utils/messages.js';
 
@@ -24,12 +24,12 @@ export interface RememberResponse {
   error?: string;
 }
 
-export class RememberHandler {
-  private rememberService: RememberService;
+export class ExperienceHandler {
+  private experienceService: ExperienceService;
   private recallService: RecallService;
 
   constructor() {
-    this.rememberService = new RememberService();
+    this.experienceService = new ExperienceService();
     this.recallService = new RecallService();
   }
 
@@ -39,7 +39,7 @@ export class RememberHandler {
    * @param args - The remember arguments containing the experiential data
    * @returns Formatted remember result
    */
-  async handle(args: RememberInput): Promise<ToolResult> {
+  async handle(args: ExperienceInput): Promise<ToolResult> {
     try {
       const result = await this.handleRegularRemember(args);
       ToolResultSchema.parse(result);
@@ -58,7 +58,7 @@ export class RememberHandler {
    * Handle regular remember with natural formatting
    */
   private async handleRegularRemember(
-    remember: RememberInput
+    remember: ExperienceInput
   ): Promise<ToolResult> {
     try {
       // Validate required fields - handle both single and batch remembers
@@ -77,9 +77,9 @@ export class RememberHandler {
       // Handle batch remembers or single remember
       if (remember.remembers && remember.remembers.length > 0) {
         // Batch remember - process each item
-        const results: RememberResult[] = [];
+        const results: ExperienceResult[] = [];
         for (const item of remember.remembers) {
-          const result = await this.rememberService.rememberSource({
+          const result = await this.experienceService.rememberSource({
             content: item.source,
             perspective: item.perspective,
             experiencer: item.experiencer,
@@ -91,7 +91,7 @@ export class RememberHandler {
         }
         
         // Format batch response using conversational formatter
-        const response = formatBatchRememberResponse(results);
+        const response = formatBatchExperienceResponse(results);
         
         return {
           content: [{
@@ -102,7 +102,7 @@ export class RememberHandler {
         
       } else {
         // Single remember with natural formatting
-        const result = await this.rememberService.rememberSource({
+        const result = await this.experienceService.rememberSource({
           content: remember.source,
           perspective: remember.perspective,
           experiencer: remember.experiencer,
@@ -112,7 +112,7 @@ export class RememberHandler {
         });
 
         // Use natural conversational formatting
-        let response = formatRememberResponse(result);
+        let response = formatExperienceResponse(result);
         
         // Find similar experience if any
         const similarText = remember.source ? 

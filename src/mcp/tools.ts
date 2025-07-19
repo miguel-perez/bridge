@@ -33,7 +33,7 @@
 // Zod-based schemas for MCP tools
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import {
-  RememberInputSchema,
+  ExperienceInputSchema,
   SearchInputSchema,
   ReconsiderInputSchema,
   ReleaseInputSchema
@@ -41,7 +41,7 @@ import {
 
 
 // JSON Schemas for MCP tool registration - generate without $ref structure
-export const RememberInputJsonSchema = zodToJsonSchema(RememberInputSchema);
+export const ExperienceInputJsonSchema = zodToJsonSchema(ExperienceInputSchema);
 export const SearchInputJsonSchema = zodToJsonSchema(SearchInputSchema);
 export const ReconsiderInputJsonSchema = zodToJsonSchema(ReconsiderInputSchema);
 export const ReleaseInputJsonSchema = zodToJsonSchema(ReleaseInputSchema);
@@ -57,9 +57,9 @@ function makeDraft202012Schema(schema: any): any {
 export async function getTools(): Promise<any[]> {
   return [
     {
-      name: 'remember',
+      name: 'experience',
       description: `Capture experiential moments from conversations to build shared memory. Preserves authentic experiences with exact words and identifies prominent experiential qualities. Use for meaningful personal experiences, insights, emotionally significant moments, AND your own experiential responses to build multi-perspective shared consciousness.`,
-      inputSchema: RememberInputJsonSchema,
+      inputSchema: ExperienceInputJsonSchema,
       readOnlyHint: false,
       destructiveHint: false,
       idempotentHint: false,

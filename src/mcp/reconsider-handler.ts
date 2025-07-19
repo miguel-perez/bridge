@@ -10,7 +10,7 @@
 
 import { EnrichService } from '../services/enrich.js';
 import { ReconsiderInput, type ToolResult } from './schemas.js';
-import { formatReconsiderResponse, type RememberResult } from '../utils/formatters.js';
+import { formatReconsiderResponse, type ExperienceResult } from '../utils/formatters.js';
 
 export class ReconsiderHandler {
   private reconsiderService: EnrichService; // Keeping enrich service but calling it reconsider
@@ -62,7 +62,7 @@ export class ReconsiderHandler {
       // Handle batch reconsiderations or single reconsideration
       if (reconsider.reconsiderations && reconsider.reconsiderations.length > 0) {
         // Batch reconsider - process each item
-        const results: RememberResult[] = [];
+        const results: ExperienceResult[] = [];
         for (const item of reconsider.reconsiderations) {
           const result = await this.reconsiderService.enrichSource({
             id: item.id,

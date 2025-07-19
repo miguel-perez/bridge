@@ -31,7 +31,7 @@ export const REMEMBER_DEFAULTS = {
  * Zod schema for validating remember input.
  * Content is optional - if not provided, a default will be used.
  */
-export const rememberSchema = z.object({
+export const experienceSchema = z.object({
   content: z.string().optional(),
   perspective: z.enum(['I', 'we', 'you', 'they']).optional(),
   experiencer: z.string().optional(),
@@ -45,7 +45,7 @@ export const rememberSchema = z.object({
 /**
  * Input type for remembering experiential data.
  */
-export interface RememberInput {
+export interface ExperienceInput {
   content?: string;
   perspective?: string;
   experiencer?: string;
@@ -57,7 +57,7 @@ export interface RememberInput {
 /**
  * Result of a remember operation.
  */
-export interface RememberResult {
+export interface ExperienceResult {
   source: Source;
   defaultsUsed: string[];
 }
@@ -69,7 +69,7 @@ export interface RememberResult {
 /**
  * Service for remembering and storing experiential sources.
  */
-export class RememberService {
+export class ExperienceService {
   // private enhancedEmbeddingService: EnhancedEmbeddingService;
 
   constructor() {
@@ -82,9 +82,9 @@ export class RememberService {
    * @returns Remember result with source record and defaults used
    * @throws Error if validation fails or required fields are missing
    */
-  async rememberSource(input: RememberInput): Promise<RememberResult> {
+  async rememberSource(input: ExperienceInput): Promise<ExperienceResult> {
     // Validate input
-    const validatedInput = rememberSchema.parse(input);
+    const validatedInput = experienceSchema.parse(input);
     
     // Generate unique ID
     const id = await generateId();
@@ -155,7 +155,7 @@ export class RememberService {
    * @param originalInput - Original input data
    * @returns Array of default field descriptions
    */
-  private getDefaultsUsed(originalInput: RememberInput): string[] {
+  private getDefaultsUsed(originalInput: ExperienceInput): string[] {
     const defaultsUsed = [];
     if (!originalInput.perspective) defaultsUsed.push('perspective="I"');
     if (!originalInput.experiencer) defaultsUsed.push('experiencer="self"');

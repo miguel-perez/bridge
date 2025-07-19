@@ -71,8 +71,8 @@ export const ExperienceObjectOptional = z.array(z.string()).describe(`Array of q
 - time.past, time.future
 - presence.individual, presence.collective`).optional();
 
-// REMEMBER tool input
-export const RememberInputSchema = z.object({
+// EXPERIENCE tool input
+export const ExperienceInputSchema = z.object({
   source: z.string().min(1).describe("Raw, exact words from the experiencer - their actual text/voice as written or spoken OR your own experiential observations. Do not summarize, interpret, or modify. This is the source material that will be processed into a framed moment.").optional(),
   perspective: PerspectiveField.optional(),
   experiencer: z.string().describe('Who experienced this moment - "Human" for their experiences, "Claude" for your experiences, or their name if provided').optional(),
@@ -174,7 +174,7 @@ export const ToolResultSchema = z.object({
 });
 
 // Example generation functions
-export function generateRememberExample(): RememberInput {
+export function generateExperienceExample(): ExperienceInput {
   return {
     source: "I'm sitting at my desk, the afternoon light streaming through the window. My fingers hover over the keyboard, that familiar mix of excitement and uncertainty bubbling up. This project feels like it could be something special, but I'm not quite sure how to start.",
     perspective: 'I',
@@ -211,7 +211,7 @@ export function generateReleaseExample(): ReleaseInput {
   };
 }
 
-export function generateBatchRememberExample(): RememberInput {
+export function generateBatchExperienceExample(): ExperienceInput {
   return {
     remembers: [
       {
@@ -252,8 +252,8 @@ export function generateBatchSearchExample(): SearchInput {
 }
 
 // Type guards using Zod schemas
-export function isRememberInput(value: unknown): value is RememberInput {
-  return RememberInputSchema.safeParse(value).success;
+export function isExperienceInput(value: unknown): value is ExperienceInput {
+  return ExperienceInputSchema.safeParse(value).success;
 }
 
 export function isSearchInput(value: unknown): value is SearchInput {
@@ -283,11 +283,11 @@ export function isExperienceObject(value: unknown): value is z.infer<typeof Expe
 
 
 // Utility type guards
-export function isSingleRememberInput(value: RememberInput): value is RememberInput & { source: string } {
+export function isSingleExperienceInput(value: ExperienceInput): value is ExperienceInput & { source: string } {
   return 'source' in value && typeof value.source === 'string';
 }
 
-export function isBatchRememberInput(value: RememberInput): value is RememberInput & { remembers: NonNullable<RememberInput['remembers']> } {
+export function isBatchExperienceInput(value: ExperienceInput): value is ExperienceInput & { remembers: NonNullable<ExperienceInput['remembers']> } {
   return 'remembers' in value && Array.isArray(value.remembers) && value.remembers.length > 0;
 }
 
@@ -319,7 +319,7 @@ export type ToolTextContent = z.infer<typeof ToolTextContentSchema>;
 export type ToolResult = z.infer<typeof ToolResultSchema>;
 
 // Inferred TypeScript types from Zod schemas
-export type RememberInput = z.infer<typeof RememberInputSchema>;
+export type ExperienceInput = z.infer<typeof ExperienceInputSchema>;
 export type SearchInput = z.infer<typeof SearchInputSchema>;
 export type ReconsiderInput = z.infer<typeof ReconsiderInputSchema>;
 export type ReleaseInput = z.infer<typeof ReleaseInputSchema>; 

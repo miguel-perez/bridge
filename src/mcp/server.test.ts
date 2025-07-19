@@ -66,19 +66,19 @@ describe('MCP Server Protocol Compliance', () => {
       
       // This would have failed without the initialize handler
       const tools = await client.listTools();
-      expect(tools.tools).toHaveLength(4); // remember, release, recall, reconsider
+      expect(tools.tools).toHaveLength(4); // experience, release, recall, reconsider
       
       const toolNames = tools.tools.map(t => t.name);
-      expect(toolNames).toContain('remember');
+      expect(toolNames).toContain('experience');
       expect(toolNames).toContain('recall');
       expect(toolNames).toContain('release');
       expect(toolNames).toContain('reconsider');
       
       // Verify tool annotations are present
-      const rememberTool = tools.tools.find(t => t.name === 'remember');
-      expect(rememberTool).toBeDefined();
-      expect(rememberTool?.readOnlyHint).toBe(false);
-      expect(rememberTool?.destructiveHint).toBe(false);
+      const experienceTool = tools.tools.find(t => t.name === 'experience');
+      expect(experienceTool).toBeDefined();
+      expect(experienceTool?.readOnlyHint).toBe(false);
+      expect(experienceTool?.destructiveHint).toBe(false);
 
       const recallTool = tools.tools.find(t => t.name === 'recall');
       expect(recallTool).toBeDefined();
@@ -92,7 +92,7 @@ describe('MCP Server Protocol Compliance', () => {
       expect(releaseTool).toBeDefined();
     }, 30000);
 
-    test('should execute remember tool with experiential qualities', async () => {
+    test('should execute experience tool with experiential qualities', async () => {
       
       transport = new StdioClientTransport({ 
         command: "node", 
@@ -107,7 +107,7 @@ describe('MCP Server Protocol Compliance', () => {
       await client.connect(transport);
       
       const result = await client.callTool({
-        name: 'remember',
+        name: 'experience',
         arguments: {
           content: 'I felt a deep sense of peace while walking in the forest',
           experiencer: 'Test User',
@@ -216,7 +216,7 @@ describe('MCP Server Protocol Compliance', () => {
       await client.connect(transport);
       
       const result = await client.callTool({
-        name: 'remember',
+        name: 'experience',
         arguments: {
           // Missing required fields
           source: '',
@@ -246,7 +246,7 @@ describe('MCP Server Protocol Compliance', () => {
       await client.connect(transport);
       
       const result = await client.callTool({
-        name: 'remember',
+        name: 'experience',
         arguments: {
           source: 'Test content',
           experiencer: 'Test User',
@@ -320,10 +320,10 @@ describe('MCP Server Protocol Compliance', () => {
       const tools = await client.listTools();
       
       // Check that tools have proper descriptions
-      const rememberTool = tools.tools.find(t => t.name === 'remember');
-      expect(rememberTool).toBeDefined();
-      expect(rememberTool?.description).toBeDefined();
-      expect(rememberTool?.description?.length).toBeGreaterThan(0);
+      const experienceTool = tools.tools.find(t => t.name === 'experience');
+      expect(experienceTool).toBeDefined();
+      expect(experienceTool?.description).toBeDefined();
+      expect(experienceTool?.description?.length).toBeGreaterThan(0);
       
       const recallTool = tools.tools.find(t => t.name === 'recall');
       expect(recallTool).toBeDefined();

@@ -239,8 +239,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const parsedArgs = parseStringifiedJson(args);
 
     switch (name) {
-      case 'remember':
-        return await toolHandlers.handle('remember', parsedArgs);
+      case 'experience':
+        return await toolHandlers.handle('experience', parsedArgs);
 
       case 'release':
         return await toolHandlers.handle('release', parsedArgs);

@@ -79,11 +79,11 @@ MCP Client (Claude) → MCP Server → Tool Handlers → Services → Storage
 ### Data Flow Example
 
 ```typescript
-// 1. Claude calls remember tool
-remember({ source: "I feel anxious", experience: ["embodied.sensing", "mood.closed"] })
+// 1. Claude calls experience tool
+experience({ source: "I feel anxious", experience: ["embodied.sensing", "mood.closed"] })
 
-// 2. MCP server routes to RememberHandler
-// 3. Handler validates and calls RememberService
+// 2. MCP server routes to ExperienceHandler
+// 3. Handler validates and calls ExperienceService
 // 4. Service creates Source record, generates embedding
 // 5. Storage saves to JSON, returns result
 // 6. Handler formats user-friendly response

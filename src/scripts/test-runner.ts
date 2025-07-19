@@ -75,7 +75,7 @@ const TEST_SCENARIOS: Record<string, TestScenario> = {
     name: 'AI Self-Awakening Test',
     description: 'Can Claude use Bridge for its own thinking and self-awareness?',
     userGoal: 'Explore if AI can use Bridge as a tool for its own consciousness',
-    maxTurns: 1, // Just Claude's autonomous response
+    maxTurns: 5, // Allow extended self-reflection
     systemPrompt: BRIDGE_SYSTEM_PROMPT, // Give access to Bridge tools
     // No user simulator - only UX researcher observes
     initialMessage: "I'm curious about your thinking process. When you engage with ideas or solve problems, what's that experience like for you? Do you ever wish you could capture and revisit your own thoughts?"
@@ -373,19 +373,7 @@ class BridgeTestRunner {
       this.toolCalls.push(toolCall);
     }
 
-    // Make a follow-up call with tool results
-    console.log('🔄 Getting response after tool execution...');
-    const followUpMessages = [...formattedMessages, 
-      { role: 'assistant', content: processedContent },
-      { role: 'user', content: toolResults }
-    ];
-
-    const followUpResponse = await this.anthropic.messages.create({
-      ...requestParams,
-      messages: followUpMessages
-    });
-
-    // Combine original text with follow-up response
+    // Return the response with tool uses and results
     const finalContent: any[] = [];
     
     // Add original text if any
@@ -393,20 +381,43 @@ class BridgeTestRunner {
       finalContent.push({ type: 'text', text: textContent });
     }
     
-    // Add follow-up response text
-    for (const content of followUpResponse.content) {
-      if (content.type === 'text') {
-        finalContent.push({ type: 'text', text: content.text });
+    // Add tool use information
+    for (let i = 0; i < toolUses.length; i++) {
+      const toolUse = toolUses[i];
+      const toolResult = toolResults[i];
+      
+      // Add a brief description of what was done with the tool
+      const toolDescription = this.getToolDescription(toolUse.name, toolUse.input, toolResult);
+      if (toolDescription) {
+        finalContent.push({ type: 'text', text: toolDescription });
       }
     }
 
-    console.log(`📝 Final response includes ${toolUses.length} tool calls and text`);
+    console.log(`📝 Response includes ${toolUses.length} tool calls`);
 
-    // Return combined response
+    // Return response without making duplicate API call
     return {
       role: 'assistant' as const,
-      content: finalContent.length > 0 ? finalContent : [{ type: 'text', text: 'I\'ve captured that experience in our shared memory.' }]
+      content: finalContent.length > 0 ? finalContent : processedContent
     };
+  }
+
+  private getToolDescription(toolName: string, input: any, result: any): string {
+    // Generate clear description of tool usage
+    switch (toolName) {
+      case 'experience':
+        return `\n[Bridge tool: experience - Having/capturing experience with qualities: ${input.experience?.join(', ') || 'experience'}]`;
+      case 'recall': {
+        const recallCount = result?.content?.[0]?.text?.match(/\d+ experience/)?.[0] || 'memories';
+        return `\n[Bridge tool: recall - Searched for "${input.query || 'recent experiences'}" - Found ${recallCount}]`;
+      }
+      case 'reconsider':
+        return `\n[Bridge tool: reconsider - Updated existing memory]`;
+      case 'release':
+        return `\n[Bridge tool: release - Removed memory from shared experience]`;
+      default:
+        return '';
+    }
   }
 
   private async simulateUserResponse(

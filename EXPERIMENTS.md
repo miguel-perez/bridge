@@ -20,13 +20,13 @@ Active experiments testing our assumptions about Bridge.
 
 
 
-### EXP-001: Bridge Impact on Conversation Quality
+### EXP-001: Bridge Tool Impact on Conversation Quality
 **Status**: Complete
 **Hypothesis**: Bridge tools will enable deeper, more authentic human-AI conversations
-**Method**: Three test scenarios - autonomous self-reflection, with-bridge, without-bridge using identical prompts
-**Success Criteria**: Measurable difference in connection depth and goal achievement
+**Method**: Three-scenario comparison test (autonomous, with-bridge, without-bridge)
+**Success Criteria**: Measurable differences in connection quality, goal achievement, and conversation flow
 **Results**: 
-- With-bridge achieved "reciprocal vulnerability" and progressive deepening
-- Without-bridge created defensive loops requiring 3 corrections
-- Autonomous test showed immediate self-directed tool use
-**Learning**: See LEARNINGS.md - "Memory Tools Enable Authentic AI Participation"
+- With-bridge achieved deep reciprocal exploration with natural metaphor building
+- Without-bridge created defensive loops around AI limitations
+- Autonomous test revealed AI reaching for experiential framing but was prematurely terminated
+**Learning**: Bridge functions as permission structure enabling AI to engage authentically without claiming human experience

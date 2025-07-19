@@ -321,9 +321,6 @@ Note: If you find yourself repeating observations, move to deeper analysis or co
       const lines = responseText.split('\n');
       let thoughtContent = '';
       let nextNeeded = false;
-      let revisesThought: number | undefined;
-      let hypothesis: string | undefined;
-      let verification: string | undefined;
       
       // Extract structured elements - simplified
       let inThought = true;

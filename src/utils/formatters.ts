@@ -136,7 +136,7 @@ export function formatStructuredSearchResult(result: SearchResult): any {
 /**
  * Interface for remember operation results
  */
-export interface RememberResult {
+export interface ExperienceResult {
   source: {
     id: string;
     source: string;
@@ -177,7 +177,7 @@ export interface RecallResult {
  * @param showId - Whether to show the ID (default: false)
  * @returns Natural language response string
  */
-export function formatRememberResponse(result: RememberResult, showId: boolean = false): string {
+export function formatExperienceResponse(result: ExperienceResult, showId: boolean = false): string {
   const qualities = result.source.experience || [];
   
   // Simple response based on whether we have qualities
@@ -204,7 +204,7 @@ export function formatRememberResponse(result: RememberResult, showId: boolean =
  * @param showIds - Whether to show IDs (default: false)
  * @returns Natural language response string
  */
-export function formatBatchRememberResponse(results: RememberResult[], showIds: boolean = false): string {
+export function formatBatchExperienceResponse(results: ExperienceResult[], showIds: boolean = false): string {
   const count = results.length;
   
   const output = [
@@ -260,7 +260,7 @@ export function formatRecallResponse(results: RecallResult[], showIds: boolean =
  * @param showId - Whether to show the ID (default: false)
  * @returns Natural language response string
  */
-export function formatReconsiderResponse(result: RememberResult, showId: boolean = false): string {
+export function formatReconsiderResponse(result: ExperienceResult, showId: boolean = false): string {
   const qualities = result.source.experience || [];
   
   let response: string;

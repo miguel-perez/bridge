@@ -7,7 +7,7 @@
  * @module mcp/handlers
  */
 
-import { RememberHandler } from './remember-handler.js';
+import { ExperienceHandler } from './experience-handler.js';
 import { RecallHandler } from './recall-handler.js';
 import { ReconsiderHandler } from './reconsider-handler.js';
 import { ReleaseHandler } from './release-handler.js';
@@ -27,23 +27,23 @@ import {
  * Each handler formats the response in a user-friendly way for MCP clients.
  */
 export class MCPToolHandlers {
-  private rememberHandler: RememberHandler;
+  private experienceHandler: ExperienceHandler;
   private recallHandler: RecallHandler;
   private reconsiderHandler: ReconsiderHandler;
   private releaseHandler: ReleaseHandler;
 
   constructor() {
-    this.rememberHandler = new RememberHandler();
+    this.experienceHandler = new ExperienceHandler();
     this.recallHandler = new RecallHandler();
     this.reconsiderHandler = new ReconsiderHandler();
     this.releaseHandler = new ReleaseHandler();
   }
 
   // Example handler mapping (update as needed):
-  async handle(toolName: string, args: any) {
+  async handle(toolName: string, args: any): Promise<any> {
     switch (toolName) {
-      case 'remember':
-        return this.rememberHandler.handle(args);
+      case 'experience':
+        return this.experienceHandler.handle(args);
       case 'recall':
         return this.recallHandler.handle(args);
       case 'reconsider':
