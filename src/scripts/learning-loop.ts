@@ -105,7 +105,7 @@ async function runLearningLoop() {
     console.log('✅ Build completed\n');
     
     // Run tests
-    execSync('npm run test:suite', { stdio: 'inherit' });
+    execSync('npm run test:bridge', { stdio: 'inherit' });
     console.log('✅ Tests completed');
   } else {
     // Check if we have recent test results (within last hour)
@@ -129,7 +129,7 @@ async function runLearningLoop() {
           console.log('✅ Using existing test results\n');
         } else {
           console.log('⚠️  Test results are old. Running new tests...\n');
-          execSync('npm run test:suite', { stdio: 'inherit' });
+          execSync('npm run test:bridge', { stdio: 'inherit' });
         }
       }
     }
