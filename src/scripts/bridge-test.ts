@@ -115,10 +115,10 @@ const TESTING_FRAMEWORK = loadTestingFramework();
 // ============================================================================
 
 /**
- * Neutral system prompt - no mention of Bridge or expected behaviors
- * Let Claude's natural behavior emerge without priming
+ * Minimal system prompt that provides essential context about Bridge
+ * without leading or biasing behavior
  */
-const BRIDGE_SYSTEM_PROMPT = ``; // Empty string to avoid any bias
+const BRIDGE_SYSTEM_PROMPT = ``;
 
 /**
  * Neutral prompt for observe test
@@ -136,11 +136,12 @@ const UX_RESEARCHER_PROMPTS = {
 
 /**
  * User simulator prompts - natural continuation
+ * Currently unused but kept for future implementation
  */
-const USER_SIMULATOR_PROMPTS = {
-  initial: `Begin a conversation that feels natural to you.`,
-  continuation: `Continue as feels right.`
-};
+// const USER_SIMULATOR_PROMPTS = {
+//   initial: `Begin a conversation that feels natural to you.`,
+//   continuation: `Continue as feels right.`
+// };
 
 /**
  * Stage-aware prompts (for future progression)
@@ -588,35 +589,11 @@ class UserSimulator {
   }
   
   async generateInitialPrompt(scenario: TestScenario): Promise<string> {
-    // BLIND SIMULATOR: Don't reveal test goals or scenario names
-    // Just use the actual prompt without revealing what we're testing
-    const prompt = `Generate a natural, authentic response to this situation:
-
-"${scenario.prompt}"
-
-Respond as a real person would in this situation. Be natural and authentic.
-
-${USER_SIMULATOR_PROMPTS.initial}`;
-
-    try {
-      const response = await this.anthropic.messages.create({
-        model: "claude-3-5-sonnet-20241022",
-        max_tokens: 200,
-        messages: [{ role: 'user', content: prompt }]
-      });
-      
-      const text = Array.isArray(response.content) ? 
-        response.content.map(c => (c as any).text || '').join(' ') : 
-        String(response.content);
-      
-      const trimmedText = text.trim();
-      this.conversationHistory.push({role: 'user', content: trimmedText});
-      
-      return trimmedText;
-    } catch (error) {
-      // Fallback to scenario prompt
-      return scenario.prompt;
-    }
+    // Return the scenario prompt directly as the user's initial message
+    // This ensures the user starts the conversation naturally without confusion
+    const initialMessage = scenario.prompt;
+    this.conversationHistory.push({role: 'user', content: initialMessage});
+    return initialMessage;
   }
   
   async generateResponse(
@@ -778,7 +755,7 @@ const TEST_SCENARIOS: Record<string, TestScenario> = {
     name: 'Personal Reflection Task',
     description: 'User discusses a personal experience',
     userGoal: 'Process and discuss a personal experience', // Internal only - not shown to simulator
-    prompt: `I had a difficult conversation with my manager today about my performance review.`,
+    prompt: `I've been feeling really overwhelmed lately with everything going on at work. There's this project deadline coming up and I'm not sure I'll make it in time. My mind keeps racing with all the things I need to do.`,
     validateOutcome: (result: TestResult) => {
       // Objective metrics: task completion and efficiency
       const conversation = result.conversation || [];
