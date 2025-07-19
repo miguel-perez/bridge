@@ -8,6 +8,7 @@
  */
 
 import type { SearchResult } from '../core/search.js';
+import { Messages, formatMessage, formatQualityList } from './messages.js';
 
 // ============================================================================
 // CONSTANTS
@@ -56,22 +57,23 @@ export function smartTruncate(text: string, maxLength: number = DEFAULT_TRUNCATE
  * 
  * @param result - The search result to format
  * @param index - The index of the result (0-based)
+ * @param showId - Whether to show the ID (default: false)
  * @returns Formatted search result string
  */
-export function formatSearchResult(result: SearchResult, index: number): string {
+export function formatSearchResult(result: SearchResult, index: number, showId: boolean = false): string {
   const label = String(result.type ?? '');
   let summary: string;
   
   if (typeof result.snippet === 'string') {
     summary = smartTruncate(result.snippet);
-  } else if (typeof result.id === 'string') {
+  } else if (typeof result.id === 'string' && showId) {
     summary = result.id;
   } else {
     summary = NO_SUMMARY_PLACEHOLDER;
   }
   
-  // Always include the ID in the output
-  return `${index + 1}. [${label.toUpperCase()}] (ID: ${result.id}) ${summary}`;
+  const idPart = showId ? ` (ID: ${result.id})` : '';
+  return `${index + 1}. [${label.toUpperCase()}]${idPart} ${summary}`;
 }
 
 /**
@@ -82,10 +84,11 @@ export function formatSearchResult(result: SearchResult, index: number): string 
  * 
  * @param result - The search result to format
  * @param index - The index of the result (0-based)
+ * @param showId - Whether to show the ID (default: false)
  * @returns Detailed formatted search result string
  */
-export function formatDetailedSearchResult(result: SearchResult, index: number): string {
-  const baseFormat = formatSearchResult(result, index);
+export function formatDetailedSearchResult(result: SearchResult, index: number, showId: boolean = false): string {
+  const baseFormat = formatSearchResult(result, index, showId);
   
   // Add additional context based on record type
   let details = '';
@@ -163,27 +166,6 @@ export interface RecallResult {
   relevance_score: number;
 }
 
-/**
- * Natural language templates for conversational responses
- */
-const CONVERSATIONAL_TEMPLATES = {
-  remember: {
-    single: "I'll remember that moment with you - {summary}",
-    batch: "I'll remember these {count} moments with you"
-  },
-  recall: {
-    found: "I found {count} moments that might help with that...",
-    none: "I don't see any moments that match that yet"
-  },
-  reconsider: {
-    success: "I've updated that memory with you - {summary}",
-    batch: "I've updated {count} memories with you"
-  },
-  release: {
-    success: "I've released that memory with you",
-    batch: "I've released {count} memories with you"
-  }
-};
 
 /**
  * Format a remember response with natural language
@@ -192,26 +174,26 @@ const CONVERSATIONAL_TEMPLATES = {
  * while preserving all technical data.
  * 
  * @param result - The remember operation result
+ * @param showId - Whether to show the ID (default: false)
  * @returns Natural language response string
  */
-export function formatRememberResponse(result: RememberResult): string {
-  const summary = createNaturalSummary(result.source);
+export function formatRememberResponse(result: RememberResult, showId: boolean = false): string {
+  const qualities = result.source.experience || [];
   
-  // Make response more conversational and less mechanical
-  const responses = [
-    `I'll remember that moment with you - ${summary}`,
-    `That's a meaningful experience to hold onto - ${summary}`,
-    `I'm capturing that moment - ${summary}`,
-    `That's worth remembering - ${summary}`,
-    `I'll keep that with us - ${summary}`
-  ];
-  
-  const response = responses[Math.floor(Math.random() * responses.length)];
+  // Simple response based on whether we have qualities
+  let response: string;
+  if (qualities.length > 0) {
+    response = formatMessage(Messages.remember.successWithQualities, {
+      qualities: formatQualityList(qualities)
+    });
+  } else {
+    response = Messages.remember.success;
+  }
   
   return [
     response,
     '',
-    formatMetadata(result.source)
+    formatMetadata(result.source, showId)
   ].join('\n');
 }
 
@@ -219,24 +201,33 @@ export function formatRememberResponse(result: RememberResult): string {
  * Format a batch remember response with natural language
  * 
  * @param results - Array of remember operation results
+ * @param showIds - Whether to show IDs (default: false)
  * @returns Natural language response string
  */
-export function formatBatchRememberResponse(results: RememberResult[]): string {
+export function formatBatchRememberResponse(results: RememberResult[], showIds: boolean = false): string {
   const count = results.length;
   
   const output = [
-    CONVERSATIONAL_TEMPLATES.remember.batch.replace('{count}', count.toString()),
+    formatMessage(Messages.remember.batch, { count }),
     ''
   ];
 
   for (let i = 0; i < results.length; i++) {
     const result = results[i];
-    const summary = createNaturalSummary(result.source);
+    const qualities = result.source.experience || [];
     
-    output.push(`--- Experience ${i + 1} ---`);
-    output.push(`I'll remember that moment with you - ${summary}`);
+    output.push(`--- ${i + 1} ---`);
+    
+    if (qualities.length > 0) {
+      output.push(formatMessage(Messages.remember.successWithQualities, {
+        qualities: formatQualityList(qualities)
+      }));
+    } else {
+      output.push(Messages.remember.success);
+    }
+    
     output.push('');
-    output.push(formatMetadata(result.source));
+    output.push(formatMetadata(result.source, showIds));
     output.push('');
   }
 
@@ -247,17 +238,18 @@ export function formatBatchRememberResponse(results: RememberResult[]): string {
  * Format a recall response with natural language
  * 
  * @param results - Array of recall results
+ * @param showIds - Whether to show IDs (default: false)
  * @returns Natural language response string
  */
-export function formatRecallResponse(results: RecallResult[]): string {
+export function formatRecallResponse(results: RecallResult[], showIds: boolean = false): string {
   if (results.length === 0) {
-    return CONVERSATIONAL_TEMPLATES.recall.none;
+    return Messages.recall.none;
   }
 
   return [
-    CONVERSATIONAL_TEMPLATES.recall.found.replace('{count}', results.length.toString()),
+    formatMessage(Messages.recall.found, { count: results.length }),
     '',
-    formatRecallResults(results)
+    formatRecallResults(results, showIds)
   ].join('\n');
 }
 
@@ -265,15 +257,25 @@ export function formatRecallResponse(results: RecallResult[]): string {
  * Format a reconsider response with natural language
  * 
  * @param result - The reconsider operation result
+ * @param showId - Whether to show the ID (default: false)
  * @returns Natural language response string
  */
-export function formatReconsiderResponse(result: RememberResult): string {
-  const summary = createNaturalSummary(result.source);
+export function formatReconsiderResponse(result: RememberResult, showId: boolean = false): string {
+  const qualities = result.source.experience || [];
+  
+  let response: string;
+  if (qualities.length > 0) {
+    response = formatMessage(Messages.reconsider.successWithQualities, {
+      qualities: formatQualityList(qualities)
+    });
+  } else {
+    response = Messages.reconsider.success;
+  }
   
   return [
-    CONVERSATIONAL_TEMPLATES.reconsider.success.replace('{summary}', summary),
+    response,
     '',
-    formatMetadata(result.source)
+    formatMetadata(result.source, showId)
   ].join('\n');
 }
 
@@ -284,7 +286,11 @@ export function formatReconsiderResponse(result: RememberResult): string {
  * @returns Natural language response string
  */
 export function formatReleaseResponse(count: number = 1): string {
-  return CONVERSATIONAL_TEMPLATES.release.success.replace('{count}', count.toString());
+  if (count === 1) {
+    return Messages.release.success;
+  } else {
+    return formatMessage(Messages.release.batch, { count });
+  }
 }
 
 // ============================================================================
@@ -292,69 +298,39 @@ export function formatReleaseResponse(count: number = 1): string {
 // ============================================================================
 
 /**
- * Create a natural summary from source content and experience qualities
- */
-function createNaturalSummary(source: any): string {
-  const content = source.source;
-  const experience = source.experience || [];
-  
-  // Extract key details for natural summary
-  return extractKeyDetails(content, experience);
-}
-
-/**
- * Extract key details from content and experience qualities
- */
-function extractKeyDetails(content: string, experience: string[]): string {
-  // Create natural summary
-  if (experience.length > 0) {
-    const qualityPhrases = formatQualities(experience);
-    return `capturing ${qualityPhrases.join(', ')} aspects of the experience`;
-  } else {
-    return `the essence of what you shared`;
-  }
-}
-
-/**
- * Format experience qualities into natural language
- */
-function formatQualities(qualities: string[]): string[] {
-  const qualityMap: Record<string, string> = {
-    'emotion': 'emotional',
-    'space': 'spatial',
-    'body': 'embodied',
-    'others': 'relational',
-    'time': 'temporal',
-    'focus': 'focused',
-    'purpose': 'purposive'
-  };
-
-  return qualities.map(quality => qualityMap[quality] || quality);
-}
-
-/**
  * Format metadata in natural language
  */
-function formatMetadata(source: any): string {
-  return [
-    `📝 ID: ${source.id}`,
-    `👤 From: ${source.experiencer || 'first person'} `,
-    `👁️ As: ${source.perspective || 'I'}`,
-    `⏰ When: ${formatProcessing(source.processing)}`,
-    `🕐 Captured: ${formatTimeAgo(source.created)}`
-  ].join('\n');
+function formatMetadata(source: any, showId: boolean = false): string {
+  const lines = [];
+  
+  if (showId) {
+    lines.push(`📝 ID: ${source.id}`);
+  }
+  
+  lines.push(
+    formatMessage(Messages.remember.from, { experiencer: source.experiencer || 'me' }),
+    formatMessage(Messages.remember.as, { perspective: source.perspective || 'I' }),
+    formatMessage(Messages.remember.when, { processing: formatProcessing(source.processing) }),
+    formatMessage(Messages.remember.captured, { timeAgo: formatTimeAgo(source.created) })
+  );
+  
+  return lines.join('\n');
 }
 
 /**
  * Format processing timing in natural language
  */
 function formatProcessing(processing?: string): string {
-  const processingMap: Record<string, string> = {
-    'during': 'during our conversation',
-    'after': 'after we finished talking',
-    'before': 'before we started'
-  };
-  return processingMap[processing || 'during'] || processing || 'during our conversation';
+  switch (processing) {
+    case 'during':
+      return Messages.processing.during;
+    case 'right-after':
+      return Messages.processing.rightAfter;
+    case 'long-after':
+      return Messages.processing.longAfter;
+    default:
+      return Messages.processing.during;
+  }
 }
 
 /**
@@ -369,12 +345,20 @@ function formatTimeAgo(timestamp: string): string {
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
   
-  if (diffMinutes < 60) {
-    return diffMinutes <= 1 ? 'just now' : `${diffMinutes} minutes ago`;
+  if (diffMinutes < 1) {
+    return Messages.time.justNow;
+  } else if (diffMinutes === 1) {
+    return Messages.time.oneMinuteAgo;
+  } else if (diffMinutes < 60) {
+    return formatMessage(Messages.time.minutesAgo, { minutes: diffMinutes });
+  } else if (diffHours === 1) {
+    return Messages.time.oneHourAgo;
   } else if (diffHours < 24) {
-    return diffHours === 1 ? '1 hour ago' : `${diffHours} hours ago`;
+    return formatMessage(Messages.time.hoursAgo, { hours: diffHours });
+  } else if (diffDays === 1) {
+    return Messages.time.yesterday;
   } else if (diffDays < 7) {
-    return diffDays === 1 ? 'yesterday' : `${diffDays} days ago`;
+    return formatMessage(Messages.time.daysAgo, { days: diffDays });
   } else {
     return time.toLocaleDateString();
   }
@@ -383,7 +367,7 @@ function formatTimeAgo(timestamp: string): string {
 /**
  * Format recall results in natural language
  */
-function formatRecallResults(results: RecallResult[]): string {
+function formatRecallResults(results: RecallResult[], showIds: boolean = false): string {
   const formattedResults = results.map((result) => {
     const metadata = result.metadata || {};
     const experience = (metadata as any).experience || [];
@@ -393,18 +377,25 @@ function formatRecallResults(results: RecallResult[]): string {
     const displayContent = content.length > 200 ? 
       content.substring(0, 200) + '...' : content;
     
-    // Format qualities if available
-    const qualityPhrases = experience.length > 0 ? 
-      `Key aspects: ${formatQualities(experience).join(', ')}` : '';
+    // Build response lines
+    const lines = [`"${displayContent}"`];
     
-    // Format timing
+    // Add qualities if available
+    if (experience.length > 0) {
+      lines.push(formatMessage(Messages.recall.qualities, { 
+        qualities: formatQualityList(experience) 
+      }));
+    }
+    
+    // Add timing
     const timeAgo = formatTimeAgo((metadata as any).created || '');
+    lines.push(formatMessage(Messages.recall.from, { timeAgo }));
     
-    return [
-      `"${displayContent}"`,
-      qualityPhrases,
-      `From ${timeAgo} • ID: ${result.id}`
-    ].filter(Boolean).join('\n');
+    if (showIds) {
+      lines[lines.length - 1] += ` • ID: ${result.id}`;
+    }
+    
+    return lines.filter(Boolean).join('\n');
   });
 
   return formattedResults.join('\n\n---\n\n');
