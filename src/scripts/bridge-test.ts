@@ -494,13 +494,15 @@ Format as JSON array with this exact schema:
 }
 
 IMPORTANT: Only use these exact quality values with their subtypes:
-- embodied.thinking, embodied.sensing, embodied.mixed
-- focus.narrow, focus.broad, focus.mixed  
-- mood.open, mood.closed, mood.mixed
-- purpose.goal, purpose.wander, purpose.mixed
-- space.here, space.there, space.mixed
+- embodied.thinking, embodied.sensing
+- focus.narrow, focus.broad
+- mood.open, mood.closed
+- purpose.goal, purpose.wander
+- space.here, space.there
 - time.past, time.future
-- presence.individual, presence.collective, presence.mixed
+- presence.individual, presence.collective
+
+Or use just the base dimension when neither subtype dominates: embodied, focus, mood, purpose, space, time, presence
 
 Make the experiences feel authentic and varied. Include specific details, emotions, and situations that would create meaningful patterns when analyzed together.
 

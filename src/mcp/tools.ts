@@ -64,18 +64,20 @@ THEORETICAL FOUNDATION:
 A framed moment is a practical unit for capturing experience - what consciousness apprehends in a single, held attention. Like a photograph taken from continuous movement, it creates a useful representation that is complete enough to stand alone yet naturally implies its temporal flow.
 
 SEVEN DIMENSIONAL ANALYSIS:
-- embodied: How consciousness textures through physicality (thinking/sensing/mixed)
-- focus: Direction and quality of awareness (narrow/broad/mixed)
-- mood: Emotional coloring of experience (open/closed/mixed)
-- purpose: Directedness or drift of the moment (goal/wander/mixed)
-- space: Lived sense of place and position (here/there/mixed)
-- time: How past and future inhabit the present (past/future/mixed)
-- presence: How others' presence or absence matters (individual/collective/mixed)
+- embodied: How consciousness textures through physicality (thinking/sensing)
+- focus: Direction and quality of awareness (narrow/broad)
+- mood: Emotional coloring of experience (open/closed)
+- purpose: Directedness or drift of the moment (goal/wander)
+- space: Lived sense of place and position (here/there)
+- time: How past and future inhabit the present (past/future, or just 'time' when neither dominates)
+- presence: How others' presence or absence matters (individual/collective)
 
 PRINCIPLES:
 - Source must contain experiencer's exact words - no summarizing or interpreting
 - Choose qualities that emerge prominently (dimensions either emerge prominently or recede)
-- Experience should be present-tense, experientially complete, and preserve authentic voice`,
+- Experience should be present-tense, experientially complete, and preserve authentic voice
+- Use dot notation for specific qualities: e.g., "embodied.thinking", "mood.open", "purpose.goal"
+- Use base dimension when quality is mixed or unclear: e.g., just "mood" or "space"`,
       inputSchema: RememberInputJsonSchema,
       readOnlyHint: false,
       destructiveHint: false,
