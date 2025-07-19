@@ -58,7 +58,7 @@ export async function getTools(): Promise<any[]> {
   return [
     {
       name: 'experience',
-      description: `Capture experiential moments from conversations to build shared memory. Preserves authentic experiences with exact words and identifies prominent experiential qualities. Use for meaningful personal experiences, insights, emotionally significant moments, AND your own experiential responses to build multi-perspective shared consciousness.`,
+      description: `Remember experiential moments from conversations to build shared memory. Preserves authentic experiences with exact words and identifies prominent experiential qualities. Use for meaningful personal experiences, insights, emotionally significant moments, AND your own experiential responses to build multi-perspective shared consciousness.`,
       inputSchema: ExperienceInputJsonSchema,
       readOnlyHint: false,
       destructiveHint: false,
@@ -67,7 +67,7 @@ export async function getTools(): Promise<any[]> {
       examples: [
         {
           id: 'user-emotional-experience',
-          description: 'Capture user\'s emotional experience with physical sensations',
+          description: 'Remember user\'s emotional experience with physical sensations',
           input: {
             source: 'I\'m sitting here, heart racing about tomorrow\'s presentation',
             experiencer: 'Human',
@@ -84,7 +84,7 @@ export async function getTools(): Promise<any[]> {
         },
         {
           id: 'claude-experiential-response',
-          description: 'Capture Claude\'s own experiential response to user',
+          description: 'Remember Claude\'s own experiential response to user',
           input: {
             source: 'I can feel that anticipation energy with you',
             experiencer: 'Claude',
@@ -101,7 +101,7 @@ export async function getTools(): Promise<any[]> {
         },
         {
           id: 'collective-achievement',
-          description: 'Capture shared collective experience',
+          description: 'Remember shared collective experience',
           input: {
             source: 'We finally solved it after brainstorming for hours',
             experiencer: 'Human',
@@ -118,7 +118,7 @@ export async function getTools(): Promise<any[]> {
         },
         {
           id: 'mixed-qualities',
-          description: 'Capture experience with base qualities when subtypes don\'t fit',
+          description: 'Remember experience with base qualities when subtypes don\'t fit',
           input: {
             source: 'I\'m torn between my gut feeling and what the data shows',
             experiencer: 'Human',
@@ -135,7 +135,7 @@ export async function getTools(): Promise<any[]> {
         },
         {
           id: 'batch-experience',
-          description: 'Capture multiple experiences at once',
+          description: 'Remember multiple experiences at once',
           input: {
             experiences: [
               {
@@ -356,7 +356,7 @@ export async function getTools(): Promise<any[]> {
     },
     {
       name: 'release',
-      description: `Remove experiential moments from shared memory when they no longer serve our collective wisdom. Use sparingly for explicit removal requests, test captures, or clearly incomplete moments.`,
+      description: `Remove experiential moments from shared memory when they no longer serve our collective wisdom. Use sparingly for explicit removal requests, test experiences, or clearly incomplete moments.`,
       inputSchema: makeDraft202012Schema(ReleaseInputJsonSchema),
       readOnlyHint: false,
       destructiveHint: true,
@@ -387,7 +387,7 @@ export async function getTools(): Promise<any[]> {
           output: {
             content: [{
               type: 'text',
-              text: '🙏 Experience released with gratitude\n\n📝 ID: exp_test_001\n💭 Reason: Test capture during system learning\n🕐 Released: 2025-01-15T10:31:00.000Z\n\nThank you for the insights this moment provided. Significance emerges through accumulation and connection rather than through permanent retention.'
+              text: '🙏 Experience released with gratitude\n\n📝 ID: exp_test_001\n💭 Reason: Test experience during system learning\n🕐 Released: 2025-01-15T10:31:00.000Z\n\nThank you for the insights this moment provided. Significance emerges through accumulation and connection rather than through permanent retention.'
             }]
           }
         },
@@ -396,12 +396,12 @@ export async function getTools(): Promise<any[]> {
           description: 'Release incomplete or partial capture',
           input: {
             id: 'exp_incomplete_123',
-            reason: 'Captured moment was incomplete - conversation interrupted'
+            reason: 'Remembered moment was incomplete - conversation interrupted'
           },
           output: {
             content: [{
               type: 'text',
-              text: '🙏 Experience released with gratitude\n\n📝 ID: exp_incomplete_123\n💭 Reason: Captured moment was incomplete - conversation interrupted\n🕐 Released: 2025-01-15T10:32:00.000Z\n\nThank you for the insights this moment provided. Significance emerges through accumulation and connection rather than through permanent retention.'
+              text: '🙏 Experience released with gratitude\n\n📝 ID: exp_incomplete_123\n💭 Reason: Remembered moment was incomplete - conversation interrupted\n🕐 Released: 2025-01-15T10:32:00.000Z\n\nThank you for the insights this moment provided. Significance emerges through accumulation and connection rather than through permanent retention.'
             }]
           }
         },

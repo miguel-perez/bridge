@@ -13,7 +13,7 @@ export interface ExperienceResponse {
   success: boolean;
   source?: {
     id: string;
-    content: string;
+    source: string;
     created: string;
     perspective?: string;
     experiencer?: string;
@@ -79,7 +79,7 @@ export class ExperienceHandler {
         // Batch experience - process each item
         const results: ExperienceResult[] = [];
         for (const item of experience.experiences) {
-          const result = await this.experienceService.captureExperience({
+          const result = await this.experienceService.rememberExperience({
             source: item.source,
             perspective: item.perspective,
             experiencer: item.experiencer,
@@ -102,7 +102,7 @@ export class ExperienceHandler {
         
       } else {
         // Single experience with natural formatting
-        const result = await this.experienceService.captureExperience({
+        const result = await this.experienceService.rememberExperience({
           source: experience.source,
           perspective: experience.perspective,
           experiencer: experience.experiencer,

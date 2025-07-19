@@ -109,7 +109,7 @@ describe('MCP Server Protocol Compliance', () => {
       const result = await client.callTool({
         name: 'experience',
         arguments: {
-          content: 'I felt a deep sense of peace while walking in the forest',
+          source: 'I felt a deep sense of peace while walking in the forest',
           experiencer: 'Test User',
           perspective: 'I',
           processing: 'during',

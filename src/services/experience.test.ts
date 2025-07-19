@@ -7,14 +7,14 @@ describe('ExperienceService', () => {
     experienceService = new ExperienceService();
   });
 
-  describe('captureExperience', () => {
+  describe('rememberExperience', () => {
     it('should experience a basic experience successfully', async () => {
       const input = {
         source: 'Test experience',
         experiencer: 'test_user'
       };
 
-      const result = await experienceService.captureExperience(input);
+      const result = await experienceService.rememberExperience(input);
 
       expect(result.source.source).toBe('Test experience');
       expect(result.source.experiencer).toBe('test_user');
@@ -26,7 +26,7 @@ describe('ExperienceService', () => {
       const experienceService = new ExperienceService();
       const input = {};
 
-      const result = await experienceService.captureExperience(input);
+      const result = await experienceService.rememberExperience(input);
 
       expect(result.source.perspective).toBe('I');
       expect(result.source.experiencer).toBe('self');
@@ -40,7 +40,7 @@ describe('ExperienceService', () => {
     it('should use default source when not provided', async () => {
       const input = { experiencer: 'test_user' };
 
-      const result = await experienceService.captureExperience(input);
+      const result = await experienceService.rememberExperience(input);
 
       expect(result.source.source).toBe('Experience experienceed');
       expect(result.defaultsUsed).toContain('source="Experience experienceed"');
@@ -52,7 +52,7 @@ describe('ExperienceService', () => {
         experiencer: 'test_user'
       };
 
-      const result = await experienceService.captureExperience(input);
+      const result = await experienceService.rememberExperience(input);
 
       expect(result.source.id).toBeDefined();
       // Note: Embedding generation is tested separately
@@ -65,7 +65,7 @@ describe('ExperienceService', () => {
         experience: ['mood.open', 'embodied.sensing', 'purpose.goal']
       };
 
-      const result = await experienceService.captureExperience(input);
+      const result = await experienceService.rememberExperience(input);
 
       expect(result.source.experience).toEqual(['mood.open', 'embodied.sensing', 'purpose.goal']);
     });
@@ -77,7 +77,7 @@ describe('ExperienceService', () => {
         experience: []
       };
 
-      const result = await experienceService.captureExperience(input);
+      const result = await experienceService.rememberExperience(input);
 
       expect(result.source.experience).toBeUndefined();
     });

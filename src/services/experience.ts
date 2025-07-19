@@ -82,7 +82,7 @@ export class ExperienceService {
    * @returns Experience result with source record and defaults used
    * @throws Error if validation fails or required fields are missing
    */
-  async captureExperience(input: ExperienceInput): Promise<ExperienceResult> {
+  async rememberExperience(input: ExperienceInput): Promise<ExperienceResult> {
     // Validate input
     const validatedInput = experienceSchema.parse(input);
     

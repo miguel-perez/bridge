@@ -3,7 +3,7 @@
  * 
  * Handles reconsider tool requests for correcting or updating existing experiences.
  * Supports partial updates to any field including content, experience analysis, metadata,
- * and experiential qualities. Useful for refining how we capture shared moments.
+ * and experiential qualities. Useful for refining how we remember shared moments.
  * 
  * @module mcp/reconsider-handler
  */
@@ -66,7 +66,7 @@ export class ReconsiderHandler {
         for (const item of reconsider.reconsiderations) {
           const result = await this.reconsiderService.enrichSource({
             id: item.id,
-            content: item.source,
+            source: item.source,
             perspective: item.perspective,
             experiencer: item.experiencer,
             processing: item.processing,
@@ -99,7 +99,7 @@ export class ReconsiderHandler {
         // Single reconsideration
         const result = await this.reconsiderService.enrichSource({
           id: reconsider.id!,
-          content: reconsider.source,
+          source: reconsider.source,
           perspective: reconsider.perspective,
           experiencer: reconsider.experiencer,
           processing: reconsider.processing,
