@@ -9,15 +9,15 @@ export const ProcessingEnumWithCrafted = ProcessingEnum; // For compatibility, b
 export const QualityTypeEnum = z.enum(['embodied', 'focus', 'mood', 'purpose', 'space', 'time', 'presence']).describe(`
 The experiential quality being analyzed. Based on FRAMED_MOMENTS.md theoretical framework:
 
-- embodied: How consciousness textures through physicality (thinking/sensing/mixed)
-- focus: Direction and quality of awareness (narrow/broad/mixed)
-- mood: Emotional coloring of experience (open/closed/mixed)
-- purpose: Directedness or drift of the moment (goal/wander/mixed)
-- space: Lived sense of place and position (here/there/mixed)
-- time: How past and future inhabit the present (past/future/mixed)
-- presence: How others' presence or absence matters (individual/collective/mixed)
+- embodied: How consciousness textures through physicality (thinking/sensing)
+- focus: Direction and quality of awareness (narrow/broad)
+- mood: Emotional coloring of experience (open/closed)
+- purpose: Directedness or drift of the moment (goal/wander)
+- space: Lived sense of place and position (here/there/)
+- time: How past and future inhabit the present (past/future/)
+- presence: How others' presence or absence matters (individual/collective)
 
-Choose qualities that emerge prominently in this moment. Following FRAMED_MOMENTS.md principle: "dimensions either emerge prominently or recede."
+Choose qualities that emerge prominently in this moment. Following the principle: "qualities emerge prominently or recede."
 `);
 export const SortEnum = z.enum(['relevance', 'created']).describe('Sort order for results');
 
