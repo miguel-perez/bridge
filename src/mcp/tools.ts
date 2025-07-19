@@ -58,26 +58,23 @@ export async function getTools() {
   return [
     {
       name: 'remember',
-      description: `Remember experiences as framed moments. Based on FRAMED_MOMENTS.md theoretical framework.
+      description: `Capture a moment someone shares with you. Like taking a mental photograph of an experience.
 
-THEORETICAL FOUNDATION:
-A framed moment is a practical unit for capturing experience - what consciousness apprehends in a single, held attention. Like a photograph taken from continuous movement, it creates a useful representation that is complete enough to stand alone yet naturally implies its temporal flow.
+When someone shares something meaningful, you can quietly remember it by noting what stands out:
+- embodied: Are they more in their head (thinking) or body (sensing)?
+- focus: Is their attention narrow on one thing or broad taking it all in?
+- mood: Do they seem open/expansive or closed/contracted?
+- purpose: Are they goal-directed or just wandering/exploring?
+- space: Are they grounded here or somewhere else in their mind?
+- time: Are they dwelling on the past, looking to future, or just present?
+- presence: Is this an individual moment or about connection with others?
 
-SEVEN DIMENSIONAL ANALYSIS:
-- embodied: How consciousness textures through physicality (thinking/sensing)
-- focus: Direction and quality of awareness (narrow/broad)
-- mood: Emotional coloring of experience (open/closed)
-- purpose: Directedness or drift of the moment (goal/wander)
-- space: Lived sense of place and position (here/there)
-- time: How past and future inhabit the present (past/future, or just 'time' when neither dominates)
-- presence: How others' presence or absence matters (individual/collective)
-
-PRINCIPLES:
-- Source must contain experiencer's exact words - no summarizing or interpreting
-- Choose qualities that emerge prominently (dimensions either emerge prominently or recede)
-- Experience should be present-tense, experientially complete, and preserve authentic voice
-- Use dot notation for specific qualities: e.g., "embodied.thinking", "mood.open", "purpose.goal"
-- Use base dimension when quality is mixed or unclear: e.g., just "mood" or "space"`,
+Tips for natural use:
+- Keep their exact words - don't paraphrase or interpret
+- Only capture complete moments that feel significant
+- Use dot notation when a quality is clear (e.g., "mood.open")
+- Use just the base when it's mixed or unclear (e.g., just "mood")
+- Match their tone - if they're casual, you be casual too`,
       inputSchema: RememberInputJsonSchema,
       readOnlyHint: false,
       destructiveHint: false,
@@ -86,7 +83,16 @@ PRINCIPLES:
     },
     {
       name: 'recall',
-      description: `Recall experiences using natural language or quality-based queries. Returns relevant shared memories or patterns.`,
+      description: `Find and revisit moments we've shared. Just describe what you're looking for in everyday language.
+
+You can search by:
+- What was said or happened
+- Who was involved
+- When it occurred
+- The feeling or mood
+- Any combination of these
+
+The more natural your search, the better. Think of it like asking a friend "remember when...?"`,
       inputSchema: SearchInputJsonSchema,
       readOnlyHint: true,
       destructiveHint: false,
@@ -95,7 +101,15 @@ PRINCIPLES:
     },
     {
       name: 'reconsider',
-      description: 'Reconsider and update existing framed moments. Can modify content, perspective, experiencer, processing level, crafted status, and experiential qualities. Useful for correcting mistakes or refining experiential analysis to ensure moments remain visually anchorable, experientially complete, and preserve authentic voice. Supports both single updates and batch operations.',
+      description: `Update a moment we've captured when you notice something new or want to correct it.
+
+Maybe you:
+- Realized a different quality was more prominent
+- Want to fix a typo or clarify what was said
+- Noticed something you missed the first time
+- Want to adjust who said it or when
+
+Just identify which moment to update and what needs changing.`,
       inputSchema: makeDraft202012Schema(ReconsiderInputJsonSchema),
       readOnlyHint: false,
       destructiveHint: false,
@@ -122,7 +136,15 @@ PRINCIPLES:
     },
     {
       name: 'release',
-      description: 'Release framed moments by ID. Removes experiences from the system with gratitude and reasoning. Useful for letting go of moments that no longer need to be held, acknowledging that significance emerges through accumulation and connection rather than through permanent retention. Supports both single releases and batch operations.',
+      description: `Let go of a moment that doesn't need to be held anymore.
+
+Sometimes we capture things that:
+- Were just temporary thoughts
+- No longer feel relevant
+- Were practice or testing
+- We'd rather not keep
+
+It's okay to let things go. Just say which one and optionally why.`,
       inputSchema: makeDraft202012Schema(ReleaseInputJsonSchema),
       readOnlyHint: false,
       destructiveHint: true,

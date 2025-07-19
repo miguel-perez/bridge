@@ -672,6 +672,7 @@ interface TestResult {
   errors: string[];
   success: boolean;
   finalResponse?: string;
+  conversation?: Array<{role: string; content: any}>;
   syntheticData?: Source[];
   userSimulation?: {
     personality: string;
@@ -822,6 +823,9 @@ class BridgeTestRunner {
         
         // Store the final response - no continuations for observe test
         result.finalResponse = claudeText;
+        
+        // Store conversation for observe test
+        result.conversation = messages;
         
         console.log(`\n🏁 Observation completed`);
         console.log(`📊 Total tool calls: ${result.toolCalls.length}`);
@@ -1021,6 +1025,9 @@ You are a thoughtful conversation partner who helps people explore and understan
         const finalTextContent = messages[messages.length - 1]?.content?.find((c: any) => c.type === 'text');
         const responseText = finalTextContent ? (finalTextContent as any).text || '' : '';
         result.finalResponse = responseText;
+        
+        // Store full conversation
+        result.conversation = messages;
         
         // Store user simulation stats if available
         if (this.userSimulator) {
