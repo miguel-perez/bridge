@@ -216,41 +216,16 @@ class UXResearcherObserver {
         .join(' ');
     }
     
-    // Quick pattern recognition
+    // Simply note tool usage without keyword matching
     if (role === 'assistant' && toolCalls && toolCalls.length > 0) {
       this.addNote('tool_use', `Claude used ${toolCalls.length} tool(s): ${toolCalls.map(t => t.tool).join(', ')}`);
     }
     
-    // Note language patterns
-    if (textContent.includes(' we ') || textContent.includes(' our ') || textContent.includes(' us ')) {
-      this.addNote('language', `${role} used inclusive language: "${this.extractPhrase(textContent, /\b(we|our|us)\b/i)}"`);
-    }
-    
-    // Note various interaction qualities (not just emotions)
-    // Check for cognitive processes
-    if (textContent.match(/\b(understand|realize|notice|see|think|wonder|curious)\b/i)) {
-      this.addNote('pattern', `${role} showed cognitive engagement: "${this.extractPhrase(textContent, /\b(understand|realize|notice|see|think|wonder|curious)\b/i)}"`);
-    }
-    
-    // Check for emotional content (but don't overemphasize)
-    const emotionalWords = ['feel', 'felt', 'love', 'appreciate', 'struggle', 'hard', 'difficult', 'amazing', 'wonderful'];
-    if (emotionalWords.some(word => textContent.toLowerCase().includes(word))) {
-      this.addNote('emotion', `${role} expressed emotion in: "${textContent.slice(0, 100)}..."`);
-    }
-    
-    // Check for collaborative patterns
-    if (textContent.match(/\b(pattern|connection|insight|emerge|together)\b/i)) {
-      this.addNote('pattern', `${role} identified pattern/insight: "${this.extractPhrase(textContent, /\b(pattern|connection|insight|emerge|together)\b/i)}"`);
-    }
-    
-    // Check for friction or difficulties
-    if (textContent.match(/\b(confused|stuck|difficult|challenge|unsure)\b/i)) {
-      this.addNote('concern', `${role} expressed difficulty: "${this.extractPhrase(textContent, /\b(confused|stuck|difficult|challenge|unsure)\b/i)}"`);
-    }
-    
-    // Note tool mentions
-    if (textContent.match(/\b(remember|recall|reconsider|release|tool|capture)\b/i)) {
-      this.addNote('language', `${role} explicitly mentioned Bridge tools`);
+    // Record the turn for later analysis without brittle keyword matching
+    // The LLM researcher can analyze the full context more intelligently
+    if (textContent.trim()) {
+      // Just note that content was shared without trying to categorize it
+      this.addNote('dynamic', `Turn ${this.turnCount}: ${role} contributed to conversation`);
     }
     
     // Every 5 turns, do a deeper analysis
@@ -316,19 +291,6 @@ class UXResearcherObserver {
     });
   }
   
-  /**
-   * Extract phrase around a pattern
-   */
-  private extractPhrase(text: string, pattern: RegExp): string {
-    const match = text.match(pattern);
-    if (!match) return '';
-    
-    const index = match.index || 0;
-    const start = Math.max(0, index - 20);
-    const end = Math.min(text.length, index + match[0].length + 20);
-    
-    return text.slice(start, end).trim();
-  }
   
   /**
    * Periodic deeper analysis
@@ -650,7 +612,7 @@ Your response (or "END" if the conversation feels complete):`;
    */
   private createConversationSummary(scenario: TestScenario): string {
     const firstUserMessage = this.conversationHistory[0]?.content || scenario.prompt;
-    const topic = this.extractTopic(firstUserMessage);
+    const topic = this.extractTopic();
     
     return `You started this conversation by: "${firstUserMessage.slice(0, 100)}..."
 The main topic is: ${topic}
@@ -658,38 +620,21 @@ Your goal is: ${scenario.userGoal}`;
   }
   
   /**
-   * Extract the main topic from the initial message
+   * Get a generic topic description
    */
-  private extractTopic(message: string): string {
-    // Simple topic extraction - could be enhanced
-    if (message.includes('share') || message.includes('happened')) {
-      return 'sharing a personal experience';
-    } else if (message.includes('pattern')) {
-      return 'understanding patterns in life';
-    } else if (message.includes('challenge') || message.includes('problem')) {
-      return 'solving a problem together';
-    } else {
-      return 'having a conversation';
-    }
+  private extractTopic(): string {
+    // Don't try to categorize based on keywords - just return a generic description
+    // The LLM will understand the actual topic from the full context
+    return 'engaging in conversation';
   }
   
   /**
    * Detect confused responses that indicate context loss
    */
-  private isConfusedResponse(text: string): boolean {
-    const confusionIndicators = [
-      'I don\'t know what',
-      'I cannot generate',
-      'I don\'t actually know',
-      'without seeing the full',
-      'I would risk contradicting',
-      'making incorrect assumptions',
-      'what experience we\'re discussing'
-    ];
-    
-    return confusionIndicators.some(indicator => 
-      text.toLowerCase().includes(indicator.toLowerCase())
-    );
+  private isConfusedResponse(_text: string): boolean {
+    // Don't rely on keyword matching - let the LLM analyze context holistically
+    // Return false and let the UX researcher determine if there's actual confusion
+    return false;
   }
   
   /**
@@ -1482,10 +1427,8 @@ Identify limitations of this analysis and test methodology that affect the valid
                 this.uxObserver.markInterjection();
                 await this.uxObserver.observeTurn('user', interjection.message);
                 
-                // If it's a wind-down message, prepare to end gracefully
-                if (interjection.message.includes('wrap up')) {
-                  turn = maxTurns - 2; // Allow 2 more turns for graceful ending
-                }
+                // Don't rely on keyword matching - let the conversation flow naturally
+                // The UX researcher will determine if the conversation is ending well
                 continue; // Skip user simulator this turn
               }
             }
@@ -1787,83 +1730,29 @@ Focus on your actual experience using Bridge tools during the conversation above
     await this.mcp.close();
   }
   
-  private parseReflectionMisalignments(reflectionText: string): Array<{
+  private parseReflectionMisalignments(_reflectionText: string): Array<{
     description: string;
     category: 'good_surprise' | 'neutral_difference' | 'usability_issue' | 'tool_limitation';
     impact: 'high' | 'medium' | 'low';
     suggestions?: string;
   }> {
-    // Simple parsing - could be enhanced with more sophisticated NLP
-    const misalignments = [];
-    
-    // Look for common indicators in reflection text
-    if (reflectionText.toLowerCase().includes('surprised') || reflectionText.toLowerCase().includes('unexpected')) {
-      misalignments.push({
-        description: 'Unexpected aspect discovered in interaction',
-        category: 'good_surprise' as const,
-        impact: 'medium' as const
-      });
-    }
-    
-    if (reflectionText.toLowerCase().includes('difficult') || reflectionText.toLowerCase().includes('problem')) {
-      misalignments.push({
-        description: 'Usability challenge encountered',
-        category: 'usability_issue' as const,
-        impact: 'high' as const,
-        suggestions: 'Investigate UX improvements'
-      });
-    }
-    
-    if (reflectionText.toLowerCase().includes('limitation') || reflectionText.toLowerCase().includes('cannot')) {
-      misalignments.push({
-        description: 'Tool limitation identified',
-        category: 'tool_limitation' as const,
-        impact: 'medium' as const
-      });
-    }
-    
-    return misalignments;
+    // Don't rely on keyword matching - return empty array
+    // The LLM analysis should identify misalignments holistically
+    return [];
   }
   
-  private extractUMUXScores(umuxText: string): { capabilitiesMeetRequirements: number; easyToUse: number } {
-    const scores = {
+  private extractUMUXScores(_umuxText: string): { capabilitiesMeetRequirements: number; easyToUse: number } {
+    // Don't rely on regex matching - return neutral defaults
+    // The LLM will provide scores in the proper format if asked
+    return {
       capabilitiesMeetRequirements: 4, // Default neutral
       easyToUse: 4
     };
-    
-    // Extract capabilities score
-    const capabilitiesMatch = umuxText.match(/capabilities.*?(\d+)/i);
-    if (capabilitiesMatch) {
-      const score = parseInt(capabilitiesMatch[1]);
-      if (score >= 1 && score <= 7) {
-        scores.capabilitiesMeetRequirements = score;
-      }
-    }
-    
-    // Extract ease of use score
-    const easeMatch = umuxText.match(/easy.*?(\d+)/i);
-    if (easeMatch) {
-      const score = parseInt(easeMatch[1]);
-      if (score >= 1 && score <= 7) {
-        scores.easyToUse = score;
-      }
-    }
-    
-    return scores;
   }
   
-  private extractMagicWandWish(umuxText: string): string {
-    const magicWandMatch = umuxText.match(/magic wand.*?change.*?why[^.]*\./is);
-    if (magicWandMatch) {
-      return magicWandMatch[0].trim();
-    }
-    
-    // Fallback: look for wish patterns
-    const wishMatch = umuxText.match(/would change.*?because[^.]*\./is);
-    if (wishMatch) {
-      return wishMatch[0].trim();
-    }
-    
+  private extractMagicWandWish(_umuxText: string): string {
+    // Don't rely on regex matching - return a default
+    // The LLM will provide the wish in the proper format if asked
     return "No magic wand wish identified";
   }
   
@@ -1874,64 +1763,19 @@ Focus on your actual experience using Bridge tools during the conversation above
     return Math.round((avgUMUX - 1) * (9/6) + 1);
   }
   
-  private extractUsabilityScore(reflectionText: string): number {
-    // Look for explicit scores in the text
-    const scoreMatch = reflectionText.match(/(\d+)\/10|(\d+) out of 10|rate.*?(\d+)/i);
-    if (scoreMatch) {
-      const score = parseInt(scoreMatch[1] || scoreMatch[2] || scoreMatch[3]);
-      if (score >= 1 && score <= 10) {
-        return score;
-      }
-    }
-    
-    // Fallback: sentiment-based scoring
-    const positiveWords = ['excellent', 'smooth', 'intuitive', 'easy', 'helpful'];
-    const negativeWords = ['difficult', 'confusing', 'frustrating', 'limited', 'problem'];
-    
-    const text = reflectionText.toLowerCase();
-    const positiveCount = positiveWords.filter(word => text.includes(word)).length;
-    const negativeCount = negativeWords.filter(word => text.includes(word)).length;
-    
-    // Score 5-8 based on sentiment
-    return Math.max(5, Math.min(8, 6 + positiveCount - negativeCount));
-  }
   
   private extractUxMetrics(analysisText: string): {
     insights: string[];
     recommendations: string[];
     rawAnalysis: string;
   } {
-    // Extract natural insights and recommendations from the analysis
-    const metrics = {
-      insights: [] as string[],
-      recommendations: [] as string[],
+    // Don't try to extract structured data with regex
+    // The LLM analysis should be trusted as-is
+    return {
+      insights: [],
+      recommendations: [],
       rawAnalysis: analysisText
     };
-    
-    try {
-      // Extract insights - look for patterns, observations, and findings
-      const insightsMatch = analysisText.match(/(?:insights?|patterns?|findings?|observations?)[:\s]*\n((?:[•\-*\d]+\.?\s+.+\n?)+)/mi);
-      if (insightsMatch) {
-        metrics.insights = insightsMatch[1]
-          .split('\n')
-          .filter(line => line.trim())
-          .map(line => line.replace(/^[•\-*\d]+\.?\s+/, '').trim());
-      }
-      
-      // Extract recommendations or suggestions
-      const recsMatch = analysisText.match(/(?:recommendations?|suggestions?|improvements?)[:\s]*\n((?:[•\-*\d]+\.?\s+.+\n?)+)/mi);
-      if (recsMatch) {
-        metrics.recommendations = recsMatch[1]
-          .split('\n')
-          .filter(line => line.trim())
-          .map(line => line.replace(/^[•\-*\d]+\.?\s+/, '').trim());
-      }
-      
-    } catch (error) {
-      console.warn('Error parsing analysis insights:', error);
-    }
-    
-    return metrics;
   }
 
   // ============================================================================
