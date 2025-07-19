@@ -57,29 +57,29 @@ export const Messages = {
     longAfter: 'long after'
   },
   
-  // Quality dimensions - simplified names
+  // Quality dimensions - full labels preserved
   qualities: {
     'embodied': 'embodied',
-    'embodied.thinking': 'thinking',
-    'embodied.sensing': 'sensing',
+    'embodied.thinking': 'embodied.thinking',
+    'embodied.sensing': 'embodied.sensing',
     'focus': 'focus',
-    'focus.narrow': 'narrow focus',
-    'focus.broad': 'broad focus',
+    'focus.narrow': 'focus.narrow',
+    'focus.broad': 'focus.broad',
     'mood': 'mood',
-    'mood.open': 'open',
-    'mood.closed': 'closed',
+    'mood.open': 'mood.open',
+    'mood.closed': 'mood.closed',
     'purpose': 'purpose',
-    'purpose.goal': 'goal-directed',
-    'purpose.wander': 'wandering',
+    'purpose.goal': 'purpose.goal',
+    'purpose.wander': 'purpose.wander',
     'space': 'space',
-    'space.here': 'here',
-    'space.there': 'there',
+    'space.here': 'space.here',
+    'space.there': 'space.there',
     'time': 'time',
-    'time.past': 'past',
-    'time.future': 'future',
+    'time.past': 'time.past',
+    'time.future': 'time.future',
     'presence': 'presence',
-    'presence.individual': 'individual',
-    'presence.collective': 'collective'
+    'presence.individual': 'presence.individual',
+    'presence.collective': 'presence.collective'
   }
 };
 
