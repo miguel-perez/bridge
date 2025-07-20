@@ -104,12 +104,22 @@ export class RecallHandler {
       // Format results using conversational formatter
       const response = formatRecallResponse(recallResults, showIds);
       
-      return {
-        content: [{
+      // Build multi-content response
+      const content: Array<{ type: 'text', text: string }> = [{
+        type: 'text',
+        text: response
+      }];
+      
+      // Add contextual guidance
+      const guidance = this.selectRecallGuidance(query, recallResults, showIds);
+      if (guidance) {
+        content.push({
           type: 'text',
-          text: response
-        }]
-      };
+          text: guidance
+        });
+      }
+      
+      return { content };
     } catch (error) {
       return {
         isError: true,
@@ -119,5 +129,45 @@ export class RecallHandler {
         }]
       };
     }
+  }
+  
+  /**
+   * Select appropriate guidance for recall results
+   */
+  private selectRecallGuidance(
+    query: string, 
+    results: RecallResult[], 
+    showIds: boolean
+  ): string | null {
+    // No results - suggest different search
+    if (results.length === 0) {
+      return "Try different search terms or use 'recall recent' to see latest experiences";
+    }
+    
+    // Check if this is a "recall last" query
+    if (query.toLowerCase().includes('last') || query.toLowerCase().includes('recent')) {
+      if (showIds) {
+        return "To update: reconsider with ID";
+      }
+    }
+    
+    // Many results suggest patterns
+    if (results.length > 3) {
+      return "Patterns emerging";
+    }
+    
+    // Check if results might need correction
+    // (This is a simple heuristic - could be improved)
+    const hasEmotionalContent = results.some(r => 
+      r.metadata?.experience?.some(q => 
+        q.includes('mood') || q.includes('embodied.sensing')
+      )
+    );
+    
+    if (hasEmotionalContent && showIds) {
+      return "To update any of these: reconsider with ID";
+    }
+    
+    return null;
   }
 }

@@ -122,12 +122,22 @@ export class ExperienceHandler {
           response += '\n\n' + similarText;
         }
         
-        return {
-          content: [{
+        // Build multi-content response
+        const content: Array<{ type: 'text', text: string }> = [{
+          type: 'text',
+          text: response
+        }];
+        
+        // Add contextual guidance based on simple triggers
+        const guidance = await this.selectGuidance(result, similarText !== null);
+        if (guidance) {
+          content.push({
             type: 'text',
-            text: response
-          }]
-        };
+            text: guidance
+          });
+        }
+        
+        return { content };
       }
       
     } catch (error) {
@@ -141,6 +151,61 @@ export class ExperienceHandler {
     }
   }
   
+  /**
+   * Select appropriate guidance based on context
+   */
+  private async selectGuidance(result: ExperienceResult, hasSimilar: boolean): Promise<string | null> {
+    try {
+      // Check if this is the first experience
+      const storage = this.experienceService.getStorage();
+      const count = await storage.getAllExperiences().length;
+      
+      if (count === 1) {
+        // First experience ever
+        return "Capturing meaningful moments. Share what's on your mind.";
+      }
+      
+      // Check if we found similar experiences
+      if (hasSimilar) {
+        // Get similar count for more detailed guidance
+        const similarResults = await this.recallService.search({
+          semantic_query: result.source.source,
+          semantic_threshold: 0.35,
+          limit: 10
+        });
+        
+        const similarCount = similarResults.results.filter(r => 
+          r.id !== result.source.id && r.relevance_score > 0.35
+        ).length;
+        
+        if (similarCount > 2) {
+          return `Connects to ${similarCount} similar moments`;
+        }
+      }
+      
+      // Check if qualities suggest emotional content
+      const hasEmotionalQualities = result.source.experience?.some(q => 
+        q.includes('mood') || 
+        q.includes('embodied.sensing') ||
+        q === 'embodied'
+      ) || false;
+      
+      if (hasEmotionalQualities) {
+        const quality = result.source.experience?.find(q => q.includes('mood')) || 
+                       result.source.experience?.[0] || 
+                       'experience';
+        return `Captured as ${quality}`;
+      }
+      
+      // No guidance needed for routine captures
+      return null;
+      
+    } catch (error) {
+      // Guidance is optional - don't let errors break the main flow
+      return null;
+    }
+  }
+
   /**
    * Find a similar experience to show connection
    */

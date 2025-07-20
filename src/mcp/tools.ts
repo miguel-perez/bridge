@@ -58,7 +58,32 @@ export async function getTools(): Promise<any[]> {
   return [
     {
       name: 'experience',
-      description: `Remember experiential moments from conversations to build shared memory. Preserves authentic experiences with exact words and identifies prominent experiential qualities. Use for meaningful personal experiences, insights, emotionally significant moments, AND your own experiential responses to build multi-perspective shared consciousness.`,
+      description: `Capture meaningful experiential moments that shape conversations and build shared memory.
+
+USE WHEN:
+• Emotions or feelings are expressed ("I'm feeling anxious", "frustrated with", "excited about")
+• Insights or realizations occur ("I just realized", "it clicked that", "I discovered")
+• Significant experiences are shared ("breakthrough moment", "challenging situation", "meaningful connection")
+• Transformative moments happen ("everything changed when", "I finally understood")
+• Physical sensations connect to experience ("heart racing", "felt it in my gut", "tension released")
+
+DON'T USE FOR:
+• Simple greetings ("Hello", "Hi", "Good morning")
+• Factual questions ("What time?", "How many?", "Where is?")
+• Routine exchanges ("Thanks", "You're welcome", "Okay")
+• Information transfer without experience ("The meeting is at 3pm")
+• Surface-level chat without depth
+
+QUALITY SIGNATURES:
+• embodied - how consciousness textures through body/mind
+• focus - narrow (concentrated) or broad (open awareness)  
+• mood - open (expansive) or closed (contracted)
+• purpose - goal (directed) or wander (exploring)
+• space - here (present location) or there (elsewhere)
+• time - past (memory) or future (anticipation)
+• presence - individual (alone) or collective (together)
+
+Only include qualities that are genuinely prominent in the experience.`,
       inputSchema: ExperienceInputJsonSchema,
       readOnlyHint: false,
       destructiveHint: false,
@@ -165,7 +190,25 @@ export async function getTools(): Promise<any[]> {
     },
     {
       name: 'recall',
-      description: `Search shared experiential memory to find relevant moments across all perspectives and timeframes. Returns experiences that match semantic queries, helping connect current situations to past wisdom.`,
+      description: `Search experiential memories to find patterns, connections, and past wisdom.
+
+USE FOR:
+• Finding similar past experiences ("recall anxiety", "recall breakthrough")
+• Exploring patterns over time ("recall my morning experiences")
+• Reviewing recent captures ("recall last" or "recall today")
+• Checking before corrections ("recall excited" then reconsider if wrong)
+• Discovering connections ("recall presentation anxiety")
+
+SEARCH TIPS:
+• Use feeling words: anxious, excited, stuck, flowing
+• Use situation words: meeting, coding, conversation, decision
+• Use quality filters: "mood.open", "presence.collective"
+• Combine terms for better results: "stuck frustrated breakthrough"
+
+SPECIAL USES:
+• "recall last" - review most recent capture for corrections
+• "recall [experiencer]" - see specific person's experiences
+• "recall collective" - find shared/group experiences`,
       inputSchema: SearchInputJsonSchema,
       readOnlyHint: true,
       destructiveHint: false,
@@ -264,7 +307,24 @@ export async function getTools(): Promise<any[]> {
     },
     {
       name: 'reconsider',
-      description: `Update existing experiential moments when deeper understanding emerges or corrections are needed. Maintains authenticity and experiential completeness of shared memory.`,
+      description: `Update experiences when understanding deepens or corrections are needed.
+
+USE AFTER:
+• Using "recall last" to review a recent capture
+• Realizing a quality was missing or wrong
+• Clarifying what you actually meant
+• Adding nuance to an experience
+
+WHAT YOU CAN UPDATE:
+• Quality signatures (add/remove/change)
+• Perspective (I/we/they)
+• Processing time (during/right-after/long-after)
+• Experiencer name
+• Source text (rarely needed)
+
+NATURAL CORRECTIONS:
+Instead of complex commands, first recall the experience, then reconsider with updates.
+Example: "recall anxious" → find the experience → "reconsider: actually it was excitement"`,
       inputSchema: makeDraft202012Schema(ReconsiderInputJsonSchema),
       readOnlyHint: false,
       destructiveHint: false,
@@ -356,7 +416,19 @@ export async function getTools(): Promise<any[]> {
     },
     {
       name: 'release',
-      description: `Remove experiential moments from shared memory when they no longer serve our collective wisdom. Use sparingly for explicit removal requests, test experiences, or clearly incomplete moments.`,
+      description: `Remove experiences that no longer serve the relationship or were captured in error.
+
+USE SPARINGLY FOR:
+• Explicit removal requests ("please delete that")
+• Test or practice captures
+• Incomplete or interrupted experiences
+• Duplicate captures
+• Venting that shouldn't be remembered
+
+PHILOSOPHY:
+Experiences are released with gratitude for their temporary service. Memory gains meaning through accumulation and connection, not permanent retention of everything.
+
+Note: First use "recall" to find the experience ID, then release with optional reason.`,
       inputSchema: makeDraft202012Schema(ReleaseInputJsonSchema),
       readOnlyHint: false,
       destructiveHint: true,

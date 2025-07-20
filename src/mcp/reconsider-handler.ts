@@ -110,12 +110,22 @@ export class ReconsiderHandler {
         // Format response using conversational formatter
         const response = formatReconsiderResponse(result);
 
-        return {
-          content: [{
+        // Build multi-content response
+        const content: Array<{ type: 'text', text: string }> = [{
+          type: 'text',
+          text: response
+        }];
+        
+        // Add guidance for next steps
+        const guidance = this.selectReconsiderGuidance(result);
+        if (guidance) {
+          content.push({
             type: 'text',
-            text: response
-          }]
-        };
+            text: guidance
+          });
+        }
+
+        return { content };
       }
       
     } catch (error) {
@@ -127,5 +137,19 @@ export class ReconsiderHandler {
         }]
       };
     }
+  }
+  
+  /**
+   * Select appropriate guidance after reconsideration
+   */
+  private selectReconsiderGuidance(result: ExperienceResult): string | null {
+    // Check what was updated
+    const hasQualityUpdate = result.source.experience && result.source.experience.length > 0;
+    
+    if (hasQualityUpdate) {
+      return "Updated. See connections with recall";
+    }
+    
+    return null;
   }
 }
