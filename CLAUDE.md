@@ -8,11 +8,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 VISION → OPPORTUNITIES → EXPERIMENTS → LEARNINGS → VISION
 ```
 
-0. **Understand Ways of Working**: Check LOOP.md
-1. **Find opportunity**: Check OPPORTUNITIES.md
-2. **Run experiment**: Add to EXPERIMENTS.md, design and run test
-3. **Review learnings**: Check LEARNINGS.md for insights
-4. **Update vision**: Refine based on learnings
+1. **Understand methodology**: Check LOOP.md
+2. **Find opportunity**: Check OPPORTUNITIES.md
+3. **Run experiment**: Add to EXPERIMENTS.md, design and run test
+4. **Review learnings**: Check LEARNINGS.md for insights
+5. **Update vision**: Refine based on learnings
 
 ## Commands
 
@@ -115,4 +115,4 @@ experience({ source: "I feel anxious", experience: ["embodied.sensing", "mood.cl
 - **DXT Manifest Spec**: https://github.com/anthropics/dxt/blob/main/MANIFEST.md
 - **DXT Examples**: https://github.com/anthropics/dxt/tree/main/examples
 
-*See VISION.md for philosophy, LOOP.md for methodology*
+*See PHILOSOPHY.md for impact, LOOP.md for methodology, VISION.md for roadmap*
