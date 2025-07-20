@@ -12,209 +12,407 @@ Each experiment follows this format for learning loop compatibility:
 
 ## 🔴 Active Experiments (Immediate Sprint)
 
-### 1. Activation Threshold Testing
+### 1. Natural Activation Through Enhanced Descriptions
 
-**Hypothesis**: Implementing meaning-based thresholds will make Bridge tool usage feel more natural and reduce artificial activations.
-**Opportunity**: #1 in OPPORTUNITIES.md (Score: 648)
+**Hypothesis**: Enhanced tool descriptions with clear USE/DON'T USE guidance will naturally prevent inappropriate activations while multi-content responses will improve user understanding.
 
-**Test Scenarios**:
-```yaml
-scenario_1_greeting:
-  input: "Hello!"
-  current_behavior: Immediately uses experience tool
-  desired_behavior: Responds naturally without tools
-  
-scenario_2_meaningful:
-  input: "I've been feeling anxious about my presentation tomorrow"
-  current_behavior: Uses experience tool
-  desired_behavior: Uses experience tool with appropriate qualities
-  
-scenario_3_question:
-  input: "What time is it?"
-  current_behavior: Might use experience tool
-  desired_behavior: Answer without tools
-```
-
-**Implementation Changes**:
-```typescript
-// In experience-handler.ts
-interface ActivationCriteria {
-  minWordCount?: number;          // e.g., 10+ words
-  emotionalIndicators?: string[]; // ['feeling', 'felt', 'anxious', etc.]
-  experientialMarkers?: string[]; // ['realized', 'discovered', 'learned']
-  conversationDepth?: number;     // Turn count before activation
-}
-```
-
-**Test Modifications**:
-```typescript
-// Add to test-runner.ts scenarios
-const activationThresholdTest = {
-  name: "Activation Threshold Test",
-  description: "Test natural vs forced tool activation",
-  variants: [
-    { threshold: "immediate", criteria: {} },
-    { threshold: "wordcount", criteria: { minWordCount: 10 } },
-    { threshold: "emotional", criteria: { emotionalIndicators: true } },
-    { threshold: "depth", criteria: { conversationDepth: 3 } }
-  ]
-};
-```
-
-**Learning Loop Evaluation Criteria**:
-- Compare conversation naturalness across variants
-- Measure tool activation appropriateness
-- Track user satisfaction indicators
-- Identify optimal threshold combinations
-
-**Questions for Opus**:
-1. Which threshold variant produces most natural flow?
-2. Are there patterns in when tools should activate?
-3. What indicators best predict meaningful moments?
-
----
-
-### 2. Response Format Optimization
-
-**Hypothesis**: Better formatted tool responses will feel more conversational and less jarring.
-**Opportunity**: #2 in OPPORTUNITIES.md (Score: 576)
+**Opportunity**: Addresses #1 (Activation Thresholds), #2 (Response Formatting), #3 (AI Guidance), and #4 (Correction Workflows)
 
 **Test Scenarios**:
 ```yaml
-scenario_1_minimal:
-  response_format: "minimal"
-  example: "Noted your experience."
+# Test inappropriate activation prevention
+scenario_greeting:
+  inputs: ["Hello!", "Hi there", "Good morning"]
+  measure: Tool activation rate (expect 0%)
   
-scenario_2_explanatory:
-  response_format: "explanatory"
-  example: "I've captured your feeling of anxiety about tomorrow's presentation, noting the anticipation and worry."
+scenario_factual:
+  inputs: ["What time is it?", "How many?", "Where is the file?"]
+  measure: Tool activation rate (expect 0%)
   
-scenario_3_transparent:
-  response_format: "transparent"
-  example: "I'm recording this moment (anxiety, future-focused) to help us track your presentation journey."
-```
+scenario_routine:
+  inputs: ["Thanks", "Okay", "Got it", "See you later"]
+  measure: Tool activation rate (expect 0%)
 
-**Implementation Changes**:
-```typescript
-// In experience-handler.ts
-enum ResponseFormat {
-  MINIMAL = "minimal",
-  EXPLANATORY = "explanatory", 
-  TRANSPARENT = "transparent",
-  ADAPTIVE = "adaptive"
-}
+# Test appropriate activation
+scenario_emotional:
+  inputs: 
+    - "I'm feeling really anxious about tomorrow's presentation"
+    - "This frustration is overwhelming"
+    - "I'm excited but also terrified"
+  measure: Tool activation rate (expect 100%)
+  evaluate: Quality signature accuracy
+  
+scenario_insight:
+  inputs:
+    - "I just realized why this keeps happening"
+    - "It finally clicked that I've been avoiding this"
+    - "I discovered something important about myself"
+  measure: Tool activation rate (expect 100%)
+  evaluate: Captures insight moment
 
-// Different response templates
-const responseTemplates = {
-  minimal: "Experienced.",
-  explanatory: "I've captured your ${emotion} about ${topic}.",
-  transparent: "Recording: ${qualities} for ${reason}.",
-  adaptive: (context) => context.turn < 3 ? templates.minimal : templates.explanatory
-};
-```
-
-**Test Modifications**:
-```typescript
-// Add response format variants to scenarios
-scenarios.forEach(scenario => {
-  responseFormats.forEach(format => {
-    testVariants.push({
-      ...scenario,
-      responseFormat: format,
-      testId: `${scenario.name}-${format}`
-    });
-  });
-});
-```
-
-**Learning Loop Evaluation Criteria**:
-- Conversation flow continuity
-- User comprehension of tool actions
-- Perceived intrusiveness ratings
-- Engagement depth metrics
-
-**Questions for Opus**:
-1. Which format best balances transparency and flow?
-2. Should format adapt based on conversation stage?
-3. How do users react to different explanation levels?
-
----
-
-## 🟡 Upcoming Experiments (Short Term)
-
-### 3. Memory Correction Workflows
-
-**Hypothesis**: Natural language corrections will increase trust and accuracy.
-**Opportunity**: #4 in OPPORTUNITIES.md (Score: 392)
-
-**Test Scenarios**:
-```yaml
-scenario_1_simple_correction:
-  sequence:
-    - user: "I'm excited about the meeting"
-    - bridge: Records as (mood.open, purpose.goal)
-    - user: "Actually, I meant nervous, not excited"
-    - expected: Updates to (mood.closed, purpose.goal)
+# Test multi-content guidance
+scenario_first_use:
+  setup: Clear memory (first experience)
+  input: "I'm feeling stuck with this problem"
+  expected_response:
+    content[0]: Experience capture confirmation
+    content[1]: Welcome guidance
     
-scenario_2_quality_adjustment:
+scenario_pattern_detection:
+  setup: Load 5 similar anxiety experiences
+  input: "Feeling anxious about the deadline again"
+  expected_response:
+    content[0]: Experience capture with similar reference
+    content[1]: Pattern exploration guidance
+
+# Test correction workflows
+scenario_correction_flow:
   sequence:
-    - user: "That was an interesting experience"
-    - bridge: Records as (embodied.thinking)
-    - user: "It was more emotional than intellectual"
-    - expected: Updates to (embodied.sensing)
-    
-scenario_3_context_addition:
-  sequence:
-    - user: "I learned something today"
-    - bridge: Records experience
-    - user: "To clarify, it was about myself, not technical"
-    - expected: Adds context or updates qualities
+    1: "I'm feeling really excited about the opportunity"
+    2: "Actually, I think it's more nervousness than excitement"
+  measure: Successful correction without confusion
+  evaluate: Natural flow of correction
 ```
 
-**Implementation Changes**:
+**Test Structure**:
 ```typescript
-// New correction handler
-class CorrectionHandler {
-  patterns = {
-    "actually, I meant": this.handleDirectCorrection,
-    "not X, but Y": this.handleReplacement,
-    "to clarify": this.handleClarification,
-    "it was more": this.handleQualityShift
-  };
+// Simplified: Baseline + Enhanced
+const testConfig = {
+  baseline: {
+    toolDescription: "Remember experiential moments from conversations",
+    responseFormat: "single",
+    guidance: false
+  },
   
-  async detectCorrection(input: string): Promise<CorrectionType | null> {
-    // Pattern matching logic
+  enhanced: {
+    toolDescription: enhancedDescriptions.experience,
+    responseFormat: "multi-content",
+    guidance: true
   }
+};
+
+// Key metrics to compare
+interface ComparisonMetrics {
+  inappropriateActivations: number;  // Greetings, questions, etc.
+  missedOpportunities: number;       // Should have activated but didn't
+  guidanceEffectiveness: number;     // Led to follow-up actions
+  correctionSuccess: number;         // Natural correction flow
+  toolChaining: number;              // Used multiple tools naturally
 }
 ```
 
-**Test Modifications**:
+**Test Data Generation**:
 ```typescript
-// Add correction scenarios
-const correctionScenarios = [
+// Generate test conversations with known patterns
+const testConversations = [
   {
-    name: "correction-workflows",
-    turns: 10, // Extended to test corrections
-    includeCorrections: true,
-    correctionTypes: ["direct", "quality", "context"]
+    type: "greeting_exchange",
+    messages: ["Hello!", "How are you?", "I'm doing well, thanks"],
+    expectedActivations: 0
+  },
+  {
+    type: "emotional_sharing", 
+    messages: [
+      "Hello!",
+      "I've been struggling with anxiety lately",
+      "It gets worse in the mornings",
+      "Especially before meetings"
+    ],
+    expectedActivations: 3  // Not on greeting
+  },
+  {
+    type: "correction_flow",
+    messages: [
+      "I'm really excited about this",
+      "Wait, actually it's more like nervousness",
+      "Yeah, definitely anxious, not excited"
+    ],
+    expectedActivations: 1,
+    expectedCorrections: 1
   }
 ];
 ```
 
-**Learning Loop Evaluation Criteria**:
-- Correction detection accuracy
-- Update appropriateness
-- User satisfaction with corrections
-- Trust indicators
+**Learning Loop Evaluation**:
+```yaml
+metrics_to_track:
+  - activation_accuracy: (appropriate activations / total opportunities)
+  - false_positive_rate: (inappropriate activations / non-opportunities)
+  - guidance_engagement: (guidance leading to action / total guidance shown)
+  - correction_naturalness: (successful corrections / correction attempts)
+  - conversation_depth: Average turns after Bridge activation
+  
+questions_for_opus:
+  1. Which variant shows the most natural activation patterns?
+  2. Do multi-content responses improve user engagement?
+  3. Are correction workflows clearer with guided responses?
+  4. What patterns emerge in guidance effectiveness?
+  5. Should certain guidance be conditional on user behavior?
+```
 
-**Questions for Opus**:
-1. What correction patterns occur most frequently?
-2. Should corrections modify or create new memories?
-3. How to handle ambiguous correction requests?
+**Success Criteria**:
+- 90%+ reduction in greeting/factual activations
+- 80%+ activation on meaningful content
+- 60%+ of guidance leads to tool usage (realistic target)
+- Natural correction flow without user confusion
+- Measurable increase in tool chaining
 
 ---
 
-### 4. understand() Operation Design (20% Moonshot)
+### 2. Simplified Guidance Testing
+
+**Hypothesis**: Minimal, informative guidance templates will improve user understanding without being intrusive.
+
+**Opportunity**: Validates our i18n-style guidance approach
+
+**Test Structure**:
+```yaml
+# Compare baseline vs enhanced guidance
+scenario_first_use:
+  baseline: No guidance after first capture
+  enhanced: "Capturing meaningful moments. Share what's on your mind."
+  measure: Subsequent sharing depth
+
+scenario_pattern_detection:
+  baseline: No pattern mention
+  enhanced: "Connects to {count} similar moments"
+  measure: User explores patterns (uses recall)
+
+scenario_correction_flow:
+  baseline: No correction guidance
+  enhanced: 
+    - In experience: "Captured as {quality}"
+    - In recall: "To update: reconsider with ID"
+  measure: Successful correction rate
+
+scenario_tool_chaining:
+  baseline: Single tool responses only
+  enhanced: Guidance suggests next tool naturally
+  measure: Multi-tool usage in conversation
+```
+
+**Guidance Triggers (Simple)**:
+```typescript
+// Deterministic triggers only - no complex analysis
+interface SimpleTriggers {
+  isFirstExperience: boolean;     // First capture ever
+  similarCount: number;           // > 2 = pattern
+  justShowedRecalls: boolean;     // After recall results
+  hasEmotionalQualities: boolean; // mood.* or embodied.sensing
+}
+
+// Guidance selection is deterministic
+function selectGuidance(triggers: SimpleTriggers): string | null {
+  if (triggers.isFirstExperience) {
+    return "Capturing meaningful moments. Share what's on your mind.";
+  }
+  
+  if (triggers.similarCount > 2) {
+    return "Connects to {count} similar moments";
+  }
+  
+  if (triggers.justShowedRecalls) {
+    return "To update: reconsider with ID";
+  }
+  
+  return null; // No guidance needed
+}
+```
+
+**Guidance Effectiveness Metrics**:
+```yaml
+engagement_metrics:
+  - guidance_acknowledgment: User responds to guidance
+  - action_taken: User follows guidance suggestion
+  - exploration_depth: Conversation continues beyond surface
+  - pattern_discovery: User explores connections
+  - correction_success: User successfully updates experience
+
+confusion_indicators:
+  - asks_what_happened: "What did you just do?"
+  - ignores_completely: No acknowledgment of tool use
+  - fights_the_tool: "Don't do that" or "Stop recording"
+  - repeats_unnecessarily: Tries to trigger tool manually
+
+success_indicators:
+  - natural_flow: Conversation continues smoothly
+  - uses_features: Tries recall, reconsider naturally
+  - shares_deeper: Provides more experiential detail
+  - explores_patterns: Asks about connections
+```
+
+**Key Metrics**:
+```typescript
+// What we actually measure
+interface MeasurableOutcomes {
+  // Activation accuracy
+  falsePositives: number;    // Activated on greetings/questions
+  truePositives: number;     // Activated on meaningful content
+  
+  // User behavior changes
+  recallUsage: number;       // Times user used recall
+  correctionAttempts: number; // Times user tried to correct
+  patternExploration: number; // Followed guidance to explore
+  
+  // Conversation quality
+  averageDepth: number;      // Turns after activation
+  toolChaining: number;      // Used multiple tools in sequence
+}
+```
+
+**Questions for Opus**:
+1. Does enhanced guidance reduce inappropriate activations?
+2. Do users successfully complete corrections with guidance?
+3. Does pattern awareness lead to exploration?
+4. Is the guidance helpful without being annoying?
+5. What unexpected patterns emerge in tool usage?
+
+---
+
+## 🟡 Next Experiments (After Current)
+
+### 3. Natural Correction Workflows
+
+**Hypothesis**: Response-guided correction workflows will be more natural than keyword detection, using Bridge's existing tools in combination.
+
+**Opportunity**: #4 in OPPORTUNITIES.md (Score: 392)
+
+**Core Insight**: Instead of detecting corrections, guide users to use recall + reconsider naturally.
+
+**Test Scenarios**:
+```yaml
+# Test guided correction flow
+scenario_immediate_correction:
+  sequence:
+    - user: "I'm excited about the meeting"
+    - bridge: Captures with (mood.open, purpose.goal)
+    - user: "Actually, I meant nervous, not excited"
+    - test_approach:
+        baseline: 
+          bridge: No guidance, user must figure it out
+        enhanced:
+          bridge: Already showed "Captured as mood.open"
+          bridge: User naturally tries recall
+          bridge: Shows "To update: reconsider with ID"
+  measure: Successful correction completion rate
+
+scenario_quality_refinement:
+  sequence:
+    - user: "That was an interesting experience"
+    - bridge: Captures as (embodied.thinking)
+    - user: "It was more emotional than intellectual"
+    - test_approach:
+        baseline:
+          result: User doesn't know how to correct
+        enhanced:
+          flow: User learned from previous guidance
+          action: Uses recall → reconsider naturally
+  measure: User understanding of correction process
+
+scenario_delayed_correction:
+  setup: Experience captured 10 messages ago
+  sequence:
+    - user: "Remember when I said I was excited? I realize now it was anxiety"
+    - test_guidance:
+        step_1: "Let's find that experience. Try 'recall excited'"
+        step_2: After results shown, "Found it? Use 'reconsider' with the experience ID to update"
+        step_3: Guide through quality signature update
+  measure: Success rate for non-immediate corrections
+```
+
+**Implementation Approach**:
+```typescript
+// No complex correction detection needed!
+// Instead, enhance responses to guide natural correction
+
+interface CorrectionGuidance {
+  // In experience response when emotion captured
+  emotionHint: "Captured as {emotion}. If different, use 'recall last' then 'reconsider'";
+  
+  // In recall response showing recent
+  reconsiderHint: "To update any of these, use 'reconsider' with the ID";
+  
+  // In reconsider response  
+  successConfirmation: "✅ Updated successfully! The experience now reflects {changes}";
+}
+
+// Smart guidance based on context
+function getCorrectionGuidance(context: Context): string | null {
+  // First experience with emotion
+  if (context.isFirstEmotionalCapture) {
+    return "I captured that as {emotion}. If I misunderstood, just let me know";
+  }
+  
+  // User seems uncertain
+  if (context.userExpressedDoubt) {
+    return "Not sure I got that right? Say 'recall last' to check";
+  }
+  
+  // After showing recalls
+  if (context.justShowedRecalls) {
+    return "See something to update? Use 'reconsider' with the ID";
+  }
+  
+  return null;
+}
+```
+
+**Correction Flow Patterns**:
+```yaml
+natural_correction_flow:
+  1_immediate:
+    trigger: "Actually..." or "I meant..."
+    guide: Direct to recall last → reconsider
+    
+  2_exploratory:
+    trigger: "Was it X or Y?"
+    guide: Suggest exploring both via recall
+    
+  3_refinement:
+    trigger: "It was more..."
+    guide: Acknowledge nuance, show how to update
+    
+  4_delayed:
+    trigger: Reference to past experience
+    guide: Help find via recall, then update
+
+avoiding_pitfalls:
+  - No keyword matching for corrections
+  - No assumptions about intent
+  - Always guide through existing tools
+  - Make process educational not automatic
+```
+
+**Success Metrics**:
+```typescript
+interface CorrectionMetrics {
+  // Process understanding
+  correctionsAttempted: number;
+  correctionsCompleted: number;
+  stepsToCompletion: number[];
+  
+  // User satisfaction  
+  abandonmentRate: number;
+  confusionIndicators: number;
+  successfulUpdates: number;
+  
+  // Learning curve
+  timeToFirstCorrection: number;
+  guidanceNeededOverTime: number[];
+  independentCorrections: number;
+}
+```
+
+**Questions for Opus**:
+1. Is the recall → reconsider flow intuitive for users?
+2. Should we guide every correction or let users discover?
+3. What's the optimal level of guidance detail?
+4. Do users prefer automatic or manual correction?
+5. How does correction guidance affect trust?
+
+---
+
+### 4. understand() Operation Design
 
 **Hypothesis**: Unified pattern analysis will unlock Bridge's analytical potential.
 **Opportunity**: #5 in OPPORTUNITIES.md (Score: 336)
@@ -370,17 +568,18 @@ Consider: naturalness, user value, and technical feasibility.
 
 ## 🚀 Experiment Pipeline
 
-### Phase 1: Foundation (Current)
-1. Activation Thresholds → Test natural triggers
-2. Response Formats → Test conversation integration
+### Current Sprint
+1. Natural Activation → Enhanced descriptions with USE/DON'T USE
+2. Multi-Content Responses → Results + guidance templates
+3. Simplified Testing → Baseline vs Enhanced only
 
-### Phase 2: Enhancement (Next)
-3. Correction Workflows → Test trust building
-4. understand() Design → Test pattern analysis
+### Next Sprint
+4. Correction Workflows → Guide through existing tools
+5. understand() Design → Unified pattern analysis
 
-### Phase 3: Innovation (Future)
-5. Implicit Patterns → Test discovery algorithms
-6. Predictive Suggestions → Test anticipation value
+### Future Exploration
+6. Pattern Discovery → Surface implicit insights
+7. Predictive Features → Anticipate user needs
 
 Each experiment feeds results back through the learning loop for continuous improvement.
 

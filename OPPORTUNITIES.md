@@ -33,37 +33,37 @@ Each opportunity is scored on three dimensions:
 
 These opportunities are blocking core functionality and must be addressed immediately.
 
-### 1. Activation Threshold Implementation  
+### 1. Natural Activation Through Enhanced Descriptions  
 **Impact**: 9 | **Certainty**: 8 | **Urgency**: 9 | **Score**: 648
 
-Create clear guidelines and implementation for when Bridge tools should activate based on conversation meaning threshold. Current immediate activation on greetings feels artificial.
+Create clear tool descriptions with USE/DON'T USE guidance to naturally prevent inappropriate activations. Current immediate activation on greetings feels artificial.
 
-**Implementation**: Define meaning threshold criteria, create activation heuristics, implement natural language triggers, add conversation state tracking.
+**Implementation**: Enhanced tool descriptions, multi-content responses with guidance, i18n-style response templates. No complex NLP or thresholds needed.
 
-### 2. Optimized Tool Response Formatting
+### 2. Multi-Content Response System
 **Impact**: 8 | **Certainty**: 8 | **Urgency**: 9 | **Score**: 576
 
-Improve how Bridge formats tool responses to be more conversational while maintaining MCP's explicit tool visibility. Focus on clear, informative responses that feel natural.
+Implement MCP's multi-content response capability to provide both tool results and contextual guidance. Makes tool usage educational and natural.
 
-**Implementation**: Enhanced response formatting that explains what Bridge is doing and why, making tool usage transparent but not jarring.
+**Implementation**: Return multiple content items - primary result plus optional guidance based on context. Use i18n-style templates for all responses.
 
 ## High Priority (Score 300-499)
 
 Major enhancements that significantly improve user experience.
 
-### 3. AI Guidance for Tool Usage
+### 3. Smart Guidance Templates
 **Impact**: 7 | **Certainty**: 7 | **Urgency**: 8 | **Score**: 392
 
-Provide clear guidance in tool descriptions and system prompts about when Bridge tools add value. Help AI make better decisions about tool usage timing.
+Provide contextual guidance through multi-content responses. Help users discover Bridge capabilities naturally through usage.
 
-**Implementation**: Enhanced tool descriptions with usage examples and clear value propositions. Update system documentation with best practices.
+**Implementation**: Simple guidance triggers (first use, patterns detected, correction opportunities). Minimal, translatable templates that inform without instructing.
 
-### 4. Memory Correction Workflows
+### 4. Natural Correction Workflows
 **Impact**: 8 | **Certainty**: 7 | **Urgency**: 7 | **Score**: 392
 
-Simple UI/commands for users to correct misunderstood experiences or adjust quality signatures. Current reconsider() operation is too technical for average users.
+Guide users through recall → reconsider flow for corrections. No keyword detection or complex commands needed.
 
-**Implementation**: Create user-friendly commands like "that's not what I meant" or "update my last memory".
+**Implementation**: After capturing, mention "Captured as {quality}". In recall results, show "To update: reconsider with ID". Let users discover the natural flow.
 
 ### 5. understand() - Pattern Analysis Operation
 **Impact**: 8 | **Certainty**: 7 | **Urgency**: 6 | **Score**: 336
@@ -247,15 +247,15 @@ Use collective wisdom from patterns to inform decisions.
 
 ### Immediate Sprint (Current) - 80% Core Improvements
 **Focus: Fix critical issues blocking natural conversation flow**
-1. Activation threshold implementation (648) - Make tools activate naturally
-2. Optimized tool response formatting (576) - Improve response quality
-3. AI guidance for tool usage (392) - Better tool descriptions
+1. Natural activation through enhanced descriptions (648) - USE/DON'T USE guidance
+2. Multi-content response system (576) - Results + contextual guidance
+3. Smart guidance templates (392) - Minimal, helpful, translatable
 
 **20% Moonshot**: Start designing understand() operation architecture
 
 ### Short Term (Next 4 Weeks) - 80% User Experience
 **Focus: Make Bridge more accessible and useful**
-1. Memory correction workflows (392) - User-friendly commands
+1. Natural correction workflows (392) - Guide through recall → reconsider
 2. Detailed response explanations (336) - Transparency in action
 3. Educational content tool (280) - Help users learn Bridge
 
