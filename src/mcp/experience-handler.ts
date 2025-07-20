@@ -149,14 +149,14 @@ export class ExperienceHandler {
       // Use semantic search to find similar experiences
       const { results } = await this.recallService.search({
         semantic_query: content,
-        semantic_threshold: 0.8, // High threshold for relevant matches
+        semantic_threshold: 0.35, // Lower threshold to find more matches (synthetic data has lower similarity scores)
         limit: 2 // Get 2 in case the first is the same one we just experienceed
       });
       
       // Filter out the experience we just experienceed and get the most similar
       const similar = results.find(r => r.id !== excludeId);
       
-      if (similar && similar.relevance_score > 0.8) {
+      if (similar && similar.relevance_score > 0.35) {
         // Format the similar experience reference
         const snippet = similar.snippet || similar.content || '';
         const truncated = snippet.length > 100 ? snippet.substring(0, 100) + '...' : snippet;

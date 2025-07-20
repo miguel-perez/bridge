@@ -385,6 +385,9 @@ export async function search(input: RecallInput): Promise<RecallServiceResponse>
         
         addDebugLog(`Found ${similarResults.length} semantically similar results with threshold ${input.semantic_threshold || 0.7}`);
         
+        // Store similarity results in debug info for inspection
+        addDebugLog('All similarity results', similarResults);
+        
         // Log top similarity scores
         const topSemanticScores = similarResults
           .slice(0, 10)
@@ -403,6 +406,9 @@ export async function search(input: RecallInput): Promise<RecallServiceResponse>
         // Add to debug similarity scores
         if (!debugInfo.similarity_scores) debugInfo.similarity_scores = [];
         debugInfo.similarity_scores.push(...topSemanticScores.map(s => ({ ...s, type: 'semantic' as const })));
+        
+        // DEBUG: Log how many items we're adding to the map
+        addDebugLog(`Adding ${similarResults.length} items to semantic similarity map`);
         
       } catch (error) {
         const errorInfo = logRecallError('semantic_recall', error as Error, { 

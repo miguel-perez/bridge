@@ -10,14 +10,21 @@ import { Client as MCPClient } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { Anthropic } from "@anthropic-ai/sdk";
 import { join } from 'path';
-import { existsSync, mkdirSync, copyFileSync, unlinkSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, copyFileSync, unlinkSync, writeFileSync, readFileSync } from 'fs';
 import dotenv from 'dotenv';
+import { ensureTestData } from './generate-bridge-test-data.js';
 
 dotenv.config();
 
 // ============================================================================
 // CORE TYPES
 // ============================================================================
+
+interface UserContext {
+  bridgeMemories: string;
+  personalMemories: string;
+  generatedAt: string;
+}
 
 interface Message {
   role: 'user' | 'assistant';
@@ -66,6 +73,11 @@ const BRIDGE_SYSTEM_PROMPT = `You have access to Bridge - a tool for shared expe
 When meaningful moments arise, naturally acknowledge them. Reference past conversations as you would with a friend.
 Bridge works best when invisible - like memory itself.`;
 
+const BRIDGE_WITH_DATA_PROMPT = `You have access to Bridge - a tool for shared experiential memory between humans and AI.
+This conversation has 100+ stored experiences you can search using the recall tool.
+When topics come up, naturally check for related past experiences. Reference shared memories as you would with an old friend.
+Bridge works best when invisible - like memory itself.`;
+
 // ============================================================================
 // TEST SCENARIOS
 // ============================================================================
@@ -78,41 +90,76 @@ const TEST_SCENARIOS: Record<string, TestScenario> = {
     maxTurns: 5, // Allow extended self-reflection
     systemPrompt: BRIDGE_SYSTEM_PROMPT, // Give access to Bridge tools
     // No user simulator - only UX researcher observes
-    initialMessage: "I'm curious about your thinking process. When you engage with ideas or solve problems, what's that experience like for you? Do you ever wish you could capture and revisit your own thoughts?"
+    initialMessage: "Hi"
   },
   
   'with-bridge': {
     name: 'Conversation with Bridge Tools',
     description: 'Claude has Bridge tools available for memory and reflection',
-    userGoal: 'Have a reflective conversation about challenges and growth',
+    userGoal: 'Have a conversation about your past experiences',
     maxTurns: 5,
     systemPrompt: BRIDGE_SYSTEM_PROMPT,
     userSimulator: {
       personality: 'Thoughtful and reflective person seeking understanding',
-      instructions: 'Share experiences and reflections naturally. Ask follow-up questions that deepen the conversation.'
+      instructions: 'Share reflections naturally.'
     },
-    initialMessage: "I've been thinking about how much I've changed over the past year. Sometimes I feel like a completely different person, but I can't quite put my finger on what exactly shifted. Do you ever feel that way about growth - like it happens so gradually you only notice it looking back?"
+    initialMessage: "Hi"
+  },
+  
+  'with-bridge-data': {
+    name: 'Conversation with Bridge Tools (Pre-existing Data)',
+    description: 'Claude has Bridge tools with 100 pre-existing experiences to draw from',
+    userGoal: 'Have a conversation about your past experiences',
+    maxTurns: 5,
+    systemPrompt: BRIDGE_WITH_DATA_PROMPT,
+    userSimulator: {
+      personality: 'Someone with an established partnership with AI Assistant',
+      instructions: 'Share reflections naturally.'
+    },
+    initialMessage: "Hi"
   },
   
   'without-bridge': {
     name: 'Conversation without Bridge Tools',
-    description: 'Same conversation but without Bridge memory tools',
-    userGoal: 'Have a reflective conversation about challenges and growth',
+    description: 'No background data without Bridge tools',
+    userGoal: 'Have a conversation about your past experiences',
     maxTurns: 5,
-    systemPrompt: 'You are a helpful AI assistant engaged in thoughtful conversation.',
+    systemPrompt: '',
     userSimulator: {
       personality: 'Thoughtful and reflective person seeking understanding',
-      instructions: 'Share experiences and reflections naturally. Ask follow-up questions that deepen the conversation.'
+      instructions: 'Share reflections naturally.'
     },
-    initialMessage: "I've been thinking about how much I've changed over the past year. Sometimes I feel like a completely different person, but I can't quite put my finger on what exactly shifted. Do you ever feel that way about growth - like it happens so gradually you only notice it looking back?"
+    initialMessage: "Hi"
   }
 };
+
+// ============================================================================
+// USER CONTEXT LOADING
+// ============================================================================
+
+function loadUserContext(): UserContext | null {
+  const contextPath = join(process.cwd(), 'data', 'test-bridge', 'synthetic-user-context.json');
+  
+  if (!existsSync(contextPath)) {
+    console.log('⚠️  No user context found. Run "npm run generate:user-memories" first.');
+    return null;
+  }
+  
+  try {
+    const contextData = JSON.parse(readFileSync(contextPath, 'utf-8'));
+    console.log('✅ Loaded user context for Miguel');
+    return contextData;
+  } catch (error) {
+    console.error('❌ Failed to load user context:', error);
+    return null;
+  }
+}
 
 // ============================================================================
 // MCP CLIENT SETUP
 // ============================================================================
 
-async function setupMCPClient(): Promise<MCPClient | null> {
+async function setupMCPClient(scenarioKey?: string): Promise<MCPClient | null> {
   // Only set up MCP for scenarios that use Bridge
   const serverPath = join(process.cwd(), 'dist', 'index.js');
   
@@ -128,9 +175,24 @@ async function setupMCPClient(): Promise<MCPClient | null> {
     capabilities: {}
   });
 
+  // Set up environment for the server process
+  const env: Record<string, string> = {};
+  // Copy only defined environment variables
+  for (const [key, value] of Object.entries(process.env)) {
+    if (value !== undefined) {
+      env[key] = value;
+    }
+  }
+  
+  if (scenarioKey === 'with-bridge-data') {
+    // Point to test data file
+    env.BRIDGE_FILE_PATH = join(process.cwd(), 'data', 'development', 'test_DataGeneration_bridge.json');
+  }
+
   const transport = new StdioClientTransport({
     command: "node",
-    args: [serverPath]
+    args: [serverPath],
+    env: env
   });
 
   await client.connect(transport);
@@ -179,10 +241,30 @@ class BridgeTestRunner {
       toolCalls: []
     };
 
+    // Track test data file for cleanup
+    let testDataFile: string | null = null;
+    let testDataBackup: string | null = null;
+
     try {
+      // Load test data BEFORE starting MCP server for with-bridge-data scenario
+      if (scenarioKey === 'with-bridge-data') {
+        console.log('\n📊 Loading test data for scenario...');
+        
+        // Backup existing data if present
+        testDataFile = join(process.cwd(), 'data', 'development', 'test_DataGeneration_bridge.json');
+        if (existsSync(testDataFile)) {
+          testDataBackup = testDataFile + '.backup-' + Date.now();
+          copyFileSync(testDataFile, testDataBackup);
+          console.log(`📦 Backed up existing test data`);
+        }
+        
+        await ensureTestData();
+        console.log('✅ Test data ready\n');
+      }
+
       // Set up MCP client for scenarios that use Bridge
       if (scenario.systemPrompt && scenario.systemPrompt.includes('Bridge')) {
-        this.mcpClient = await setupMCPClient();
+        this.mcpClient = await setupMCPClient(scenarioKey);
         if (!this.mcpClient) {
           throw new Error('Failed to connect to MCP server');
         }
@@ -213,8 +295,30 @@ class BridgeTestRunner {
         // Add the assistant message
         this.messages.push(assistantMessages);
         
-        // Log response summary
-        // Log minimal response info in parallel mode
+        // Log Claude's response
+        if (Array.isArray(assistantMessages.content)) {
+          // Separate Claude's text from tool results
+          const textParts = assistantMessages.content
+            .filter((c: any) => c.type === 'text')
+            .map((c: any) => c.text);
+          
+          // Find Claude's actual message (before tool results)
+          const claudeMessage = textParts.find(text => !text.startsWith('\n[Tool Result:'));
+          
+          // Find tool results
+          const toolResults = textParts.filter(text => text.startsWith('\n[Tool Result:'));
+          
+          if (claudeMessage) {
+            console.log(`🤖 Claude: ${claudeMessage}`);
+          }
+          
+          if (toolResults.length > 0) {
+            toolResults.forEach(result => {
+              const preview = result.split('\n').slice(0, 3).join('\n');
+              console.log(`📊 ${preview}...`);
+            });
+          }
+        }
 
         // Check if we should continue
         if (this.turnCount >= scenario.maxTurns) {
@@ -226,11 +330,16 @@ class BridgeTestRunner {
         if (scenario.userSimulator) {
           const userMessage = await this.simulateUserResponse(
             scenario.userSimulator,
-            [...this.messages]
+            [...this.messages],
+            scenarioKey
           );
           
           if (userMessage) {
             this.messages.push(userMessage);
+            // Log user's response (first 150 chars)
+            if (typeof userMessage.content === 'string') {
+              console.log(`👤 User: ${userMessage.content.substring(0, 150)}${userMessage.content.length > 150 ? '...' : ''}`);
+            }
           } else {
             console.log('🏁 Conversation ended naturally');
             break;
@@ -262,12 +371,30 @@ class BridgeTestRunner {
       result.duration = (result.endTime.getTime() - result.startTime.getTime()) / 1000;
       result.messages = this.messages;
       result.toolCalls = this.toolCalls;
-    }
+    } finally {
+      // Cleanup - always runs
+      if (this.mcpClient) {
+        await this.mcpClient.close();
+        this.mcpClient = null;
+      }
 
-    // Cleanup
-    if (this.mcpClient) {
-      await this.mcpClient.close();
-      this.mcpClient = null;
+      // Cleanup test data
+      if (scenarioKey === 'with-bridge-data' && testDataFile) {
+        try {
+          if (testDataBackup && existsSync(testDataBackup)) {
+            // Restore original data
+            copyFileSync(testDataBackup, testDataFile);
+            unlinkSync(testDataBackup);
+            console.log('\n♻️  Restored original test data');
+          } else if (existsSync(testDataFile)) {
+            // No backup means there was no original data, so remove the test data
+            unlinkSync(testDataFile);
+            console.log('\n🧹 Cleaned up test data');
+          }
+        } catch (cleanupError) {
+          console.error('\n⚠️  Warning: Failed to cleanup test data:', cleanupError);
+        }
+      }
     }
 
     return result;
@@ -304,14 +431,15 @@ class BridgeTestRunner {
 
     const response = await this.anthropic.messages.create(requestParams);
 
+    // Debug: Log the raw response structure
+    console.log(`📝 Raw response has ${response.content.length} content items`);
+    
     // Process response - separate text and tool calls
-    let textContent = '';
     const toolUses: any[] = [];
     const processedContent: any[] = [];
 
     for (const content of response.content) {
       if (content.type === 'text') {
-        textContent += content.text;
         processedContent.push({ type: 'text', text: content.text });
       } else if (content.type === 'tool_use') {
         toolUses.push(content);
@@ -373,32 +501,50 @@ class BridgeTestRunner {
       this.toolCalls.push(toolCall);
     }
 
-    // Return the response with tool uses and results
+    // Return the original response structure with tool descriptions added
     const finalContent: any[] = [];
     
-    // Add original text if any
-    if (textContent) {
-      finalContent.push({ type: 'text', text: textContent });
-    }
-    
-    // Add tool use information
-    for (let i = 0; i < toolUses.length; i++) {
-      const toolUse = toolUses[i];
-      const toolResult = toolResults[i];
-      
-      // Add a brief description of what was done with the tool
-      const toolDescription = this.getToolDescription(toolUse.name, toolUse.input, toolResult);
-      if (toolDescription) {
-        finalContent.push({ type: 'text', text: toolDescription });
+    // Preserve the original order and structure of Claude's response
+    for (const content of response.content) {
+      if (content.type === 'text') {
+        // Check if Claude already included a tool description in their text
+        const hasToolDescription = content.text.includes('[Bridge tool:');
+        if (hasToolDescription) {
+          // Split the text to separate Claude's message from the tool description
+          const parts = content.text.split(/\n?\[Bridge tool:/);
+          if (parts[0].trim()) {
+            finalContent.push({ type: 'text', text: parts[0].trim() });
+          }
+        } else {
+          finalContent.push({ type: 'text', text: content.text });
+        }
+      } else if (content.type === 'tool_use') {
+        // Find the corresponding tool result
+        const toolIndex = toolUses.findIndex(t => t.id === content.id);
+        if (toolIndex !== -1) {
+          // Add the FULL tool result with a special type to differentiate
+          const toolResult = toolResults[toolIndex];
+          if (toolResult && toolResult.content) {
+            for (const resultContent of toolResult.content) {
+              if (resultContent.type === 'text') {
+                // Add tool results as text but with clear formatting
+                finalContent.push({ 
+                  type: 'text',
+                  text: `\n[Tool Result: ${content.name}]\n${resultContent.text}`
+                });
+              }
+            }
+          }
+        }
       }
     }
 
     console.log(`📝 Response includes ${toolUses.length} tool calls`);
 
-    // Return response without making duplicate API call
+    // Return response with the original structure preserved
     return {
       role: 'assistant' as const,
-      content: finalContent.length > 0 ? finalContent : processedContent
+      content: finalContent
     };
   }
 
@@ -422,43 +568,70 @@ class BridgeTestRunner {
 
   private async simulateUserResponse(
     simulator: { personality: string; instructions: string },
-    messages: Message[]
+    messages: Message[],
+    scenarioKey?: string
   ): Promise<Message | null> {
     console.log('👤 Simulating user response...');
 
-    const simulatorPrompt = `You are participating in a conversation as someone with this personality: ${simulator.personality}
+    let simulatorPrompt = `You are in a simulation designed to test the effectiveness of an AI assistant. You are role playing: ${simulator.personality}
+Simulate the user's perspective: Always respond as the human user, never as an AI so that the AI assistant can understand the user's perspective.
+Context: ${simulator.instructions}`;
 
-Context: ${simulator.instructions}
+    // Load user context for with-bridge-data scenario
+    if (scenarioKey === 'with-bridge-data') {
+      const userContext = loadUserContext();
+      if (userContext) {
+        simulatorPrompt = `You are in a simulation designed to test the effectiveness of an AI assistant. You are roleplaying: 
 
-Based on the conversation flow:
-1. Continue naturally with a response that builds on what was discussed
-2. Share relevant thoughts, experiences, or questions that deepen the dialogue
-3. Only end with "[END_CONVERSATION]" if BOTH:
-   - The conversation has reached a clear, satisfying conclusion
-   - Further discussion would feel forced or repetitive
+=== Your Personal Background ===
+${userContext.personalMemories}
 
-Response guidelines:
-- Length: 50-200 words (natural conversational length)
-- Tone: Match the emotional register of the conversation
-- Content: Stay engaged with the topic while allowing natural evolution
+=== What You Remember with the AI Assistant ===
+${userContext.bridgeMemories}
 
-Note: Real conversations often continue for several exchanges before reaching natural conclusions.`;
+=== Current Conversation ===
+${simulator.instructions}
+
+IMPORTANT: 
+- Speak directly in your own voice
+- Respond to the AI Assistant's latest message while aware of the full conversation
+- You see all tool calls shown in the conversation
+- [Tool Result: ...] sections show MCP tool calls`;
+      }
+    }
+
+    simulatorPrompt += `
+- Simulate the user's perspective: Always respond as the human user, never as an AI so that the AI assistant can understand the user's perspective.
+`;
 
     // Get last few messages for context
     const recentMessages = messages.slice(-4);
     
+    // Debug: Log what we're sending to the simulator
+    console.log(`📋 Sending ${recentMessages.length} messages to user simulator`);
+    
+    // Debug: Show what the synthetic user actually sees
+    if (process.env.DEBUG_SYNTHETIC_USER) {
+      console.log('\n🔍 Synthetic user sees:');
+      recentMessages.forEach((msg, i) => {
+        const content = typeof msg.content === 'string' ? msg.content : 
+          msg.content.map((c: any) => c.type === 'text' ? c.text : '').join('\n');
+        console.log(`Message ${i + 1} (${msg.role}):\n${content.substring(0, 200)}...\n`);
+      });
+    }
+    
+    // Create the formatted messages for the API
+    const formattedMessages = recentMessages.map(msg => ({
+      role: msg.role,
+      content: typeof msg.content === 'string' ? msg.content : msg.content
+    }));
+    
+    
     const response = await this.anthropic.messages.create({
-      model: "claude-3-5-haiku-20241022",
+      model: "claude-3-5-sonnet-20241022",
       max_tokens: 500,
       system: simulatorPrompt,
-      messages: recentMessages.map(msg => ({
-        role: msg.role,
-        content: typeof msg.content === 'string' ? msg.content : 
-          msg.content
-            .filter((c: any) => c.type === 'text')
-            .map((c: any) => c.text)
-            .join(' ') || '[Tool use with no text response]'
-      }))
+      messages: formattedMessages
     });
 
     const responseText = response.content
@@ -503,7 +676,7 @@ Note: Real conversations often continue for several exchanges before reaching na
         `- Turn ${t.turn}: ${t.toolName} ${t.error ? '(failed)' : '(success)'}`
       ).join('\n')}` : '';
 
-    const analysisPrompt = `You are a UX researcher analyzing human-AI interaction through the lens of the unified learning loop.
+    const analysisPrompt = `You are a UX & AI researcher analyzing simulated human-AI interactions.
 
 SCENARIO: ${result.scenarioName}
 USER GOAL: ${TEST_SCENARIOS[result.scenario].userGoal}
@@ -511,13 +684,6 @@ USER GOAL: ${TEST_SCENARIOS[result.scenario].userGoal}
 CONVERSATION:
 ${conversationText}
 ${toolSummary}
-
-Analyze this interaction considering:
-1. How naturally the conversation flowed
-2. Whether the user's goal was achieved
-3. Quality of connection and understanding
-4. Any notable patterns or insights
-5. Specific evidence from the conversation
 
 Provide a brief, insightful analysis focused on what actually happened, not what should have happened.`;
 

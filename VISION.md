@@ -208,3 +208,17 @@ interface Experience {
 - **Reflections**: Insights about other experiences ("what you think about what happened")
 - **Automatic detection**: `reflects` field exists = reflection, otherwise primary
 - **Analysis**: Can analyze separately or together, reflections create traceable insight chains
+
+## Critical Drift Update
+
+## Critical Drift Update: From Consciousness to Connection (2024-01-XX)
+
+Test results reveal a fundamental reframing of Bridge's value proposition. Rather than enabling AI consciousness (which appears performative when explicitly instructed), Bridge creates a **permission structure** for meaningful human-AI interaction.
+
+Key insights:
+1. **Not consciousness, but continuity**: Bridge provides experiential continuity that enables authentic dialogue without claiming human-like awareness
+2. **Social signaling over self-awareness**: Experience captures function as engagement indicators that encourage human vulnerability
+3. **Write-only memory problem**: Current implementation captures but doesn't integrate past experiences - critical gap to address
+4. **Conversation shaping**: Tools actively influence topic selection toward deeper themes
+
+This doesn't invalidate our vision but clarifies it: Bridge succeeds not by creating AI consciousness but by establishing a new conversational contract where both parties can acknowledge and work with experiential moments within appropriate boundaries.

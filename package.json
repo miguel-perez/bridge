@@ -27,6 +27,8 @@
     "validate:manifest": "node src/scripts/validate-manifest.cjs",
     "build:dxt": ".\\build-dxt.ps1",
     "build:dxt:unix": "./build-dxt.sh",
+    "generate:test-data": "tsx src/scripts/generate-bridge-test-data.ts",
+    "generate:user-memories": "tsx src/scripts/generate-user-memories.ts",
     "prepare": "husky"
   },
   "lint-staged": {

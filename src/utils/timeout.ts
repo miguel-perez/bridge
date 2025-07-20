@@ -93,7 +93,7 @@ export async function withRetryAndTimeout<T>(
   maxAttempts: number = 3,
   baseDelayMs: number = 1000,
   maxDelayMs: number = 10000,
-  timeoutMs: number = DEFAULT_TIMEOUTS.REMEMBER,
+  timeoutMs: number = DEFAULT_TIMEOUTS.EXPERIENCE,
   operationName: string = 'operation'
 ): Promise<T> {
   let lastError: Error = new Error('No attempts made');
