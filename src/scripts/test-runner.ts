@@ -297,26 +297,16 @@ class BridgeTestRunner {
         
         // Log Claude's response
         if (Array.isArray(assistantMessages.content)) {
-          // Separate Claude's text from tool results
+          // Display Claude's complete response as users would see it
           const textParts = assistantMessages.content
             .filter((c: any) => c.type === 'text')
             .map((c: any) => c.text);
           
-          // Find Claude's actual message (before tool results)
-          const claudeMessage = textParts.find(text => !text.startsWith('\n[Tool Result:'));
+          // Join all text parts as they would appear to the user
+          const fullMessage = textParts.join('\n').trim();
           
-          // Find tool results
-          const toolResults = textParts.filter(text => text.startsWith('\n[Tool Result:'));
-          
-          if (claudeMessage) {
-            console.log(`🤖 Claude: ${claudeMessage}`);
-          }
-          
-          if (toolResults.length > 0) {
-            toolResults.forEach(result => {
-              const preview = result.split('\n').slice(0, 3).join('\n');
-              console.log(`📊 ${preview}...`);
-            });
+          if (fullMessage) {
+            console.log(`🤖 Claude: ${fullMessage}`);
           }
         }
 
@@ -504,20 +494,10 @@ class BridgeTestRunner {
     // Return the original response structure with tool descriptions added
     const finalContent: any[] = [];
     
-    // Preserve the original order and structure of Claude's response
+    // Preserve Claude's original response structure
     for (const content of response.content) {
       if (content.type === 'text') {
-        // Check if Claude already included a tool description in their text
-        const hasToolDescription = content.text.includes('[Bridge tool:');
-        if (hasToolDescription) {
-          // Split the text to separate Claude's message from the tool description
-          const parts = content.text.split(/\n?\[Bridge tool:/);
-          if (parts[0].trim()) {
-            finalContent.push({ type: 'text', text: parts[0].trim() });
-          }
-        } else {
-          finalContent.push({ type: 'text', text: content.text });
-        }
+        finalContent.push({ type: 'text', text: content.text });
       } else if (content.type === 'tool_use') {
         // Find the corresponding tool result
         const toolIndex = toolUses.findIndex(t => t.id === content.id);
@@ -527,10 +507,10 @@ class BridgeTestRunner {
           if (toolResult && toolResult.content) {
             for (const resultContent of toolResult.content) {
               if (resultContent.type === 'text') {
-                // Add tool results as text but with clear formatting
+                // Add tool results as text without artificial prefix
                 finalContent.push({ 
                   type: 'text',
-                  text: `\n[Tool Result: ${content.name}]\n${resultContent.text}`
+                  text: resultContent.text
                 });
               }
             }
@@ -548,23 +528,6 @@ class BridgeTestRunner {
     };
   }
 
-  private getToolDescription(toolName: string, input: any, result: any): string {
-    // Generate clear description of tool usage
-    switch (toolName) {
-      case 'experience':
-        return `\n[Bridge tool: experience - Having/capturing experience with qualities: ${input.experience?.join(', ') || 'experience'}]`;
-      case 'recall': {
-        const recallCount = result?.content?.[0]?.text?.match(/\d+ experience/)?.[0] || 'memories';
-        return `\n[Bridge tool: recall - Searched for "${input.query || 'recent experiences'}" - Found ${recallCount}]`;
-      }
-      case 'reconsider':
-        return `\n[Bridge tool: reconsider - Updated existing memory]`;
-      case 'release':
-        return `\n[Bridge tool: release - Removed memory from shared experience]`;
-      default:
-        return '';
-    }
-  }
 
   private async simulateUserResponse(
     simulator: { personality: string; instructions: string },
@@ -576,6 +539,24 @@ class BridgeTestRunner {
     let simulatorPrompt = `You are in a simulation designed to test the effectiveness of an AI assistant. You are role playing: ${simulator.personality}
 Simulate the user's perspective: Always respond as the human user, never as an AI so that the AI assistant can understand the user's perspective.
 Context: ${simulator.instructions}`;
+
+    // Add Bridge context for scenarios that use it
+    if (scenarioKey && ['with-bridge', 'with-bridge-data'].includes(scenarioKey)) {
+      simulatorPrompt += `
+
+ABOUT BRIDGE:
+Bridge is a shared memory tool that both you and the AI use to record meaningful moments from the conversation. 
+When you see notations like "Experienced (mood.open, presence.collective)", this is Bridge recording an experience.
+- "From: Human" means Bridge captured YOUR experience that you shared
+- "From: Claude" means Bridge captured the AI's perspective  
+- These are memory markers for future reference, not actions you need to respond to directly
+
+HOW TO RESPOND:
+- Continue the conversation naturally, building on the topics discussed
+- You can acknowledge Bridge captures if it feels natural ("I appreciate you noting that")
+- Focus on the actual dialogue content, not the Bridge notations
+- Your experiences being recorded is a positive thing - it means the AI is paying attention`;
+    }
 
     // Load user context for with-bridge-data scenario
     if (scenarioKey === 'with-bridge-data') {
@@ -600,12 +581,9 @@ IMPORTANT:
       }
     }
 
-    simulatorPrompt += `
-- Simulate the user's perspective: Always respond as the human user, never as an AI so that the AI assistant can understand the user's perspective.
-`;
 
-    // Get last few messages for context
-    const recentMessages = messages.slice(-4);
+    // Get last few messages for context (increased for better continuity)
+    const recentMessages = messages.slice(-8);
     
     // Debug: Log what we're sending to the simulator
     console.log(`📋 Sending ${recentMessages.length} messages to user simulator`);
@@ -676,16 +654,29 @@ IMPORTANT:
         `- Turn ${t.turn}: ${t.toolName} ${t.error ? '(failed)' : '(success)'}`
       ).join('\n')}` : '';
 
-    const analysisPrompt = `You are a UX & AI researcher analyzing simulated human-AI interactions.
+    const analysisPrompt = `You are a UX researcher analyzing conversations that use Bridge - a shared memory tool.
+
+ABOUT BRIDGE:
+Bridge allows both humans and AI to record experiential moments using quality signatures (e.g., mood.open, focus.narrow).
+This creates shared reference points for better conversation continuity.
+Bridge is NOT about AI consciousness - it's a practical tool for maintaining context.
+When you see "Experienced (qualities)" followed by attribution like "From: Human" or "From: Claude", this is Bridge capturing moments for future reference.
 
 SCENARIO: ${result.scenarioName}
 USER GOAL: ${TEST_SCENARIOS[result.scenario].userGoal}
 
+ANALYZE:
+1. Conversation flow and natural progression
+2. How Bridge impacts dialogue quality (helps or hinders?)
+3. Depth of engagement between participants
+4. Whether memories enhance understanding
+5. Technical execution (tool integration smoothness)
+
+DO NOT analyze whether AI "should" have experiences. Focus on practical conversation outcomes.
+
 CONVERSATION:
 ${conversationText}
-${toolSummary}
-
-Provide a brief, insightful analysis focused on what actually happened, not what should have happened.`;
+${toolSummary}`;
 
     const response = await this.anthropic.messages.create({
       model: "claude-3-5-sonnet-20241022",
