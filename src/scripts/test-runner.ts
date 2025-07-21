@@ -42,6 +42,7 @@ interface TestResult {
   duration?: number;
   messages: Message[];
   toolCalls: ToolCall[];
+  conversationFlow: ConversationTurn[];
   error?: string;
 }
 
@@ -53,6 +54,19 @@ interface ToolCall {
   result?: unknown;
   resultText?: string[];
   error?: string;
+}
+
+interface ConversationTurn {
+  turnNumber: number;
+  userMessage?: string;
+  assistantResponse?: {
+    text?: string;
+    toolCalls?: Array<{
+      toolName: string;
+      arguments: Record<string, unknown>;
+      result: string[];
+    }>;
+  };
 }
 
 // ============================================================================
@@ -138,6 +152,7 @@ class TestRunner {
   private mcpClient: MCPClient | null = null;
   private messages: Message[] = [];
   private toolCalls: ToolCall[] = [];
+  private conversationFlow: ConversationTurn[] = [];
   private turnCount = 0;
 
   constructor() {
@@ -164,7 +179,8 @@ class TestRunner {
       scenarioName: scenario.name,
       startTime: new Date(),
       messages: [],
-      toolCalls: []
+      toolCalls: [],
+      conversationFlow: []
     };
 
     // Setup test data
@@ -199,6 +215,7 @@ class TestRunner {
       // Reset state
       this.messages = [];
       this.toolCalls = [];
+      this.conversationFlow = [];
       this.turnCount = 0;
 
       // Start conversation
@@ -208,12 +225,20 @@ class TestRunner {
           role: 'user',
           content: scenario.initialMessage
         });
+        this.conversationFlow.push({
+          turnNumber: 0,
+          userMessage: scenario.initialMessage
+        });
       }
 
       // Run conversation
       while (this.turnCount < scenario.maxTurns) {
         this.turnCount++;
         console.log(`\n--- Turn ${this.turnCount} ---`);
+
+        const currentTurn: ConversationTurn = {
+          turnNumber: this.turnCount
+        };
 
         // Get Claude's response
         const assistantMessage = await this.getClaudeResponse(
@@ -224,33 +249,35 @@ class TestRunner {
         if (assistantMessage) {
           this.messages.push(assistantMessage);
           
-          // Extract text content for display
-          const textContent = typeof assistantMessage.content === 'string' 
-            ? assistantMessage.content 
-            : assistantMessage.content
-                .filter((c: unknown) => typeof c === 'object' && c !== null && 'type' in c && (c as {type: string}).type === 'text')
-                .map((c: unknown) => (c as {text: string}).text)
-                .join(' ');
+          // Extract response details for conversation flow
+          const responseDetails = this.extractResponseDetails(assistantMessage);
+          currentTurn.assistantResponse = responseDetails;
           
-          if (textContent) {
-            console.log(`🤖 Claude: ${textContent.substring(0, 150)}${textContent.length > 150 ? '...' : ''}`);
+          // Display summary
+          if (responseDetails.text) {
+            console.log(`🤖 Claude: ${responseDetails.text.substring(0, 150)}${responseDetails.text.length > 150 ? '...' : ''}`);
           }
         }
 
         // Check if we're done with predefined messages
         if (this.turnCount > scenario.predefinedMessages.length) {
           console.log('🏁 All predefined messages processed');
+          this.conversationFlow.push(currentTurn);
           break;
         }
 
         // Get next user message
         const predefinedContent = scenario.predefinedMessages[this.turnCount - 1];
+        currentTurn.userMessage = predefinedContent;
+        
         const userMessage = {
           role: 'user' as const,
           content: predefinedContent
         };
         console.log(`👤 User: ${predefinedContent}`);
         this.messages.push(userMessage);
+        
+        this.conversationFlow.push(currentTurn);
       }
 
       // Complete result
@@ -258,6 +285,7 @@ class TestRunner {
       result.duration = (result.endTime.getTime() - result.startTime.getTime()) / 1000;
       result.messages = this.messages;
       result.toolCalls = this.toolCalls;
+      result.conversationFlow = this.conversationFlow;
 
       console.log(`\n✅ Test completed in ${result.duration?.toFixed(1)}s`);
       
@@ -270,6 +298,7 @@ class TestRunner {
       result.duration = (result.endTime.getTime() - result.startTime.getTime()) / 1000;
       result.messages = this.messages;
       result.toolCalls = this.toolCalls;
+      result.conversationFlow = this.conversationFlow;
     } finally {
       // Cleanup
       if (this.mcpClient) {
@@ -295,6 +324,53 @@ class TestRunner {
     }
 
     return result;
+  }
+
+  private extractResponseDetails(message: Message): ConversationTurn['assistantResponse'] {
+    const details: ConversationTurn['assistantResponse'] = {};
+    
+    if (typeof message.content === 'string') {
+      details.text = message.content;
+    } else if (Array.isArray(message.content)) {
+      const textParts: string[] = [];
+      const toolCallDetails: Array<{
+        toolName: string;
+        arguments: Record<string, unknown>;
+        result: string[];
+      }> = [];
+      
+      for (const content of message.content) {
+        if (typeof content === 'object' && content !== null && 'type' in content) {
+          const typedContent = content as {type: string; text?: string; name?: string; input?: unknown; id?: string};
+          
+          if (typedContent.type === 'text' && typedContent.text) {
+            textParts.push(typedContent.text);
+          } else if (typedContent.type === 'tool_use' && typedContent.name && typedContent.input) {
+            // Find the corresponding tool call result
+            const toolCall = this.toolCalls.find(tc => 
+              tc.toolName === typedContent.name && 
+              tc.turn === this.turnCount
+            );
+            
+            toolCallDetails.push({
+              toolName: typedContent.name,
+              arguments: typedContent.input as Record<string, unknown>,
+              result: toolCall?.resultText || []
+            });
+          }
+        }
+      }
+      
+      if (textParts.length > 0) {
+        details.text = textParts.join(' ');
+      }
+      
+      if (toolCallDetails.length > 0) {
+        details.toolCalls = toolCallDetails;
+      }
+    }
+    
+    return details;
   }
 
   private async getClaudeResponse(systemPrompt: string, messages: Message[]): Promise<Message> {
@@ -330,15 +406,10 @@ class TestRunner {
     const response = await this.anthropic.messages.create(requestParams);
 
     // Process response and handle tool use
-    const responseContent: unknown[] = [];
     const toolUses: Array<{id: string; name: string; result: {content?: unknown[]; isError?: boolean}}> = [];
     
     for (const content of response.content) {
-      if (content.type === 'text') {
-        responseContent.push(content);
-      } else if (content.type === 'tool_use' && this.mcpClient) {
-        responseContent.push(content);
-        
+      if (content.type === 'tool_use' && this.mcpClient) {
         // Call the tool
         console.log(`🔧 Calling tool: ${content.name}`);
         
@@ -435,7 +506,7 @@ class TestRunner {
 
     return {
       role: 'assistant',
-      content: responseContent
+      content: response.content
     };
   }
 }
@@ -492,12 +563,14 @@ async function main(): Promise<void> {
     testRun: new Date().toISOString(),
     summary: {
       totalScenarios: results.length,
+      totalDuration: totalDuration,
       scenarios: results.map(r => ({
         scenario: r.scenario,
         name: r.scenarioName,
         duration: r.duration || 0,
-        turns: r.messages.filter(m => m.role === 'user').length,
-        toolCalls: r.toolCalls.length
+        turns: r.conversationFlow.length,
+        toolCalls: r.toolCalls.length,
+        error: r.error
       }))
     },
     results
@@ -518,7 +591,7 @@ async function main(): Promise<void> {
   results.forEach(r => {
     const status = r.error ? '❌' : '✅';
     const toolCount = r.toolCalls.length;
-    const turns = r.messages.filter(m => m.role === 'user').length;
+    const turns = r.conversationFlow.length;
     console.log(`${status} ${r.scenarioName}: ${turns} turns, ${toolCount} tool calls, ${r.duration?.toFixed(1)}s`);
   });
   
