@@ -16,6 +16,58 @@ Each experiment follows this format for learning loop compatibility:
 
 ## Active Experiments
 
+### EXP-003: Intelligent Learning Loop Recommendations
+
+**Purpose**: Test a recommendation-based learning loop that provides actionable insights without auto-updating files
+
+**Status**: Ready to test
+
+**Test Scenarios**:
+
+1. **Context Aggregation**: Learning loop successfully loads and parses all data sources
+   - Git history (recent commits)
+   - Unit test results
+   - Bridge scenario test results
+   - All documentation files
+
+2. **Recommendation Generation**: System produces useful, prioritized recommendations
+   - Each recommendation has clear rationale and evidence
+   - Priorities (critical/high/medium/low) are appropriate
+   - Suggestions are actionable and specific
+
+3. **Evidence Linking**: Recommendations trace back to specific evidence
+   - Links to relevant commits
+   - References specific test failures
+   - Points to documentation sections
+
+4. **Report Quality**: Output is clear and actionable
+   - Executive summary captures key insights
+   - Recommendations are well-structured
+   - Next steps are concrete
+
+**Measurable Outcomes**:
+
+- Time saved vs manual analysis (target: 80% reduction)
+- Recommendation accuracy (>90% actionable suggestions)
+- Evidence quality (each recommendation has 2+ evidence sources)
+- Developer satisfaction with insights provided
+
+**Learning Questions**:
+
+- What context is most valuable for generating recommendations?
+- How should recommendations be prioritized?
+- What format makes recommendations easiest to act on?
+- Which types of patterns are most useful to detect?
+
+**Implementation Notes**:
+
+Start with a minimal prototype that:
+
+1. Loads git history and test results
+2. Identifies one type of pattern (e.g., test failures after commits)
+3. Generates simple recommendations
+4. Outputs a markdown report
+
 ### EXP-002: Dimensional Filtering and Unified Scoring
 
 **Purpose**: Test the new dimensional filtering capabilities and unified scoring system
