@@ -10,6 +10,12 @@ import {
 import { Messages, formatMessage } from '../utils/messages.js';
 import { SEMANTIC_CONFIG } from '../core/config.js';
 
+/**
+ * Response structure for experience capture operations
+ * @remarks
+ * Used internally for structured communication between handler and formatters.
+ * Includes success status, captured source data, and any defaults that were applied.
+ */
 export interface ExperienceResponse {
   success: boolean;
   source?: {
@@ -25,6 +31,36 @@ export interface ExperienceResponse {
   error?: string;
 }
 
+/**
+ * Handles experience capture requests from MCP clients
+ * @remarks
+ * Validates input using Zod schemas, delegates to ExperienceService for processing,
+ * and returns user-friendly responses. Supports both single and batch experience capture.
+ * Handles errors gracefully with appropriate error messages for MCP protocol compliance.
+ * 
+ * @example
+ * ```ts
+ * // Single experience capture
+ * const result = await experienceHandler.handle({
+ *   source: "I feel anxious about tomorrow's presentation",
+ *   experience: ["embodied.sensing", "mood.closed"]
+ * });
+ * // Returns: "Experienced (embodied.sensing, mood.closed)"
+ * 
+ * // Batch experience capture
+ * const result = await experienceHandler.handle({
+ *   experiences: [
+ *     { source: "Feeling focused while coding", experience: ["embodied.thinking"] },
+ *     { source: "Anxiety about meeting", experience: ["mood.closed"] }
+ *   ]
+ * });
+ * // Returns: "Experienced 2 moments..."
+ * ```
+ * @throws {ValidationError} When input validation fails
+ * @throws {ServiceError} When underlying service operations fail
+ * @see {@link ExperienceService} for core business logic
+ * @see {@link RecallService} for similarity detection
+ */
 export class ExperienceHandler {
   private experienceService: ExperienceService;
   private recallService: RecallService;
@@ -35,10 +71,15 @@ export class ExperienceHandler {
   }
 
   /**
-   * Handles experience requests
-   * 
-   * @param args - The experience arguments containing the experiential data
-   * @returns Formatted experience result
+   * Processes experience capture requests with validation and formatting
+   * @remarks
+   * Main entry point for MCP experience tool. Validates input, processes the request,
+   * and ensures output conforms to MCP protocol requirements. Handles both single
+   * and batch experience capture modes.
+   * @param args - Experience input data from MCP client
+   * @returns Formatted tool result compliant with MCP protocol
+   * @throws {ValidationError} When required fields are missing
+   * @throws {ServiceError} When experience processing fails
    */
   async handle(args: ExperienceInput): Promise<ToolResult> {
     try {
@@ -56,7 +97,16 @@ export class ExperienceHandler {
   }
 
   /**
-   * Handle regular experience with natural formatting
+   * Processes experience capture with natural language formatting
+   * @remarks
+   * Handles the core logic for both single and batch experience capture.
+   * Validates required fields, processes through ExperienceService, and formats
+   * responses for natural conversation flow. Includes similarity detection
+   * for enhanced user experience.
+   * @param experience - Experience input data to process
+   * @returns Formatted tool result with natural language response
+   * @throws {Error} When source content is missing
+   * @throws {ServiceError} When experience processing fails
    */
   private async handleRegularExperience(
     experience: ExperienceInput
@@ -100,11 +150,10 @@ export class ExperienceHandler {
             text: response
           }]
         };
-        
       } else {
-        // Single experience with natural formatting
+        // Single experience - process and format
         const result = await this.experienceService.rememberExperience({
-          source: experience.source,
+          source: experience.source!,
           perspective: experience.perspective,
           experiencer: experience.experiencer,
           processing: experience.processing,
@@ -140,7 +189,6 @@ export class ExperienceHandler {
         
         return { content };
       }
-      
     } catch (error) {
       return {
         isError: true,
