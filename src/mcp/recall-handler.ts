@@ -77,7 +77,13 @@ export class RecallHandler {
           limit,
           // If query is provided, also use it for semantic recall
           semantic_query: query,
-          semantic_threshold: 0.7
+          semantic_threshold: 0.7,
+          // Pass through all filters from the input
+          experiencer: recall.experiencer,
+          perspective: recall.perspective,
+          processing: recall.processing,
+          created: recall.created,
+          sort: recall.sort
         }),
         DEFAULT_TIMEOUTS.SEARCH,
         'Recall operation'

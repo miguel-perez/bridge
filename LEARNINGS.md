@@ -5,6 +5,41 @@ This document captures validated insights from Bridge experiments with clear evi
 ## Core Behavioral Insights
 
 ### 1. Bridge Functions as Write-Only Memory
+**Evidence**: Zero successful modifications across test scenarios
+**Test Files**: bridge-operations test showing failed update/delete attempts
+**Related Opportunity**: OPPORTUNITIES.md - #9 "Bidirectional Memory Implementation"
+**Confidence**: High
+
+Bridge currently operates primarily as a write-only system:
+- Experience capture works reliably but modification fails
+- Update attempts result in "No experiences found" errors
+- Delete operations cannot be completed
+- Pattern recognition works but experience evolution doesn't
+
+### 2. Pattern Recognition Succeeds Despite Limitations
+**Evidence**: Successfully identified anxiety patterns across experiences
+**Test Files**: bridge-operations showing quality signature clustering
+**Confidence**: High
+
+The quality signature system enables pattern recognition even without modification capabilities:
+- Common patterns (embodied.sensing, mood.closed, time.future) emerged naturally
+- System successfully grouped related emotional states
+- Pattern recognition worked without complex reasoning
+- Simple tagging created meaningful insights
+
+### 3. Error Handling Needs Improvement
+**Evidence**: Failed operations led to dead ends
+**Test Files**: bridge-operations showing failed recall/modify attempts
+**Confidence**: High
+
+Current error handling creates conversation friction:
+- "No experiences found" errors lack recovery guidance
+- Failed operations don't suggest alternatives
+- AI continues trying failed approaches instead of graceful degradation
+- Natural conversation breaks down during error states
+
+
+### 1. Bridge Functions as Write-Only Memory
 **Evidence**: Zero retrieval operations across all test scenarios
 **Test Files**: All scenario files showing tool usage patterns
 **Related Opportunity**: OPPORTUNITIES.md - #9 "Bidirectional Memory Implementation"

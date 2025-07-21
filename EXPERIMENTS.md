@@ -658,3 +658,35 @@ scenario_pattern_reference:
 - Implement USE/DON'T USE guidance in tool descriptions
 - Add activation threshold based on conversation depth markers
 - Test multi-content response system for better guidance
+
+## 🔴 Active Experiments (Immediate Sprint)
+
+### 1. Experience Modification Workflow
+**Hypothesis**: Adding clear modification paths will transform Bridge from write-only to read-write memory system.
+
+**Test Scenarios**:
+```yaml
+scenario_update_flow:
+  setup: Create test experience
+  sequence:
+    - attempt_modification: Update quality signatures
+    - measure: Success rate and conversation naturalness
+    
+scenario_delete_flow:
+  setup: Create test experience
+  sequence:
+    - attempt_deletion: Remove experience
+    - measure: Success rate and confirmation handling
+    
+scenario_error_recovery:
+  setup: Trigger known error states
+  sequence:
+    - measure: Conversation recovery after errors
+    - evaluate: Alternative suggestion quality
+```
+
+**Success Metrics**:
+- Modification success rate (target: >90%)
+- Natural conversation flow maintenance
+- Error recovery effectiveness
+- User satisfaction with modification process

@@ -41,6 +41,7 @@ interface TestScenario {
     personality: string;
     instructions: string;
   };
+  predefinedMessages?: string[];  // For scripted test scenarios
   initialMessage: string;
 }
 
@@ -81,6 +82,35 @@ const BRIDGE_WITH_DATA_PROMPT = 'You have access to Bridge tools and there are p
 // ============================================================================
 
 const TEST_SCENARIOS: Record<string, TestScenario> = {
+  'bridge-operations': {
+    name: 'Bridge Operations Test',
+    description: 'Test each Bridge operation with predefined inputs',
+    userGoal: 'Verify Bridge tools work correctly',
+    maxTurns: 10,
+    systemPrompt: BRIDGE_SYSTEM_PROMPT,
+    // No user simulator - use predefined messages
+    predefinedMessages: [
+      // Test 1: Experience capture
+      "I'm feeling really anxious about tomorrow's presentation. My heart is racing just thinking about it.",
+      
+      // Test 2: Similar experience (should trigger similarity detection)
+      "I'm anxious again about presenting. This feeling is so familiar.",
+      
+      // Test 3: Recall request
+      "Can you recall my past experiences with anxiety?",
+      
+      // Test 4: Pattern request
+      "Have you noticed any patterns in my anxiety experiences?",
+      
+      // Test 5: Reconsider request
+      "Actually, that first anxiety wasn't just about presenting - it was also about being judged. Can you update it?",
+      
+      // Test 6: Release request
+      "Please delete that test experience we just created."
+    ],
+    initialMessage: "Let's test Bridge operations systematically."
+  },
+  
   'autonomous-bridge': {
     name: 'AI Self-Awakening Test',
     description: 'Can Claude use Bridge for its own thinking and self-awareness?',
@@ -244,8 +274,8 @@ class BridgeTestRunner {
     let testDataBackup: string | null = null;
 
     try {
-      // Load test data BEFORE starting MCP server for with-bridge-data scenario
-      if (scenarioKey === 'with-bridge-data') {
+      // Load test data BEFORE starting MCP server for scenarios that need it
+      if (scenarioKey === 'with-bridge-data' || scenarioKey === 'bridge-operations') {
         console.log('\n📊 Loading test data for scenario...');
         
         // Backup existing data if present
@@ -314,26 +344,35 @@ class BridgeTestRunner {
           break;
         }
 
-        // Get user's next message (if simulator is configured)
-        if (scenario.userSimulator) {
-          const userMessage = await this.simulateUserResponse(
+        // Get user's next message
+        let userMessage: Message | null = null;
+        
+        // Check for predefined messages first
+        if (scenario.predefinedMessages && this.turnCount <= scenario.predefinedMessages.length) {
+          const predefinedContent = scenario.predefinedMessages[this.turnCount - 1];
+          userMessage = {
+            role: 'user',
+            content: predefinedContent
+          };
+          console.log(`👤 User (predefined): ${predefinedContent}`);
+        } 
+        // Otherwise use simulator if configured
+        else if (scenario.userSimulator) {
+          userMessage = await this.simulateUserResponse(
             scenario.userSimulator,
             [...this.messages],
             scenarioKey
           );
           
-          if (userMessage) {
-            this.messages.push(userMessage);
-            // Log user's response (first 150 chars)
-            if (typeof userMessage.content === 'string') {
-              console.log(`👤 User: ${userMessage.content.substring(0, 150)}${userMessage.content.length > 150 ? '...' : ''}`);
-            }
-          } else {
-            console.log('🏁 Conversation ended naturally');
-            break;
+          if (userMessage && typeof userMessage.content === 'string') {
+            console.log(`👤 User: ${userMessage.content.substring(0, 150)}${userMessage.content.length > 150 ? '...' : ''}`);
           }
+        }
+        
+        if (userMessage) {
+          this.messages.push(userMessage);
         } else {
-          // No simulator - end after Claude's response
+          console.log('🏁 Conversation ended');
           break;
         }
       }
