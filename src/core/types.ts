@@ -44,7 +44,7 @@ export type Perspective = typeof PERSPECTIVES[number] | string;
 /** When the processing occurred relative to the experience */
 export type ProcessingLevel = typeof PROCESSING_LEVELS[number];
 
-/** Experiential quality dimensions */
+/** Experiential quality types */
 export type QualityType = typeof QUALITY_TYPES[number];
 
 /**
@@ -128,8 +128,8 @@ export type StorageRecord = SourceRecord;
 /** Zod schema for Experience */
 export const ExperienceSchema = z.array(z.string().refine(val => {
   // Accept base quality types or dot notation variants
-  const baseDimension = val.split('.')[0];
-  return QUALITY_TYPES.includes(baseDimension as QualityType);
+  const baseQuality = val.split('.')[0];
+return QUALITY_TYPES.includes(baseQuality as QualityType);
 }, {
   message: 'Invalid quality type'
 })).describe('Array of qualities that emerge prominently in this moment');
@@ -166,8 +166,8 @@ export const StorageDataSchema = z.object({
  */
 export function isValidQualityType(value: string): boolean {
   // Accept base quality types or dot notation variants
-  const baseDimension = value.split('.')[0];
-  return QUALITY_TYPES.includes(baseDimension as QualityType);
+  const baseQuality = value.split('.')[0];
+return QUALITY_TYPES.includes(baseQuality as QualityType);
 }
 
 /**

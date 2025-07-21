@@ -300,8 +300,6 @@ recall("", {
 
 **Evidence**: Integration tests passing, learning loop analysis complete, commit e468d67
 
-## Completed Experiments
-
 ### EXP-005: Pattern Realizations with reflects Field
 **Status**: Completed 2025-07-21  
 **Purpose**: Implement `reflects` field to enable capturing pattern realizations as linkable experiences

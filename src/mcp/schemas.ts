@@ -5,7 +5,7 @@ export const PerspectiveEnum = z.enum(['I', 'we', 'you', 'they']).describe('Pers
 export const ProcessingEnum = z.enum(['during', 'right-after', 'long-after']).describe('When processing occurred: during (real-time), right-after (immediate), long-after (retrospective)');
 // Remove 'crafted' from ProcessingEnumWithCrafted
 export const ProcessingEnumWithCrafted = ProcessingEnum; // For compatibility, but no 'crafted'
-// Simplified quality types for experiential dimensions
+// Simplified quality types for experiential qualities
 export const QualityTypeEnum = z.enum(['embodied', 'focus', 'mood', 'purpose', 'space', 'time', 'presence']).describe(`
 The experiential quality being analyzed:
 
@@ -56,10 +56,10 @@ Quality detection guide:
 
 - presence.individual: "just me", alone → solitary experience
 - presence.collective: "we", "together" → social/shared experience
-- presence: When social dimension doesn't clearly fit individual/collective subtypes
+- presence: When social quality doesn't clearly fit individual/collective subtypes
 
 Example: ["embodied.sensing", "mood.open", "purpose.goal"]
-Dimensions either emerge prominently or recede - only include what stands out.`);
+Qualities either emerge prominently or recede - only include what stands out.`);
 
 // Experience analysis (all fields optional for update)
 export const ExperienceObjectOptional = z.array(z.string()).describe(`Array of qualities that emerge prominently in this moment. Use dot notation to specify subtypes:
@@ -101,8 +101,8 @@ export const ExperienceInputSchema = z.object({
 export const SearchInputSchema = z.object({
   query: z.union([
     z.string().describe('Search query for semantic matching'),
-    z.array(z.string()).describe('Array of dimensions or search terms')
-  ]).describe('Search query - can be a string or array of dimensions').optional(),
+    z.array(z.string()).describe('Array of qualities or search terms')
+  ]).describe('Search query - can be a string or array of qualities').optional(),
   limit: z.number().describe('Maximum number of results to return').optional(),
   offset: z.number().describe('Number of results to skip for pagination').optional(),
   experiencer: z.string().describe('Filter by experiencer').optional(),
@@ -197,7 +197,7 @@ export const ToolResultSchema = z.object({
  * Generates an example experience input for testing and documentation
  * @remarks
  * Provides a realistic example of single experience capture with quality signatures.
- * @returns Example experience input with embodied sensing and mood dimensions
+ * @returns Example experience input with embodied sensing and mood qualities
  */
 export function generateExperienceExample(): ExperienceInput {
   return {

@@ -179,7 +179,7 @@ Automate quality checks to prevent the high test coverage and code quality from 
 Bridge prioritizes using a barbell strategy for antifragility - balancing high-certainty wins with high-impact experiments while avoiding fragile middle ground.
 
 ### **High-Certainty Foundation (Implement First)**
-1. **Sophisticated Dimensional Filtering** (Score: 504) - Critical for unlocking Bridge's full potential
+1. **Sophisticated Quality Filtering** (Score: 504) - Critical for unlocking Bridge's full potential
 2. **Continuous Quality Monitoring** (Score: 270) - Maintain high quality standards
 3. **Natural Language Temporal Queries** (Score: 180) - Convenience feature
 

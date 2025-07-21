@@ -198,7 +198,7 @@ export class RecallHandler {
         return "Try more specific terms or 'recall recent' for latest experiences";
       }
       // Default guidance with examples
-      return "No matches found. Try:\n• Different dimensions\n• Broader terms\n• 'recall recent' for latest";
+      return "No matches found. Try:\n• Different qualities\n• Broader terms\n• 'recall recent' for latest";
     }
     
     // Single result - suggest actions

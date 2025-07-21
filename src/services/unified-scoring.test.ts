@@ -33,7 +33,7 @@ describe('Quality Filtering', () => {
     }
   ];
 
-  it('should filter experiences by single dimension query', () => {
+  it('should filter experiences by single quality query', () => {
     const query = 'mood.closed';
     const results = applyFiltersAndScore(mockExperiences, query, {}, new Map());
     
@@ -42,20 +42,20 @@ describe('Quality Filtering', () => {
     expect(results.map(r => r.experience.id).sort()).toEqual(['exp_1', 'exp_3']);
   });
 
-  it('should filter experiences by array dimension query', () => {
+  it('should filter experiences by array quality query', () => {
     const query = ['embodied.sensing', 'mood.closed'];
     const results = applyFiltersAndScore(mockExperiences, query, {}, new Map());
     
-    // Should only return experiences with BOTH dimensions
+    // Should only return experiences with BOTH qualities
     expect(results).toHaveLength(1);
     expect(results[0].experience.id).toBe('exp_1');
   });
 
-  it('should match base dimensions with subtypes', () => {
+  it('should match base qualities with subtypes', () => {
     const query = 'embodied';
     const results = applyFiltersAndScore(mockExperiences, query, {}, new Map());
     
-    // Should return all experiences since they all have embodied.* dimensions
+    // Should return all experiences since they all have embodied.* qualities
     expect(results).toHaveLength(3);
   });
 
@@ -78,19 +78,19 @@ describe('Quality Filtering', () => {
     expect(exp1Result!.score).toBeGreaterThan(exp2Result!.score);
   });
 
-  it('should return empty results when no dimensions match', () => {
+  it('should return empty results when no qualities match', () => {
     const query = 'space.here';
     const results = applyFiltersAndScore(mockExperiences, query, {}, new Map());
     
-    // No experiences have spatial dimensions
+    // No experiences have spatial qualities
     expect(results).toHaveLength(0);
   });
 
-  it('should handle invalid dimension queries gracefully', () => {
-    const query = 'not.a.dimension';
+  it('should handle invalid quality queries gracefully', () => {
+const query = 'not.a.quality';
     const results = applyFiltersAndScore(mockExperiences, query, {}, new Map());
     
-    // Invalid dimensions should return all experiences (treated as text search)
+    // Invalid qualities should return all experiences (treated as text search)
     expect(results).toHaveLength(3);
   });
 });

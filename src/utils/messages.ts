@@ -57,7 +57,7 @@ export const Messages = {
     longAfter: 'long after'
   },
   
-  // Quality dimensions - full labels preserved
+  // Quality types - full labels preserved
   qualities: {
     'embodied': 'embodied',
     'embodied.thinking': 'embodied.thinking',

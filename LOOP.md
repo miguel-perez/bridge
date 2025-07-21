@@ -72,7 +72,7 @@ npm run test:bridge:experience    # Test experience tool capture
 npm run test:bridge:recall        # Test recall search patterns
 npm run test:bridge:reconsider    # Test reconsider evolution
 npm run test:bridge:release       # Test release cleanup
-npm run test:bridge:dimensional   # Test dimensional queries
+npm run test:bridge:quality   # Test quality queries
 npm run test:all                  # Run tests then learning loop
 npm run loop                      # Run learning loop analysis
 
@@ -121,10 +121,10 @@ SKIP_PRE_PUSH=true git push      # Bypass pre-push
 Bridge tests run sequentially by default to avoid resource contention. Each scenario focuses on specific tools:
 
 - **experience-capture**: Tests experience tool with various emotional states
-- **recall-queries**: Tests recall with text, dimensional, and mixed queries  
+- **recall-queries**: Tests recall with text, quality, and mixed queries  
 - **reconsider-evolution**: Tests reconsider as understanding deepens
 - **release-cleanup**: Tests selective removal of experiences
-- **dimensional-focus**: Deep dive into dimensional filtering patterns
+- **quality-focus**: Deep dive into quality filtering patterns
 
 All test results are saved to the `loop/` directory for analysis.
 
@@ -143,17 +143,6 @@ All test results are saved to the `loop/` directory for analysis.
 ## How to Score Opportunities
 
 See **OPPORTUNITIES.md** for the complete scoring methodology (Impact × Certainty × Urgency).
-
-## Current Development Priorities
-
-1. **Clustering** (Score: 378) - Core to revealing insights through automatic grouping
-2. **Dimension Filtering** (Score: 280) - Sophisticated queries by dimension presence/absence
-3. **Extensible Recall** (Score: 270) - Technical foundation for future features
-4. **Sequence Analysis** (Score: 240) - Temporal patterns and transitions
-5. **Natural Language Time** (Score: 216) - Convenience feature for intuitive querying
-6. **Code Quality Monitoring** (Score: 336) - Maintain high test coverage and quality
-
-**Note**: Pattern Realizations (EXP-005) completed successfully, enabling collaborative wisdom building with `reflects` field.
 
 ### Prioritization Strategy
 - Use barbell approach: Mix high-certainty quick wins with high-impact experiments

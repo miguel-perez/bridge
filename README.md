@@ -6,7 +6,7 @@ captures meaningful moments with quality signatures, enabling pattern recognitio
 ## Overview
 
 Bridge creates a persistent memory layer for AI interactions, allowing both humans and AI to:
-- Capture experiences with dimensional qualities
+- Capture experiences with quality signatures
 - Recall past experiences through semantic search
 - Discover patterns through clustering analysis
 - Build collaborative understanding over time
@@ -49,12 +49,12 @@ experience("Just had a breakthrough with the algorithm", {
 ```
 
 ### 2. Recall
-Search experiences with semantic, dimensional, and temporal scoring:
+Search experiences with semantic, quality, and temporal scoring:
 ```javascript
 // Semantic search
 recall("breakthrough moments")
 
-// Dimensional filtering
+// Quality filtering
 recall("mood.closed")  // Exact matches only
 
 // Clustering analysis
@@ -80,7 +80,7 @@ release(experienceId, "Test data cleanup")
 
 ## Quality Dimensions
 
-Bridge uses seven dimensional pairs to capture experience qualities:
+Bridge uses seven quality pairs to capture experience characteristics:
 
 - **embodied**: thinking/sensing
 - **focus**: narrow/broad  
@@ -142,7 +142,7 @@ Bridge uses a vision-driven development cycle. See [LOOP.md](./LOOP.md) for our 
 
 - ✅ Core operations (experience, recall, reconsider, release)
 - ✅ Semantic search with embeddings
-- ✅ Dimensional filtering
+- ✅ Quality filtering
 - ✅ Unified scoring system
 - ✅ Learning loop with recommendations
 - 🚧 Pattern recognition (see OPPORTUNITIES.md)

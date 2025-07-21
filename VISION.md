@@ -66,7 +66,7 @@ The key insight: we only note dimensions that genuinely stand out. A focused cod
 Bridge provides four core operations that work together to create a living memory system:
 
 **experience()** - Capture meaningful moments with quality signatures
-**recall()** - Search memories semantically or by dimensional patterns  
+**recall()** - Search memories semantically or by quality patterns  
 **reconsider()** - Update understanding as it deepens over time
 **release()** - Let go of what no longer serves
 

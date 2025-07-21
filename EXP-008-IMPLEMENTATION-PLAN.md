@@ -115,10 +115,10 @@ Standardize all terminology from "dimensional" to "quality" throughout the codeb
 
 ## Phase 2: Quality Filtering Infrastructure (Week 2)
 
-### Goal
+### Phase 2 Goal
 Create the core infrastructure for sophisticated quality filtering with boolean logic and presence/absence filtering.
 
-### Tasks
+### Phase 2 Tasks
 
 #### 2.1 Create QualityFilterService
 **File**: `src/services/quality-filter.ts`
@@ -178,10 +178,10 @@ Create the core infrastructure for sophisticated quality filtering with boolean 
 
 ## Phase 3: Integration and Advanced Features (Week 3)
 
-### Goal
+### Phase 3 Goal
 Integrate quality filtering into the existing recall system and add advanced features.
 
-### Tasks
+### Phase 3 Tasks
 
 #### 3.1 Update Unified Scoring
 **File**: `src/services/unified-scoring.ts`
@@ -446,17 +446,17 @@ recall("", {
 
 ### Unit Test Coverage by Phase
 
-#### Phase 1: Terminology Standardization
+#### Phase 1 Testing: Terminology Standardization
 - **Core Files**: Test quality terminology consistency
 - **Service Files**: Test renamed functions and variables
 - **Backward Compatibility**: Test aliases work correctly
 
-#### Phase 2: Quality Filtering Infrastructure
+#### Phase 2 Testing: Quality Filtering Infrastructure
 - **QualityFilterService**: Test all filter types and edge cases
 - **Schema Validation**: Test QualityFilterSchema thoroughly
 - **Error Handling**: Test validation and error messages
 
-#### Phase 3: Integration and Advanced Features
+#### Phase 3 Testing: Integration and Advanced Features
 - **Unified Scoring**: Test filter integration with scoring
 - **Recall Handler**: Test filter parsing and application
 - **Performance**: Test with large datasets and complex filters

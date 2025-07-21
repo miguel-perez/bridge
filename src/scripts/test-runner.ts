@@ -271,11 +271,11 @@ const SCENARIOS: Record<string, TestScenario> = {
       },
       {
         role: 'user',
-        content: 'Show me experiences with embodied dimensions but without mood dimensions'
+        content: 'Show me experiences with embodied qualities but without mood qualities'
       },
       {
         role: 'assistant',
-        content: 'I\'ll search for experiences that have embodied qualities but no mood dimensions.',
+        content: 'I\'ll search for experiences that have embodied qualities but no mood qualities.',
         expectedTools: ['recall']
       },
       {

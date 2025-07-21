@@ -317,7 +317,7 @@ describe('RecallHandler', () => {
 
       expect(result.content).toContainEqual({
         type: 'text',
-        text: "No matches found. Try:\n• Different dimensions\n• Broader terms\n• 'recall recent' for latest"
+        text: "No matches found. Try:\n• Different qualities\n• Broader terms\n• 'recall recent' for latest"
       });
     });
 

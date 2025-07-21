@@ -99,7 +99,7 @@ QUALITY SIGNATURES:
 • time - past (memory) or future (anticipation)
 • presence - individual (alone) or collective (together)
 
-Only include dimensions that genuinely stand out in the experience.`,
+Only include qualities that genuinely stand out in the experience.`,
       inputSchema: ExperienceInputJsonSchema,
       readOnlyHint: false,
       destructiveHint: false,
@@ -238,7 +238,7 @@ SEARCH APPROACHES:
 • Natural language: "stuck frustrated breakthrough"
 • Emotional themes: "anxiety confidence transformation"
 • Situations: "debugging presentation teamwork"
-• Quality patterns: Search by specific dimensions
+• Quality patterns: Search by specific qualities
 • Time-based: Recent experiences or date ranges
 
 SPECIAL SEARCHES:

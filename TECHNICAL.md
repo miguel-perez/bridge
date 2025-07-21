@@ -8,7 +8,7 @@ and planned features.
 Bridge provides four core operations:
 
 1. **experience()** - Captures meaningful moments with quality signatures
-2. **recall()** - Searches experiences with semantic, dimensional, and temporal scoring
+2. **recall()** - Searches experiences with semantic, quality, and temporal scoring
 3. **reconsider()** - Updates experiences as understanding deepens
 4. **release()** - Removes experiences that no longer serve
 
@@ -22,13 +22,13 @@ The recall() operation provides sophisticated search capabilities:
 // Simple semantic search
 recall("breakthrough moments")
 
-// Pure dimensional query (exact matches only)
+// Pure quality query (exact matches only)
 recall("mood.closed")
 
-// Array dimensional query (requires ALL dimensions)
+// Array quality query (requires ALL qualities)
 recall(["embodied.thinking", "mood.open"])
 
-// Mixed queries (semantic + dimensional)
+// Mixed queries (semantic + quality)
 recall("stuck", { dimensions: ["mood.closed"] })
 
 // Time-based filtering
@@ -47,7 +47,7 @@ recall("", { filter: { reflects: ["exp-123", "exp-456"] } })  // Find insights r
 - **query**: Search query (string)
   - Text for semantic search
   - Dimension name for exact dimension matching
-  - Array of dimensions for multi-dimensional filtering
+  - Array of qualities for multi-quality filtering
   - "recent" or "last" for latest experiences
 
 - **options**: Optional filters
@@ -73,7 +73,7 @@ Groups experiences by similarity to reveal patterns in different states.
 recall("anxiety", { as: "clusters" })
 
 // Clusters are returned with:
-// - Common dimensional signatures
+// - Common quality signatures
 // - Meaningful summaries
 // - Experience IDs in each cluster
 // - Cluster size and themes
@@ -123,7 +123,7 @@ recall("feeling anxious about presentation")
 // Finds semantically related experiences even without exact word matches
 ```
 
-### Dimensional Filtering
+### Quality Filtering
 
 Query by specific quality dimensions:
 
@@ -189,7 +189,7 @@ const breakthroughs = await recall("breakthrough moment finally solved", {
 // Uses semantic embeddings to find conceptually similar experiences
 ```
 
-### Multi-dimensional Query
+### Multi-quality Query
 ```javascript
 const focusedAnxiety = await recall(["focus.narrow", "mood.closed"]);
 // Finds experiences that have BOTH dimensions
@@ -207,8 +207,8 @@ const anxietyClusters = await recall("anxiety", { as: "clusters" });
 
 The current recall() implementation uses:
 - **Semantic embeddings** (@xenova/transformers, all-MiniLM-L6-v2 model)
-- **Unified scoring** combining semantic similarity, text matching, and dimensional relevance
-- **Dimensional filtering** for precise quality-based queries
+- **Unified scoring** combining semantic similarity, text matching, and quality relevance
+- **Quality filtering** for precise quality-based queries
 
 ## Integration with Other Operations
 
