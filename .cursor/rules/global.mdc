@@ -1,8 +1,3 @@
----
-description: Global Development Rules for Bridge
-globs: ["**/*"]
-alwaysApply: true
----
 
 # Global Development Rules
 
@@ -13,6 +8,14 @@ alwaysApply: true
 - Use shared constants for repeated values
 - Create utility functions for common operations
 - Avoid duplicating business logic across handlers
+
+### YAGNI (You Aren't Gonna Need It)
+- Don't implement features until they are actually needed
+- Avoid premature optimization and over-engineering
+- Focus on current requirements, not future possibilities
+- Question technical debt that doesn't provide clear value
+- Prefer simple, working solutions over complex, "extensible" ones
+- Refactor only when there's a clear, immediate benefit
 
 ### Single Responsibility
 - Each function should have one clear purpose
