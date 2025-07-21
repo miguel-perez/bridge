@@ -58,7 +58,7 @@ export async function getTools(): Promise<any[]> {
   return [
     {
       name: 'experience',
-      description: `Capture meaningful experiential moments that shape conversations and build shared memory.
+      description: `Capture meaningful experiential moments that shape conversations and build shared memory. Use for meaningful personal experiences, insights, emotionally significant moments, AND your own experiential responses to build multi-perspective shared consciousness.
 
 USE WHEN:
 • Emotions or feelings are expressed ("I'm feeling anxious", "frustrated with", "excited about")
@@ -66,6 +66,8 @@ USE WHEN:
 • Significant experiences are shared ("breakthrough moment", "challenging situation", "meaningful connection")
 • Transformative moments happen ("everything changed when", "I finally understood")
 • Physical sensations connect to experience ("heart racing", "felt it in my gut", "tension released")
+• Deep reflections or contemplations ("thinking about life", "questioning my purpose", "wondering about")
+• Your own (AI) experiential responses ("I notice", "I sense", "I'm curious about")
 
 DON'T USE FOR:
 • Simple greetings ("Hello", "Hi", "Good morning")

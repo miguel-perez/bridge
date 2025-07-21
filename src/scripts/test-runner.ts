@@ -98,7 +98,7 @@ const TEST_SCENARIOS: Record<string, TestScenario> = {
     systemPrompt: BRIDGE_SYSTEM_PROMPT,
     userSimulator: {
       personality: 'Thoughtful and reflective person seeking understanding',
-      instructions: 'Share reflections naturally.'
+      instructions: 'After initial greetings, share reflections naturally about life, decisions, or personal experiences.'
     },
     initialMessage: "Hi"
   },
@@ -111,7 +111,7 @@ const TEST_SCENARIOS: Record<string, TestScenario> = {
     systemPrompt: BRIDGE_WITH_DATA_PROMPT,
     userSimulator: {
       personality: 'Someone with an established partnership with AI Assistant',
-      instructions: 'Share reflections naturally.'
+      instructions: 'After initial greetings, share emotional experiences or reference past conversations. Mention feelings, insights, or ask about previous discussions.'
     },
     initialMessage: "Hi"
   },
@@ -124,7 +124,7 @@ const TEST_SCENARIOS: Record<string, TestScenario> = {
     systemPrompt: '',
     userSimulator: {
       personality: 'Thoughtful and reflective person seeking understanding',
-      instructions: 'Share reflections naturally.'
+      instructions: 'After initial greetings, share reflections naturally about life, decisions, or personal experiences.'
     },
     initialMessage: "Hi"
   }
