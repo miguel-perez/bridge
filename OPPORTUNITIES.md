@@ -42,37 +42,6 @@ Prioritize using a barbell strategy for antifragility.
 
 ## Pattern Recognition & Analysis Features
 
-### HMW capture pattern realizations as linkable experiences?
-
-**Impact: 8** - Enables collaborative wisdom building through linked insights  
-**Certainty: 8** - Clear implementation path using existing experience structure  
-**Urgency: 6** - Important for building on accumulated experiences  
-**Score: 384**
-
-**Status: ✓ COMPLETED (See EXP-005 in EXPERIMENTS.md)**
-
-Implementation added `reflects` field to experiences, enabling:
-
-- Pattern realizations that link to specific experiences
-- Bidirectional filtering (`reflects` and `reflected_by`)
-- Collaborative wisdom building through linked insights
-- 100% backward compatibility with existing experiences
-
-### HMW enable Bridge to reveal patterns through clustering similar experiences?
-
-**Impact: 9** - Core to the vision of revealing insights neither human nor AI could see alone  
-**Certainty: 7** - Clear technical approach using existing embeddings and dimensional signatures  
-**Urgency: 6** - Important for delivering on Bridge's promise but basic recall works without it  
-**Score: 378**
-
-**Status: ✓ COMPLETED (See EXP-006 in EXPERIMENTS.md)**
-
-Implementation added `{ as: "clusters" }` option to recall, grouping experiences by:
-
-- Similar dimensional signatures
-- Semantic similarity of content
-- Common experiencer states
-
 ### HMW track temporal sequences to reveal natural rhythms and transitions?
 
 **Impact: 8** - Would reveal stuck→unstuck patterns, decision flows, and personal cycles  
@@ -200,5 +169,4 @@ Based on rescored opportunities, the current development priorities are:
 9. **Life Journey Mapping** (Score: 48) - Long-term vision feature
 
 ### Completed Features
-- **Pattern Realizations** ✓ COMPLETED (Score: 384)
-- **Clustering Analysis** ✓ COMPLETED (Score: 378)
+For completed features and their learnings, see [LEARNINGS.md](./LEARNINGS.md).
