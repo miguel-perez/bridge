@@ -128,7 +128,7 @@ describe('Clustering Service', () => {
     });
 
     it('should handle experiences without quality signatures', async () => {
-      const experiencesWithoutDimensions = [
+      const experiencesWithoutQualities = [
         {
           id: 'exp-6',
           source: 'Just a regular day',
@@ -141,7 +141,7 @@ describe('Clustering Service', () => {
         }
       ];
       
-      const clusters = await clusterExperiences(experiencesWithoutDimensions);
+      const clusters = await clusterExperiences(experiencesWithoutQualities);
       
       expect(clusters).toBeDefined();
       expect(Array.isArray(clusters)).toBe(true);

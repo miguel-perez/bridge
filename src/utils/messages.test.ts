@@ -51,7 +51,7 @@ describe('Messages Utility', () => {
       expect(Messages.processing.longAfter).toBe('long after');
     });
 
-    it('should have all quality dimension messages', () => {
+    it('should have all quality type messages', () => {
       // Base qualities
       expect(Messages.qualities['embodied']).toBe('embodied');
       expect(Messages.qualities['focus']).toBe('focus');

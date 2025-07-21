@@ -296,7 +296,7 @@ recall("", {
 - Edge cases handled gracefully (single/individual clusters)
 - Output is MCP protocol compliant
 
-**Technical Implementation**: Added clustering service, enhanced recall handler, implemented dimensional and semantic clustering
+**Technical Implementation**: Added clustering service, enhanced recall handler, implemented quality and semantic clustering
 
 **Evidence**: Integration tests passing, learning loop analysis complete, commit e468d67
 
@@ -341,16 +341,16 @@ recall("", {
 
 **Evidence**: src/scripts/learning-loop.ts, multiple successful runs, 12 related commits
 
-### EXP-002: Dimensional Filtering and Unified Scoring
+### EXP-002: Quality Filtering and Unified Scoring
 **Status**: Completed 2025-07-21  
-**Purpose**: Test dimensional filtering capabilities and unified scoring system
+**Purpose**: Test quality filtering capabilities and unified scoring system
 
 **Key Outcomes**: ✅ All scenarios passing
-- Dimensional filtering accuracy: 100% (no false positives)
+- Quality filtering accuracy: 100% (no false positives)
 - Unified scoring effectiveness: Significantly improved relevance
 - Performance impact: Minimal (~2ms added latency)
 
-**Technical Implementation**: Pure dimensional queries, mixed text/dimension queries, unified scoring weights
+**Technical Implementation**: Pure quality queries, mixed text/quality queries, unified scoring weights
 
 **Evidence**: src/services/recall.ts, src/services/unified-scoring.ts, all Bridge integration tests passing
 

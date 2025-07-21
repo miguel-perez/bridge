@@ -33,7 +33,7 @@ After installation, you'll need to configure:
 Once installed, Bridge provides four MCP tools:
 
 ### 1. Experience
-Remember experiences with seven-dimensional phenomenological analysis:
+Remember experiences with seven-quality phenomenological analysis:
 - **Embodied**: Physical sensations and somatic awareness
 - **Attentional**: Focus patterns and awareness distribution
 - **Affective**: Emotional qualities and feeling tones

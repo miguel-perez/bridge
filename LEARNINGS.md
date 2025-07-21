@@ -57,14 +57,14 @@ This document captures validated insights from Bridge experiments with clear evi
 **Key Achievement**: Successfully implemented clustering analysis to automatically group similar experiences and reveal patterns
 
 **Technical Implementation**:
-- Added `src/services/clustering.ts` with dimensional and semantic clustering algorithms
+- Added `src/services/clustering.ts` with quality and semantic clustering algorithms
 - Enhanced recall handler to support `{ as: "clusters" }` option
 - Implemented cluster generation with meaningful summaries and labels
 - Added comprehensive unit tests for clustering functionality
 - Integrated clustering with existing filtering and scoring systems
 
 **Impact Metrics**:
-- **Pattern Discovery**: Automatic grouping of experiences with similar dimensional signatures
+- **Pattern Discovery**: Automatic grouping of experiences with similar quality signatures
 - **Insight Generation**: Meaningful cluster summaries reveal common themes
 - **User Experience**: Structured cluster output instead of flat experience lists
 - **Integration**: Seamless integration with existing recall functionality
@@ -85,7 +85,7 @@ Found 5 clusters of similar experiences:
 ```
 
 **Technical Patterns Discovered**:
-- Dimensional clustering works well for experiences with similar quality signatures
+- Quality clustering works well for experiences with similar quality signatures
 - Cluster summaries need to balance brevity with meaningful information
 - Edge cases (single experiences, highly diverse data) require graceful handling
 - Integration with existing filters maintains query flexibility
@@ -157,22 +157,22 @@ Found 5 clusters of similar experiences:
 - Learning loop confirmation: `loop/recommendations-1753118148548.md`
 - Coverage analysis: `coverage-analysis.md`
 
-### 2025-07-21 - Dimensional Filtering Fix
+### 2025-07-21 - Quality Filtering Fix
 
 **Key Achievement**: Fixed critical bug where partial dimension matching caused false positives (e.g., "mood.closed"
 matching "mood.open")
 
 **Technical Implementation**:
 - Implemented unified scoring system with dynamic weight calculation
-- Added proper filtering for pure dimensional queries
-- Mixed text/dimension queries now score all experiences without filtering
-- Comprehensive test coverage added for dimensional filtering
+- Added proper filtering for pure quality queries
+- Mixed text/quality queries now score all experiences without filtering
+- Comprehensive test coverage added for quality filtering
 
-**Impact**: Recall operations now correctly filter experiences when querying by dimensions, ensuring more accurate and
+**Impact**: Recall operations now correctly filter experiences when querying by qualities, ensuring more accurate and
 relevant results.
 
 **Evidence Trail**:
-- Commit: 0379376 "fix: dimensional filtering for recall queries"
+- Commit: 0379376 "fix: quality filtering for recall queries"
 - Files affected: recall.ts, unified-scoring.ts, recall-handler.ts
 - Tests added: recall-service.test.ts, unified-scoring.test.ts
 
@@ -261,7 +261,7 @@ potential functionality issue (now fixed)
 
 - Basic experience capture with quality signatures ✓
 - Semantic recall with embedding-based search ✓
-- Dimensional filtering (pure and mixed queries) ✓
+- Quality filtering (pure and mixed queries) ✓
 - Unified scoring system ✓
 - Reconsider and release operations ✓
 - Test infrastructure with learning loop ✓
