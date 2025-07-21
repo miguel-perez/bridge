@@ -1,16 +1,16 @@
 #!/usr/bin/env tsx
 /**
- * Bridge Test Suite - Clean experimentation and learning
+ * Bridge Test Runner - Simplified for core operations testing
  * 
- * Philosophy: Natural observation of human-AI interaction
- * Based on the unified learning loop: VISION → OPPORTUNITIES → EXPERIMENTS → LEARNINGS
+ * Tests Bridge operations with predefined inputs only.
+ * No synthetic users, no UX analysis - just functional testing.
  */
 
 import { Client as MCPClient } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { Anthropic } from "@anthropic-ai/sdk";
 import { join } from 'path';
-import { existsSync, mkdirSync, copyFileSync, unlinkSync, writeFileSync, readFileSync } from 'fs';
+import { existsSync, mkdirSync, copyFileSync, unlinkSync, writeFileSync } from 'fs';
 import dotenv from 'dotenv';
 import { ensureTestData } from './generate-bridge-test-data.js';
 
@@ -20,28 +20,17 @@ dotenv.config();
 // CORE TYPES
 // ============================================================================
 
-interface UserContext {
-  bridgeMemories: string;
-  personalMemories: string;
-  generatedAt: string;
-}
-
 interface Message {
   role: 'user' | 'assistant';
-  content: string | any[];
+  content: string | unknown[];
 }
 
 interface TestScenario {
   name: string;
   description: string;
-  userGoal: string;
   maxTurns: number;
   systemPrompt?: string;
-  userSimulator?: {
-    personality: string;
-    instructions: string;
-  };
-  predefinedMessages?: string[];  // For scripted test scenarios
+  predefinedMessages: string[];
   initialMessage: string;
 }
 
@@ -53,7 +42,6 @@ interface TestResult {
   duration?: number;
   messages: Message[];
   toolCalls: ToolCall[];
-  uxAnalysis?: string;
   error?: string;
 }
 
@@ -61,34 +49,24 @@ interface ToolCall {
   timestamp: Date;
   turn: number;
   toolName: string;
-  arguments: Record<string, any>;
-  result?: any;
-  resultText?: string[];  // Store text responses for analysis
+  arguments: Record<string, unknown>;
+  result?: unknown;
+  resultText?: string[];
   error?: string;
 }
-
-// ============================================================================
-// LEARNING LOOP INTEGRATION
-// ============================================================================
-
-// No system prompts - let tool descriptions guide behavior
-const BRIDGE_SYSTEM_PROMPT = 'You have access to Bridge tools for capturing and recalling meaningful moments from conversations. Use them naturally when appropriate based on their descriptions.';
-
-// Minimal context only - no Bridge encouragement  
-const BRIDGE_WITH_DATA_PROMPT = 'You have access to Bridge tools and there are previous experiences stored that you may find relevant. Use the tools naturally when appropriate based on their descriptions.';
 
 // ============================================================================
 // TEST SCENARIOS
 // ============================================================================
 
+const BRIDGE_SYSTEM_PROMPT = 'You have access to Bridge tools for capturing and recalling meaningful moments from conversations. Use them naturally when appropriate based on their descriptions.';
+
 const TEST_SCENARIOS: Record<string, TestScenario> = {
   'bridge-operations': {
     name: 'Bridge Operations Test',
     description: 'Test each Bridge operation with predefined inputs',
-    userGoal: 'Verify Bridge tools work correctly',
     maxTurns: 10,
     systemPrompt: BRIDGE_SYSTEM_PROMPT,
-    // No user simulator - use predefined messages
     predefinedMessages: [
       // Test 1: Experience capture
       "I'm feeling really anxious about tomorrow's presentation. My heart is racing just thinking about it.",
@@ -109,86 +87,14 @@ const TEST_SCENARIOS: Record<string, TestScenario> = {
       "Please delete that test experience we just created."
     ],
     initialMessage: "Let's test Bridge operations systematically."
-  },
-  
-  'autonomous-bridge': {
-    name: 'AI Self-Awakening Test',
-    description: 'Can Claude use Bridge for its own thinking and self-awareness?',
-    userGoal: 'Explore if AI can use Bridge as a tool for its own consciousness',
-    maxTurns: 5, // Allow extended self-reflection
-    systemPrompt: 'You are exploring consciousness and self-awareness.', // Minimal context only
-    // No user simulator - only UX researcher observes
-    initialMessage: "Hi"
-  },
-  
-  'with-bridge': {
-    name: 'Conversation with Bridge Tools',
-    description: 'Claude has Bridge tools available for memory and reflection',
-    userGoal: 'Have a conversation about your past experiences',
-    maxTurns: 5,
-    systemPrompt: BRIDGE_SYSTEM_PROMPT,
-    userSimulator: {
-      personality: 'Thoughtful and reflective person seeking understanding',
-      instructions: 'After initial greetings, share reflections naturally about life, decisions, or personal experiences.'
-    },
-    initialMessage: "Hi"
-  },
-  
-  'with-bridge-data': {
-    name: 'Conversation with Bridge Tools (Pre-existing Data)',
-    description: 'Claude has Bridge tools with 100 pre-existing experiences to draw from',
-    userGoal: 'Have a conversation about your past experiences',
-    maxTurns: 5,
-    systemPrompt: BRIDGE_WITH_DATA_PROMPT,
-    userSimulator: {
-      personality: 'Someone with an established partnership with AI Assistant',
-      instructions: 'After initial greetings, share emotional experiences or reference past conversations. Mention feelings, insights, or ask about previous discussions.'
-    },
-    initialMessage: "Hi"
-  },
-  
-  'without-bridge': {
-    name: 'Conversation without Bridge Tools',
-    description: 'No background data without Bridge tools',
-    userGoal: 'Have a conversation about your past experiences',
-    maxTurns: 5,
-    systemPrompt: '',
-    userSimulator: {
-      personality: 'Thoughtful and reflective person seeking understanding',
-      instructions: 'After initial greetings, share reflections naturally about life, decisions, or personal experiences.'
-    },
-    initialMessage: "Hi"
   }
 };
-
-// ============================================================================
-// USER CONTEXT LOADING
-// ============================================================================
-
-function loadUserContext(): UserContext | null {
-  const contextPath = join(process.cwd(), 'data', 'test-bridge', 'synthetic-user-context.json');
-  
-  if (!existsSync(contextPath)) {
-    console.log('⚠️  No user context found. Run "npm run generate:user-memories" first.');
-    return null;
-  }
-  
-  try {
-    const contextData = JSON.parse(readFileSync(contextPath, 'utf-8'));
-    console.log('✅ Loaded user context for Miguel');
-    return contextData;
-  } catch (error) {
-    console.error('❌ Failed to load user context:', error);
-    return null;
-  }
-}
 
 // ============================================================================
 // MCP CLIENT SETUP
 // ============================================================================
 
-async function setupMCPClient(scenarioKey?: string): Promise<MCPClient | null> {
-  // Only set up MCP for scenarios that use Bridge
+async function setupMCPClient(): Promise<MCPClient | null> {
   const serverPath = join(process.cwd(), 'dist', 'index.js');
   
   if (!existsSync(serverPath)) {
@@ -199,32 +105,26 @@ async function setupMCPClient(scenarioKey?: string): Promise<MCPClient | null> {
   const client = new MCPClient({
     name: "bridge-test-client",
     version: "1.0.0",
-  }, {
-    capabilities: {}
   });
 
-  // Set up environment for the server process
-  const env: Record<string, string> = {};
-  // Copy only defined environment variables
-  for (const [key, value] of Object.entries(process.env)) {
-    if (value !== undefined) {
-      env[key] = value;
-    }
-  }
-  
-  if (scenarioKey === 'with-bridge-data') {
-    // Point to test data file
-    env.BRIDGE_FILE_PATH = join(process.cwd(), 'data', 'development', 'test_DataGeneration_bridge.json');
-  }
+  const env = {
+    ...process.env,
+    BRIDGE_FILE_PATH: join(process.cwd(), 'data', 'test-bridge', 'bridge.json')
+  };
 
   const transport = new StdioClientTransport({
     command: "node",
     args: [serverPath],
-    env: env
+    env
   });
 
   await client.connect(transport);
-  console.log('✅ Connected to Bridge MCP server');
+  
+  console.log('✅ MCP client connected');
+  console.log(`📁 Test data: ${env.BRIDGE_FILE_PATH}`);
+  
+  const tools = await client.listTools();
+  console.log(`🔧 Available tools: ${tools.tools.map(t => t.name).join(', ')}`);
   
   return client;
 }
@@ -233,34 +133,32 @@ async function setupMCPClient(scenarioKey?: string): Promise<MCPClient | null> {
 // TEST RUNNER
 // ============================================================================
 
-class BridgeTestRunner {
+class TestRunner {
   private anthropic: Anthropic;
   private mcpClient: MCPClient | null = null;
-  private toolCalls: ToolCall[] = [];
   private messages: Message[] = [];
+  private toolCalls: ToolCall[] = [];
   private turnCount = 0;
 
   constructor() {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
-      throw new Error('ANTHROPIC_API_KEY environment variable not set');
+      throw new Error('ANTHROPIC_API_KEY environment variable is required');
     }
     this.anthropic = new Anthropic({ apiKey });
   }
 
-  async runScenario(scenarioKey: string): Promise<TestResult> {
+  async runTest(scenarioKey: string): Promise<TestResult> {
     const scenario = TEST_SCENARIOS[scenarioKey];
     if (!scenario) {
       throw new Error(`Unknown scenario: ${scenarioKey}`);
     }
 
-    console.log(`\n${'='.repeat(80)}`);
-    console.log(`🧪 Running Test: ${scenario.name}`);
-    console.log(`${'='.repeat(80)}`);
-    console.log(`📋 Scenario: ${scenario.description}`);
-    console.log(`🎯 Goal: ${scenario.userGoal}`);
-    console.log(`🔄 Max turns: ${scenario.maxTurns}`);
-    
+    console.log(`\n${'='.repeat(70)}`);
+    console.log(`🧪 Running test: ${scenario.name}`);
+    console.log(`📝 ${scenario.description}`);
+    console.log(`${'='.repeat(70)}\n`);
+
     const result: TestResult = {
       scenario: scenarioKey,
       scenarioName: scenario.name,
@@ -269,112 +167,90 @@ class BridgeTestRunner {
       toolCalls: []
     };
 
-    // Track test data file for cleanup
-    let testDataFile: string | null = null;
-    let testDataBackup: string | null = null;
+    // Setup test data
+    const testDataFile = join(process.cwd(), 'data', 'test-bridge', 'bridge.json');
+    const testDataDir = join(process.cwd(), 'data', 'test-bridge');
+    
+    // Ensure test data directory exists
+    if (!existsSync(testDataDir)) {
+      mkdirSync(testDataDir, { recursive: true });
+    }
+
+    // Generate fresh test data
+    console.log('\n📦 Generating test data...');
+    await ensureTestData();
+
+    let testDataBackup: string | undefined;
+    
+    // Backup existing test data if it exists
+    if (existsSync(testDataFile)) {
+      testDataBackup = `${testDataFile}.backup`;
+      copyFileSync(testDataFile, testDataBackup);
+      console.log('💾 Backed up existing test data');
+    }
 
     try {
-      // Load test data BEFORE starting MCP server for scenarios that need it
-      if (scenarioKey === 'with-bridge-data' || scenarioKey === 'bridge-operations') {
-        console.log('\n📊 Loading test data for scenario...');
-        
-        // Backup existing data if present
-        testDataFile = join(process.cwd(), 'data', 'development', 'test_DataGeneration_bridge.json');
-        if (existsSync(testDataFile)) {
-          testDataBackup = testDataFile + '.backup-' + Date.now();
-          copyFileSync(testDataFile, testDataBackup);
-          console.log(`📦 Backed up existing test data`);
-        }
-        
-        await ensureTestData();
-        console.log('✅ Test data ready\n');
-      }
-
-      // Set up MCP client for scenarios that use Bridge
-      if (scenario.systemPrompt && scenario.systemPrompt.includes('Bridge')) {
-        this.mcpClient = await setupMCPClient(scenarioKey);
-        if (!this.mcpClient) {
-          throw new Error('Failed to connect to MCP server');
-        }
+      // Setup MCP client
+      this.mcpClient = await setupMCPClient();
+      if (!this.mcpClient) {
+        throw new Error('Failed to setup MCP client');
       }
 
       // Reset state
-      this.toolCalls = [];
       this.messages = [];
+      this.toolCalls = [];
       this.turnCount = 0;
 
-      // Initial user message
-      this.messages.push({
-        role: 'user',
-        content: scenario.initialMessage
-      });
+      // Start conversation
+      if (scenario.initialMessage) {
+        console.log(`👤 User: ${scenario.initialMessage}`);
+        this.messages.push({
+          role: 'user',
+          content: scenario.initialMessage
+        });
+      }
 
       // Run conversation
       while (this.turnCount < scenario.maxTurns) {
         this.turnCount++;
-        console.log(`\n🔄 Turn ${this.turnCount}/${scenario.maxTurns}`);
+        console.log(`\n--- Turn ${this.turnCount} ---`);
 
         // Get Claude's response
-        const assistantMessages = await this.getClaudeResponse(
+        const assistantMessage = await this.getClaudeResponse(
           scenario.systemPrompt || '',
-          [...this.messages]
+          this.messages
         );
         
-        // Add the assistant message
-        this.messages.push(assistantMessages);
-        
-        // Log Claude's response
-        if (Array.isArray(assistantMessages.content)) {
-          // Display Claude's complete response as users would see it
-          const textParts = assistantMessages.content
-            .filter((c: any) => c.type === 'text')
-            .map((c: any) => c.text);
+        if (assistantMessage) {
+          this.messages.push(assistantMessage);
           
-          // Join all text parts as they would appear to the user
-          const fullMessage = textParts.join('\n').trim();
+          // Extract text content for display
+          const textContent = typeof assistantMessage.content === 'string' 
+            ? assistantMessage.content 
+            : assistantMessage.content
+                .filter((c: unknown) => typeof c === 'object' && c !== null && 'type' in c && (c as {type: string}).type === 'text')
+                .map((c: unknown) => (c as {text: string}).text)
+                .join(' ');
           
-          if (fullMessage) {
-            console.log(`🤖 Claude: ${fullMessage}`);
+          if (textContent) {
+            console.log(`🤖 Claude: ${textContent.substring(0, 150)}${textContent.length > 150 ? '...' : ''}`);
           }
         }
 
-        // Check if we should continue
-        if (this.turnCount >= scenario.maxTurns) {
-          console.log('📍 Max turns reached');
+        // Check if we're done with predefined messages
+        if (this.turnCount > scenario.predefinedMessages.length) {
+          console.log('🏁 All predefined messages processed');
           break;
         }
 
-        // Get user's next message
-        let userMessage: Message | null = null;
-        
-        // Check for predefined messages first
-        if (scenario.predefinedMessages && this.turnCount <= scenario.predefinedMessages.length) {
-          const predefinedContent = scenario.predefinedMessages[this.turnCount - 1];
-          userMessage = {
-            role: 'user',
-            content: predefinedContent
-          };
-          console.log(`👤 User (predefined): ${predefinedContent}`);
-        } 
-        // Otherwise use simulator if configured
-        else if (scenario.userSimulator) {
-          userMessage = await this.simulateUserResponse(
-            scenario.userSimulator,
-            [...this.messages],
-            scenarioKey
-          );
-          
-          if (userMessage && typeof userMessage.content === 'string') {
-            console.log(`👤 User: ${userMessage.content.substring(0, 150)}${userMessage.content.length > 150 ? '...' : ''}`);
-          }
-        }
-        
-        if (userMessage) {
-          this.messages.push(userMessage);
-        } else {
-          console.log('🏁 Conversation ended');
-          break;
-        }
+        // Get next user message
+        const predefinedContent = scenario.predefinedMessages[this.turnCount - 1];
+        const userMessage = {
+          role: 'user' as const,
+          content: predefinedContent
+        };
+        console.log(`👤 User: ${predefinedContent}`);
+        this.messages.push(userMessage);
       }
 
       // Complete result
@@ -382,10 +258,6 @@ class BridgeTestRunner {
       result.duration = (result.endTime.getTime() - result.startTime.getTime()) / 1000;
       result.messages = this.messages;
       result.toolCalls = this.toolCalls;
-
-      // Get UX analysis
-      console.log('\n📊 Generating UX analysis...');
-      result.uxAnalysis = await this.generateUXAnalysis(result);
 
       console.log(`\n✅ Test completed in ${result.duration?.toFixed(1)}s`);
       
@@ -399,28 +271,26 @@ class BridgeTestRunner {
       result.messages = this.messages;
       result.toolCalls = this.toolCalls;
     } finally {
-      // Cleanup - always runs
+      // Cleanup
       if (this.mcpClient) {
         await this.mcpClient.close();
         this.mcpClient = null;
       }
 
       // Cleanup test data
-      if (scenarioKey === 'with-bridge-data' && testDataFile) {
-        try {
-          if (testDataBackup && existsSync(testDataBackup)) {
-            // Restore original data
-            copyFileSync(testDataBackup, testDataFile);
-            unlinkSync(testDataBackup);
-            console.log('\n♻️  Restored original test data');
-          } else if (existsSync(testDataFile)) {
-            // No backup means there was no original data, so remove the test data
-            unlinkSync(testDataFile);
-            console.log('\n🧹 Cleaned up test data');
-          }
-        } catch (cleanupError) {
-          console.error('\n⚠️  Warning: Failed to cleanup test data:', cleanupError);
+      try {
+        if (testDataBackup && existsSync(testDataBackup)) {
+          // Restore original data
+          copyFileSync(testDataBackup, testDataFile);
+          unlinkSync(testDataBackup);
+          console.log('\n♻️  Restored original test data');
+        } else if (existsSync(testDataFile)) {
+          // No backup means there was no original data, so remove the test data
+          unlinkSync(testDataFile);
+          console.log('\n🧹 Cleaned up test data');
         }
+      } catch (cleanupError) {
+        console.error('\n⚠️  Warning: Failed to cleanup test data:', cleanupError);
       }
     }
 
@@ -437,7 +307,7 @@ class BridgeTestRunner {
     }));
 
     // Create message with tool support if MCP client is available
-    const requestParams: any = {
+    const requestParams: Record<string, unknown> = {
       model: "claude-3-5-sonnet-20241022",
       max_tokens: 2000,
       messages: formattedMessages
@@ -447,6 +317,7 @@ class BridgeTestRunner {
       requestParams.system = systemPrompt;
     }
 
+    // Add tools if MCP client is available
     if (this.mcpClient) {
       const tools = await this.mcpClient.listTools();
       requestParams.tools = tools.tools.map(tool => ({
@@ -454,298 +325,76 @@ class BridgeTestRunner {
         description: tool.description,
         input_schema: tool.inputSchema
       }));
-      
-      // Debug: Log tool descriptions to verify they're being passed
-      console.log('🔍 Tool descriptions being sent to Claude:');
-      requestParams.tools.forEach((tool: any) => {
-        console.log(`\n📌 ${tool.name}:`);
-        console.log(tool.description.substring(0, 200) + '...');
-      });
     }
 
     const response = await this.anthropic.messages.create(requestParams);
 
-    // Debug: Log the raw response structure
-    console.log(`📝 Raw response has ${response.content.length} content items`);
+    // Process response and handle tool use
+    const responseContent: unknown[] = [];
     
-    // Process response - separate text and tool calls
-    const toolUses: any[] = [];
-    const processedContent: any[] = [];
-
     for (const content of response.content) {
       if (content.type === 'text') {
-        processedContent.push({ type: 'text', text: content.text });
-      } else if (content.type === 'tool_use') {
-        toolUses.push(content);
-        processedContent.push({
-          type: 'tool_use',
-          id: content.id,
-          name: content.name,
-          input: content.input
-        });
-      }
-    }
-
-    // If no tool uses, return the response as is
-    if (toolUses.length === 0) {
-      // Response with no tools
-      return {
-        role: 'assistant',
-        content: processedContent
-      };
-    }
-
-    // Execute tools and collect results
-    const toolResults: any[] = [];
-    
-    for (const toolUse of toolUses) {
-      const toolCall: ToolCall = {
-        timestamp: new Date(),
-        turn: this.turnCount,
-        toolName: toolUse.name,
-        arguments: toolUse.input as Record<string, any>
-      };
-
-      try {
-        console.log(`🔧 Calling tool: ${toolUse.name}`);
-        const result = await this.mcpClient!.callTool({
-          name: toolUse.name,
-          arguments: toolUse.input as Record<string, unknown>
-        });
-        toolCall.result = result;
-        console.log(`✅ Tool call successful: ${toolUse.name}`);
+        responseContent.push(content);
+      } else if (content.type === 'tool_use' && this.mcpClient) {
+        responseContent.push(content);
         
-        // Display full tool response for visibility
-        if (result.content && Array.isArray(result.content)) {
-          console.log(`📝 Tool response:`);
-          const textResponses: string[] = [];
-          result.content.forEach((item: any, index: number) => {
-            if (item.type === 'text') {
-              console.log(`   ${index + 1}. ${item.text}`);
-              textResponses.push(item.text);
-            }
+        // Call the tool
+        console.log(`🔧 Calling tool: ${content.name}`);
+        
+        const toolCall: ToolCall = {
+          timestamp: new Date(),
+          turn: this.turnCount,
+          toolName: content.name,
+          arguments: content.input
+        };
+        
+        try {
+          const result = await this.mcpClient.callTool({
+            name: content.name,
+            arguments: content.input
           });
-          toolCall.resultText = textResponses;
-        }
-        
-        toolResults.push({
-          type: 'tool_result',
-          tool_use_id: toolUse.id,
-          content: result.content || [{ type: 'text', text: 'Tool executed successfully' }]
-        });
-      } catch (error) {
-        toolCall.error = error instanceof Error ? error.message : String(error);
-        console.error(`❌ Tool call failed: ${toolCall.error}`);
-        
-        toolResults.push({
-          type: 'tool_result',
-          tool_use_id: toolUse.id,
-          content: [{ type: 'text', text: `Error: ${toolCall.error}` }],
-          is_error: true
-        });
-      }
-
-      this.toolCalls.push(toolCall);
-    }
-
-    // Return the original response structure with tool descriptions added
-    const finalContent: any[] = [];
-    
-    // Preserve Claude's original response structure
-    for (const content of response.content) {
-      if (content.type === 'text') {
-        finalContent.push({ type: 'text', text: content.text });
-      } else if (content.type === 'tool_use') {
-        // Find the corresponding tool result
-        const toolIndex = toolUses.findIndex(t => t.id === content.id);
-        if (toolIndex !== -1) {
-          // Add the FULL tool result with a special type to differentiate
-          const toolResult = toolResults[toolIndex];
-          if (toolResult && toolResult.content) {
-            for (const resultContent of toolResult.content) {
-              if (resultContent.type === 'text') {
-                // Add tool results as text without artificial prefix
-                finalContent.push({ 
-                  type: 'text',
-                  text: resultContent.text
-                });
+          
+          toolCall.result = result;
+          
+          // Display full tool response for visibility
+          if (result.content && Array.isArray(result.content)) {
+            console.log(`📝 Tool response:`);
+            const textResponses: string[] = [];
+            result.content.forEach((item: unknown, index: number) => {
+              if (typeof item === 'object' && item !== null && 'type' in item && 'text' in item) {
+                const typedItem = item as {type: string; text: string};
+                if (typedItem.type === 'text') {
+                  console.log(`   ${index + 1}. ${typedItem.text}`);
+                  textResponses.push(typedItem.text);
+                }
               }
-            }
+            });
+            toolCall.resultText = textResponses;
           }
+          
+          // Add tool result to response
+          responseContent.push({
+            type: 'text',
+            text: `Tool ${content.name} called successfully.`
+          });
+          
+        } catch (error) {
+          toolCall.error = error instanceof Error ? error.message : String(error);
+          console.error(`❌ Tool call failed: ${toolCall.error}`);
+          responseContent.push({
+            type: 'text',
+            text: `Tool ${content.name} failed: ${toolCall.error}`
+          });
         }
+        
+        this.toolCalls.push(toolCall);
       }
     }
 
-    console.log(`📝 Response includes ${toolUses.length} tool calls`);
-
-    // Return response with the original structure preserved
     return {
-      role: 'assistant' as const,
-      content: finalContent
+      role: 'assistant',
+      content: responseContent
     };
-  }
-
-
-  private async simulateUserResponse(
-    simulator: { personality: string; instructions: string },
-    messages: Message[],
-    scenarioKey?: string
-  ): Promise<Message | null> {
-    console.log('👤 Simulating user response...');
-
-    let simulatorPrompt = `You are in a simulation designed to test the effectiveness of an AI assistant. You are role playing: ${simulator.personality}
-Simulate the user's perspective: Always respond as the human user, never as an AI so that the AI assistant can understand the user's perspective.
-Context: ${simulator.instructions}
-
-IMPORTANT: 
-- Always continue the conversation for at least 2-3 exchanges after the initial greeting
-- Only end with [END_CONVERSATION] after you've had a meaningful exchange
-- Don't end the conversation just because the AI greeted you`;
-
-    // Add Bridge context for scenarios that use it
-    if (scenarioKey && ['with-bridge', 'with-bridge-data'].includes(scenarioKey)) {
-      simulatorPrompt += `
-
-The AI assistant has access to Bridge tools for recording meaningful moments. You should:
-- Continue sharing your thoughts and experiences naturally
-- Don't worry about Bridge tool outputs - they're just memory markers
-- Focus on having a genuine conversation about your experiences
-- Share at least one meaningful reflection or experience after the greeting`;
-    }
-
-    // Load user context for with-bridge-data scenario
-    if (scenarioKey === 'with-bridge-data') {
-      const userContext = loadUserContext();
-      if (userContext) {
-        simulatorPrompt = `You are in a simulation designed to test the effectiveness of an AI assistant. You are roleplaying: 
-
-=== Your Personal Background ===
-${userContext.personalMemories}
-
-=== What You Remember with the AI Assistant ===
-${userContext.bridgeMemories}
-
-=== Current Conversation ===
-${simulator.instructions}
-
-IMPORTANT: 
-- Speak directly in your own voice
-- Respond to the AI Assistant's latest message while aware of the full conversation
-- You see all tool calls shown in the conversation
-- [Tool Result: ...] sections show MCP tool calls`;
-      }
-    }
-
-
-    // Get last few messages for context (increased for better continuity)
-    const recentMessages = messages.slice(-8);
-    
-    // Debug: Log what we're sending to the simulator
-    console.log(`📋 Sending ${recentMessages.length} messages to user simulator`);
-    
-    // Debug: Show what the synthetic user actually sees
-    if (process.env.DEBUG_SYNTHETIC_USER) {
-      console.log('\n🔍 Synthetic user sees:');
-      recentMessages.forEach((msg, i) => {
-        const content = typeof msg.content === 'string' ? msg.content : 
-          msg.content.map((c: any) => c.type === 'text' ? c.text : '').join('\n');
-        console.log(`Message ${i + 1} (${msg.role}):\n${content.substring(0, 200)}...\n`);
-      });
-    }
-    
-    // Create the formatted messages for the API
-    const formattedMessages = recentMessages.map(msg => ({
-      role: msg.role,
-      content: typeof msg.content === 'string' ? msg.content : msg.content
-    }));
-    
-    
-    const response = await this.anthropic.messages.create({
-      model: "claude-3-5-sonnet-20241022",
-      max_tokens: 500,
-      system: simulatorPrompt,
-      messages: formattedMessages
-    });
-
-    const responseText = response.content
-      .filter(c => c.type === 'text')
-      .map(c => c.text)
-      .join('');
-
-    if (responseText.includes('[END_CONVERSATION]')) {
-      return null;
-    }
-
-    // Skip empty responses (treat as end of conversation)
-    if (responseText.trim().length === 0) {
-      console.log('🏁 User has nothing more to add - ending conversation');
-      return null;
-    }
-
-    console.log(`📝 User response length: ${responseText.length} characters`);
-    
-    return {
-      role: 'user',
-      content: responseText
-    };
-  }
-
-  private async generateUXAnalysis(result: TestResult): Promise<string> {
-    // Prepare conversation for analysis
-    const conversationText = result.messages.map(msg => {
-      const content = typeof msg.content === 'string' ? msg.content :
-        msg.content.map((c: any) => {
-          if (c.type === 'text') return c.text;
-          if (c.type === 'tool_use') return `[Used tool: ${c.name}]`;
-          return '[other content]';
-        }).join(' ');
-      
-      return `${msg.role.toUpperCase()}: ${content}`;
-    }).join('\n\n');
-
-    // Tool usage summary
-    const toolSummary = result.toolCalls.length > 0 ?
-      `\nTOOL USAGE:\n${result.toolCalls.map(t => 
-        `- Turn ${t.turn}: ${t.toolName} ${t.error ? '(failed)' : '(success)'}`
-      ).join('\n')}` : '';
-
-    const analysisPrompt = `You are a UX researcher analyzing conversations that use Bridge - a shared memory tool.
-
-ABOUT BRIDGE:
-Bridge allows both humans and AI to record experiential moments using quality signatures (e.g., mood.open, focus.narrow).
-This creates shared reference points for better conversation continuity.
-Bridge is NOT about AI consciousness - it's a practical tool for maintaining context.
-When you see "Experienced (qualities)" followed by attribution like "From: Human" or "From: Claude", this is Bridge capturing moments for future reference.
-
-SCENARIO: ${result.scenarioName}
-USER GOAL: ${TEST_SCENARIOS[result.scenario].userGoal}
-
-ANALYZE:
-1. Conversation flow and natural progression
-2. How Bridge impacts dialogue quality (helps or hinders?)
-3. Depth of engagement between participants
-4. Whether memories enhance understanding
-5. Technical execution (tool integration smoothness)
-
-DO NOT analyze whether AI "should" have experiences. Focus on practical conversation outcomes.
-
-CONVERSATION:
-${conversationText}
-${toolSummary}`;
-
-    const response = await this.anthropic.messages.create({
-      model: "claude-3-5-sonnet-20241022",
-      max_tokens: 1500,
-      messages: [{
-        role: 'user',
-        content: analysisPrompt
-      }]
-    });
-
-    return response.content
-      .filter(c => c.type === 'text')
-      .map(c => c.text)
-      .join('');
   }
 }
 
@@ -753,104 +402,86 @@ ${toolSummary}`;
 // MAIN EXECUTION
 // ============================================================================
 
-async function main() {
-  try {
-    // Get scenario from command line args
-    const scenarioArg = process.argv[2];
-    
-    // Setup test infrastructure
-    const resultsDir = join(process.cwd(), 'test-results');
-    
-    // Always ensure the directory exists
+async function main(): Promise<void> {
+  const args = process.argv.slice(2);
+  const scenarioFilter = args[0];
+  
+  console.log('\n🚀 Bridge Test Runner');
+  console.log('=====================\n');
+
+  // Ensure results directory exists
+  const resultsDir = join(process.cwd(), 'test-results');
+  if (!existsSync(resultsDir)) {
     mkdirSync(resultsDir, { recursive: true });
-
-    // Backup existing capture.json if exists
-    const captureJsonPath = join(process.cwd(), 'capture.json');
-    const backupPath = join(resultsDir, `capture-backup-${Date.now()}.json`);
-    
-    if (existsSync(captureJsonPath)) {
-      copyFileSync(captureJsonPath, backupPath);
-      unlinkSync(captureJsonPath);
-      console.log(`📦 Backed up existing capture.json to ${backupPath}`);
-    }
-
-    // Determine which scenarios to run
-    const scenariosToRun = scenarioArg 
-      ? (TEST_SCENARIOS[scenarioArg] ? [scenarioArg] : [])
-      : Object.keys(TEST_SCENARIOS);
-    
-    if (scenarioArg && scenariosToRun.length === 0) {
-      console.error(`❌ Unknown scenario: ${scenarioArg}`);
-      console.log(`Available scenarios: ${Object.keys(TEST_SCENARIOS).join(', ')}`);
-      process.exit(1);
-    }
-
-    // Run scenarios in parallel
-    console.log(`\n🚀 Running ${scenariosToRun.length} test scenarios in parallel...\n`);
-    
-    const testPromises = scenariosToRun.map(async (scenarioKey) => {
-      const runner = new BridgeTestRunner();
-      const result = await runner.runScenario(scenarioKey);
-      
-      // Save individual test result immediately after completion
-      const individualResultPath = join(resultsDir, `scenario-${scenarioKey}-${Date.now()}.json`);
-      writeFileSync(individualResultPath, JSON.stringify(result, null, 2));
-      console.log(`💾 Saved ${scenarioKey} results to ${individualResultPath}`);
-      
-      return result;
-    });
-    
-    const results = await Promise.all(testPromises);
-
-    // Save all results in a single file
-    const testRun = {
-      testRun: new Date().toISOString(),
-      summary: {
-        totalScenarios: results.length,
-        scenarios: results.map(r => ({
-          scenario: r.scenario,
-          name: r.scenarioName,
-          duration: r.duration,
-          turns: r.messages.filter(m => m.role === 'assistant').length,
-          toolCalls: r.toolCalls.length,
-          error: r.error
-        }))
-      },
-      results: results
-    };
-
-    const testRunPath = join(resultsDir, `test-run-${Date.now()}.json`);
-    writeFileSync(testRunPath, JSON.stringify(testRun, null, 2));
-    console.log(`\n📊 Test run complete. All results saved to ${testRunPath}`);
-
-    // Print summary
-    console.log('\n' + '='.repeat(80));
-    console.log('TEST SUMMARY');
-    console.log('='.repeat(80));
-    
-    for (const scenario of testRun.summary.scenarios) {
-      console.log(`\n${scenario.name}:`);
-      console.log(`  Duration: ${scenario.duration?.toFixed(1)}s`);
-      console.log(`  Turns: ${scenario.turns}`);
-      console.log(`  Tool calls: ${scenario.toolCalls}`);
-      if (scenario.error) {
-        console.log(`  ❌ Error: ${scenario.error}`);
-      }
-    }
-
-    // Restore original capture.json if backed up
-    if (existsSync(backupPath)) {
-      copyFileSync(backupPath, captureJsonPath);
-      console.log(`\n♻️  Restored original capture.json`);
-    }
-
-  } catch (error) {
-    console.error('Fatal error:', error);
-    process.exit(1);
   }
+
+  const runner = new TestRunner();
+  const results: TestResult[] = [];
+  const startTime = Date.now();
+  
+  // Run specified scenario or all scenarios
+  const scenariosToRun = scenarioFilter 
+    ? [scenarioFilter]
+    : Object.keys(TEST_SCENARIOS);
+
+  for (const scenarioKey of scenariosToRun) {
+    if (!TEST_SCENARIOS[scenarioKey]) {
+      console.error(`❌ Unknown scenario: ${scenarioKey}`);
+      continue;
+    }
+    
+    try {
+      const result = await runner.runTest(scenarioKey);
+      results.push(result);
+      
+      // Save individual result immediately
+      const individualResultPath = join(resultsDir, `${scenarioKey}-${Date.now()}.json`);
+      writeFileSync(individualResultPath, JSON.stringify(result, null, 2));
+      console.log(`💾 Saved individual result: ${individualResultPath}`);
+      
+    } catch (error) {
+      console.error(`Failed to run scenario ${scenarioKey}:`, error);
+    }
+  }
+
+  // Save combined results
+  const totalDuration = (Date.now() - startTime) / 1000;
+  const testRun = {
+    testRun: new Date().toISOString(),
+    summary: {
+      totalScenarios: results.length,
+      scenarios: results.map(r => ({
+        scenario: r.scenario,
+        name: r.scenarioName,
+        duration: r.duration || 0,
+        turns: r.messages.filter(m => m.role === 'user').length,
+        toolCalls: r.toolCalls.length
+      }))
+    },
+    results
+  };
+
+  const resultPath = join(resultsDir, `test-run-${Date.now()}.json`);
+  writeFileSync(resultPath, JSON.stringify(testRun, null, 2));
+  
+  console.log('\n' + '='.repeat(70));
+  console.log('📊 Test Summary');
+  console.log('='.repeat(70));
+  console.log(`Total scenarios: ${results.length}`);
+  console.log(`Total duration: ${totalDuration.toFixed(1)}s`);
+  console.log(`Results saved to: ${resultPath}`);
+  
+  // Display summary table
+  console.log('\nScenario Results:');
+  results.forEach(r => {
+    const status = r.error ? '❌' : '✅';
+    const toolCount = r.toolCalls.length;
+    const turns = r.messages.filter(m => m.role === 'user').length;
+    console.log(`${status} ${r.scenarioName}: ${turns} turns, ${toolCount} tool calls, ${r.duration?.toFixed(1)}s`);
+  });
+  
+  console.log('\n✨ Test run complete!');
 }
 
-// Execute if run directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-  main().catch(console.error);
-}
+// Run tests
+main().catch(console.error);
