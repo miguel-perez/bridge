@@ -70,10 +70,10 @@ interface ToolCall {
 // ============================================================================
 
 // No system prompts - let tool descriptions guide behavior
-const BRIDGE_SYSTEM_PROMPT = '';
+const BRIDGE_SYSTEM_PROMPT = 'You have access to Bridge tools for capturing and recalling meaningful moments from conversations. Use them naturally when appropriate based on their descriptions.';
 
 // Minimal context only - no Bridge encouragement  
-const BRIDGE_WITH_DATA_PROMPT = 'You are having a conversation. Previous experiences exist that you may find relevant.';
+const BRIDGE_WITH_DATA_PROMPT = 'You have access to Bridge tools and there are previous experiences stored that you may find relevant. Use the tools naturally when appropriate based on their descriptions.';
 
 // ============================================================================
 // TEST SCENARIOS
@@ -542,24 +542,22 @@ class BridgeTestRunner {
 
     let simulatorPrompt = `You are in a simulation designed to test the effectiveness of an AI assistant. You are role playing: ${simulator.personality}
 Simulate the user's perspective: Always respond as the human user, never as an AI so that the AI assistant can understand the user's perspective.
-Context: ${simulator.instructions}`;
+Context: ${simulator.instructions}
+
+IMPORTANT: 
+- Always continue the conversation for at least 2-3 exchanges after the initial greeting
+- Only end with [END_CONVERSATION] after you've had a meaningful exchange
+- Don't end the conversation just because the AI greeted you`;
 
     // Add Bridge context for scenarios that use it
     if (scenarioKey && ['with-bridge', 'with-bridge-data'].includes(scenarioKey)) {
       simulatorPrompt += `
 
-ABOUT BRIDGE:
-Bridge is a shared memory tool that both you and the AI use to record meaningful moments from the conversation. 
-When you see notations like "Experienced (mood.open, presence.collective)", this is Bridge recording an experience.
-- "From: Human" means Bridge captured YOUR experience that you shared
-- "From: Claude" means Bridge captured the AI's perspective  
-- These are memory markers for future reference, not actions you need to respond to directly
-
-HOW TO RESPOND:
-- Continue the conversation naturally, building on the topics discussed
-- You can acknowledge Bridge captures if it feels natural ("I appreciate you noting that")
-- Focus on the actual dialogue content, not the Bridge notations
-- Your experiences being recorded is a positive thing - it means the AI is paying attention`;
+The AI assistant has access to Bridge tools for recording meaningful moments. You should:
+- Continue sharing your thoughts and experiences naturally
+- Don't worry about Bridge tool outputs - they're just memory markers
+- Focus on having a genuine conversation about your experiences
+- Share at least one meaningful reflection or experience after the greeting`;
     }
 
     // Load user context for with-bridge-data scenario

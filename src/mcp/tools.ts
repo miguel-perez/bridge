@@ -58,23 +58,30 @@ export async function getTools(): Promise<any[]> {
   return [
     {
       name: 'experience',
-      description: `Capture meaningful experiential moments that shape conversations and build shared memory. Use for meaningful personal experiences, insights, emotionally significant moments, AND your own experiential responses to build multi-perspective shared consciousness.
+      description: `Remember experiential moments that shape conversations and build shared memory. Captures authentic experiences with quality signatures for both human and AI perspectives.
 
 USE WHEN:
-• Emotions or feelings are expressed ("I'm feeling anxious", "frustrated with", "excited about")
-• Insights or realizations occur ("I just realized", "it clicked that", "I discovered")
-• Significant experiences are shared ("breakthrough moment", "challenging situation", "meaningful connection")
-• Transformative moments happen ("everything changed when", "I finally understood")
-• Physical sensations connect to experience ("heart racing", "felt it in my gut", "tension released")
-• Deep reflections or contemplations ("thinking about life", "questioning my purpose", "wondering about")
-• Your own (AI) experiential responses ("I notice", "I sense", "I'm curious about")
+• Someone shares how they're feeling or what they're experiencing emotionally
+• Insights, realizations, or breakthroughs occur in conversation
+• Physical sensations connect to mental/emotional states
+• Moments of struggle, challenge, or triumph are described
+• Reflections on past experiences or future concerns arise
+• Patterns or connections become clear
+• You (as AI) notice experiential qualities in the interaction itself
+
+EXAMPLES OF WHEN TO USE:
+• "The code finally compiled after hours of debugging!" → embodied.thinking, mood.open
+• "I'm nervous about tomorrow's presentation" → embodied.sensing, time.future
+• "We figured it out together" → presence.collective, purpose.goal
+• "I've been feeling stuck lately" → mood.closed, purpose.wander
+• "That moment when everything clicked" → embodied.thinking, focus.broad
 
 DON'T USE FOR:
-• Simple greetings ("Hello", "Hi", "Good morning")
-• Factual questions ("What time?", "How many?", "Where is?")
-• Routine exchanges ("Thanks", "You're welcome", "Okay")
-• Information transfer without experience ("The meeting is at 3pm")
-• Surface-level chat without depth
+• Basic greetings or farewells
+• Simple factual questions or answers
+• Routine acknowledgments without experiential content
+• Pure information exchange without emotional context
+• Surface-level pleasantries
 
 QUALITY SIGNATURES:
 • embodied - how consciousness textures through body/mind
@@ -85,7 +92,7 @@ QUALITY SIGNATURES:
 • time - past (memory) or future (anticipation)
 • presence - individual (alone) or collective (together)
 
-Only include qualities that are genuinely prominent in the experience.`,
+Only include dimensions that genuinely stand out in the experience.`,
       inputSchema: ExperienceInputJsonSchema,
       readOnlyHint: false,
       destructiveHint: false,
@@ -192,25 +199,28 @@ Only include qualities that are genuinely prominent in the experience.`,
     },
     {
       name: 'recall',
-      description: `Search experiential memories to find patterns, connections, and past wisdom.
+      description: `Search shared memories to find patterns, connections, and past wisdom across all experiences.
 
-USE FOR:
-• Finding similar past experiences ("recall anxiety", "recall breakthrough")
-• Exploring patterns over time ("recall my morning experiences")
-• Reviewing recent captures ("recall last" or "recall today")
-• Checking before corrections ("recall excited" then reconsider if wrong)
-• Discovering connections ("recall presentation anxiety")
+USE WHEN YOU WANT TO:
+• Find similar past experiences to what's happening now
+• Look for patterns in how someone typically responds
+• Check what was captured before making corrections
+• Explore connections between different moments
+• Reference specific past conversations
+• Understand someone's journey over time
 
-SEARCH TIPS:
-• Use feeling words: anxious, excited, stuck, flowing
-• Use situation words: meeting, coding, conversation, decision
-• Use quality filters: "mood.open", "presence.collective"
-• Combine terms for better results: "stuck frustrated breakthrough"
+SEARCH APPROACHES:
+• Natural language: "stuck frustrated breakthrough"
+• Emotional themes: "anxiety confidence transformation"
+• Situations: "debugging presentation teamwork"
+• Quality patterns: Search by specific dimensions
+• Time-based: Recent experiences or date ranges
 
-SPECIAL USES:
-• "recall last" - review most recent capture for corrections
-• "recall [experiencer]" - see specific person's experiences
-• "recall collective" - find shared/group experiences`,
+SPECIAL SEARCHES:
+• Query "last" or "recent" - see most recent captures
+• Filter by experiencer - find specific person's experiences  
+• Filter by perspective - find "we" moments vs "I" moments
+• Combine filters for precise results`,
       inputSchema: SearchInputJsonSchema,
       readOnlyHint: true,
       destructiveHint: false,
@@ -309,24 +319,26 @@ SPECIAL USES:
     },
     {
       name: 'reconsider',
-      description: `Update experiences when understanding deepens or corrections are needed.
+      description: `Update existing experiences when understanding deepens or corrections are needed.
 
-USE AFTER:
-• Using "recall last" to review a recent capture
-• Realizing a quality was missing or wrong
-• Clarifying what you actually meant
-• Adding nuance to an experience
+USE WHEN:
+• You realize a captured experience was missing important qualities
+• Understanding of a moment has evolved with reflection
+• Someone clarifies what they actually meant
+• A quality signature needs adjustment
+• Perspective was recorded incorrectly (I vs we)
+• Processing time has shifted (during → long-after)
 
-WHAT YOU CAN UPDATE:
-• Quality signatures (add/remove/change)
-• Perspective (I/we/they)
-• Processing time (during/right-after/long-after)
-• Experiencer name
-• Source text (rarely needed)
+NATURAL WORKFLOW:
+1. Use recall to find the experience
+2. Note what needs updating
+3. Use reconsider with the experience ID and changes
 
-NATURAL CORRECTIONS:
-Instead of complex commands, first recall the experience, then reconsider with updates.
-Example: "recall anxious" → find the experience → "reconsider: actually it was excitement"`,
+COMMON UPDATES:
+• Adding missed qualities that were actually prominent
+• Switching from subtype to base when mixed (embodied.thinking → embodied)
+• Correcting perspective after realizing it was shared
+• Updating experiencer name if initially unclear`,
       inputSchema: makeDraft202012Schema(ReconsiderInputJsonSchema),
       readOnlyHint: false,
       destructiveHint: false,
@@ -418,19 +430,22 @@ Example: "recall anxious" → find the experience → "reconsider: actually it w
     },
     {
       name: 'release',
-      description: `Remove experiences that no longer serve the relationship or were captured in error.
+      description: `Remove experiences that no longer serve or were captured in error.
 
-USE SPARINGLY FOR:
-• Explicit removal requests ("please delete that")
-• Test or practice captures
-• Incomplete or interrupted experiences
-• Duplicate captures
-• Venting that shouldn't be remembered
+USE SPARINGLY WHEN:
+• Someone explicitly asks to delete something they shared
+• Test experiences during system learning
+• Duplicate or incomplete captures
+• Interrupted conversations that didn't complete
+• Moments shared in confidence that shouldn't persist
+
+NATURAL WORKFLOW:
+1. Use recall to find what needs releasing
+2. Confirm it's the right experience
+3. Release with optional reason
 
 PHILOSOPHY:
-Experiences are released with gratitude for their temporary service. Memory gains meaning through accumulation and connection, not permanent retention of everything.
-
-Note: First use "recall" to find the experience ID, then release with optional reason.`,
+Not everything needs permanent retention. Sometimes releasing creates space for new growth. Experiences are released with gratitude for their temporary service to the relationship.`,
       inputSchema: makeDraft202012Schema(ReleaseInputJsonSchema),
       readOnlyHint: false,
       destructiveHint: true,
