@@ -76,56 +76,56 @@ Implementation added `{ as: "clusters" }` option to recall, grouping experiences
 ### HMW track temporal sequences to reveal natural rhythms and transitions?
 
 **Impact: 8** - Would reveal stuck→unstuck patterns, decision flows, and personal cycles  
-**Certainty: 6** - Requires temporal analysis algorithms and pattern detection  
-**Urgency: 5** - Valuable but users can manually observe patterns for now  
-**Score: 240**
+**Certainty: 7** - Clear implementation path using existing temporal data and clustering patterns  
+**Urgency: 6** - Important for delivering on Bridge's pattern recognition promise  
+**Score: 336**
 
-Implementation would add `{ as: "sequence" }` option to recall, analyzing:
 
-- Common dimensional transitions over time
-- Recurring patterns in experience flows
-- Natural rhythms in user's experiential landscape
 
 
 ### HMW support natural language temporal filters like "last week"?
 
-**Impact: 6** - Convenience feature for more intuitive querying  
+**Impact: 5** - Convenience feature for more intuitive querying  
 **Certainty: 9** - Straightforward date parsing and calculation  
 **Urgency: 4** - Current date-based filtering works but less intuitive  
-**Score: 216**
+**Score: 180**
 
-Implementation would parse strings like:
 
-- "last week", "past month", "yesterday"
-- "since Monday", "before December"
-- Converting to date ranges internally
 
 ### HMW filter experiences by dimension presence/absence?
 
-**Impact: 7** - Enables sophisticated queries about experiential qualities  
-**Certainty: 8** - Clear implementation path using existing dimensional data  
-**Urgency: 5** - Would unlock new query patterns but not blocking current use  
-**Score: 280**
+**Impact: 8** - Enables sophisticated queries about experiential qualities and unlocks advanced use cases  
+**Certainty: 9** - Clear implementation path using existing dimensional data and proven patterns  
+**Urgency: 7** - Critical for unlocking Bridge's full potential and enabling complex queries  
+**Score: 504**
 
 Implementation would support filters like:
 
 - `{ embodied: { present: true }, time: { present: false } }`
 - Finding experiences with specific dimensional combinations
 - Excluding experiences with certain qualities
+- Complex queries like "experiences with embodied.sensing but without mood.closed"
 
 ### HMW structure recall options for extensibility?
 
-**Impact: 5** - Technical improvement for future features  
+**Impact: 6** - Technical foundation that enables all future recall features  
 **Certainty: 9** - Clear refactoring of current parameter structure  
-**Urgency: 6** - Important before adding more options  
-**Score: 270**
+**Urgency: 8** - Critical blocker for implementing advanced recall features  
+**Score: 432**
+
+Implementation would:
+
+- Refactor recall parameters into structured options object
+- Enable clean addition of new recall modes (clusters, sequences, etc.)
+- Improve API consistency and developer experience
+- Set foundation for all future recall enhancements
 
 ### HMW maintain code quality through continuous monitoring?
 
-**Impact: 7** - Prevents regression and maintains the high quality achieved  
-**Certainty: 8** - Clear metrics and thresholds based on current state  
-**Urgency: 6** - Important to lock in the gains from test coverage improvement  
-**Score: 336**
+**Impact: 6** - Prevents regression and maintains the high quality achieved  
+**Certainty: 9** - Clear metrics and thresholds based on current state  
+**Urgency: 5** - Important to lock in the gains but not blocking new features  
+**Score: 270**
 
 Implementation would:
 
@@ -139,52 +139,37 @@ Implementation would:
 
 ### HMW enable multi-party memory for teams and groups?
 
-**Impact: 8** - Would enable collaborative memory across multiple participants  
-**Certainty: 5** - Requires significant architectural changes for multi-user support  
-**Urgency: 4** - Valuable for team collaboration but not core to individual use  
-**Score: 160**
+**Impact: 7** - Would enable collaborative memory across multiple participants  
+**Certainty: 4** - Requires significant architectural changes and MCP protocol extensions  
+**Urgency: 3** - Long-term vision feature, not blocking individual use  
+**Score: 84**
 
-Implementation would support:
 
-- Multiple experiencers in shared memory space
-- Team pattern recognition across participants
-- Privacy controls and permission management
-- Cross-participant experience linking
 
 ### HMW provide cross-experiencer pattern insights?
 
-**Impact: 7** - Would reveal patterns across different people's experiences  
-**Certainty: 6** - Requires analysis algorithms for cross-experiencer patterns  
-**Urgency: 4** - Valuable for team insights but not blocking individual use  
-**Score: 168**
+**Impact: 6** - Would reveal patterns across different people's experiences  
+**Certainty: 5** - Requires analysis algorithms and multi-user data structures  
+**Urgency: 3** - Long-term vision feature, not blocking individual use  
+**Score: 90**
 
-Implementation would analyze:
 
-- Common patterns across different experiencers
-- Shared dimensional signatures in team contexts
-- Collective wisdom building through cross-participant insights
-- Privacy-preserving pattern analysis
 
 ### HMW implement predictive pattern matching?
 
-**Impact: 8** - Would anticipate patterns before they fully emerge  
-**Certainty: 4** - Requires machine learning and predictive modeling  
-**Urgency: 5** - Could significantly enhance user experience  
-**Score: 160**
+**Impact: 7** - Would anticipate patterns before they fully emerge  
+**Certainty: 3** - Requires machine learning and predictive modeling  
+**Urgency: 4** - Could enhance user experience but not blocking  
+**Score: 84**
 
-Implementation would:
 
-- Predict likely dimensional transitions
-- Suggest pattern realizations before explicit recognition
-- Alert to emerging patterns in real-time
-- Provide anticipatory insights based on historical data
 
 ### HMW support extended life journey mapping?
 
-**Impact: 9** - Would enable long-term experiential tracking and life insights  
-**Certainty: 4** - Requires sophisticated temporal analysis and visualization  
-**Urgency: 3** - Long-term vision feature, not immediately blocking  
-**Score: 108**
+**Impact: 8** - Would enable long-term experiential tracking and life insights  
+**Certainty: 3** - Requires sophisticated temporal analysis and visualization  
+**Urgency: 2** - Long-term vision feature, not immediately blocking  
+**Score: 48**
 
 Implementation would provide:
 
@@ -192,3 +177,28 @@ Implementation would provide:
 - Life pattern visualization and analysis
 - Milestone tracking and reflection prompts
 - Integration with external life data sources
+
+## Updated Priority Order
+
+Based on rescored opportunities, the current development priorities are:
+
+### High Priority (400+ Score)
+1. **Dimension Filtering** (Score: 504) - Critical for unlocking Bridge's full potential
+2. **Extensible Recall Options** (Score: 432) - Technical foundation for all future features
+
+### Medium Priority (200-399 Score)  
+3. **Temporal Sequences** (Score: 336) - Pattern recognition through time
+4. **Code Quality Monitoring** (Score: 270) - Maintain high quality standards
+
+### Lower Priority (100-199 Score)
+5. **Natural Language Time Filters** (Score: 180) - Convenience feature
+
+### Long-term Vision (50-99 Score)
+6. **Cross-experiencer Insights** (Score: 90) - Team collaboration features
+7. **Multi-party Memory** (Score: 84) - Team collaboration features  
+8. **Predictive Pattern Matching** (Score: 84) - Advanced AI features
+9. **Life Journey Mapping** (Score: 48) - Long-term vision feature
+
+### Completed Features
+- **Pattern Realizations** ✓ COMPLETED (Score: 384)
+- **Clustering Analysis** ✓ COMPLETED (Score: 378)
