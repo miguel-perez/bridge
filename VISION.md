@@ -63,63 +63,20 @@ The key insight: we only note dimensions that genuinely stand out. A focused cod
 
 ### The Operations
 
-**experience()** - Capture meaningful moments
-```
-Human: "I finally cracked that bug after hours of frustration!"
-AI: I'll capture this breakthrough moment.
-[Captures: embodied.thinking, focus.narrow, mood.open, purpose.goal]
-```
+Bridge provides four core operations that work together to create a living memory system:
 
-**recall()** - Search memories semantically or by quality patterns
-```
-Human: "When have I felt stuck like this before?"
-AI: Let me search our shared memories...
-[Finds similar experiences with mood.closed + focus.narrow]
-```
-
-**reconsider()** - Update understanding as it deepens
-```
-Human: "Actually, that wasn't just thinking - my whole body was tense"
-AI: I'll update that memory to include the physical dimension.
-[Updates to add: embodied.sensing]
-```
-
+**experience()** - Capture meaningful moments with quality signatures
+**recall()** - Search memories semantically or by dimensional patterns  
+**reconsider()** - Update understanding as it deepens over time
 **release()** - Let go of what no longer serves
-```
-Human: "That was just a test - you can remove it"
-AI: I'll release that memory.
-[Removed with acknowledgment]
-```
+
+For detailed API documentation and examples, see [TECHNICAL.md](./TECHNICAL.md).
 
 ### Pattern Recognition in Action
 
-Patterns emerge through insight from both participants. Here's how it unfolds:
+Patterns emerge through insight from both participants. The system captures pattern recognition from both human and AI perspectives, building collaborative wisdom through accumulated insights.
 
-```
-Week 1:
-Human: "This presentation terrifies me"
-[Captured: embodied.sensing, mood.closed, purpose.goal]
-
-Week 2:
-Human: "Nailed the presentation!"
-[Captured: mood.open, purpose.goal, presence.collective]
-
-Week 3:
-Claude: "I notice you tend to excel at things that initially frighten you"
-[Creates pattern realization linking previous experiences]
-
-Week 4:
-Human: "I just realized - I always dread things that end up going well"
-[Creates another pattern realization from human perspective]
-
-Week 6:
-Human: "Feeling that familiar dread about tomorrow"
-AI: We've both noticed this pattern - your dread often signals 
-    you're about to do something meaningful. Here's what we've 
-    discovered about it... [recalls both pattern realizations]
-```
-
-The system captures pattern recognition from both participants, building collaborative wisdom through accumulated insights.
+For detailed examples and implementation patterns, see [TECHNICAL.md](./TECHNICAL.md).
 
 ## Design Principles
 
@@ -174,15 +131,9 @@ good conversations visible, queryable, and useful for both participants.
 
 ## The Future
 
-Bridge will evolve through use, potentially adding:
+Bridge will evolve through use, guided by our learning loop methodology. The essence remains: making memory visible, patterns recognizable, and human-AI collaboration deeper through shared experiential understanding.
 
-- Multi-party memory for teams
-- Cross-experiencer pattern insights
-- Predictive pattern matching
-- Extended life journey mapping
-
-But the essence remains: making memory visible, patterns recognizable, and human-AI collaboration deeper through shared
-experiential understanding.
+For specific future features and development priorities, see [OPPORTUNITIES.md](./OPPORTUNITIES.md).
 
 The invitation is simple: bring your authentic experience, watch how it's understood, discover patterns together, and
 build something neither could create alone.
