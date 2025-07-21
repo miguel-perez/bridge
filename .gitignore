@@ -28,7 +28,9 @@ bridge-dxt/
 
 # Testing
 coverage/
-test-results/ 
+loop/
+.nyc_output/
+*.lcov 
 
 # Project specific
 data/
@@ -37,6 +39,8 @@ data/
 # Personal data and logs
 bridge.json
 *.log
+experiences.json
+~/.bridge/
 
 # IDE configs with personal paths
 .cursor/
@@ -56,9 +60,7 @@ Thumbs.db
 *.temp 
 
 # Learning loop generated files
-OPPORTUNITIES.md
-LEARNINGS.md
-EXPERIMENTS.md
+# (Note: OPPORTUNITIES.md, LEARNINGS.md, EXPERIMENTS.md are tracked in git)
 
 # Test data cache
 test-data/

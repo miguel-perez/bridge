@@ -34,6 +34,8 @@ export default {
     '!src/scripts/llm-integration-improved.ts',
     '!src/test-setup.ts'
   ],
+  coverageReporters: ['json-summary', 'text', 'lcov'],
+  coverageDirectory: 'coverage',
   // Increase timeout for tests
   testTimeout: 30000,
   // Transform ESM dependencies  

@@ -38,7 +38,7 @@ This document captures validated insights from Bridge experiments with clear evi
 **Evidence Trail**:
 - Experiment: EXP-001 (see EXPERIMENTS.md)
 - Test run: test-run-1753069074129.json
-- Analysis: /Users/miguel/Git/bridge/test-results/learning-loop-1753069156823.json
+- Analysis: /Users/miguel/Git/bridge/loop/learning-loop-1753069156823.json
 - Model: claude-opus-4-20250514
 - Thoughts generated: 8
 

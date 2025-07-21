@@ -83,43 +83,81 @@ When users request dimensional queries:
 When users request deletion with specific IDs, use the release tool with that ID.`;
 
 const TEST_SCENARIOS: Record<string, TestScenario> = {
-  'bridge-operations': {
-    name: 'Bridge Operations Test',
-    description: 'Test each Bridge operation with predefined inputs',
-    maxTurns: 15,
+  // Tool-focused scenarios with realistic context
+  'experience-capture': {
+    name: 'Experience Tool - Emotional Capture',
+    description: 'Tests experience tool with various emotional states and dimensions',
+    maxTurns: 4,
     systemPrompt: BRIDGE_SYSTEM_PROMPT,
     predefinedMessages: [
-      // Test 1: Experience capture
       "I'm feeling really anxious about tomorrow's presentation. My heart is racing just thinking about it.",
-      
-      // Test 2: Similar experience (should trigger similarity detection)
-      "I'm anxious again about presenting. This feeling is so familiar.",
-      
-      // Test 3: Basic recall request
-      "Can you recall my past experiences with anxiety?",
-      
-      // Test 4: Dimensional query - single dimension
-      "Can you use recall to find all experiences with the dimension mood.closed?",
-      
-      // Test 5: Dimensional query - array of dimensions
-      "Please use recall with an array query to find experiences that have both embodied.sensing AND mood.closed dimensions",
-      
-      // Test 6: Mixed dimensional and text query
-      "Use recall to search for experiences about 'anxiety' that also have the time.future dimension",
-      
-      // Test 7: Pattern request
-      "Have you noticed any patterns in my anxiety experiences?",
-      
-      // Test 8: Reconsider request
-      "Actually, that first anxiety wasn't just about presenting - it was also about being judged. Can you update it?",
-      
-      // Test 9: Create a test experience for deletion
-      "I just had a breakthrough moment while coding - everything clicked!",
-      
-      // Test 10: Find and release the breakthrough experience
-      "Can you recall the breakthrough experience we just created and then delete it using the release tool?"
+      "Earlier I felt a surge of confidence when my code finally worked after hours of debugging.",
+      "We had such a great team meeting today - everyone was contributing and building on each other's ideas."
     ],
-    initialMessage: "Let's test Bridge operations systematically, including dimensional queries."
+    initialMessage: "I'd like to capture some emotional experiences from my day."
+  },
+  
+  'recall-queries': {
+    name: 'Recall Tool - Search Patterns',
+    description: 'Tests recall tool with text, dimensional, and mixed queries',
+    maxTurns: 5,
+    systemPrompt: BRIDGE_SYSTEM_PROMPT,
+    predefinedMessages: [
+      "Let me capture this feeling of being stuck on a problem.",
+      "Can you recall my experiences with feeling stuck?",
+      "Show me all experiences with mood.closed",
+      "Search for experiences with ['embodied.sensing', 'mood.closed']"
+    ],
+    initialMessage: "I want to test different recall query patterns."
+  },
+  
+  'reconsider-evolution': {
+    name: 'Reconsider Tool - Evolving Understanding',
+    description: 'Tests reconsider tool as understanding deepens',
+    maxTurns: 6,
+    systemPrompt: BRIDGE_SYSTEM_PROMPT,
+    predefinedMessages: [
+      "I'm frustrated with this bug - nothing seems to work.",
+      "Actually, wait - I think I see the pattern now. This might be interesting.",
+      "Can you recall that frustration I just shared?",
+      "I realize now it wasn't just frustration - it was also curiosity driving me. Can you update that experience to add purpose.goal?",
+      "And thinking more, it was definitely embodied.thinking not just sensing. Please update that too.",
+      "Actually, can you also change the perspective from 'I' to 'we' since my teammate was helping?"
+    ],
+    initialMessage: "Let me track how my understanding of this problem evolves."
+  },
+  
+  'release-cleanup': {
+    name: 'Release Tool - Selective Removal',
+    description: 'Tests release tool for removing experiences',
+    maxTurns: 6,
+    systemPrompt: BRIDGE_SYSTEM_PROMPT,
+    predefinedMessages: [
+      "Just testing Bridge - this is a test experience.",
+      "Another test - feeling happy about testing.",
+      "Real experience: I'm genuinely excited about this project's potential.",
+      "Can you show me all recent experiences?",
+      "Please delete the test experiences but keep the real one about project excitement.",
+      "Can you confirm those test experiences are gone?"
+    ],
+    initialMessage: "I need to clean up some test data while preserving real experiences."
+  },
+  
+  'dimensional-focus': {
+    name: 'Dimensional Queries - Quality Exploration',
+    description: 'Deep dive into dimensional filtering and patterns',
+    maxTurns: 7,
+    systemPrompt: BRIDGE_SYSTEM_PROMPT,
+    predefinedMessages: [
+      "Feeling mentally sharp and focused on solving this algorithm.",
+      "My body is tense from sitting too long, but my mind is still engaged.",
+      "Taking a break - feeling more relaxed and open to new ideas.",
+      "Show me all embodied.thinking experiences",
+      "What about embodied.sensing experiences?",
+      "Find experiences that have focus.narrow",
+      "Can you search for experiences with multiple dimensions like ['mood.open', 'embodied.thinking']?"
+    ],
+    initialMessage: "I want to explore how different qualities show up in my experiences."
   }
 };
 
@@ -182,14 +220,15 @@ class TestRunner {
     this.anthropic = new Anthropic({ apiKey });
   }
 
-  async runTest(scenarioKey: string): Promise<TestResult> {
+  async runTest(scenarioKey: string, retryCount: number = 0): Promise<TestResult> {
+    const MAX_RETRIES = 2;
     const scenario = TEST_SCENARIOS[scenarioKey];
     if (!scenario) {
       throw new Error(`Unknown scenario: ${scenarioKey}`);
     }
 
     console.log(`\n${'='.repeat(70)}`);
-    console.log(`🧪 Running test: ${scenario.name}`);
+    console.log(`🧪 Running test: ${scenario.name}${retryCount > 0 ? ` (retry ${retryCount}/${MAX_RETRIES})` : ''}`);
     console.log(`📝 ${scenario.description}`);
     console.log(`${'='.repeat(70)}\n`);
 
@@ -320,6 +359,17 @@ class TestRunner {
       result.messages = this.messages;
       result.toolCalls = this.toolCalls;
       result.conversationFlow = this.conversationFlow;
+      
+      // Retry logic for transient failures
+      const MAX_RETRIES = 2;
+      if (retryCount < MAX_RETRIES && 
+          (result.error.includes('timeout') || 
+           result.error.includes('429') || 
+           result.error.includes('invalid_request_error'))) {
+        console.log(`\n🔄 Retrying test due to transient error...`);
+        await new Promise(resolve => setTimeout(resolve, 2000 * (retryCount + 1))); // Exponential backoff
+        return this.runTest(scenarioKey, retryCount + 1);
+      }
     } finally {
       // Cleanup
       if (this.mcpClient) {
@@ -524,9 +574,132 @@ class TestRunner {
         });
       }
       
-      // Get Claude's response after tool use - this may include more tool uses
-      // Use recursive call to handle any additional tool uses
-      return this.handleClaudeResponse(systemPrompt, this.messages);
+      // Get Claude's response after tool use
+      try {
+        // Create a new request with the updated messages
+        const continuationParams: any = {
+          model: "claude-3-5-sonnet-20241022",
+          max_tokens: 2000,
+          messages: this.messages.map(msg => ({
+            role: msg.role,
+            content: typeof msg.content === 'string' ? msg.content : msg.content
+          }))
+        };
+        
+        if (systemPrompt) {
+          continuationParams.system = systemPrompt;
+        }
+        
+        // Add tools for continuation
+        if (this.mcpClient) {
+          const tools = await this.mcpClient.listTools();
+          continuationParams.tools = tools.tools.map(tool => ({
+            name: tool.name,
+            description: tool.description,
+            input_schema: tool.inputSchema
+          }));
+        }
+        
+        const continuationResponse = await this.anthropic.messages.create(continuationParams);
+        
+        // Process the continuation response for tool uses
+        let hasContinuationToolUse = false;
+        const continuationToolUses: Array<{id: string; name: string; result: {content?: unknown[]; isError?: boolean}}> = [];
+        
+        for (const content of continuationResponse.content) {
+          if (content.type === 'tool_use' && this.mcpClient) {
+            hasContinuationToolUse = true;
+            console.log(`🔧 Continuation has tool use: ${content.name}`);
+            
+            // Process this tool use
+            const toolCall: ToolCall = {
+              timestamp: new Date(),
+              turn: this.turnCount,
+              toolName: content.name,
+              arguments: content.input as Record<string, unknown>
+            };
+            
+            try {
+              const result = await this.mcpClient.callTool({
+                name: content.name,
+                arguments: content.input as Record<string, unknown>
+              });
+              
+              toolCall.result = result;
+              
+              // Display tool response
+              if (result.content && Array.isArray(result.content)) {
+                console.log(`📝 Tool response:`);
+                const textResponses: string[] = [];
+                result.content.forEach((item: unknown, index: number) => {
+                  if (typeof item === 'object' && item !== null && 'type' in item && 'text' in item) {
+                    const typedItem = item as {type: string; text: string};
+                    if (typedItem.type === 'text') {
+                      console.log(`   ${index + 1}. ${typedItem.text}`);
+                      textResponses.push(typedItem.text);
+                    }
+                  }
+                });
+                toolCall.resultText = textResponses;
+              }
+              
+              continuationToolUses.push({
+                id: content.id,
+                name: content.name,
+                result: { content: result.content as unknown[] }
+              });
+            } catch (error) {
+              toolCall.error = error instanceof Error ? error.message : String(error);
+              console.error(`❌ Tool call failed: ${toolCall.error}`);
+              
+              continuationToolUses.push({
+                id: content.id,
+                name: content.name,
+                result: { 
+                  isError: true, 
+                  content: [{ type: 'text', text: `Error: ${toolCall.error}` }] 
+                }
+              });
+            }
+            
+            this.toolCalls.push(toolCall);
+          }
+        }
+        
+        if (hasContinuationToolUse) {
+          // Add the assistant message with tool uses
+          this.messages.push({
+            role: 'assistant',
+            content: continuationResponse.content
+          });
+          
+          // Add tool results
+          for (const toolUse of continuationToolUses) {
+            this.messages.push({
+              role: 'user',
+              content: [{
+                type: 'tool_result',
+                tool_use_id: toolUse.id,
+                content: toolUse.result.content || []
+              }]
+            });
+          }
+          
+          // Recursively handle any further responses
+          return this.handleClaudeResponse(systemPrompt, this.messages);
+        } else {
+          // No more tool uses, add final response
+          const finalResponse = {
+            role: 'assistant' as const,
+            content: continuationResponse.content
+          };
+          this.messages.push(finalResponse);
+          return finalResponse;
+        }
+      } catch (error) {
+        console.error('❌ Continuation failed:', error instanceof Error ? error.message : String(error));
+        throw error;
+      }
     }
 
     // No tool use, just add and return the response
@@ -545,19 +718,28 @@ class TestRunner {
 
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
-  const scenarioFilter = args[0];
+  let scenarioFilter: string | undefined;
+  let runParallel = false;
+  
+  // Parse arguments
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--parallel' || args[i] === '-p') {
+      runParallel = true;
+    } else if (!args[i].startsWith('-')) {
+      scenarioFilter = args[i];
+    }
+  }
   
   console.log('\n🚀 Bridge Test Runner');
   console.log('=====================\n');
 
   // Ensure results directory exists
-  const resultsDir = join(process.cwd(), 'test-results');
+  const resultsDir = join(process.cwd(), 'loop');
   if (!existsSync(resultsDir)) {
     mkdirSync(resultsDir, { recursive: true });
   }
 
   const runner = new TestRunner();
-  const results: TestResult[] = [];
   const startTime = Date.now();
   
   // Run specified scenario or all scenarios
@@ -565,23 +747,95 @@ async function main(): Promise<void> {
     ? [scenarioFilter]
     : Object.keys(TEST_SCENARIOS);
 
-  for (const scenarioKey of scenariosToRun) {
-    if (!TEST_SCENARIOS[scenarioKey]) {
-      console.error(`❌ Unknown scenario: ${scenarioKey}`);
-      continue;
+  // Filter out unknown scenarios
+  const validScenarios = scenariosToRun.filter(key => {
+    if (!TEST_SCENARIOS[key]) {
+      console.error(`❌ Unknown scenario: ${key}`);
+      return false;
     }
-    
+    return true;
+  });
+
+  console.log(`🏃 Running ${validScenarios.length} scenario(s) ${runParallel ? 'in parallel' : 'sequentially'}...\n`);
+
+  const results: TestResult[] = [];
+  
+  if (runParallel) {
+    // Run all scenarios in parallel with timeout
+    const scenarioPromises = validScenarios.map(async (scenarioKey) => {
     try {
-      const result = await runner.runTest(scenarioKey);
-      results.push(result);
+      // Add timeout to prevent hanging
+      const timeoutMs = 60000; // 60 seconds per scenario (increased from 30)
+      const resultPromise = runner.runTest(scenarioKey);
+      
+      const timeoutPromise = new Promise<TestResult>((_, reject) => {
+        const timer = setTimeout(() => {
+          reject(new Error(`Test timeout after ${timeoutMs/1000}s`));
+        }, timeoutMs);
+        
+        // Clean up timer if result comes first
+        resultPromise.then(() => clearTimeout(timer)).catch(() => clearTimeout(timer));
+      });
+      
+      const result = await Promise.race([resultPromise, timeoutPromise]);
       
       // Save individual result immediately
       const individualResultPath = join(resultsDir, `${scenarioKey}-${Date.now()}.json`);
       writeFileSync(individualResultPath, JSON.stringify(result, null, 2));
-      console.log(`💾 Saved individual result: ${individualResultPath}`);
+      console.log(`💾 Saved: ${scenarioKey} → ${individualResultPath}`);
       
+      return result;
     } catch (error) {
-      console.error(`Failed to run scenario ${scenarioKey}:`, error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`❌ Failed ${scenarioKey}: ${errorMessage}`);
+      
+      // Return error result instead of throwing
+      return {
+        scenario: scenarioKey,
+        scenarioName: TEST_SCENARIOS[scenarioKey].name,
+        startTime: new Date(),
+        endTime: new Date(),
+        duration: 0,
+        messages: [],
+        toolCalls: [],
+        conversationFlow: [],
+        error: errorMessage
+      } as TestResult;
+    }
+    });
+
+    // Wait for all scenarios to complete
+    results.push(...await Promise.all(scenarioPromises));
+  } else {
+    // Run scenarios sequentially to avoid resource contention
+    for (const scenarioKey of validScenarios) {
+      try {
+        console.log(`\n🏃 Starting: ${scenarioKey}...`);
+        const result = await runner.runTest(scenarioKey);
+        
+        // Save individual result immediately
+        const individualResultPath = join(resultsDir, `${scenarioKey}-${Date.now()}.json`);
+        writeFileSync(individualResultPath, JSON.stringify(result, null, 2));
+        console.log(`💾 Saved: ${scenarioKey} → ${individualResultPath}`);
+        
+        results.push(result);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error(`❌ Failed ${scenarioKey}: ${errorMessage}`);
+        
+        // Return error result instead of throwing
+        results.push({
+          scenario: scenarioKey,
+          scenarioName: TEST_SCENARIOS[scenarioKey].name,
+          startTime: new Date(),
+          endTime: new Date(),
+          duration: 0,
+          messages: [],
+          toolCalls: [],
+          conversationFlow: [],
+          error: errorMessage
+        } as TestResult);
+      }
     }
   }
 
@@ -616,12 +870,29 @@ async function main(): Promise<void> {
   
   // Display summary table
   console.log('\nScenario Results:');
+  const passed = results.filter(r => !r.error).length;
+  const failed = results.filter(r => r.error).length;
+  
   results.forEach(r => {
     const status = r.error ? '❌' : '✅';
-    const toolCount = r.toolCalls.length;
-    const turns = r.conversationFlow.length;
-    console.log(`${status} ${r.scenarioName}: ${turns} turns, ${toolCount} tool calls, ${r.duration?.toFixed(1)}s`);
+    if (r.error) {
+      console.log(`${status} ${r.scenarioName}: Failed - ${r.error}`);
+    } else {
+      const toolCount = r.toolCalls.length;
+      const turns = r.conversationFlow.length;
+      console.log(`${status} ${r.scenarioName}: ${turns} turns, ${toolCount} tool calls, ${r.duration?.toFixed(1)}s`);
+    }
   });
+  
+  console.log(`\n📋 Summary: ${passed} passed, ${failed} failed`);
+  
+  if (failed > 0) {
+    console.log('\n💡 Troubleshooting tips:');
+    console.log('  - Run tests sequentially (default) to avoid resource contention');
+    console.log('  - Check your API key and rate limits');
+    console.log('  - Run individual tests with: npm run test:bridge:experience');
+    console.log('  - Use --parallel flag only if you have sufficient API capacity');
+  }
   
   console.log('\n✨ Test run complete!');
 }

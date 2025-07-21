@@ -130,6 +130,6 @@ Start with a minimal prototype that:
 
 **Evidence Trail**:
 
-- Test Results: `test-results/test-run-1753069074129.json`
-- Learning Analysis: `/Users/miguel/Git/bridge/test-results/learning-loop-1753069156823.json`
+- Test Results: `loop/test-run-1753069074129.json`
+- Learning Analysis: `/Users/miguel/Git/bridge/loop/learning-loop-1753069156823.json`
 - Validated Insights: Added to LEARNINGS.md (2025-07-21 entry)

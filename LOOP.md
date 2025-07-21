@@ -30,10 +30,10 @@ We use a continuous learning loop to evolve from vision to reality:
 
 ### 3. Experiments Generate Learnings
 - Run learning loop with `npm run loop`
-- Opus 4 analyzes test results using sequential thinking
-- Extracts patterns and insights
-- Updates LEARNINGS.md with evidence trails
-- Documents architecture insights and behavioral patterns
+- Analyzes git history, test results, and documentation
+- Generates prioritized recommendations
+- Provides evidence trails for each recommendation
+- Suggests updates to documentation files
 
 ### 4. Learnings Inform Development
 - Review insights that reveal implementation gaps
@@ -48,8 +48,9 @@ We use a continuous learning loop to evolve from vision to reality:
 1. **Check current state**: Read TECHNICAL.md for what's actually implemented
 2. **Find next priority**: Check OPPORTUNITIES.md for scored features
 3. **Run tests**: Use `npm test` for unit tests, `npm run test:bridge` for scenarios
-4. **Analyze results**: Run `npm run loop` for learning loop analysis
-5. **Update docs**: Keep TECHNICAL.md current with implementation
+4. **Analyze results**: Run `npm run loop` for recommendation-based analysis
+5. **Apply recommendations**: Review and implement suggested changes
+6. **Update docs**: Keep TECHNICAL.md current with implementation
 
 ### Key Commands
 ```bash
@@ -62,8 +63,13 @@ npm run type-check                # Type check without building
 
 # Testing
 npm test                          # Run unit tests with Jest
-npm run test:bridge               # Run all Bridge test scenarios
-npm run test:bridge <scenario>    # Run specific scenario
+npm run test:bridge               # Run all Bridge test scenarios (sequential by default)
+npm run test:bridge -- --parallel # Run all Bridge test scenarios in parallel
+npm run test:bridge:experience    # Test experience tool capture
+npm run test:bridge:recall        # Test recall search patterns
+npm run test:bridge:reconsider    # Test reconsider evolution
+npm run test:bridge:release       # Test release cleanup
+npm run test:bridge:dimensional   # Test dimensional queries
 npm run test:all                  # Run tests then learning loop
 npm run loop                      # Run learning loop analysis
 
@@ -74,9 +80,18 @@ npm run build:all                 # Build and bundle for production
 ```
 
 ### Test Scenarios
-- **autonomous-bridge**: Can AI use Bridge for self-awareness?
-- **with-bridge**: Conversation with Bridge tools available
-- **without-bridge**: Control test without tools
+
+Bridge tests run sequentially by default to avoid resource contention. Each scenario focuses on specific tools:
+
+- **experience-capture**: Tests experience tool with various emotional states
+- **recall-queries**: Tests recall with text, dimensional, and mixed queries  
+- **reconsider-evolution**: Tests reconsider as understanding deepens
+- **release-cleanup**: Tests selective removal of experiences
+- **dimensional-focus**: Deep dive into dimensional filtering patterns
+
+All test results are saved to the `loop/` directory for analysis.
+
+**Note**: Tests include automatic retry logic for transient failures (timeouts, rate limits).
 
 ## How to Generate Opportunities from Gaps
 
@@ -141,22 +156,46 @@ The enhanced loop creates clear evidence trails:
 - Raw data references (e.g., "4/5 users in test-2025-07-18.json")
 - Experiment status tracking (complete, in-progress, pending)
 
-## Autonomous Updates
+## Learning Loop Analysis
 
-Run `npm run loop` to have Opus analyze all documents and automatically update them:
-- **Direct Updates**: Modifies LEARNINGS.md, EXPERIMENTS.md, OPPORTUNITIES.md, and VISION.md directly
-- **Evidence Trails**: Each learning links to specific test results and experiments
-- **Smart Updates**: Preserves existing content, only adds new insights
-- **Test Integration**: Reads JSON test results directly from test-results/scenarios/
-- **Progression Tracking**: Records each loop run in test-results/progression-tracking.json
+Run `npm run loop` to analyze your project and generate recommendations:
 
-### What Gets Updated
+### What It Analyzes
+- **Git History**: Recent commits, development velocity, focus areas
+- **Test Results**: Unit tests with coverage, Bridge integration tests
+- **Documentation**: All markdown files for gaps and inconsistencies
+- **Experiments**: Active experiments that may need completion
+- **Patterns**: Bug fix rates, test coverage, documentation lag
+- **Previous Runs**: Compares with last run to detect changes
 
-- **LEARNINGS.md**: New insights with evidence and confidence levels
-- **EXPERIMENTS.md**: Status updates for completed experiments
-- **OPPORTUNITIES.md**: New questions based on test insights
-- **VISION.md**: Only for critical drift (rare, clearly marked)
+### Automatic Test Execution
+The learning loop will automatically run tests when:
+- No test results exist in the `loop/` directory
+- New commits have been made since the last run
+- Uncommitted changes are detected in the repository
+- Coverage data is older than 24 hours
 
-### File Creation
+### What You Get
+- **Prioritized Recommendations**: Sorted by critical/high/medium/low priority
+- **Evidence-Based**: Each recommendation includes specific evidence
+- **Actionable**: Clear suggestions for what to change
+- **Confidence Levels**: How certain the analysis is (0-100%)
+- **Reports**: Both JSON and Markdown formats in loop/
 
-If any core files don't exist, the loop creates them with proper headers.
+### CLI Options
+```bash
+npm run loop                    # Full analysis (default: 30 days)
+npm run loop -- -d 7           # Analyze last 7 days only
+npm run loop -- -f markdown    # Output markdown only
+npm run loop -- --verbose      # Show detailed progress
+npm run loop -- --help         # Show all options
+```
+
+### Example Recommendations
+- Complete experiments that appear finished
+- Add tests for areas with high bug fix rates
+- Update documentation that's lagging behind features
+- Run Bridge tests if results are missing
+- Improve test coverage in frequently changed files
+
+The loop provides recommendations, not automatic updates, giving you control over what changes to apply.
