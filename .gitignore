@@ -44,6 +44,7 @@ experiences.json
 
 # IDE configs with personal paths
 .cursor/
+!.cursor/rules/
 .idea/
 
 # Backup files
