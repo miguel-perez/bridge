@@ -156,6 +156,29 @@ const SCENARIOS: Record<string, TestScenario> = {
       }
     ]
   },
+  'sequence-analysis': {
+    description: 'Test temporal sequence analysis to reveal patterns over time',
+    turns: [
+      {
+        role: 'user',
+        content: 'I felt stuck yesterday, but today I feel unstuck'
+      },
+      {
+        role: 'assistant',
+        content: 'That\'s an important transition! Let me capture both experiences to track this pattern.',
+        expectedTools: ['experience']
+      },
+      {
+        role: 'user',
+        content: 'Show me my patterns of getting stuck and unstuck over time'
+      },
+      {
+        role: 'assistant',
+        content: 'I\'ll analyze your experiences to find temporal patterns and transitions.',
+        expectedTools: ['recall']
+      }
+    ]
+  },
   'reconsider-evolution': {
     description: 'Test reconsider as understanding deepens',
     turns: [

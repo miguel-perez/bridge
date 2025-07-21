@@ -44,6 +44,26 @@ interface BridgeTestScenario {
   success?: boolean;
   duration?: number;
   errors?: string[];
+  // Enhanced to include test content for better analysis
+  content?: {
+    description?: string;
+    conversationFlow?: Array<{
+      turnNumber: number;
+      userMessage?: string;
+      assistantResponse?: {
+        text?: string;
+        hasToolUse?: boolean;
+        toolsUsed?: string[];
+      };
+    }>;
+    toolCalls?: Array<{
+      toolName: string;
+      arguments: Record<string, unknown>;
+      result?: string;
+      timestamp: string;
+    }>;
+    summary?: string;
+  };
 }
 
 
@@ -104,6 +124,7 @@ interface BridgeTestResults {
     success: boolean;
     duration: number;
     errors?: string[];
+    content?: BridgeTestScenario['content'];
   }>;
   totalDuration: number;
 }
@@ -497,20 +518,27 @@ class TestResultsAggregator {
       mkdirSync(testResultsDir, { recursive: true });
     }
 
-    // Find most recent Bridge test results
-    const files = readdirSync(testResultsDir)
-      .filter(f => f.startsWith('test-run-') && f.endsWith('.json'))
+    // Find all Bridge test result files (both combined and individual)
+    const allFiles = readdirSync(testResultsDir)
+      .filter(f => f.endsWith('.json'))
       .sort()
       .reverse();
 
+    const testRunFiles = allFiles.filter(f => f.startsWith('test-run-'));
+    const individualScenarioFiles = allFiles.filter(f => 
+      !f.startsWith('test-run-') && 
+      !f.startsWith('learning-loop-') && 
+      f.endsWith('.json')
+    );
+
     // Check if we should actually run tests
-    let shouldRunBridgeTests = files.length === 0; // Always run if no results
+    let shouldRunBridgeTests = testRunFiles.length === 0; // Always run if no results
     
     if (!shouldRunBridgeTests && forceRun) {
       // Even with forceRun, check if existing tests are recent enough
-      if (files.length > 0) {
+      if (testRunFiles.length > 0) {
         try {
-          const latestFile = join(testResultsDir, files[0]);
+          const latestFile = join(testResultsDir, testRunFiles[0]);
           const stats = await import('fs').then(fs => fs.statSync(latestFile));
           const ageInHours = (Date.now() - stats.mtimeMs) / (1000 * 60 * 60);
           
@@ -565,7 +593,7 @@ class TestResultsAggregator {
         if (newFiles.length > 0) {
           console.log('    ✓ Bridge tests completed');
           // Continue with normal processing using the new files
-          files.push(...newFiles);
+          testRunFiles.unshift(...newFiles);
         } else {
           console.log('    ⚠️  Bridge tests completed but no results were saved');
           return { scenarios: [], totalDuration: 0 };
@@ -590,64 +618,282 @@ class TestResultsAggregator {
       }
     }
 
+    // Aggregate scenarios from multiple sources
+    const allScenarios = new Map<string, { name: string; success: boolean; duration: number; errors: string[]; content?: BridgeTestScenario['content']; source: string }>();
+    let totalDuration = 0;
+
+    // 1. Process test run files (combined results)
+    for (const file of testRunFiles.slice(0, 3)) { // Look at last 3 test runs
+      try {
+        const filePath = join(testResultsDir, file);
+        const latestResults = JSON.parse(readFileSync(filePath, 'utf-8'));
+
+        // Parse Bridge test format - handle both old and new formats
+        if ('scenarios' in latestResults && latestResults.scenarios) {
+          // Old format: scenarios as object
+          for (const [name, data] of Object.entries(latestResults.scenarios)) {
+            const scenario = data as BridgeTestScenario;
+            const key = `${name}-${file}`;
+            allScenarios.set(key, {
+              name,
+              success: scenario.success || false,
+              duration: scenario.duration || 0,
+              errors: scenario.errors || [],
+              content: scenario.content,
+              source: file
+            });
+            totalDuration += scenario.duration || 0;
+          }
+        } else if ('summary' in latestResults && latestResults.summary?.scenarios) {
+          // New format: scenarios in summary
+          for (const scenario of latestResults.summary.scenarios) {
+            const key = `${scenario.name || scenario.scenario}-${file}`;
+            allScenarios.set(key, {
+              name: scenario.name || scenario.scenario,
+              success: !scenario.error,
+              duration: scenario.duration || 0,
+              errors: scenario.error ? [scenario.error] : [],
+              content: scenario.content,
+              source: file
+            });
+            totalDuration += scenario.duration || 0;
+          }
+        } else if ('results' in latestResults && latestResults.results) {
+          // Alternative format: results array (test-run files)
+          for (const result of latestResults.results) {
+            const key = `${result.scenarioName || result.scenario}-${file}`;
+            
+            // Extract content from the full result
+            const content = this.extractTestContent(result);
+            
+            allScenarios.set(key, {
+              name: result.scenarioName || result.scenario,
+              success: !result.error,
+              duration: result.duration || 0,
+              errors: result.error ? [result.error] : [],
+              content,
+              source: file
+            });
+            totalDuration += result.duration || 0;
+          }
+        }
+      } catch (error) {
+        console.warn(`    ⚠️  Could not parse test run file: ${file}`);
+      }
+    }
+
+    // 2. Process individual scenario files
+    for (const file of individualScenarioFiles.slice(0, 20)) { // Look at last 20 individual files
+      try {
+        const filePath = join(testResultsDir, file);
+        const scenarioResult = JSON.parse(readFileSync(filePath, 'utf-8'));
+        
+        // Extract scenario name from filename (e.g., "clustering-analysis-1234567890.json")
+        const scenarioName = file.replace(/-\d{13}\.json$/, '');
+        
+        // Extract content from the full test result
+        const content = this.extractTestContent(scenarioResult);
+        
+        const key = `${scenarioName}-${file}`;
+        allScenarios.set(key, {
+          name: scenarioName,
+          success: !scenarioResult.error,
+          duration: scenarioResult.duration || 0,
+          errors: scenarioResult.error ? [scenarioResult.error] : [],
+          content,
+          source: file
+        });
+        totalDuration += scenarioResult.duration || 0;
+      } catch (error) {
+        console.warn(`    ⚠️  Could not parse individual scenario file: ${file}`);
+      }
+    }
+
+    // Convert to final format, deduplicating by scenario name (prefer scenarios with content)
+    const scenarios: Array<{ name: string; success: boolean; duration: number; errors: string[]; content?: BridgeTestScenario['content'] }> = [];
+    const scenarioMap = new Map<string, { name: string; success: boolean; duration: number; errors: string[]; content?: BridgeTestScenario['content']; source: string }>();
+    
+    // Sort by source file timestamp (most recent first) to prioritize recent results
+    const sortedEntries = Array.from(allScenarios.entries()).sort((a, b) => {
+      const aTimestamp = parseInt(a[1].source.match(/\d{13}/)?.[0] || '0');
+      const bTimestamp = parseInt(b[1].source.match(/\d{13}/)?.[0] || '0');
+      return bTimestamp - aTimestamp;
+    });
+
+    for (const [, scenario] of sortedEntries) {
+      const existing = scenarioMap.get(scenario.name);
+      
+      // Prefer scenarios with content, or keep the most recent if both have/ don't have content
+      if (!existing || (scenario.content && !existing.content)) {
+        scenarioMap.set(scenario.name, scenario);
+        console.log(`    📋 ${existing ? 'Replacing' : 'Adding'} scenario "${scenario.name}" from ${scenario.source} (content: ${scenario.content ? 'YES' : 'NO'})`);
+      } else {
+        console.log(`    📋 Skipping scenario "${scenario.name}" from ${scenario.source} (content: ${scenario.content ? 'YES' : 'NO'}) - keeping existing from ${existing.source}`);
+      }
+    }
+    
+    // Convert map to array
+    for (const scenario of scenarioMap.values()) {
+      scenarios.push({
+        name: scenario.name,
+        success: scenario.success,
+        duration: scenario.duration,
+        errors: scenario.errors,
+        content: scenario.content
+      });
+    }
+      
+    console.log(`    ✓ Loaded ${scenarios.length} unique Bridge test scenarios from ${allScenarios.size} total results`);
+    console.log(`    ✓ Success rate: ${scenarios.filter(s => s.success).length}/${scenarios.length}`);
+    
+    // Log any failed scenarios
+    const failed = scenarios.filter(s => !s.success);
+    if (failed.length > 0) {
+      console.log(`    ⚠️  Failed scenarios: ${failed.map(s => s.name).join(', ')}`);
+    }
+
+    // Log scenario names for debugging
+    const scenarioNames = scenarios.map(s => s.name).sort();
+    console.log(`    📋 Scenarios found: ${scenarioNames.join(', ')}`);
+    
+    // Log content extraction results
+    const scenariosWithContent = scenarios.filter(s => s.content);
+    console.log(`    📋 Scenarios with content: ${scenariosWithContent.length}/${scenarios.length}`);
+    scenariosWithContent.forEach(s => {
+      console.log(`    📋 "${s.name}": ${s.content?.description || 'No description'}`);
+    });
+
+    return { scenarios, totalDuration };
+  }
+
+  /**
+   * Extract meaningful content from a test result for analysis
+   */
+  private extractTestContent(scenarioResult: any): BridgeTestScenario['content'] | undefined {
     try {
-      const latestResults = JSON.parse(
-        readFileSync(join(testResultsDir, files[0]), 'utf-8')
-      );
+      const content: BridgeTestScenario['content'] = {};
 
-      const scenarios = [];
-      let totalDuration = 0;
-
-      // Parse Bridge test format - handle both old and new formats
-      if ('scenarios' in latestResults && latestResults.scenarios) {
-        // Old format: scenarios as object
-        for (const [name, data] of Object.entries(latestResults.scenarios)) {
-          const scenario = data as BridgeTestScenario;
-          scenarios.push({
-            name,
-            success: scenario.success || false,
-            duration: scenario.duration || 0,
-            errors: scenario.errors || []
-          });
-          totalDuration += scenario.duration || 0;
+      // Extract conversation flow
+      if (scenarioResult.conversationFlow && Array.isArray(scenarioResult.conversationFlow)) {
+        content.conversationFlow = scenarioResult.conversationFlow.map((turn: any) => ({
+          turnNumber: turn.turnNumber || 0,
+          userMessage: turn.userMessage,
+          assistantResponse: {
+            text: turn.assistantResponse?.text,
+            hasToolUse: turn.assistantResponse?.hasToolUse || false,
+            toolsUsed: turn.assistantResponse?.toolsUsed || []
+          }
+        }));
+      } else if (scenarioResult.messages && Array.isArray(scenarioResult.messages)) {
+        // Extract conversation flow from messages array
+        const conversationFlow: any[] = [];
+        let currentTurn: any = {};
+        
+        scenarioResult.messages.forEach((message: any, index: number) => {
+          if (message.role === 'user') {
+            if (currentTurn.userMessage) {
+              // Start new turn
+              conversationFlow.push(currentTurn);
+              currentTurn = {};
+            }
+            currentTurn.turnNumber = Math.floor(index / 2) + 1;
+            currentTurn.userMessage = typeof message.content === 'string' 
+              ? message.content 
+              : message.content[0]?.text || '';
+          } else if (message.role === 'assistant') {
+            if (message.content && Array.isArray(message.content)) {
+              const textContent = message.content.find((c: any) => c.type === 'text');
+              const toolContent = message.content.find((c: any) => c.type === 'tool_use');
+              
+              currentTurn.assistantResponse = {
+                text: textContent?.text || '',
+                hasToolUse: !!toolContent,
+                toolsUsed: toolContent ? [toolContent.name] : []
+              };
+            } else if (typeof message.content === 'string') {
+              currentTurn.assistantResponse = {
+                text: message.content,
+                hasToolUse: false,
+                toolsUsed: []
+              };
+            }
+          }
+        });
+        
+        // Add the last turn
+        if (currentTurn.userMessage || currentTurn.assistantResponse) {
+          conversationFlow.push(currentTurn);
         }
-      } else if ('summary' in latestResults && latestResults.summary?.scenarios) {
-        // New format: scenarios in summary
-        for (const scenario of latestResults.summary.scenarios) {
-          scenarios.push({
-            name: scenario.name || scenario.scenario,
-            success: !scenario.error,
-            duration: scenario.duration || 0,
-            errors: scenario.error ? [scenario.error] : []
-          });
-          totalDuration += scenario.duration || 0;
-        }
-      } else if ('results' in latestResults && latestResults.results) {
-        // Alternative format: results array
-        for (const result of latestResults.results) {
-          scenarios.push({
-            name: result.scenarioName || result.scenario,
-            success: !result.error,
-            duration: result.duration || 0,
-            errors: result.error ? [result.error] : []
-          });
-          totalDuration += result.duration || 0;
+        
+        if (conversationFlow.length > 0) {
+          content.conversationFlow = conversationFlow;
         }
       }
-      
-      console.log(`    ✓ Loaded ${scenarios.length} Bridge test scenarios from ${files[0]}`);
-      console.log(`    ✓ Success rate: ${scenarios.filter(s => s.success).length}/${scenarios.length}`);
-      
-      // Log any failed scenarios
-      const failed = scenarios.filter(s => !s.success);
-      if (failed.length > 0) {
-        console.log(`    ⚠️  Failed scenarios: ${failed.map(s => s.name).join(', ')}`);
+
+      // Extract tool calls
+      if (scenarioResult.toolCalls && Array.isArray(scenarioResult.toolCalls)) {
+        content.toolCalls = scenarioResult.toolCalls.map((call: any) => ({
+          toolName: call.toolName || 'unknown',
+          arguments: call.arguments || {},
+          result: call.resultText ? call.resultText.join('\n') : call.result,
+          timestamp: call.timestamp || ''
+        }));
+      } else if (scenarioResult.messages && Array.isArray(scenarioResult.messages)) {
+        // Extract tool calls from messages array
+        const toolCalls: any[] = [];
+        
+        scenarioResult.messages.forEach((message: any) => {
+          if (message.role === 'assistant' && message.content && Array.isArray(message.content)) {
+            const toolUse = message.content.find((c: any) => c.type === 'tool_use');
+            if (toolUse) {
+              toolCalls.push({
+                toolName: toolUse.name || 'unknown',
+                arguments: toolUse.input || {},
+                result: '', // Will be filled by next tool_result message
+                timestamp: ''
+              });
+            }
+          } else if (message.role === 'user' && message.content && Array.isArray(message.content)) {
+            const toolResult = message.content.find((c: any) => c.type === 'tool_result');
+            if (toolResult && toolCalls.length > 0) {
+              // Find the most recent tool call and add the result
+              const lastToolCall = toolCalls[toolCalls.length - 1];
+              if (toolResult.content && Array.isArray(toolResult.content)) {
+                lastToolCall.result = toolResult.content.map((c: any) => c.text || '').join('\n');
+              }
+            }
+          }
+        });
+        
+        if (toolCalls.length > 0) {
+          content.toolCalls = toolCalls;
+        }
       }
 
-      return { scenarios, totalDuration };
+      // Extract summary
+      if (scenarioResult.summary) {
+        content.summary = scenarioResult.summary;
+      }
+
+      // Extract description from scenario name or messages
+      if (scenarioResult.messages && Array.isArray(scenarioResult.messages)) {
+        const firstUserMessage = scenarioResult.messages.find((m: any) => m.role === 'user');
+        if (firstUserMessage?.content) {
+          content.description = typeof firstUserMessage.content === 'string' 
+            ? firstUserMessage.content 
+            : firstUserMessage.content[0]?.text || '';
+        }
+      }
+
+      const hasContent = Object.keys(content).length > 0;
+      if (hasContent) {
+        console.log(`    📋 Extracted content for test: ${scenarioResult.scenarioName || scenarioResult.scenario}`);
+      }
+      
+      return hasContent ? content : undefined;
     } catch (error) {
-      console.warn('    ⚠️  Could not parse Bridge test results');
-      return { scenarios: [], totalDuration: 0 };
+      console.warn('    ⚠️  Could not extract test content:', error);
+      return undefined;
     }
   }
 
@@ -1016,11 +1262,49 @@ function generateRecommendations(
   const recommendations: Recommendation[] = [];
   let idCounter = 1;
 
-  // Pattern 1: High bug fix rate
+  // Pattern 1: Test evidence analysis (HIGHEST PRIORITY)
+  if (testContext.bridgeTests.scenarios.length > 0) {
+    const successfulTests = testContext.bridgeTests.scenarios.filter(s => s.success);
+    const testSuccessRate = successfulTests.length / testContext.bridgeTests.scenarios.length;
+    
+    if (testSuccessRate === 1.0) {
+      recommendations.push({
+        id: `REC-${idCounter++}`,
+        type: 'test',
+        priority: 'high',
+        title: 'All Bridge tests passing - excellent test coverage',
+        description: `All ${testContext.bridgeTests.scenarios.length} Bridge test scenarios are passing successfully.`,
+        rationale: 'Comprehensive test coverage with 100% pass rate indicates high code quality and reliability.',
+        evidence: [
+          `✅ ${successfulTests.length}/${testContext.bridgeTests.scenarios.length} scenarios passing`,
+          `📋 Scenarios: ${testContext.bridgeTests.scenarios.map(s => s.name).join(', ')}`,
+          `⏱️ Total test duration: ${testContext.bridgeTests.totalDuration.toFixed(1)}s`
+        ],
+        confidenceLevel: 0.95
+      });
+    } else if (testSuccessRate < 0.8) {
+      recommendations.push({
+        id: `REC-${idCounter++}`,
+        type: 'test',
+        priority: 'critical',
+        title: 'Bridge test failures detected - immediate attention needed',
+        description: `${Math.round((1 - testSuccessRate) * 100)}% of Bridge test scenarios are failing.`,
+        rationale: 'Test failures indicate broken functionality that needs immediate attention.',
+        evidence: [
+          `❌ ${testContext.bridgeTests.scenarios.length - successfulTests.length} failed scenarios`,
+          `✅ ${successfulTests.length} passing scenarios`,
+          `Failed: ${testContext.bridgeTests.scenarios.filter(s => !s.success).map(s => s.name).join(', ')}`
+        ],
+        confidenceLevel: 1.0
+      });
+    }
+  }
+
+  // Pattern 2: High bug fix rate (only if test evidence is insufficient)
   const fixCommits = gitContext.recentCommits.filter(c => c.type === 'fix');
   const fixRate = fixCommits.length / gitContext.recentCommits.length;
 
-  if (fixRate > 0.3) {
+  if (fixRate > 0.3 && testContext.bridgeTests.scenarios.length === 0) {
     recommendations.push({
       id: `REC-${idCounter++}`,
       type: 'process',
@@ -1132,6 +1416,22 @@ function generateRecommendations(
   } else {
     const failedScenarios = testContext.bridgeTests.scenarios.filter(s => !s.success);
     if (failedScenarios.length > 0) {
+      const evidence = [
+        `${failedScenarios.length} scenarios failing`,
+        ...failedScenarios.map(s => `${s.name}: ${s.errors?.join(', ') || 'Unknown error'}`)
+      ];
+      
+      // Add test content context for failed scenarios
+      failedScenarios.forEach(scenario => {
+        if (scenario.content?.description) {
+          evidence.push(`📋 Failed test "${scenario.name}" was testing: "${scenario.content.description}"`);
+        }
+        if (scenario.content?.toolCalls && scenario.content.toolCalls.length > 0) {
+          const toolsUsed = [...new Set(scenario.content.toolCalls.map(call => call.toolName))];
+          evidence.push(`🔧 Failed test "${scenario.name}" used tools: ${toolsUsed.join(', ')}`);
+        }
+      });
+      
       recommendations.push({
         id: `REC-${idCounter++}`,
         type: 'test',
@@ -1139,16 +1439,51 @@ function generateRecommendations(
         title: `Bridge integration tests failing: ${failedScenarios.map(s => s.name).join(', ')}`,
         description: 'Bridge scenario tests are failing, indicating potential integration issues.',
         rationale: 'Integration tests catch issues that unit tests might miss, especially in tool interactions.',
-        evidence: [
-          `${failedScenarios.length} scenarios failing`,
-          ...failedScenarios.map(s => `${s.name}: ${s.errors?.join(', ') || 'Unknown error'}`)
-        ],
+        evidence,
         confidenceLevel: 0.9
       });
     }
   }
 
-  // Pattern 7: Low test coverage
+  // Pattern 7: Successful Bridge test scenarios with content
+  const successfulScenarios = testContext.bridgeTests.scenarios.filter(s => s.success);
+  if (successfulScenarios.length > 0) {
+    const scenariosWithContent = successfulScenarios.filter(s => s.content);
+    if (scenariosWithContent.length > 0) {
+      recommendations.push({
+        id: `REC-${idCounter++}`,
+        type: 'test',
+        priority: 'low',
+        title: `Bridge integration tests passing with detailed evidence`,
+        description: `${successfulScenarios.length} Bridge scenarios are passing, providing strong validation of functionality.`,
+        rationale: 'Successful integration tests provide confidence that the MCP tools work correctly in real scenarios.',
+        evidence: [
+          `${successfulScenarios.length} scenarios passing successfully`,
+          ...scenariosWithContent.slice(0, 3).map(s => 
+            `✅ "${s.name}": ${s.content?.description || 'No description'}`
+          ),
+          ...scenariosWithContent.slice(0, 2).flatMap(s => {
+            const evidence: string[] = [];
+            if (s.content?.conversationFlow && s.content.conversationFlow.length > 0) {
+              evidence.push(`\n📝 **Sample conversation from "${s.name}":**`);
+              s.content.conversationFlow.slice(0, 2).forEach((turn) => {
+                if (turn.userMessage) {
+                  evidence.push(`   **User:** ${turn.userMessage}`);
+                }
+                if (turn.assistantResponse?.text) {
+                  evidence.push(`   **Assistant:** ${turn.assistantResponse.text.substring(0, 150)}${turn.assistantResponse.text.length > 150 ? '...' : ''}`);
+                }
+              });
+            }
+            return evidence;
+          })
+        ],
+        confidenceLevel: 0.8
+      });
+    }
+  }
+
+  // Pattern 8: Low test coverage
   if (testContext.unitTests.coverage) {
     const { lines, branches, functions } = testContext.unitTests.coverage;
     const avgCoverage = (lines + branches + functions) / 3;
@@ -1173,7 +1508,7 @@ function generateRecommendations(
     }
   }
 
-  // Pattern 8: Documentation gaps
+  // Pattern 9: Documentation gaps
   if (docContext && docContext.docGaps.length > 0) {
     recommendations.push({
       id: `REC-${idCounter++}`,
@@ -1187,10 +1522,14 @@ function generateRecommendations(
     });
   }
 
-  // Pattern 9: Active experiments completion check
-  if (docContext && docContext.activeExperiments.length > 0) {
+  // Pattern 10: Dynamic experiment completion detection (STATELESS)
+  if (docContext && docContext.activeExperiments.length > 0 && testContext.bridgeTests.scenarios.length > 0) {
     const experimentsDoc = docContext.documents.get('EXPERIMENTS.md') || '';
     const activeExps = docContext.activeExperiments;
+    
+    // Get all available test scenarios for dynamic matching
+    const availableScenarios = testContext.bridgeTests.scenarios.map(s => s.name);
+    console.log(`    🔍 Analyzing ${activeExps.length} active experiments against ${availableScenarios.length} test scenarios`);
     
     activeExps.forEach(exp => {
       // Parse experiment details from document
@@ -1202,125 +1541,211 @@ function generateRecommendations(
       const evidence: string[] = [];
       let completionConfidence = 0;
       
+      // Extract experiment title and purpose for dynamic keyword generation
+      const titleMatch = expContent.match(new RegExp(`${exp}:\\s*(.+)`));
+      const title = titleMatch ? titleMatch[1].trim() : exp;
+      
+      const purposeMatch = expContent.match(/\*\*Purpose\*\*:\s*(.+)/);
+      const purpose = purposeMatch ? purposeMatch[1].trim() : '';
+      
       // Extract measurable outcomes from experiment
       const outcomesMatch = expContent.match(/\*\*Measurable Outcomes\*\*:(.*?)(?=\*\*|$)/s);
       const outcomes = outcomesMatch ? outcomesMatch[1].split('\n').filter(line => line.trim().startsWith('-')) : [];
       
-      // Extract test scenarios
-      const scenariosMatch = expContent.match(/\*\*Test Scenarios\*\*:(.*?)(?=\*\*|$)/s);
-      const scenarios = scenariosMatch ? scenariosMatch[1].split('\n').filter(line => line.trim().match(/^\d+\./)) : [];
+
       
-      // Enhanced experiment detection logic
-      // Extract keywords from experiment content for better matching
+      // DYNAMIC KEYWORD GENERATION (STATELESS)
       const expKeywords: string[] = [];
       
-      // Extract keywords from experiment title and purpose
-      const purposeMatch = expContent.match(/\*\*Purpose\*\*:\s*(.+)/);
-      if (purposeMatch) {
-        const purposeWords = purposeMatch[1].toLowerCase().split(/\s+/)
-          .filter(w => w.length > 3 && !['test', 'the', 'and', 'for', 'with'].includes(w));
-        expKeywords.push(...purposeWords);
-      }
+      // Extract keywords from title and purpose
+      const allText = `${title} ${purpose}`.toLowerCase();
+      const words = allText.split(/\s+/)
+        .filter(w => w.length > 3 && !['test', 'the', 'and', 'for', 'with', 'that', 'this', 'from', 'into', 'during', 'before', 'after', 'under', 'over', 'between', 'among'].includes(w))
+        .map(w => w.replace(/[^\w]/g, '')); // Remove punctuation
       
-      // Add specific keywords based on experiment ID
-      if (exp === 'EXP-002') {
-        expKeywords.push('dimensional', 'filtering', 'scoring', 'unified', 'recall');
-      } else if (exp === 'EXP-003') {
-        expKeywords.push('learning', 'loop', 'recommendations', 'analysis', 'intelligent');
-      }
+      expKeywords.push(...words);
       
-      // Check for evidence of completion
-      outcomes.forEach(() => {
+      // DYNAMIC SCENARIO MATCHING (STATELESS)
+      const matchedScenarios: string[] = [];
+      
+      // Match test scenarios based on keyword similarity
+      availableScenarios.forEach(scenarioName => {
+        const scenarioLower = scenarioName.toLowerCase();
         
-        // Enhanced commit matching using keywords
-        const relatedCommits = gitContext.recentCommits.filter(c => {
-          const msg = c.message.toLowerCase();
-          const expLower = exp.toLowerCase();
-          
-          // Direct mention of experiment
-          if (msg.includes(expLower)) return true;
-          
-          // Match based on experiment keywords
-          const keywordMatches = expKeywords.filter(keyword => msg.includes(keyword)).length;
-          if (keywordMatches >= 2) return true;
-          
-          // Specific pattern matching
-          if (exp === 'EXP-002' && (msg.includes('dimensional') || msg.includes('recall') || msg.includes('filtering'))) {
-            return true;
-          }
-          if (exp === 'EXP-003' && msg.includes('learning loop')) {
-            return true;
-          }
-          
-          return false;
-        });
+        // Check for direct keyword matches
+        const keywordMatches = expKeywords.filter(keyword => 
+          scenarioLower.includes(keyword) || keyword.includes(scenarioLower)
+        ).length;
         
-        if (relatedCommits.length > 0) {
-          evidence.push(`${relatedCommits.length} commits implementing features: ${relatedCommits.slice(0, 3).map(c => c.message.split('\n')[0]).join(', ')}`);
-          completionConfidence += 0.2;
+        // Check for semantic similarity (common patterns)
+        const semanticMatches = [
+          // Common scenario patterns
+          { pattern: 'clustering', keywords: ['cluster', 'group', 'similar', 'pattern'] },
+          { pattern: 'dimensional', keywords: ['dimension', 'filter', 'recall', 'query'] },
+          { pattern: 'experience', keywords: ['experience', 'capture', 'remember'] },
+          { pattern: 'recall', keywords: ['recall', 'search', 'find', 'query'] },
+          { pattern: 'reconsider', keywords: ['reconsider', 'update', 'evolve', 'change'] },
+          { pattern: 'release', keywords: ['release', 'delete', 'remove', 'cleanup'] },
+          { pattern: 'pattern', keywords: ['pattern', 'realization', 'reflect', 'insight'] }
+        ];
+        
+        const semanticMatch = semanticMatches.find(match => 
+          scenarioLower.includes(match.pattern) && 
+          match.keywords.some(keyword => expKeywords.includes(keyword))
+        );
+        
+        if (keywordMatches >= 2 || semanticMatch) {
+          matchedScenarios.push(scenarioName);
         }
       });
       
-      // Enhanced test scenario matching
-      if (testContext.bridgeTests.scenarios.length > 0) {
-        let matchedScenarios: string[] = [];
+      // PRIORITY 1: TEST EVIDENCE (Highest Weight)
+      if (matchedScenarios.length > 0) {
+        const matchedTests = testContext.bridgeTests.scenarios.filter(s => matchedScenarios.includes(s.name));
+        const successfulMatches = matchedTests.filter(t => t.success);
         
-        // Match test scenarios to experiments based on content
-        if (exp === 'EXP-002') {
-          // Dimensional filtering experiment
-          const dimensionalTests = testContext.bridgeTests.scenarios.filter(s => 
-            s.name.toLowerCase().includes('dimensional') || 
-            s.name.toLowerCase().includes('recall') ||
-            s.name.toLowerCase().includes('dimensional-focus') ||
-            s.name.toLowerCase().includes('recall-queries')
-          );
+        if (successfulMatches.length > 0) {
+          evidence.push(`✅ ${successfulMatches.length} matching test scenarios passing: ${successfulMatches.map(t => t.name).join(', ')}`);
+          completionConfidence += 0.6; // High weight for passing tests
           
-          if (dimensionalTests.length > 0 && dimensionalTests.every(t => t.success)) {
-            matchedScenarios = dimensionalTests.map(t => t.name);
-            evidence.push(`Dimensional filtering tests passing: ${matchedScenarios.join(', ')}`);
-            completionConfidence += 0.4;
+          // Add specific test content citations
+          successfulMatches.forEach(test => {
+            if (test.content?.description) {
+              evidence.push(`📋 Test "${test.name}": "${test.content.description}"`);
+            }
+            if (test.content?.toolCalls && test.content.toolCalls.length > 0) {
+              const toolsUsed = [...new Set(test.content.toolCalls.map(call => call.toolName))];
+              evidence.push(`🔧 Test "${test.name}" used tools: ${toolsUsed.join(', ')}`);
+            }
+            if (test.content?.conversationFlow && test.content.conversationFlow.length > 0) {
+              const turns = test.content.conversationFlow.length;
+              evidence.push(`💬 Test "${test.name}" completed ${turns} conversation turns`);
+            }
+            
+            // Add formatted conversation flow
+            if (test.content?.conversationFlow && test.content.conversationFlow.length > 0) {
+              evidence.push(`\n📝 **Conversation Flow for "${test.name}":**`);
+              test.content.conversationFlow.forEach((turn, index) => {
+                if (turn.userMessage) {
+                  evidence.push(`   **Turn ${turn.turnNumber || index + 1} - User:** ${turn.userMessage}`);
+                }
+                if (turn.assistantResponse?.text) {
+                  evidence.push(`   **Turn ${turn.turnNumber || index + 1} - Assistant:** ${turn.assistantResponse.text.substring(0, 200)}${turn.assistantResponse.text.length > 200 ? '...' : ''}`);
+                }
+              });
+            }
+            
+            // Add formatted tool calls
+            if (test.content?.toolCalls && test.content.toolCalls.length > 0) {
+              evidence.push(`\n🔧 **Tool Calls for "${test.name}":**`);
+              test.content.toolCalls.forEach((call, index) => {
+                const args = Object.keys(call.arguments).length > 0 
+                  ? `(${Object.entries(call.arguments).map(([k, v]) => `${k}: ${JSON.stringify(v)}`).join(', ')})`
+                  : '';
+                evidence.push(`   **${index + 1}.** ${call.toolName}${args}`);
+                if (call.result) {
+                  const resultPreview = call.result.length > 100 
+                    ? call.result.substring(0, 100) + '...' 
+                    : call.result;
+                  evidence.push(`      → ${resultPreview}`);
+                }
+              });
+            }
+          });
+        }
+        
+        if (successfulMatches.length === matchedTests.length && matchedTests.length > 0) {
+          evidence.push(`✅ All ${matchedTests.length} matched scenarios passing`);
+          completionConfidence += 0.3; // Additional weight for complete test success
+        }
+      }
+      
+      // PRIORITY 2: IMPLEMENTATION EVIDENCE (Medium Weight)
+      // Dynamically check for implementation files based on experiment keywords
+      const implementationChecks = [
+        { keyword: 'clustering', file: 'src/services/clustering.ts' },
+        { keyword: 'learning', file: 'src/scripts/learning-loop.ts' },
+        { keyword: 'scoring', file: 'src/services/unified-scoring.ts' },
+        { keyword: 'embedding', file: 'src/services/embeddings.ts' },
+        { keyword: 'recall', file: 'src/services/recall.ts' },
+        { keyword: 'experience', file: 'src/services/experience.ts' }
+      ];
+      
+      implementationChecks.forEach(check => {
+        if (expKeywords.some(keyword => keyword.includes(check.keyword) || check.keyword.includes(keyword))) {
+          if (existsSync(join(process.cwd(), check.file))) {
+            evidence.push(`✅ ${check.keyword} implementation exists: ${check.file}`);
+            completionConfidence += 0.2;
           }
-        } else if (exp === 'EXP-003') {
-          // Learning loop experiment
-          // Check if learning loop has been running successfully
-          const loopRuns = testContext.recentTestRuns.filter(r => r.type === 'learning-loop');
-          if (loopRuns.length > 0) {
-            const successfulLoops = loopRuns.filter(r => r.success).length;
-            evidence.push(`Learning loop has ${loopRuns.length} recent runs (${successfulLoops} successful)`);
+          
+          // Check for corresponding test file
+          const testFile = check.file.replace('.ts', '.test.ts');
+          if (existsSync(join(process.cwd(), testFile))) {
+            evidence.push(`✅ ${check.keyword} unit tests exist: ${testFile}`);
+            completionConfidence += 0.1;
+          }
+        }
+      });
+      
+      // PRIORITY 3: COMMIT EVIDENCE (Lower Weight - Only if tests are insufficient)
+      // Only consider commits if we don't have strong test evidence
+      if (completionConfidence < 0.5) {
+        outcomes.forEach(() => {
+          // Enhanced commit matching using keywords
+          const relatedCommits = gitContext.recentCommits.filter(c => {
+            const msg = c.message.toLowerCase();
+            const expLower = exp.toLowerCase();
+            
+            // Direct mention of experiment
+            if (msg.includes(expLower)) return true;
+            
+            // Match based on experiment keywords
+            const keywordMatches = expKeywords.filter(keyword => msg.includes(keyword)).length;
+            if (keywordMatches >= 2) return true;
+            
+            // Specific pattern matching
+            if (exp === 'EXP-002' && (msg.includes('dimensional') || msg.includes('recall') || msg.includes('filtering'))) {
+              return true;
+            }
+            if (exp === 'EXP-003' && msg.includes('learning loop')) {
+              return true;
+            }
+            if (exp === 'EXP-006' && (msg.includes('clustering') || msg.includes('cluster'))) {
+              return true;
+            }
+            
+            return false;
+          });
+          
+          if (relatedCommits.length > 0) {
+            evidence.push(`📝 ${relatedCommits.length} commits implementing features: ${relatedCommits.slice(0, 3).map(c => c.message.split('\n')[0]).join(', ')}`);
+            completionConfidence += 0.1; // Lower weight for commits
+          }
+        });
+      }
+      
+      // Additional learning loop evidence for EXP-003
+      if (exp === 'EXP-003') {
+        const loopRuns = testContext.recentTestRuns.filter(r => r.type === 'learning-loop');
+        if (loopRuns.length > 0) {
+          const successfulLoops = loopRuns.filter(r => r.success).length;
+          evidence.push(`✅ Learning loop has ${loopRuns.length} recent runs (${successfulLoops} successful)`);
+          completionConfidence += 0.3;
+        }
+        
+        // Check if learning loop files exist
+        const loopDir = join(process.cwd(), 'loop');
+        if (existsSync(loopDir)) {
+          const loopFiles = readdirSync(loopDir);
+          const recsFiles = loopFiles.filter(f => f.includes('recommendations'));
+          if (recsFiles.length > 0) {
+            evidence.push(`✅ Recommendations generated in ${recsFiles.length} runs`);
             completionConfidence += 0.3;
           }
-          
-          // Check if learning loop files exist
-          const loopDir = join(process.cwd(), 'loop');
-          if (existsSync(loopDir)) {
-            const loopFiles = readdirSync(loopDir);
-            const recsFiles = loopFiles.filter(f => f.includes('recommendations'));
-            if (recsFiles.length > 0) {
-              evidence.push(`Recommendations generated in ${recsFiles.length} runs`);
-              completionConfidence += 0.3;
-            }
-          }
-        }
-        
-        // General test success evidence
-        const successfulTests = testContext.bridgeTests.scenarios.filter(s => s.success);
-        if (successfulTests.length === testContext.bridgeTests.scenarios.length && testContext.bridgeTests.scenarios.length > 0) {
-          evidence.push(`All ${successfulTests.length} Bridge test scenarios passing`);
-          completionConfidence += 0.2;
         }
       }
       
-      // Check for implementation files mentioned in scenarios
-      scenarios.forEach(scenario => {
-        if (scenario.includes('learning loop') && existsSync(join(process.cwd(), 'src/scripts/learning-loop.ts'))) {
-          evidence.push('Learning loop implementation exists');
-          completionConfidence += 0.2;
-        }
-        if (scenario.includes('unified scoring') && existsSync(join(process.cwd(), 'src/services/unified-scoring.ts'))) {
-          evidence.push('Unified scoring implementation exists');
-          completionConfidence += 0.2;
-        }
-      });
+
       
       // Generate recommendations based on evidence
       if (evidence.length >= 2 && completionConfidence >= 0.5) {
@@ -1346,11 +1771,11 @@ function generateRecommendations(
       } else if (evidence.length > 0) {
         // Partial evidence - suggest what's missing
         const missingEvidence: string[] = [];
-        if (!evidence.some(e => e.includes('commits'))) {
-          missingEvidence.push('No related commits found');
+        if (matchedScenarios.length === 0) {
+          missingEvidence.push(`No matching test scenarios found (available: ${availableScenarios.join(', ')})`);
         }
-        if (!evidence.some(e => e.includes('tests'))) {
-          missingEvidence.push('No matching test scenarios');
+        if (!evidence.some(e => e.includes('✅'))) {
+          missingEvidence.push('No passing test evidence found');
         }
         
         recommendations.push({
@@ -1359,7 +1784,7 @@ function generateRecommendations(
           priority: 'low',
           title: `${exp} shows partial progress`,
           description: `${exp} has some evidence of progress but may need additional work.`,
-          rationale: 'Active experiments should show clear progress through commits and tests.',
+          rationale: 'Active experiments should show clear progress through tests and implementation.',
           evidence: [...evidence, ...missingEvidence],
           confidenceLevel: completionConfidence
         });
@@ -1380,6 +1805,7 @@ function generateRecommendations(
         rationale: 'Regular experiment review ensures documentation stays current.',
         evidence: [
           `${activeExps.length} experiments in active state`,
+          `Available test scenarios: ${availableScenarios.join(', ')}`,
           'Consider documenting progress or completion'
         ],
         confidenceLevel: 0.4
