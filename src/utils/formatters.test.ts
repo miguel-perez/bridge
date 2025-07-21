@@ -56,7 +56,7 @@ jest.mock('./messages.js', () => ({
       daysAgo: '{days} days ago'
     }
   },
-  formatMessage: jest.fn((template: string, params: Record<string, any>) => {
+  formatMessage: jest.fn((template: string, params: Record<string, unknown>) => {
     let result = template;
     for (const [key, value] of Object.entries(params)) {
       result = result.replace(`{${key}}`, String(value));

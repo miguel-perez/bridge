@@ -13,7 +13,7 @@ import {
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 
 // Helper to create a delayed promise
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const delay = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
 
 describe('Timeout Utilities', () => {
   beforeEach(() => {
@@ -90,7 +90,7 @@ describe('Timeout Utilities', () => {
 
   describe('createTimeoutWrapper', () => {
     it('should wrap async function with timeout', async () => {
-      const asyncFn = async (value: string) => {
+      const asyncFn = async (value: string): Promise<string> => {
         await delay(50);
         return `result: ${value}`;
       };
@@ -102,7 +102,7 @@ describe('Timeout Utilities', () => {
     });
 
     it('should timeout wrapped function', async () => {
-      const asyncFn = async (value: string) => {
+      const asyncFn = async (value: string): Promise<string> => {
         await delay(200);
         return `result: ${value}`;
       };
@@ -114,7 +114,7 @@ describe('Timeout Utilities', () => {
     });
 
     it('should handle multiple arguments', async () => {
-      const asyncFn = async (a: number, b: number) => {
+      const asyncFn = async (a: number, b: number): Promise<number> => {
         await delay(10);
         return a + b;
       };

@@ -457,7 +457,7 @@ class TestRunner {
     }));
 
     // Create message with tool support if MCP client is available
-    const requestParams: any = {
+    const requestParams: Record<string, unknown> = {
       model: "claude-3-5-sonnet-20241022",
       max_tokens: 2000,
       messages: formattedMessages

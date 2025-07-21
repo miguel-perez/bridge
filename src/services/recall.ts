@@ -341,13 +341,13 @@ export async function search(input: RecallInput): Promise<RecallServiceResponse>
     }));
 
     // Keep only records with non-zero scores
-    const finalRecords = recordsWithRelevance.filter((r: any) => r._relevance.score > 0);
+    const finalRecords = recordsWithRelevance.filter((r: SourceRecord & { _relevance: { score: number } }) => r._relevance.score > 0);
     addDebugLog(`Score filter applied: ${recordsWithRelevance.length} -> ${finalRecords.length} records`);
 
     // Apply sorting (default to created date for recency)
     const sortType = input.sort || 'created';
     addDebugLog(`Applying sort: ${sortType}`);
-    finalRecords.sort((a: any, b: any) => {
+    finalRecords.sort((a: SourceRecord & { _relevance: { score: number } }, b: SourceRecord & { _relevance: { score: number } }) => {
       switch (sortType) {
         case 'created': {
           const aTime = new Date(a.created).getTime();

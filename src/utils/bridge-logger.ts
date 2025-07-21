@@ -23,9 +23,9 @@ function createBridgeLogger(): BridgeLogger {
   // Removed: const shouldLog = ...; // No longer needed since all methods are no-ops
   
   return {
-    log: () => {},
-    warn: () => {},
-    error: () => {},
+    log: (): void => {},
+    warn: (): void => {},
+    error: (): void => {},
   };
 }
 

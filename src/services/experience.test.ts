@@ -98,7 +98,7 @@ describe('ExperienceService', () => {
         initialize: jest.fn().mockResolvedValue(undefined),
         generateEmbedding: jest.fn().mockRejectedValue(new Error('Embedding generation failed'))
       };
-      (EmbeddingService as jest.MockedClass<typeof EmbeddingService>).mockImplementation(() => mockEmbeddingService as any);
+      (EmbeddingService as jest.MockedClass<typeof EmbeddingService>).mockImplementation(() => mockEmbeddingService as unknown as EmbeddingService);
 
       const input = {
         source: 'Test experience with embedding failure',

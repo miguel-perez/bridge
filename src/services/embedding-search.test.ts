@@ -68,7 +68,7 @@ describe('Embedding Search Service', () => {
     });
 
     it('should return empty array when embeddings is null', async () => {
-      mockGetAllEmbeddings.mockResolvedValue(null as any);
+      mockGetAllEmbeddings.mockResolvedValue(null as unknown as EmbeddingRecord[]);
 
       const results = await findSimilarByEmbedding([1, 0, 0]);
 

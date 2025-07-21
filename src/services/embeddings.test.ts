@@ -38,7 +38,7 @@ describe('EmbeddingService', () => {
     mockRateLimiterEnforce = jest.fn(async (fn) => fn());
     (RateLimiter as jest.MockedClass<typeof RateLimiter>).mockImplementation(() => ({
       enforce: mockRateLimiterEnforce
-    } as any));
+    } as unknown as RateLimiter));
   });
 
   afterEach(() => {

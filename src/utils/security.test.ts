@@ -77,7 +77,7 @@ describe('Security Utilities', () => {
     });
 
     it('should throw error for non-string input', () => {
-      expect(() => sanitizeUserInput(123 as any))
+      expect(() => sanitizeUserInput(123 as unknown as string))
         .toThrow(new McpError(ErrorCode.InvalidParams, 'Input must be a string'));
     });
 
@@ -133,7 +133,7 @@ describe('Security Utilities', () => {
     });
 
     it('should throw error for non-string path', () => {
-      expect(() => validateFileAccess(null as any))
+      expect(() => validateFileAccess(null as unknown as string))
         .toThrow(new McpError(ErrorCode.InvalidParams, 'File path is required'));
     });
 
@@ -215,7 +215,7 @@ describe('Security Utilities', () => {
     });
 
     it('should throw error for non-numeric values', () => {
-      expect(() => validateNumericRange('5' as any, 0, 10, 'test'))
+      expect(() => validateNumericRange('5' as unknown as number, 0, 10, 'test'))
         .toThrow(new McpError(ErrorCode.InvalidParams, 'test must be a valid number'));
     });
 
@@ -362,7 +362,7 @@ describe('Security Utilities', () => {
     });
 
     it('should throw error for non-array input', () => {
-      expect(() => validateArraySize('not an array' as any, 5, 'test'))
+      expect(() => validateArraySize('not an array' as unknown as unknown[], 5, 'test'))
         .toThrow(new McpError(ErrorCode.InvalidParams, 'test must be an array'));
     });
 
@@ -385,7 +385,7 @@ describe('Security Utilities', () => {
     it('should return undefined for falsy input', () => {
       expect(validatePerspective(undefined)).toBeUndefined();
       expect(validatePerspective('')).toBeUndefined();
-      expect(validatePerspective(null as any)).toBeUndefined();
+      expect(validatePerspective(null as unknown as string)).toBeUndefined();
     });
 
     it('should sanitize and return valid perspective', () => {
@@ -421,7 +421,7 @@ describe('Security Utilities', () => {
     it('should return undefined for falsy input', () => {
       expect(validateExperiencer(undefined)).toBeUndefined();
       expect(validateExperiencer('')).toBeUndefined();
-      expect(validateExperiencer(null as any)).toBeUndefined();
+      expect(validateExperiencer(null as unknown as string)).toBeUndefined();
     });
 
     it('should sanitize and return valid experiencer', () => {

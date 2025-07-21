@@ -327,8 +327,8 @@ class TestResultsAggregator {
   private async runUnitTests(forceRun: boolean = false): Promise<UnitTestResults> {
     console.log('  🧪 Checking unit test results...');
     
-    let testResults: any = null;
-    let coverageData: any = null;
+    let testResults: Record<string, unknown> | null = null;
+    let coverageData: Record<string, unknown> | null = null;
     
     // Check if we need to run tests (no recent coverage data)
     const coveragePath = join(this.repoPath, 'coverage', 'coverage-summary.json');
