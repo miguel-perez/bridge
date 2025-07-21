@@ -47,10 +47,11 @@ let customStorageDir: string | null = null;
 // ============================================================================
 
 /**
- * Sets custom storage configuration.
- * @param config - Configuration options
- * @param config.dataFile - Custom data file path
- * @param config.storageDir - Custom storage directory
+ * Sets custom storage configuration
+ * @remarks
+ * Allows customization of data file and storage directory paths.
+ * @param dataFile - Custom data file path
+ * @param storageDir - Custom storage directory
  */
 export function setStorageConfig({ dataFile, storageDir }: { dataFile?: string; storageDir?: string }): void {
   if (dataFile) customDataFile = dataFile;

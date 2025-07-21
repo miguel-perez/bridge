@@ -253,7 +253,10 @@ export function generateReleaseExample(): ReleaseInput {
 }
 
 /**
- *
+ * Generates an example batch experience input for testing and documentation
+ * @remarks
+ * Provides a realistic example of multiple experience capture in a single request.
+ * @returns Example batch experience input with multiple experiences
  */
 export function generateBatchExperienceExample(): ExperienceInput {
   return {
@@ -279,7 +282,10 @@ export function generateBatchExperienceExample(): ExperienceInput {
 }
 
 /**
- *
+ * Generates an example batch search input for testing and documentation
+ * @remarks
+ * Provides a realistic example of multiple search queries in a single request.
+ * @returns Example batch search input with multiple queries
  */
 export function generateBatchSearchExample(): SearchInput {
   return {
@@ -300,49 +306,77 @@ export function generateBatchSearchExample(): SearchInput {
 
 // Type guards using Zod schemas
 /**
- *
+ * Type guard to check if value is a valid ExperienceInput
+ * @remarks
+ * Uses Zod schema validation to ensure type safety for experience inputs.
+ * @param value - Value to validate
+ * @returns True if value matches ExperienceInput schema
  */
 export function isExperienceInput(value: unknown): value is ExperienceInput {
   return ExperienceInputSchema.safeParse(value).success;
 }
 
 /**
- *
+ * Type guard to check if value is a valid SearchInput
+ * @remarks
+ * Uses Zod schema validation to ensure type safety for search inputs.
+ * @param value - Value to validate
+ * @returns True if value matches SearchInput schema
  */
 export function isSearchInput(value: unknown): value is SearchInput {
   return SearchInputSchema.safeParse(value).success;
 }
 
 /**
- *
+ * Type guard to check if value is a valid ReconsiderInput
+ * @remarks
+ * Uses Zod schema validation to ensure type safety for reconsider inputs.
+ * @param value - Value to validate
+ * @returns True if value matches ReconsiderInput schema
  */
 export function isReconsiderInput(value: unknown): value is ReconsiderInput {
   return ReconsiderInputSchema.safeParse(value).success;
 }
 
 /**
- *
+ * Type guard to check if value is a valid ReleaseInput
+ * @remarks
+ * Uses Zod schema validation to ensure type safety for release inputs.
+ * @param value - Value to validate
+ * @returns True if value matches ReleaseInput schema
  */
 export function isReleaseInput(value: unknown): value is ReleaseInput {
   return ReleaseInputSchema.safeParse(value).success;
 }
 
 /**
- *
+ * Type guard to check if value is a valid ToolResult
+ * @remarks
+ * Uses Zod schema validation to ensure type safety for tool results.
+ * @param value - Value to validate
+ * @returns True if value matches ToolResult schema
  */
 export function isToolResult(value: unknown): value is ToolResult {
   return ToolResultSchema.safeParse(value).success;
 }
 
 /**
- *
+ * Type guard to check if value is a valid ToolTextContent
+ * @remarks
+ * Uses Zod schema validation to ensure type safety for tool text content.
+ * @param value - Value to validate
+ * @returns True if value matches ToolTextContent schema
  */
 export function isToolTextContent(value: unknown): value is ToolTextContent {
   return ToolTextContentSchema.safeParse(value).success;
 }
 
 /**
- *
+ * Type guard to check if value is a valid ExperienceObject
+ * @remarks
+ * Uses Zod schema validation to ensure type safety for experience objects.
+ * @param value - Value to validate
+ * @returns True if value matches ExperienceObject schema
  */
 export function isExperienceObject(value: unknown): value is z.infer<typeof ExperienceObject> {
   return ExperienceObject.safeParse(value).success;
@@ -352,56 +386,88 @@ export function isExperienceObject(value: unknown): value is z.infer<typeof Expe
 
 // Utility type guards
 /**
- *
+ * Type guard to check if ExperienceInput is a single experience
+ * @remarks
+ * Distinguishes between single and batch experience inputs for proper handling.
+ * @param value - ExperienceInput to check
+ * @returns True if input contains single source field
  */
 export function isSingleExperienceInput(value: ExperienceInput): value is ExperienceInput & { source: string } {
   return 'source' in value && typeof value.source === 'string';
 }
 
 /**
- *
+ * Type guard to check if ExperienceInput is a batch experience
+ * @remarks
+ * Distinguishes between single and batch experience inputs for proper handling.
+ * @param value - ExperienceInput to check
+ * @returns True if input contains experiences array
  */
 export function isBatchExperienceInput(value: ExperienceInput): value is ExperienceInput & { experiences: NonNullable<ExperienceInput['experiences']> } {
   return 'experiences' in value && Array.isArray(value.experiences) && value.experiences.length > 0;
 }
 
 /**
- *
+ * Type guard to check if SearchInput is a single search
+ * @remarks
+ * Distinguishes between single and batch search inputs for proper handling.
+ * @param value - SearchInput to check
+ * @returns True if input contains single query field
  */
 export function isSingleSearchInput(value: SearchInput): value is SearchInput & { query?: string } {
   return !('searches' in value) || !value.searches;
 }
 
 /**
- *
+ * Type guard to check if SearchInput is a batch search
+ * @remarks
+ * Distinguishes between single and batch search inputs for proper handling.
+ * @param value - SearchInput to check
+ * @returns True if input contains searches array
  */
 export function isBatchSearchInput(value: SearchInput): value is SearchInput & { searches: NonNullable<SearchInput['searches']> } {
   return 'searches' in value && Array.isArray(value.searches) && value.searches.length > 0;
 }
 
 /**
- *
+ * Type guard to check if ReconsiderInput is a single reconsideration
+ * @remarks
+ * Distinguishes between single and batch reconsideration inputs for proper handling.
+ * @param value - ReconsiderInput to check
+ * @returns True if input contains single id field
  */
 export function isSingleReconsiderInput(value: ReconsiderInput): value is ReconsiderInput & { id?: string } {
   return !('reconsiderations' in value) || !value.reconsiderations;
 }
 
 /**
- *
+ * Type guard to check if ReconsiderInput is a batch reconsideration
+ * @remarks
+ * Distinguishes between single and batch reconsideration inputs for proper handling.
+ * @param value - ReconsiderInput to check
+ * @returns True if input contains reconsiderations array
  */
 export function isBatchReconsiderInput(value: ReconsiderInput): value is ReconsiderInput & { reconsiderations: NonNullable<ReconsiderInput['reconsiderations']> } {
   return 'reconsiderations' in value && Array.isArray(value.reconsiderations) && value.reconsiderations.length > 0;
 }
 
 /**
- *
+ * Type guard to check if ReleaseInput is a single release
+ * @remarks
+ * Distinguishes between single and batch release inputs for proper handling.
+ * @param value - ReleaseInput to check
+ * @returns True if input contains single id field
  */
 export function isSingleReleaseInput(value: ReleaseInput): value is ReleaseInput & { id?: string } {
   return !('releases' in value) || !value.releases;
 }
 
 /**
- *
+ * Type guard to check if ReleaseInput is a batch release
+ * @remarks
+ * Distinguishes between single and batch release inputs for proper handling.
+ * @param value - ReleaseInput to check
+ * @returns True if input contains releases array
  */
 export function isBatchReleaseInput(value: ReleaseInput): value is ReleaseInput & { releases: NonNullable<ReleaseInput['releases']> } {
   return 'releases' in value && Array.isArray(value.releases) && value.releases.length > 0;

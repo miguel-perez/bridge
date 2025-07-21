@@ -148,7 +148,12 @@ export class CircuitBreaker {
   private state: 'closed' | 'open' | 'half-open' = 'closed';
   
   /**
-   *
+   * Creates a new CircuitBreaker instance
+   * @remarks
+   * Implements circuit breaker pattern for external service calls with configurable thresholds.
+   * @param failureThreshold - Number of failures before opening circuit
+   * @param timeoutMs - Timeout for individual operations in milliseconds
+   * @param resetTimeoutMs - Time to wait before attempting reset in milliseconds
    */
   constructor(
     private readonly failureThreshold: number = 5,
@@ -157,7 +162,13 @@ export class CircuitBreaker {
   ) {}
   
   /**
-   *
+   * Executes operation with circuit breaker protection
+   * @remarks
+   * Manages circuit state and applies timeout protection to operations.
+   * @param operation - Function to execute
+   * @param operationName - Name for error reporting
+   * @returns Result of the operation
+   * @throws McpError When circuit is open or operation times out
    */
   async execute<T>(operation: () => Promise<T>, operationName: string): Promise<T> {
     if (this.state === 'open') {
@@ -210,7 +221,10 @@ export class CircuitBreaker {
   }
   
   /**
-   *
+   * Gets current circuit breaker state
+   * @remarks
+   * Returns current state, failure count, and last failure time for monitoring.
+   * @returns Object with circuit state information
    */
   getState(): { state: string; failures: number; lastFailTime: number } {
     return {

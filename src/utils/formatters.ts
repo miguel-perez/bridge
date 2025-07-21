@@ -3,8 +3,6 @@
  * 
  * This module provides formatting functions for search results and other
  * data structures, ensuring consistent output formatting across the application.
- * 
- * @module utils/formatters
  */
 
 import type { SearchResult } from '../core/search.js';

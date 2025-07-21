@@ -712,6 +712,12 @@ class TestRunner {
 // MAIN EXECUTION
 // ============================================================================
 
+/**
+ * Main entry point for Bridge test runner
+ * @remarks
+ * Executes Bridge integration tests with Claude and MCP server.
+ * Supports both sequential and parallel execution modes.
+ */
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   let scenarioFilter: string | undefined;

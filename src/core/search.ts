@@ -259,7 +259,11 @@ export function sortResults(results: SearchResult[], sortBy: SortOption): Search
 // ============================================================================
 
 /**
- * Performs a semantic search on experiential data.
+ * Performs a semantic search on experiential data
+ * @remarks
+ * Note: Semantic search functionality has been moved to the search service.
+ * This function is maintained for backward compatibility but returns empty results.
+ * Use the search service for full semantic search capabilities.
  * @param query - The search query
  * @param options - Search options
  * @returns Search results with relevance scores

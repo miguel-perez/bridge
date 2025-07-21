@@ -193,7 +193,11 @@ export class EmbeddingService {
   }
 
   /**
-   *
+   * Generates embeddings for multiple texts
+   * @remarks
+   * Processes multiple texts in parallel for efficiency.
+   * @param texts - Array of texts to convert to embeddings
+   * @returns Array of vector representations
    */
   async generateEmbeddings(texts: string[]): Promise<number[][]> {
     await this.initialize();
@@ -216,14 +220,19 @@ export class EmbeddingService {
   }
 
   /**
-   *
+   * Clears the embedding cache
+   * @remarks
+   * Removes all cached embeddings to free memory.
    */
   clearCache(): void {
     this.cache.clear();
   }
 
   /**
-   *
+   * Gets the current cache size
+   * @remarks
+   * Returns the number of cached embeddings for monitoring.
+   * @returns Number of cached embeddings
    */
   getCacheSize(): number {
     return this.cache.size;

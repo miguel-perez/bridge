@@ -159,7 +159,12 @@ interface RelevanceBreakdown {
 }
 
 /**
- *
+ * Formats relevance breakdown for search results
+ * @remarks
+ * Converts relevance scores to percentage format for display.
+ * Handles missing or null breakdown data gracefully.
+ * @param breakdown - The relevance breakdown object
+ * @returns Formatted relevance breakdown string
  */
 export function formatRelevanceBreakdown(breakdown: RelevanceBreakdown | null | undefined): string {
   if (!breakdown) return 'No breakdown available';

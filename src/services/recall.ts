@@ -162,7 +162,12 @@ async function applyTemporalFilter(records: SourceRecord[], filter: string | { s
 
 // Main search function
 /**
- *
+ * Performs comprehensive recall search with filtering and scoring
+ * @remarks
+ * Main entry point for recall operations. Handles semantic search, filtering,
+ * and unified scoring to return relevant experiences.
+ * @param input - Recall input with query and filter parameters
+ * @returns Recall service response with results and debug information
  */
 export async function search(input: RecallInput): Promise<RecallServiceResponse> {
   const debugInfo: RecallServiceResponse['debug'] = {
@@ -473,11 +478,18 @@ function determineNoResultsReason(input: RecallInput, debugInfo: RecallServiceRe
 // }
 
 /**
- *
+ * Service wrapper for recall operations
+ * @remarks
+ * Provides a simplified interface to the comprehensive search function.
+ * Maintains backward compatibility with existing code.
  */
 export class RecallService {
   /**
-   *
+   * Performs recall search with simplified interface
+   * @remarks
+   * Wraps the comprehensive search function for backward compatibility.
+   * @param input - Recall input parameters
+   * @returns Search results with statistics
    */
   async search(input: RecallInput): Promise<{ results: RecallServiceResult[], stats?: Record<string, unknown> }> {
     // Use the comprehensive search function that includes all filtering logic

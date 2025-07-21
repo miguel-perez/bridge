@@ -368,7 +368,12 @@ async function generateWithClaude(totalExperiences: number = DEFAULT_TOTAL): Pro
 }
 
 /**
- *
+ * Ensures test data is available for Bridge testing
+ * @remarks
+ * Checks for cached test data and generates new data if needed.
+ * Supports both cached and fresh data generation modes.
+ * @param options - Configuration options for data generation
+ * @param options.total - Total number of experiences to generate
  */
 export async function ensureTestData(options?: { total?: number }): Promise<void> {
   // Check cache
@@ -421,9 +426,11 @@ async function loadCachedData(cached: CachedTestData): Promise<void> {
   console.log('✅ Test data loaded successfully');
 }
 
-// Clear cache function
 /**
- *
+ * Clears cached test data and progress files
+ * @remarks
+ * Removes both the cache file and progress tracking file.
+ * Useful for forcing fresh data generation.
  */
 export function clearTestDataCache(): void {
   if (existsSync(CACHE_FILE)) {

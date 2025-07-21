@@ -167,7 +167,10 @@ class GitContextManager {
   private repoPath: string;
 
   /**
-   *
+   * Creates a new GitContextManager instance
+   * @remarks
+   * Manages git repository context for learning loop analysis.
+   * @param repoPath - Path to the git repository
    */
   constructor(repoPath: string = process.cwd()) {
     this.repoPath = repoPath;
@@ -877,7 +880,13 @@ function shouldRunTests(gitManager: GitContextManager, previousRun: PreviousRunI
 }
 
 /**
- *
+ * Runs the learning loop analysis
+ * @remarks
+ * Main analysis function that aggregates git, test, and documentation context
+ * to generate actionable recommendations for Bridge development.
+ * @param options - Analysis configuration options
+ * @param options.days - Number of days of history to analyze
+ * @returns Comprehensive analysis report with recommendations
  */
 async function runAnalysis(options: { days?: number } = {}): Promise<AnalysisReport> {
   const startTime = Date.now();

@@ -64,12 +64,13 @@ function expandPath(path: string): string {
 }
 
 /**
- * Get the default data file path for Bridge experiential data.
+ * Get the default data file path for Bridge experiential data
+ * @remarks
  * Priority order:
  *   1. User config from DXT (BRIDGE_FILE_PATH env var)
  *   2. Environment variable BRIDGE_FILE_PATH
  *   3. Default: ~/bridge.json (cross-platform)
- * @returns {string} Path to bridge.json
+ * @returns Path to bridge.json
  */
 function getDefaultDataFilePath(): string {
   const userConfigPath = process.env.BRIDGE_FILE_PATH;

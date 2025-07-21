@@ -85,7 +85,7 @@ export const Messages = {
 
 /**
  * Simple template replacement function
- * @param template - Template string with {key} placeholders
+ * @param template - Template string with \{key\} placeholders
  * @param values - Object with replacement values
  * @returns String with placeholders replaced
  */
