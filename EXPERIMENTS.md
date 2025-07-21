@@ -19,6 +19,47 @@ Each experiment follows this format for learning loop compatibility:
 
 ## Active Experiments
 
+### EXP-007: Enhanced Learning Loop with Rich Test Evidence
+**Status**: Active  
+**Purpose**: Enhance learning loop to provide beautifully formatted conversation flow and tool calls for more compelling recommendations
+
+**Test Scenarios**:
+1. **Conversation Flow Extraction Evidence**
+   - Input: Test results with conversationFlow or messages arrays
+   - Expected: Learning loop extracts and formats user-assistant interactions
+   - Evidence: Loop shows formatted conversation turns with proper indentation
+
+2. **Tool Call Formatting Evidence**
+   - Input: Test results with tool calls and their arguments/results
+   - Expected: Learning loop displays tool calls with arguments and results
+   - Evidence: Loop shows formatted tool calls like "experience(source: '...', ...) → Result"
+
+3. **Content Prioritization Evidence**
+   - Input: Multiple test result files (combined and individual)
+   - Expected: Learning loop prioritizes scenarios with rich content over summary data
+   - Evidence: Loop prefers individual scenario files with conversation flow over combined files
+
+4. **Evidence Citation Evidence**
+   - Input: Successful and failed test scenarios
+   - Expected: Learning loop cites specific test content in recommendations
+   - Evidence: Loop includes conversation snippets and tool usage in evidence arrays
+
+**Measurable Outcomes**:
+- ✅ Conversation flow is extracted from both conversationFlow and messages arrays
+- ✅ Tool calls show arguments and results in readable format
+- ✅ Content-rich scenarios are prioritized over summary-only scenarios
+- ✅ Test evidence includes actual user-assistant interactions
+- ✅ Recommendations are more compelling and actionable
+- ✅ Long content is appropriately truncated for readability
+
+**Learning Questions**:
+- Does rich test evidence make recommendations more compelling?
+- Is the conversation flow extraction robust across different test formats?
+- Does tool call formatting help developers understand test behavior?
+- How does content prioritization affect recommendation quality?
+
+**Evidence Trail**: Learning loop analysis results, recommendation quality assessment, developer feedback
+
 ### EXP-006: Clustering Similar Experiences
 **Status**: Active  
 **Purpose**: Enable Bridge to reveal patterns by automatically clustering similar experiences

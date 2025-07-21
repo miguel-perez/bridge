@@ -9,6 +9,49 @@ This document captures validated insights from Bridge experiments with clear evi
 
 ## Core Behavioral Insights
 
+### 2025-07-21 - Enhanced Learning Loop with Rich Test Evidence
+
+**Key Achievement**: Dramatically improved learning loop recommendations by extracting and formatting conversation flow and tool calls from test results
+
+**Technical Implementation**:
+- Enhanced `extractTestContent` method to parse conversation flow from both `conversationFlow` and `messages` arrays
+- Added tool call extraction with argument formatting and result display
+- Implemented content prioritization logic to prefer rich individual scenario files over summary combined files
+- Added conversation flow and tool call formatting in recommendation evidence arrays
+- Implemented smart truncation to keep recommendations readable while showing meaningful content
+
+**Impact Metrics**:
+- **Evidence Quality**: Recommendations now include actual user-assistant interactions instead of just metadata
+- **Readability**: Beautiful formatting with proper indentation and structure
+- **Actionability**: Developers can see exactly what was tested and how tools were used
+- **Comprehensiveness**: Extracts content from multiple test result formats for maximum coverage
+
+**Example Enhanced Evidence**:
+```
+📝 **Conversation Flow for "clustering-analysis":**
+   **Turn 1 - User:** I feel anxious about the presentation tomorrow
+   **Turn 1 - Assistant:** I've captured this experience with the following qualities...
+   **Turn 3 - User:** I also feel anxious about the meeting next week
+   **Turn 3 - Assistant:** I can see from your past experiences...
+
+🔧 **Tool Calls for "clustering-analysis":**
+   **1.** experience(source: "I feel anxious about the presentation tomorrow", ...)
+      → Experienceed (embodied.sensing, mood.closed, time.future)
+   **2.** recall(query: "anxiety nervousness meeting presentation", ...)
+      → Found 6 experiences
+```
+
+**Technical Patterns Discovered**:
+- Test results can contain conversation data in multiple formats (`conversationFlow`, `messages`)
+- Tool calls need both argument display and result preview for full understanding
+- Content prioritization significantly improves recommendation quality
+- Truncation at 150-200 characters maintains readability while showing context
+
+**Evidence Trail**:
+- Implementation: Enhanced `src/scripts/learning-loop.ts` with conversation flow and tool call extraction
+- Test results: `loop/recommendations-1753137452110.md` shows dramatically improved evidence quality
+- Commit: 65e6f1b "feat: enhance learning loop with beautifully formatted conversation flow and tool calls"
+
 ### 2025-07-21 - Development Velocity and Quality Patterns
 
 **Key Finding**: High bug fix rate (33% of commits) reveals reactive development pattern
@@ -179,13 +222,15 @@ potential functionality issue (now fixed)
 - Reconsider and release operations ✓
 - Test infrastructure with learning loop ✓
 - **Pattern Realizations with reflects field** ✓ (EXP-005 completed)
+- **Clustering Analysis** ✓ (EXP-006 completed)
+- **Enhanced Learning Loop with Rich Test Evidence** ✓ (EXP-007 completed)
 
 **Vision Features Not Yet Implemented**:
 
-1. **Clustering Analysis** (OPPORTUNITIES.md Score: 378)
-   - No `{ as: "clusters" }` option in recall
-   - Cannot group similar experiences automatically
-   - Missing thematic analysis capabilities
+1. **Dimension Filtering** (OPPORTUNITIES.md Score: 280)
+   - Cannot filter by dimension presence/absence
+   - No support for complex dimension queries like `{ embodied: { present: true }, time: { present: false } }`
+   - Missing sophisticated query patterns
 
 2. **Sequence Analysis** (OPPORTUNITIES.md Score: 240)
    - No `{ as: "sequence" }` option in recall
@@ -206,7 +251,7 @@ potential functionality issue (now fixed)
 - Test results directory management needs improvement
 - Embedding service limited to 35% coverage due to mocking constraints
 
-**Next Priority**: Based on scoring, clustering analysis (Score: 378) should be implemented next as it builds on the pattern realizations foundation and would enable automatic grouping of similar experiences
+**Next Priority**: Based on scoring, dimension filtering (Score: 280) should be implemented next as it would enable sophisticated queries by dimension presence/absence, building on the clustering analysis foundation
 
 ### 2025-07-21 - Development Velocity and Quality Patterns (Learning Loop Analysis)
 
