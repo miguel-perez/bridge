@@ -8,6 +8,26 @@ This document captures validated insights from Bridge experiments with clear evi
 
 ## Core Behavioral Insights
 
+### 2025-07-21 - Development Velocity and Quality Patterns
+
+**Key Finding**: High bug fix rate (33% of commits) reveals reactive development pattern
+
+**Insights Gained**:
+- 96 fix commits out of 290 total indicates stability challenges
+- Low test coverage (26%) correlates with high bug fix rate
+- Most bugs occur in frequently changed areas (src directory)
+- Integration test timeouts revealed need for performance optimization
+
+**Recommendations Applied**:
+- Shortened test scenarios from 4-7 turns to 3 turns each
+- Implemented smart test re-run logic (only when code changes)
+- Enhanced learning loop to detect experiment completion automatically
+
+**Evidence Trail**:
+- Learning loop analysis: `loop/recommendations-1753111683976.md`
+- Related commits: c8c1372 (shortened tests), 74211eb (enhanced loop)
+- Test coverage metrics: 27.4% lines, 19.1% branches, 31.5% functions
+
 ### 2025-07-21 - Dimensional Filtering Fix
 
 **Key Achievement**: Fixed critical bug where partial dimension matching caused false positives (e.g., "mood.closed" matching "mood.open")

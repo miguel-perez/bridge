@@ -1,52 +1,60 @@
 # Bridge Technical Documentation
 
-This document covers the technical details of Bridge's operations, with particular focus on the enhanced recall() functionality.
+This document covers the technical details of Bridge's operations, clearly distinguishing between current capabilities and planned features.
 
-## Operations Overview
+## Current Operations (Implemented)
 
 Bridge provides four core operations:
 
 1. **experience()** - Captures meaningful moments with quality signatures
-2. **recall()** - Searches, clusters, and sequences experiences
+2. **recall()** - Searches experiences with semantic, dimensional, and temporal scoring
 3. **reconsider()** - Updates experiences as understanding deepens
 4. **release()** - Removes experiences that no longer serve
 
-## Enhanced recall() Functionality
+## Current recall() Functionality
 
-The recall() operation goes beyond simple search to provide sophisticated analysis through two distinct modes:
+The recall() operation provides sophisticated search capabilities:
 
-### Basic Usage
+### What's Working Now
 
 ```javascript
 // Simple semantic search
 recall("breakthrough moments")
 
-// Analyze single dimension
-recall("purpose")
+// Pure dimensional query (exact matches only)
+recall("mood.closed")
 
-// Analyze dimension interactions
-recall(["focus", "time"])
+// Array dimensional query (requires ALL dimensions)
+recall(["embodied.thinking", "mood.open"])
 
-// Advanced analysis with options
-recall("mood", { as: "sequence", timespan: "last week" })
+// Mixed queries (semantic + dimensional)
+recall("stuck", { dimensions: ["mood.closed"] })
+
+// Time-based filtering
+recall("recent")  // or "last"
+
+// Filtering by experiencer
+recall("", { experiencer: "Human" })
 ```
 
-### Parameters
+### Current Parameters
 
-- **query/dimensions**: What to analyze
-  - String: Semantic search or single dimension analysis
-  - Array: Multi-dimensional analysis
-  - Empty: Analyze all experiences
+- **query**: Search query (string)
+  - Text for semantic search
+  - Dimension name for exact dimension matching
+  - Array of dimensions for multi-dimensional filtering
+  - "recent" or "last" for latest experiences
 
-- **options**: How to analyze (optional)
-  - `as`: Analysis mode ("clusters", "sequence")
-  - `filter`: Narrow the scope
+- **options**: Optional filters
+  - `experiencer`: Filter by who experienced it
+  - `limit`: Maximum results to return
+  - `offset`: For pagination
 
 ## Planned Features (Not Yet Implemented)
 
-### Future: Clusters Mode
+### Future: Advanced Analysis Modes
 
-*Status: Planned (See OPPORTUNITIES.md - Score: 378)*
+*Status: Planned - These features appear in documentation but are NOT functional*
 
 Will group experiences by similarity to reveal patterns in different states.
 
