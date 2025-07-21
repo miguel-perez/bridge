@@ -59,6 +59,16 @@ export function setStorageConfig({ dataFile, storageDir }: { dataFile?: string; 
 }
 
 /**
+ * Resets storage configuration to defaults (for test use only).
+ * @remarks
+ * Clears any custom data file and storage directory settings.
+ */
+export function resetStorageConfig(): void {
+  customDataFile = null;
+  customStorageDir = null;
+}
+
+/**
  * Gets the storage directory path.
  * @returns The storage directory path
  */
