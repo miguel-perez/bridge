@@ -67,13 +67,6 @@ Bridge uses a barbell strategy to balance stability with growth potential:
 **Urgency: 7** - Critical for unlocking Bridge's full potential and enabling complex queries  
 **Score: 504** ⭐ **High-Certainty Foundation**
 
-### HMW create extensible recall architecture?
-
-**Impact: 6** - Technical foundation that enables all future recall features  
-**Certainty: 9** - Clear refactoring of current parameter structure  
-**Urgency: 8** - Critical blocker for implementing advanced recall features  
-**Score: 432** ⭐ **High-Certainty Foundation**
-
 ### HMW establish continuous quality monitoring?
 
 **Impact: 6** - Prevents regression and maintains the high quality achieved  
@@ -133,15 +126,14 @@ Bridge prioritizes using a barbell strategy for antifragility - balancing high-c
 
 ### **High-Certainty Foundation (Implement First)**
 1. **Sophisticated Dimensional Filtering** (Score: 504) - Critical for unlocking Bridge's full potential
-2. **Extensible Recall Architecture** (Score: 432) - Technical foundation for all future features
-3. **Continuous Quality Monitoring** (Score: 270) - Maintain high quality standards
-4. **Natural Language Temporal Queries** (Score: 180) - Convenience feature
+2. **Continuous Quality Monitoring** (Score: 270) - Maintain high quality standards
+3. **Natural Language Temporal Queries** (Score: 180) - Convenience feature
 
 ### **High-Impact Experiments (Research & Prototype)**
-5. **Cross-experiencer Pattern Insights** (Score: 90) - Team collaboration features
-6. **Collaborative Memory Across Teams** (Score: 84) - Team collaboration features  
-7. **Predictive Pattern Anticipation** (Score: 84) - Advanced AI features
-8. **Long-term Life Journey Mapping** (Score: 48) - Long-term vision feature
+4. **Cross-experiencer Pattern Insights** (Score: 90) - Team collaboration features
+5. **Collaborative Memory Across Teams** (Score: 84) - Team collaboration features  
+6. **Predictive Pattern Anticipation** (Score: 84) - Advanced AI features
+7. **Long-term Life Journey Mapping** (Score: 48) - Long-term vision feature
 
 ### **Medium-Risk Items (Avoid)**
 - **Temporal Pattern Recognition** (Score: 336) - Medium impact, medium certainty, fragile middle ground
