@@ -52,9 +52,22 @@ export class ReleaseHandler {
       const footer = releases.length > 1 ? '\n\n💡 All records have been permanently removed from your experiential data.' : 
                      '\n\n💡 The record has been permanently removed from your experiential data.';
       
-      const result = {
-        content: [{ type: 'text' as const, text: summary + results.join('\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n') + footer }]
-      };
+      // Build multi-content response
+      const content: Array<{ type: 'text', text: string }> = [{
+        type: 'text' as const,
+        text: summary + results.join('\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n') + footer
+      }];
+      
+      // Add contextual guidance
+      const guidance = this.selectReleaseGuidance(releases);
+      if (guidance) {
+        content.push({
+          type: 'text' as const,
+          text: guidance
+        });
+      }
+      
+      const result = { content };
 
       ToolResultSchema.parse(result);
       return result;
@@ -67,5 +80,27 @@ export class ReleaseHandler {
         }]
       };
     }
+  }
+  
+  /**
+   * Select appropriate guidance after release
+   */
+  private selectReleaseGuidance(releases: Array<{ id?: string; reason?: string }>): string | null {
+    // Check if this was a venting release
+    const hasVentingReason = releases.some(r => 
+      r.reason?.toLowerCase().includes('vent') || 
+      r.reason?.toLowerCase().includes('temporary')
+    );
+    
+    if (hasVentingReason) {
+      return "Memory space cleared for new experiences";
+    }
+    
+    // Multiple releases suggest cleanup
+    if (releases.length > 3) {
+      return "Focus returns to the present moment";
+    }
+    
+    return null;
   }
 }

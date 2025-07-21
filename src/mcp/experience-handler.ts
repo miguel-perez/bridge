@@ -157,8 +157,9 @@ export class ExperienceHandler {
   private async selectGuidance(result: ExperienceResult, hasSimilar: boolean): Promise<string | null> {
     try {
       // Check if this is the first experience
-      const storage = this.experienceService.getStorage();
-      const count = await storage.getAllExperiences().length;
+      const { getAllRecords } = await import('../core/storage.js');
+      const allRecords = await getAllRecords();
+      const count = allRecords.length;
       
       if (count === 1) {
         // First experience ever

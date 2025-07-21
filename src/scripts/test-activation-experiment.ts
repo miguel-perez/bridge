@@ -196,9 +196,9 @@ async function runExperiment(variant: 'baseline' | 'enhanced'): Promise<Experime
           message,
           activated: false,
           toolsUsed: [],
-          error: error.message
+          error: error instanceof Error ? error.message : String(error)
         });
-        console.log(`  ❌ "${message.substring(0, 50)}..." - Error: ${error.message}`);
+        console.log(`  ❌ "${message.substring(0, 50)}..." - Error: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
   }

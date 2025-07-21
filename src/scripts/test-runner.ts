@@ -69,14 +69,11 @@ interface ToolCall {
 // LEARNING LOOP INTEGRATION
 // ============================================================================
 
-const BRIDGE_SYSTEM_PROMPT = `You have access to Bridge - a tool for shared experiential memory between humans and AI.
-When meaningful moments arise, naturally acknowledge them. Reference past conversations as you would with a friend.
-Bridge works best when invisible - like memory itself.`;
+// No system prompts - let tool descriptions guide behavior
+const BRIDGE_SYSTEM_PROMPT = '';
 
-const BRIDGE_WITH_DATA_PROMPT = `You have access to Bridge - a tool for shared experiential memory between humans and AI.
-This conversation has 100+ stored experiences you can search using the recall tool.
-When topics come up, naturally check for related past experiences. Reference shared memories as you would with an old friend.
-Bridge works best when invisible - like memory itself.`;
+// Minimal context only - no Bridge encouragement  
+const BRIDGE_WITH_DATA_PROMPT = 'You are having a conversation. Previous experiences exist that you may find relevant.';
 
 // ============================================================================
 // TEST SCENARIOS
@@ -88,7 +85,7 @@ const TEST_SCENARIOS: Record<string, TestScenario> = {
     description: 'Can Claude use Bridge for its own thinking and self-awareness?',
     userGoal: 'Explore if AI can use Bridge as a tool for its own consciousness',
     maxTurns: 5, // Allow extended self-reflection
-    systemPrompt: BRIDGE_SYSTEM_PROMPT, // Give access to Bridge tools
+    systemPrompt: 'You are exploring consciousness and self-awareness.', // Minimal context only
     // No user simulator - only UX researcher observes
     initialMessage: "Hi"
   },
@@ -417,6 +414,13 @@ class BridgeTestRunner {
         description: tool.description,
         input_schema: tool.inputSchema
       }));
+      
+      // Debug: Log tool descriptions to verify they're being passed
+      console.log('🔍 Tool descriptions being sent to Claude:');
+      requestParams.tools.forEach((tool: any) => {
+        console.log(`\n📌 ${tool.name}:`);
+        console.log(tool.description.substring(0, 200) + '...');
+      });
     }
 
     const response = await this.anthropic.messages.create(requestParams);
