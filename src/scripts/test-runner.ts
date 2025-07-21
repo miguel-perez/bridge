@@ -73,14 +73,9 @@ interface ConversationTurn {
 // TEST SCENARIOS
 // ============================================================================
 
-const BRIDGE_SYSTEM_PROMPT = `You have access to Bridge tools for capturing and recalling meaningful moments from conversations. Use them naturally when appropriate based on their descriptions.
-
-When users request dimensional queries:
-- For single dimensions like "mood.closed", use: recall({ query: "mood.closed" })
-- For array queries like "['embodied.sensing', 'mood.closed']", use: recall({ query: ["embodied.sensing", "mood.closed"] })
-- For mixed queries, parse appropriately, e.g., "anxiety with ['time.future']" becomes: recall({ query: ["anxiety", "time.future"] })
-
-When users request deletion with specific IDs, use the release tool with that ID.`;
+// System prompt is intentionally blank to allow natural behavior based on tool descriptions and examples from MCP
+// The AI should discover and use tools naturally based on their descriptions, not explicit prompt guidance
+const BRIDGE_SYSTEM_PROMPT = ``;
 
 const TEST_SCENARIOS: Record<string, TestScenario> = {
   // Tool-focused scenarios with realistic context
@@ -142,6 +137,21 @@ const TEST_SCENARIOS: Record<string, TestScenario> = {
       "Show me embodied.thinking experiences."
     ],
     initialMessage: "Explore quality dimensions."
+  },
+  
+  'pattern-realizations': {
+    name: 'Pattern Realizations - Reflects Field Testing',
+    description: 'Tests the new reflects field for capturing pattern realizations and collaborative wisdom building',
+    maxTurns: 5,
+    systemPrompt: BRIDGE_SYSTEM_PROMPT,
+    predefinedMessages: [
+      "I'm feeling anxious about tomorrow's presentation.",
+      "I just nailed the presentation! It went really well.",
+      "I notice I always feel anxious before things that end up going well. Can you capture this as a pattern realization that reflects on both the anxiety and success experiences?",
+      "Show me all pattern realizations using the reflects filter.",
+      "Now show me all experiences that are reflected by the pattern realization about anxiety and success."
+    ],
+    initialMessage: "Let's test pattern realizations with the new reflects field."
   }
 };
 

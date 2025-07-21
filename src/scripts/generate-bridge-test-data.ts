@@ -129,6 +129,70 @@ Important: Create a natural, conversational experience that feels real and speci
   }
 }
 
+async function generatePatternRealization(
+  patternNum: number,
+  existingExperienceIds: string[],
+  anthropic: Anthropic,
+  mcpClient: MCPClient,
+  toolSchemas: any[]
+): Promise<boolean> {
+  // Select 2-3 random experience IDs to reflect on
+  const numToReflect = Math.min(3, Math.max(2, Math.floor(Math.random() * 3) + 2));
+  const selectedIds = existingExperienceIds
+    .sort(() => 0.5 - Math.random())
+    .slice(0, numToReflect);
+
+  const prompt = `Generate pattern realization #${patternNum} that reflects on these existing experiences:
+
+Experience IDs to reflect on: ${selectedIds.join(', ')}
+
+This should be an "aha moment" or insight that connects multiple experiences. Examples:
+- "I notice I always feel anxious before things that end up going well"
+- "There's a pattern where my mood.closed experiences often precede mood.open breakthroughs"
+- "I see how my learning follows a cycle of confusion → practice → clarity"
+
+Create a pattern realization that:
+1. Captures a meaningful insight about connections between experiences
+2. Uses the reflects field to link to the specified experience IDs
+3. Has appropriate qualities like embodied.thinking, mood.open, time.past
+4. Feels authentic to Miguel's journey
+
+Use the experience tool with the reflects field set to: ${JSON.stringify(selectedIds)}`;
+
+  try {
+    const response = await anthropic.messages.create({
+      model: 'claude-3-5-sonnet-20241022',
+      max_tokens: 1000,
+      temperature: 0.9,
+      system: 'You have access to Bridge tools. Generate one pattern realization using the experience tool with the reflects field.',
+      messages: [{
+        role: 'user',
+        content: prompt
+      }],
+      tools: toolSchemas
+    });
+    
+    // Process the response
+    for (const content of response.content) {
+      if (content.type === 'tool_use' && content.name === 'experience') {
+        await mcpClient.callTool({
+          name: content.name,
+          arguments: content.input as Record<string, unknown>
+        });
+        
+        console.log(`✓ Generated pattern realization ${patternNum} reflecting on ${selectedIds.length} experiences`);
+        return true;
+      }
+    }
+    
+    console.log(`⚠️  No pattern realization generated for #${patternNum}`);
+    return false;
+  } catch (error) {
+    console.error(`❌ Error generating pattern realization ${patternNum}:`, error);
+    return false;
+  }
+}
+
 async function generateWithClaude(totalExperiences: number = DEFAULT_TOTAL): Promise<CachedTestData> {
   console.log('🤖 Using Claude to generate Bridge test data...');
   console.log(`📊 Target: ${totalExperiences} experiences\n`);
@@ -201,6 +265,9 @@ async function generateWithClaude(totalExperiences: number = DEFAULT_TOTAL): Pro
     apiKey: process.env.ANTHROPIC_API_KEY
   });
   
+  // Track experience IDs for pattern realizations
+  const experienceIds: string[] = [];
+  
   // Generate experiences one at a time
   while (progress.completed < progress.totalTarget) {
     const experienceNum = progress.completed + 1;
@@ -216,6 +283,20 @@ async function generateWithClaude(totalExperiences: number = DEFAULT_TOTAL): Pro
       progress.completed++;
       progress.lastUpdated = new Date().toISOString();
       
+      // Get the latest experience ID for pattern realizations
+      try {
+        const storageFile = join(process.cwd(), 'data', 'development', 'test_DataGeneration_bridge.json');
+        if (existsSync(storageFile)) {
+          const storageData = JSON.parse(readFileSync(storageFile, 'utf-8'));
+          const latestExperience = storageData.sources?.[storageData.sources.length - 1];
+          if (latestExperience?.id) {
+            experienceIds.push(latestExperience.id);
+          }
+        }
+      } catch (error) {
+        console.log('⚠️  Could not track experience ID for pattern realizations');
+      }
+      
       // Save progress every 5 experiences
       if (progress.completed % 5 === 0) {
         writeFileSync(PROGRESS_FILE, JSON.stringify(progress, null, 2));
@@ -226,6 +307,32 @@ async function generateWithClaude(totalExperiences: number = DEFAULT_TOTAL): Pro
     // Small delay to avoid rate limiting
     if (progress.completed < progress.totalTarget) {
       await new Promise(resolve => setTimeout(resolve, 500));
+    }
+  }
+  
+  // Generate pattern realizations (10% of total experiences)
+  const numPatternRealizations = Math.floor(progress.totalTarget * 0.1);
+  console.log(`\n🔗 Generating ${numPatternRealizations} pattern realizations...`);
+  
+  for (let i = 1; i <= numPatternRealizations; i++) {
+    if (experienceIds.length >= 2) {
+      const success = await generatePatternRealization(
+        i,
+        experienceIds,
+        anthropic,
+        client,
+        toolSchemas
+      );
+      
+      if (success) {
+        console.log(`✓ Pattern realization ${i}/${numPatternRealizations} completed`);
+      }
+      
+      // Small delay to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 500));
+    } else {
+      console.log(`⚠️  Not enough experiences (${experienceIds.length}) to create pattern realizations`);
+      break;
     }
   }
   

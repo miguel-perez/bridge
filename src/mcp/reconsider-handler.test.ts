@@ -5,7 +5,7 @@
 import { ReconsiderHandler } from './reconsider-handler.js';
 import { EnrichService } from '../services/enrich.js';
 import { formatReconsiderResponse } from '../utils/formatters.js';
-import type { ReconsiderInput, ToolResult } from './schemas.js';
+import type { ReconsiderInput } from './schemas.js';
 import type { ExperienceResult } from '../utils/formatters.js';
 
 // Mock dependencies

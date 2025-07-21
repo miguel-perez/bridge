@@ -33,7 +33,7 @@ jest.mock('./schemas.js', () => ({
 
 // Mock zodToJsonSchema
 jest.mock('zod-to-json-schema', () => ({
-  zodToJsonSchema: jest.fn((schema) => ({
+  zodToJsonSchema: jest.fn(() => ({
     type: 'object',
     properties: {},
     additionalProperties: false
@@ -59,7 +59,7 @@ describe('MCP Tools', () => {
       expect(experienceTool.idempotentHint).toBe(false);
       expect(experienceTool.openWorldHint).toBe(false);
       expect(experienceTool.inputSchema).toBeDefined();
-      expect(experienceTool.examples).toHaveLength(5);
+      expect(experienceTool.examples).toHaveLength(6);
     });
 
     it('should have recall tool with correct properties', async () => {
@@ -74,7 +74,7 @@ describe('MCP Tools', () => {
       expect(recallTool.idempotentHint).toBe(true);
       expect(recallTool.openWorldHint).toBe(false);
       expect(recallTool.inputSchema).toBeDefined();
-      expect(recallTool.examples).toHaveLength(5);
+      expect(recallTool.examples).toHaveLength(8);
     });
 
     it('should have reconsider tool with correct properties', async () => {

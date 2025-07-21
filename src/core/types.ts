@@ -75,6 +75,10 @@ export interface Source {
   // Analysis fields
   /** Experience analysis results (prominent qualities) */
   experience?: Experience;
+  
+  // Pattern realization fields
+  /** Array of experience IDs that this experience reflects on/connects to */
+  reflects?: string[];
 }
 
 /**
@@ -139,7 +143,8 @@ export const SourceSchema = z.object({
   experiencer: z.string().optional().describe('Who experienced this'),
   processing: z.enum(PROCESSING_LEVELS).optional().describe('When processing occurred relative to experience'),
   crafted: z.boolean().optional().describe('Whether this is crafted content vs raw experience'),
-  experience: ExperienceSchema.optional().describe('Experience analysis results')
+  experience: ExperienceSchema.optional().describe('Experience analysis results'),
+  reflects: z.array(z.string()).optional().describe('Array of experience IDs that this experience reflects on/connects to')
 });
 
 /** Zod schema for StorageData */
@@ -192,7 +197,11 @@ export function isValidSource(source: unknown): source is Source {
       (source as any).experience.length >= 0
     )) &&
     ((source as any).perspective === undefined || isValidPerspective((source as any).perspective)) &&
-    ((source as any).processing === undefined || isValidProcessingLevel((source as any).processing));
+    ((source as any).processing === undefined || isValidProcessingLevel((source as any).processing)) &&
+    ((source as any).reflects === undefined || (
+      Array.isArray((source as any).reflects) && 
+      (source as any).reflects.every((item: unknown) => typeof item === 'string')
+    ));
 }
 
 /**

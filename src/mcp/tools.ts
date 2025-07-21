@@ -194,6 +194,24 @@ Only include dimensions that genuinely stand out in the experience.`,
               text: '✅ Successfully remembered 2 experiences'
             }]
           }
+        },
+        {
+          id: 'pattern-realization',
+          description: 'Create a pattern realization that reflects on multiple experiences',
+          input: {
+            source: 'I notice I always feel anxious before things that end up going well',
+            experiencer: 'Human',
+            perspective: 'I',
+            processing: 'long-after',
+            experience: ['embodied.thinking', 'mood.open', 'time.past'],
+            reflects: ['exp_123', 'exp_456']
+          },
+          output: {
+            content: [{
+              type: 'text',
+              text: 'Experienced (embodied.thinking, mood.open, time.past)\n\nFrom: Human\nAs: I\nWhen: long after\nCaptured: just now\n🔗 Reflects on: exp_123, exp_456'
+            }]
+          }
         }
       ]
     },
@@ -220,6 +238,9 @@ SPECIAL SEARCHES:
 • Query "last" or "recent" - see most recent captures
 • Filter by experiencer - find specific person's experiences  
 • Filter by perspective - find "we" moments vs "I" moments
+• Filter by reflects: "only" - find pattern realizations (experiences that reflect on other experiences)
+• Natural language patterns: "show me all pattern realizations" → use reflects: "only"
+• Natural language patterns: "find insights about connections" → use reflects: "only"
 • Combine filters for precise results`,
       inputSchema: SearchInputJsonSchema,
       readOnlyHint: true,
@@ -312,6 +333,48 @@ SPECIAL SEARCHES:
             content: [{
               type: 'text',
               text: '✅ Completed 2 searches:\n\nSearch 1: Found 2 results for "joy celebration success"\nSearch 2: Found 2 results for "challenge difficulty struggle"'
+            }]
+          }
+        },
+        {
+          id: 'pattern-realizations',
+          description: 'Find all pattern realizations (experiences that reflect on other experiences)',
+          input: {
+            reflects: 'only',
+            limit: 5
+          },
+          output: {
+            content: [{
+              type: 'text',
+              text: '🔍 Found 2 pattern realizations:\n\n1. "I notice I always feel anxious before things that end up going well" (2 hours ago)\n   💡 embodied.thinking, mood.open, time.past\n   🔗 Reflects on: exp_123, exp_456\n\n2. "There\'s a pattern where my mood.closed experiences often precede mood.open breakthroughs" (1 day ago)\n   🤔 embodied.thinking, presence.collective\n   🔗 Reflects on: exp_789, exp_101'
+            }]
+          }
+        },
+        {
+          id: 'natural-language-patterns',
+          description: 'Natural language request for pattern realizations',
+          input: {
+            reflects: 'only',
+            query: 'pattern realizations insights connections'
+          },
+          output: {
+            content: [{
+              type: 'text',
+              text: '🔍 Found 3 pattern realizations:\n\n1. "I notice I always feel anxious before things that end up going well" (2 hours ago)\n   💡 embodied.thinking, mood.open, time.past\n   🔗 Reflects on: exp_123, exp_456\n\n2. "There\'s a pattern where my mood.closed experiences often precede mood.open breakthroughs" (1 day ago)\n   🤔 embodied.thinking, presence.collective\n   🔗 Reflects on: exp_789, exp_101\n\n3. "I see how my learning follows a cycle of confusion → practice → clarity" (3 days ago)\n   🎯 embodied.thinking, time.past, purpose.goal\n   🔗 Reflects on: exp_202, exp_303'
+            }]
+          }
+        },
+        {
+          id: 'reflected-by-filter',
+          description: 'Find experiences that are reflected by specific pattern realizations',
+          input: {
+            reflected_by: 'exp_123',
+            limit: 5
+          },
+          output: {
+            content: [{
+              type: 'text',
+              text: '🔍 Found 2 experiences reflected by exp_123:\n\n1. "I\'m feeling anxious about tomorrow\'s presentation" (2 hours ago)\n   😰 embodied.sensing, mood.closed, time.future\n\n2. "I just nailed the presentation! It went really well" (1 hour ago)\n   🎉 mood.open, purpose.goal, embodied.sensing'
             }]
           }
         }

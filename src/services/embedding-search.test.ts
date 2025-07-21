@@ -2,7 +2,7 @@
  * Tests for Embedding Search Service
  */
 
-import { findSimilarByEmbedding, getSourcesByIds, type SimilarityResult } from './embedding-search.js';
+import { findSimilarByEmbedding, getSourcesByIds } from './embedding-search.js';
 import * as storage from '../core/storage.js';
 import type { Source } from '../core/types.js';
 

@@ -190,7 +190,7 @@ class GitContextManager {
           date,
           message,
           filesChanged,
-          type: this.categorizeCommit(message)
+          type: this.detectCommitType(message)
         });
       }
 
@@ -1217,8 +1217,8 @@ function generateRecommendations(
           const dimensionalTests = testContext.bridgeTests.scenarios.filter(s => 
             s.name.toLowerCase().includes('dimensional') || 
             s.name.toLowerCase().includes('recall') ||
-            s.scenario === 'dimensional-focus' ||
-            s.scenario === 'recall-queries'
+            s.name.toLowerCase().includes('dimensional-focus') ||
+            s.name.toLowerCase().includes('recall-queries')
           );
           
           if (dimensionalTests.length > 0 && dimensionalTests.every(t => t.success)) {

@@ -79,13 +79,15 @@ export const ExperienceInputSchema = z.object({
   processing: ProcessingEnum.optional(),
   crafted: z.boolean().describe('Whether this is crafted content (blog/refined for an audience) vs raw experience (journal/immediate)').optional(),
   experience: ExperienceObject.optional(),
+  reflects: z.array(z.string()).describe('Array of experience IDs that this experience reflects on/connects to (for pattern realizations)').optional(),
   experiences: z.array(z.object({
     source: z.string().min(1).describe("Raw, exact words from the experiencer - their actual text/voice as written or spoken. Do not summarize, interpret, or modify."),
     perspective: PerspectiveField.optional(),
     experiencer: z.string().describe('Who experienced this moment (person, group, or entity)').optional(),
     processing: ProcessingEnum.optional(),
     crafted: z.boolean().describe('Whether this is crafted content (blog/refined for an audience) vs raw experience (journal/immediate)').optional(),
-    experience: ExperienceObject
+    experience: ExperienceObject,
+    reflects: z.array(z.string()).describe('Array of experience IDs that this experience reflects on/connects to (for pattern realizations)').optional()
   })).describe('Array of experiences to experience (for batch operations)').optional()
 }).strict().refine(
   (data) => data.source || (data.experiences && data.experiences.length > 0),
@@ -106,6 +108,11 @@ export const SearchInputSchema = z.object({
   experiencer: z.string().describe('Filter by experiencer').optional(),
   perspective: PerspectiveField.optional(),
   processing: ProcessingEnum.optional(),
+  reflects: z.enum(['only']).describe('Filter for pattern realizations only (experiences with reflects field)').optional(),
+  reflected_by: z.union([
+    z.string().describe('Find experiences that are reflected by this specific experience ID'),
+    z.array(z.string()).describe('Find experiences that are reflected by any of these experience IDs')
+  ]).describe('Filter for experiences that are reflected by specific pattern realizations').optional(),
   created: z.union([
     z.string().describe('Filter by specific date (YYYY-MM-DD format)'),
     z.object({
@@ -122,6 +129,11 @@ export const SearchInputSchema = z.object({
     experiencer: z.string().describe('Filter by experiencer').optional(),
     perspective: PerspectiveField.optional(),
     processing: ProcessingEnum.optional(),
+    reflects: z.enum(['only']).describe('Filter for pattern realizations only (experiences with reflects field)').optional(),
+    reflected_by: z.union([
+      z.string().describe('Find experiences that are reflected by this specific experience ID'),
+      z.array(z.string()).describe('Find experiences that are reflected by any of these experience IDs')
+    ]).describe('Filter for experiences that are reflected by specific pattern realizations').optional(),
     created: z.union([
       z.string().describe('Filter by specific date (YYYY-MM-DD format)'),
       z.object({
@@ -142,6 +154,7 @@ export const ReconsiderInputSchema = z.object({
   processing: ProcessingEnum.optional(),
   crafted: z.boolean().describe('Updated crafted status (optional)').optional(),
   experience: ExperienceObjectOptional.optional(),
+  reflects: z.array(z.string()).describe('Updated array of experience IDs that this experience reflects on/connects to (for pattern realizations)').optional(),
   reconsiderations: z.array(z.object({
     id: z.string().describe('ID of the experience to reconsider'),
     source: z.string().min(1).describe('Updated source (optional)').optional(),
@@ -149,7 +162,8 @@ export const ReconsiderInputSchema = z.object({
     experiencer: z.string().describe('Updated experiencer (optional)').optional(),
     processing: ProcessingEnum.optional(),
     crafted: z.boolean().describe('Updated crafted status (optional)').optional(),
-    experience: ExperienceObjectOptional.optional()
+    experience: ExperienceObjectOptional.optional(),
+    reflects: z.array(z.string()).describe('Updated array of experience IDs that this experience reflects on/connects to (for pattern realizations)').optional()
   })).describe('Array of experiences to reconsider (for batch operations)').optional()
 }).strict();
 

@@ -121,12 +121,57 @@ describe('Type Validation Functions', () => {
       expect(isValidSource(validSource)).toBe(true);
     });
 
+    it('should accept valid source objects with reflects field', () => {
+      const validSourceWithReflects: Source = {
+        id: 'test-123',
+        source: 'I notice I always feel anxious before things that end up going well',
+        created: '2024-01-01T00:00:00.000Z',
+        perspective: 'I',
+        experiencer: 'test',
+        processing: 'during',
+        crafted: false,
+        experience: ['embodied.sensing', 'mood.closed', 'time.future'],
+        reflects: ['exp-001', 'exp-002', 'exp-003']
+      };
+      expect(isValidSource(validSourceWithReflects)).toBe(true);
+    });
+
+    it('should accept source objects with empty reflects array', () => {
+      const validSourceWithEmptyReflects: Source = {
+        id: 'test-123',
+        source: 'Test source',
+        created: '2024-01-01T00:00:00.000Z',
+        perspective: 'I',
+        experiencer: 'test',
+        processing: 'during',
+        crafted: false,
+        experience: ['mood.open', 'embodied.thinking'],
+        reflects: []
+      };
+      expect(isValidSource(validSourceWithEmptyReflects)).toBe(true);
+    });
+
     it('should reject invalid source objects', () => {
       expect(isValidSource(null)).toBe(false);
       expect(isValidSource(undefined)).toBe(false);
       expect(isValidSource({})).toBe(false);
       expect(isValidSource({ id: 'test' })).toBe(false);
       expect(isValidSource({ id: '', source: 'test', created: '2024-01-01' })).toBe(false);
+    });
+
+    it('should reject source objects with invalid reflects field', () => {
+      const invalidSourceWithReflects = {
+        id: 'test-123',
+        source: 'Test source',
+        created: '2024-01-01T00:00:00.000Z',
+        perspective: 'I',
+        experiencer: 'test',
+        processing: 'during',
+        crafted: false,
+        experience: ['mood.open', 'embodied.thinking'],
+        reflects: 'not-an-array' // Should be array
+      };
+      expect(isValidSource(invalidSourceWithReflects)).toBe(false);
     });
   });
 });
@@ -196,6 +241,74 @@ describe('Zod Schema Validation', () => {
       expect(result.success).toBe(true);
     });
 
+    it('should validate source with reflects field', () => {
+      const validSourceWithReflects: Source = {
+        id: 'test-123',
+        source: 'I notice I always feel anxious before things that end up going well',
+        created: '2024-01-01T00:00:00.000Z',
+        perspective: 'I',
+        experiencer: 'test',
+        processing: 'during',
+        crafted: false,
+        experience: ['embodied.sensing', 'mood.closed', 'time.future'],
+        reflects: ['exp-001', 'exp-002', 'exp-003']
+      };
+      
+      const result = SourceSchema.safeParse(validSourceWithReflects);
+      expect(result.success).toBe(true);
+    });
+
+    it('should validate source with empty reflects array', () => {
+      const validSourceWithEmptyReflects: Source = {
+        id: 'test-123',
+        source: 'Test source content',
+        created: '2024-01-01T00:00:00.000Z',
+        perspective: 'I',
+        experiencer: 'test',
+        processing: 'during',
+        crafted: false,
+        experience: ['mood.open', 'embodied.thinking'],
+        reflects: []
+      };
+      
+      const result = SourceSchema.safeParse(validSourceWithEmptyReflects);
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject source with invalid reflects field', () => {
+      const invalidSourceWithReflects = {
+        id: 'test-123',
+        source: 'Test source content',
+        created: '2024-01-01T00:00:00.000Z',
+        perspective: 'I',
+        experiencer: 'test',
+        processing: 'during',
+        crafted: false,
+        experience: ['mood.open', 'embodied.thinking'],
+        reflects: 'not-an-array' // Should be array
+      };
+      
+      const result = SourceSchema.safeParse(invalidSourceWithReflects);
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject source with invalid reflects array elements', () => {
+      const invalidSourceWithReflects = {
+        id: 'test-123',
+        source: 'Test source content',
+        created: '2024-01-01T00:00:00.000Z',
+        perspective: 'I',
+        experiencer: 'test',
+        processing: 'during',
+        crafted: false,
+        experience: ['mood.open', 'embodied.thinking'],
+        reflects: ['exp-001', 123, 'exp-002'] // Contains non-string element
+      };
+      
+      const result = SourceSchema.safeParse(invalidSourceWithReflects);
+      expect(result.success).toBe(false);
+    });
+
     it('should validate source with custom perspective', () => {
       const validSource: Source = {
         id: 'test-123',
@@ -252,6 +365,37 @@ describe('Zod Schema Validation', () => {
       expect(result.success).toBe(true);
     });
 
+    it('should validate storage data with sources containing reflects field', () => {
+      const validStorageDataWithReflects: StorageData = {
+        sources: [
+          {
+            id: 'test-123',
+            source: 'Test source content',
+            created: '2024-01-01T00:00:00.000Z',
+            perspective: 'I',
+            experiencer: 'test',
+            processing: 'during',
+            crafted: false,
+            experience: ['mood.open', 'embodied.thinking']
+          },
+          {
+            id: 'pattern-001',
+            source: 'I notice I always feel anxious before things that end up going well',
+            created: '2024-01-01T00:00:00.000Z',
+            perspective: 'I',
+            experiencer: 'test',
+            processing: 'long-after',
+            crafted: false,
+            experience: ['embodied.sensing', 'mood.closed', 'time.future'],
+            reflects: ['test-123', 'test-456']
+          }
+        ]
+      };
+      
+      const result = StorageDataSchema.safeParse(validStorageDataWithReflects);
+      expect(result.success).toBe(true);
+    });
+
     it('should reject invalid storage data', () => {
       const invalidStorageData = {
         sources: 'not an array',
@@ -282,6 +426,23 @@ describe('Zod-based Validation Functions', () => {
       expect(result).toBeDefined();
     });
 
+    it('should return success for valid source with reflects field', () => {
+      const validSourceWithReflects: Source = {
+        id: 'pattern-001',
+        source: 'I notice I always feel anxious before things that end up going well',
+        created: '2024-01-01T00:00:00.000Z',
+        perspective: 'I',
+        experiencer: 'test',
+        processing: 'long-after',
+        crafted: false,
+        experience: ['embodied.sensing', 'mood.closed', 'time.future'],
+        reflects: ['exp-001', 'exp-002', 'exp-003']
+      };
+      
+      const result = validateSource(validSourceWithReflects);
+      expect(result).toBeDefined();
+    });
+
     it('should return error for invalid source', () => {
       const invalidSource = {
         id: '',
@@ -289,6 +450,22 @@ describe('Zod-based Validation Functions', () => {
       };
       
       expect(() => validateSource(invalidSource)).toThrow();
+    });
+
+    it('should return error for source with invalid reflects field', () => {
+      const invalidSourceWithReflects = {
+        id: 'test-123',
+        source: 'Test source content',
+        created: '2024-01-01T00:00:00.000Z',
+        perspective: 'I',
+        experiencer: 'test',
+        processing: 'during',
+        crafted: false,
+        experience: ['mood.open', 'embodied.thinking'],
+        reflects: 'not-an-array' // Should be array
+      };
+      
+      expect(() => validateSource(invalidSourceWithReflects)).toThrow();
     });
   });
 
@@ -327,6 +504,37 @@ describe('Zod-based Validation Functions', () => {
       };
       
       const result = validateStorageData(validStorageData);
+      expect(result).toBeDefined();
+    });
+
+    it('should return success for valid storage data with reflects fields', () => {
+      const validStorageDataWithReflects: StorageData = {
+        sources: [
+          {
+            id: 'test-123',
+            source: 'Test source content',
+            created: '2024-01-01T00:00:00.000Z',
+            perspective: 'I',
+            experiencer: 'test',
+            processing: 'during',
+            crafted: false,
+            experience: ['mood.open', 'embodied.thinking']
+          },
+          {
+            id: 'pattern-001',
+            source: 'I notice I always feel anxious before things that end up going well',
+            created: '2024-01-01T00:00:00.000Z',
+            perspective: 'I',
+            experiencer: 'test',
+            processing: 'long-after',
+            crafted: false,
+            experience: ['embodied.sensing', 'mood.closed', 'time.future'],
+            reflects: ['test-123', 'test-456']
+          }
+        ]
+      };
+      
+      const result = validateStorageData(validStorageDataWithReflects);
       expect(result).toBeDefined();
     });
 

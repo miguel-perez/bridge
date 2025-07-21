@@ -15,7 +15,6 @@ import {
   type ExperienceResult,
   type RecallResult
 } from './formatters.js';
-import * as messages from './messages.js';
 import type { SearchResult } from '../core/search.js';
 
 // Mock the messages module

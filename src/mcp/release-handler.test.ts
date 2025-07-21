@@ -5,7 +5,7 @@
 import { ReleaseHandler } from './release-handler.js';
 import { deleteSource } from '../core/storage.js';
 import { ToolResultSchema } from './schemas.js';
-import type { ReleaseInput, ToolResult } from './schemas.js';
+import type { ReleaseInput } from './schemas.js';
 
 // Mock dependencies
 jest.mock('../core/storage.js');

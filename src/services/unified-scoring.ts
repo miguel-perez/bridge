@@ -292,13 +292,13 @@ export function applyFiltersAndScore(
     perspective?: string;
     processing?: string;
     reflects?: 'only';
+    reflected_by?: string | string[];
   },
   semanticScores: Map<string, number>
 ): ScoredExperience[] {
   let filtered = experiences;
   
   // Hard filters (binary)
-  // Note: reflects field doesn't exist in current SourceRecord type
   if (filters.experiencer) {
     filtered = filtered.filter(exp => exp.experiencer === filters.experiencer);
   }
@@ -308,6 +308,23 @@ export function applyFiltersAndScore(
   if (filters.processing) {
     filtered = filtered.filter(exp => exp.processing === filters.processing);
   }
+      if (filters.reflects === 'only') {
+      // Filter for pattern realizations only (experiences with reflects field)
+      filtered = filtered.filter(exp => exp.reflects !== undefined);
+    }
+
+    if (filters.reflected_by) {
+      // Filter for experiences that are reflected by specific pattern realizations
+      const reflectedByIds = Array.isArray(filters.reflected_by) ? filters.reflected_by : [filters.reflected_by];
+      filtered = filtered.filter(exp => {
+        // Find pattern realizations that reflect on this experience
+        return experiences.some((patternExp: SourceRecord) => 
+          patternExp.reflects && 
+          patternExp.reflects.includes(exp.id) &&
+          reflectedByIds.includes(patternExp.id)
+        );
+      });
+    }
   
   // Dimensional filter: For pure dimensional queries, only return experiences with matching dimensions
   if (query && isQueryPurelyDimensional(query)) {
