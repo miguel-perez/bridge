@@ -105,7 +105,7 @@ Important: Create a natural, conversational experience that feels real and speci
         role: 'user',
         content: prompt
       }],
-      tools: toolSchemas
+      tools: toolSchemas as unknown as any[]
     });
     
     // Process the response
@@ -134,7 +134,7 @@ async function generatePatternRealization(
   existingExperienceIds: string[],
   anthropic: Anthropic,
   mcpClient: MCPClient,
-  toolSchemas: any[]
+  toolSchemas: Record<string, unknown>[]
 ): Promise<boolean> {
   // Select 2-3 random experience IDs to reflect on
   const numToReflect = Math.min(3, Math.max(2, Math.floor(Math.random() * 3) + 2));
@@ -169,7 +169,7 @@ Use the experience tool with the reflects field set to: ${JSON.stringify(selecte
         role: 'user',
         content: prompt
       }],
-      tools: toolSchemas
+      tools: toolSchemas as unknown as any[]
     });
     
     // Process the response
@@ -254,9 +254,9 @@ async function generateWithClaude(totalExperiences: number = DEFAULT_TOTAL): Pro
   
   // Get available tools
   const tools = await client.listTools();
-  const toolSchemas = tools.tools.map((tool: any) => ({
-    name: tool.name,
-    description: tool.description,
+  const toolSchemas = tools.tools.map((tool: Record<string, unknown>) => ({
+    name: tool.name as string,
+    description: tool.description as string,
     input_schema: tool.inputSchema
   }));
   
@@ -373,8 +373,8 @@ export async function ensureTestData(options?: { total?: number }): Promise<void
     console.log('📂 Found cached test data');
     const cached = JSON.parse(readFileSync(CACHE_FILE, 'utf-8')) as CachedTestData;
     console.log(`📅 Generated: ${cached.generatedAt}`);
-    console.log(`💾 Experiences: ${cached.storageSnapshot.sources?.length || 0}`);
-    console.log(`🔢 Embeddings: ${cached.storageSnapshot.embeddings?.length || 0}`);
+    console.log(`💾 Experiences: ${(cached.storageSnapshot.sources as unknown[])?.length || 0}`);
+    console.log(`🔢 Embeddings: ${(cached.storageSnapshot.embeddings as unknown[])?.length || 0}`);
     
     // Load into test storage
     await loadCachedData(cached);

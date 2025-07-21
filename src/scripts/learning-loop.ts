@@ -14,6 +14,42 @@ import { join } from 'path';
 // Type Definitions
 // ============================================================================
 
+// Jest test result types
+interface JestTestResult {
+  perfStats?: {
+    runtime?: number;
+  };
+}
+
+interface JestAssertionResult {
+  status: string;
+  fullName?: string;
+  title?: string;
+  failureMessages?: string[];
+}
+
+interface JestTestSuite {
+  assertionResults?: JestAssertionResult[];
+}
+
+interface JestResults {
+  testResults?: JestTestSuite[];
+  numTotalTests?: number;
+  numPassedTests?: number;
+  numFailedTests?: number;
+}
+
+// Bridge test result types
+interface BridgeTestScenario {
+  success?: boolean;
+  duration?: number;
+  errors?: string[];
+}
+
+
+
+
+
 interface GitCommit {
   hash: string;
   date: string;
@@ -394,14 +430,15 @@ class TestResultsAggregator {
     }
     
     if (testResults) {
+      const jestResults = testResults as JestResults;
       return {
-        totalTests: testResults.numTotalTests || 0,
-        passed: testResults.numPassedTests || 0,
-        failed: testResults.numFailedTests || 0,
-        duration: testResults.testResults?.reduce((sum: number, r: any) => 
-          sum + (r.perfStats?.runtime || 0), 0) || 0,
-        failedTests: this.extractFailedTests(testResults),
-        coverage: coverageData
+        totalTests: jestResults.numTotalTests || 0,
+        passed: jestResults.numPassedTests || 0,
+        failed: jestResults.numFailedTests || 0,
+        duration: jestResults.testResults?.reduce((sum: number, r: JestTestSuite) => 
+          sum + ((r as unknown as JestTestResult).perfStats?.runtime || 0), 0) || 0,
+        failedTests: this.extractFailedTests(jestResults),
+        coverage: coverageData as { lines: number; branches: number; functions: number; } | undefined
       };
     }
     
@@ -420,7 +457,7 @@ class TestResultsAggregator {
     };
   }
 
-  private extractFailedTests(jestResults: any): Array<{name: string; error: string}> {
+  private extractFailedTests(jestResults: JestResults): Array<{name: string; error: string}> {
     const failed: Array<{name: string; error: string}> = [];
     
     if (jestResults.testResults) {
@@ -553,10 +590,10 @@ class TestResultsAggregator {
       let totalDuration = 0;
 
       // Parse Bridge test format - handle both old and new formats
-      if (latestResults.scenarios) {
+      if ('scenarios' in latestResults && latestResults.scenarios) {
         // Old format: scenarios as object
         for (const [name, data] of Object.entries(latestResults.scenarios)) {
-          const scenario = data as any;
+          const scenario = data as BridgeTestScenario;
           scenarios.push({
             name,
             success: scenario.success || false,
@@ -565,7 +602,7 @@ class TestResultsAggregator {
           });
           totalDuration += scenario.duration || 0;
         }
-      } else if (latestResults.summary?.scenarios) {
+      } else if ('summary' in latestResults && latestResults.summary?.scenarios) {
         // New format: scenarios in summary
         for (const scenario of latestResults.summary.scenarios) {
           scenarios.push({
@@ -576,7 +613,7 @@ class TestResultsAggregator {
           });
           totalDuration += scenario.duration || 0;
         }
-      } else if (latestResults.results) {
+      } else if ('results' in latestResults && latestResults.results) {
         // Alternative format: results array
         for (const result of latestResults.results) {
           scenarios.push({

@@ -4,7 +4,7 @@
 
 import { findSimilarByEmbedding, getSourcesByIds } from './embedding-search.js';
 import * as storage from '../core/storage.js';
-import type { Source } from '../core/types.js';
+import type { Source, EmbeddingRecord } from '../core/types.js';
 
 // Mock storage functions
 jest.mock('../core/storage.js');
@@ -12,6 +12,13 @@ jest.mock('../core/storage.js');
 describe('Embedding Search Service', () => {
   let mockGetAllEmbeddings: jest.MockedFunction<typeof storage.getAllEmbeddings>;
   let mockGetAllRecords: jest.MockedFunction<typeof storage.getAllRecords>;
+
+  // Helper function to create mock embedding records
+  const createMockEmbedding = (sourceId: string, vector: number[]): EmbeddingRecord => ({
+    sourceId,
+    vector,
+    generated: new Date().toISOString()
+  });
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -25,9 +32,9 @@ describe('Embedding Search Service', () => {
     it('should calculate correct similarity through findSimilarByEmbedding', async () => {
       const queryEmbedding = [1, 0, 0];
       const mockEmbeddings = [
-        { sourceId: 'id1', vector: [1, 0, 0] }, // Perfect match
-        { sourceId: 'id2', vector: [0, 1, 0] }, // Orthogonal
-        { sourceId: 'id3', vector: [0.707, 0.707, 0] }, // 45 degrees
+        createMockEmbedding('id1', [1, 0, 0]), // Perfect match
+        createMockEmbedding('id2', [0, 1, 0]), // Orthogonal
+        createMockEmbedding('id3', [0.707, 0.707, 0]), // 45 degrees
       ];
 
       mockGetAllEmbeddings.mockResolvedValue(mockEmbeddings);
@@ -44,8 +51,8 @@ describe('Embedding Search Service', () => {
     it('should handle zero vectors correctly', async () => {
       const queryEmbedding = [0, 0, 0];
       const mockEmbeddings = [
-        { sourceId: 'id1', vector: [1, 0, 0] },
-        { sourceId: 'id2', vector: [0, 0, 0] }, // Zero vector
+        createMockEmbedding('id1', [1, 0, 0]),
+        createMockEmbedding('id2', [0, 0, 0]), // Zero vector
       ];
 
       mockGetAllEmbeddings.mockResolvedValue(mockEmbeddings);
@@ -77,9 +84,9 @@ describe('Embedding Search Service', () => {
 
     it('should skip embeddings with missing vectors', async () => {
       const mockEmbeddings = [
-        { sourceId: 'id1', vector: [1, 0, 0] },
-        { sourceId: 'id2' }, // Missing vector
-        { sourceId: 'id3', vector: null as any }, // Null vector
+        createMockEmbedding('id1', [1, 0, 0]),
+        { sourceId: 'id2', generated: new Date().toISOString() } as EmbeddingRecord, // Missing vector
+        { sourceId: 'id3', vector: null as unknown as number[], generated: new Date().toISOString() } as EmbeddingRecord, // Null vector
       ];
 
       mockGetAllEmbeddings.mockResolvedValue(mockEmbeddings);

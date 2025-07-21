@@ -16,6 +16,8 @@ import { ensureTestData } from './generate-bridge-test-data.js';
 
 dotenv.config();
 
+
+
 // ============================================================================
 // CORE TYPES
 // ============================================================================
@@ -571,7 +573,7 @@ class TestRunner {
       // Get Claude's response after tool use
       try {
         // Create a new request with the updated messages
-        const continuationParams: any = {
+        const continuationParams = {
           model: "claude-3-5-sonnet-20241022",
           max_tokens: 2000,
           messages: this.messages.map(msg => ({
@@ -594,7 +596,7 @@ class TestRunner {
           }));
         }
         
-        const continuationResponse = await this.anthropic.messages.create(continuationParams);
+        const continuationResponse = await this.anthropic.messages.create(continuationParams as any);
         
         // Process the continuation response for tool uses
         let hasContinuationToolUse = false;
