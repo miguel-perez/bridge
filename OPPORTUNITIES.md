@@ -67,6 +67,37 @@ Bridge uses a barbell strategy to balance stability with growth potential:
 **Urgency: 7** - Critical for unlocking Bridge's full potential and enabling complex queries  
 **Score: 504** ⭐ **High-Certainty Foundation**
 
+**What This Actually Means:**
+Enable complex dimensional queries that go beyond simple exact matches. Currently, Bridge only supports basic dimensional filtering - we need advanced patterns like presence/absence filtering, dimension combinations, and sophisticated boolean logic.
+
+**Current Limitations:**
+- **Only exact matches**: `recall("mood.closed")` finds experiences WITH mood.closed
+- **Only AND logic**: `recall(["embodied.thinking", "mood.open"])` requires BOTH dimensions
+- **No absence filtering**: Cannot find experiences WITHOUT specific dimensions
+- **No OR logic**: Cannot find experiences with EITHER dimension A OR dimension B
+- **No complex combinations**: Cannot do "mood.closed AND (embodied.thinking OR focus.narrow)"
+
+**Specific Implementation:**
+- **Presence/Absence filtering**: `{ embodied: { present: true }, mood: { present: false } }`
+- **Boolean combinations**: `{ mood: "closed", embodied: ["thinking", "sensing"] }` (OR logic)
+- **Complex queries**: `{ mood: "closed", embodied: { present: true }, focus: { present: false } }`
+- **Dimension ranges**: `{ mood: ["open", "closed"], time: "future" }` (multiple values)
+- **Nested logic**: Support for parentheses and complex boolean expressions
+
+**Why This Matters:**
+- **Unlocks advanced use cases**: "Show me anxious states that aren't focused" or "Find open moods during thinking"
+- **Enables pattern discovery**: Complex queries reveal hidden experiential patterns
+- **Improves user experience**: More intuitive and powerful querying capabilities
+- **Supports research**: Enables sophisticated experiential analysis
+
+**Current State:**
+- ✅ Basic dimensional filtering: `recall("mood.closed")`
+- ✅ Multi-dimensional AND: `recall(["embodied.thinking", "mood.open"])`
+- ✅ Base dimension matching: `recall("embodied")` matches subtypes
+- ❌ No absence filtering: Cannot exclude dimensions
+- ❌ No OR logic: Cannot combine dimensions with OR
+- ❌ No complex boolean expressions: No nested logic support
+
 ### HMW establish continuous quality monitoring?
 
 **Impact: 6** - Prevents regression and maintains the high quality achieved  
