@@ -19,19 +19,19 @@ Each experiment follows this format for learning loop compatibility:
 
 ## Active Experiments
 
-### EXP-008: Sophisticated Dimensional Filtering
+### EXP-008: Sophisticated Quality Filtering
 **Status**: Active 2025-07-21  
-**Purpose**: Enable complex dimensional queries with boolean logic, absence filtering, and advanced combinations
+**Purpose**: Enable complex quality queries with boolean logic, absence filtering, and advanced combinations
 
 **Design Overview**:
-Transform Bridge's dimensional filtering from simple exact matches to a sophisticated query system that supports complex boolean logic, presence/absence filtering, and nested expressions.
+Transform Bridge's quality filtering from simple exact matches to a sophisticated query system that supports complex boolean logic, presence/absence filtering, and nested expressions.
 
 **Technical Architecture**:
 
 ### 1. Enhanced Schema Design
 ```typescript
-// New dimensional filter structure
-interface DimensionalFilter {
+// New quality filter structure
+interface QualityFilter {
   // Presence/Absence filtering
   embodied?: { present: boolean } | string | string[];
   focus?: { present: boolean } | string | string[];
@@ -42,25 +42,25 @@ interface DimensionalFilter {
   presence?: { present: boolean } | string | string[];
   
   // Complex boolean expressions
-  $and?: DimensionalFilter[];
-  $or?: DimensionalFilter[];
-  $not?: DimensionalFilter;
+  $and?: QualityFilter[];
+  $or?: QualityFilter[];
+  $not?: QualityFilter;
 }
 
 // Enhanced SearchInputSchema
 export const SearchInputSchema = z.object({
   // ... existing fields ...
-  dimensions: DimensionalFilterSchema.optional(),
+  qualities: QualityFilterSchema.optional(),
   // ... rest of schema
 });
 ```
 
 ### 2. Query Processing Pipeline
 ```typescript
-// New dimensional filtering service
-export class DimensionalFilterService {
-  // Parse complex dimensional queries
-  parseDimensionalFilter(filter: DimensionalFilter): FilterExpression;
+// New quality filtering service
+export class QualityFilterService {
+  // Parse complex quality queries
+  parseQualityFilter(filter: QualityFilter): FilterExpression;
   
   // Evaluate filter expressions against experiences
   evaluateFilter(experience: SourceRecord, filter: FilterExpression): boolean;
@@ -71,9 +71,9 @@ export class DimensionalFilterService {
 ```
 
 ### 3. Backward Compatibility Strategy
-- **Phase 1**: Add new `dimensions` field alongside existing `query` field
+- **Phase 1**: Add new `qualities` field alongside existing `query` field
 - **Phase 2**: Enhance existing `query` array support for simple OR logic
-- **Phase 3**: Deprecate old dimensional query format with migration path
+- **Phase 3**: Deprecate old quality query format with migration path
 
 **Test Scenarios**:
 
@@ -81,22 +81,22 @@ export class DimensionalFilterService {
 ```javascript
 // Test absence filtering
 recall("", { 
-  dimensions: { 
-    mood: { present: false },  // Find experiences WITHOUT mood dimensions
-    embodied: { present: true } // But WITH embodied dimensions
+  qualities: { 
+    mood: { present: false },  // Find experiences WITHOUT mood qualities
+    embodied: { present: true } // But WITH embodied qualities
   }
 });
 
-// Expected: Experiences with embodied dimensions but no mood dimensions
+// Expected: Experiences with embodied qualities but no mood qualities
 // Test data: 3 experiences with embodied.thinking, 2 with mood.closed, 1 with both
 // Should return: 2 experiences (embodied.thinking without mood)
 ```
 
 ### Scenario 2: OR Logic with Multiple Values
 ```javascript
-// Test OR logic within a dimension
+// Test OR logic within a quality
 recall("", { 
-  dimensions: { 
+  qualities: { 
     embodied: ["thinking", "sensing"],  // embodied.thinking OR embodied.sensing
     mood: "closed"  // AND mood.closed
   }
@@ -111,7 +111,7 @@ recall("", {
 ```javascript
 // Test nested boolean logic
 recall("", { 
-  dimensions: { 
+  qualities: { 
     $and: [
       { mood: "closed" },
       { 
@@ -129,38 +129,38 @@ recall("", {
 // Should return: 3 experiences matching the complex pattern
 ```
 
-### Scenario 4: Mixed Semantic and Dimensional Queries
+### Scenario 4: Mixed Semantic and Quality Queries
 ```javascript
-// Test semantic search with dimensional filtering
+// Test semantic search with quality filtering
 recall("anxiety nervousness", { 
-  dimensions: { 
+  qualities: { 
     embodied: { present: true },
     focus: { present: false }
   }
 });
 
-// Expected: Semantic matches for "anxiety nervousness" that have embodied dimensions but no focus
-// Test data: 5 experiences with anxiety-related content and various dimensional signatures
-// Should return: 2 experiences matching semantic + dimensional criteria
+// Expected: Semantic matches for "anxiety nervousness" that have embodied qualities but no focus
+// Test data: 5 experiences with anxiety-related content and various quality signatures
+// Should return: 2 experiences matching semantic + quality criteria
 ```
 
 ### Scenario 5: Edge Cases and Error Handling
 ```javascript
-// Test invalid dimension names
+// Test invalid quality names
 recall("", { 
-  dimensions: { 
-    invalid_dimension: "value"  // Should be ignored or return error
+  qualities: { 
+    invalid_quality: "value"  // Should be ignored or return error
   }
 });
 
 // Test empty filter objects
 recall("", { 
-  dimensions: {}  // Should return all experiences
+  qualities: {}  // Should return all experiences
 });
 
 // Test conflicting presence/absence
 recall("", { 
-  dimensions: { 
+  qualities: { 
     mood: { present: true, absent: true }  // Should return validation error
   }
 });
@@ -171,36 +171,36 @@ recall("", {
 - ✅ Backward compatibility maintained (existing queries work unchanged)
 - ✅ Performance impact <20% increase in recall latency
 - ✅ Complex boolean expressions evaluate correctly
-- ✅ Presence/absence filtering works for all dimensions
+- ✅ Presence/absence filtering works for all qualities
 - ✅ Error handling provides clear validation messages
 - ✅ Schema validation catches invalid filter structures
 
 **Implementation Plan**:
 
 ### Phase 1: Core Infrastructure (Week 1)
-1. **Create DimensionalFilterService** (`src/services/dimensional-filter.ts`)
+1. **Create QualityFilterService** (`src/services/quality-filter.ts`)
    - Filter expression parsing
    - Boolean logic evaluation
    - Presence/absence checking
 
 2. **Enhanced Schema Definition** (`src/mcp/schemas.ts`)
-   - Add DimensionalFilterSchema
-   - Update SearchInputSchema with dimensions field
+   - Add QualityFilterSchema
+   - Update SearchInputSchema with qualities field
    - Add validation for complex filter structures
 
-3. **Unit Tests** (`src/services/dimensional-filter.test.ts`)
+3. **Unit Tests** (`src/services/quality-filter.test.ts`)
    - Test all filter types individually
    - Test boolean logic combinations
    - Test edge cases and error conditions
 
 ### Phase 2: Integration (Week 2)
 1. **Update Unified Scoring** (`src/services/unified-scoring.ts`)
-   - Integrate DimensionalFilterService
+   - Integrate QualityFilterService
    - Maintain backward compatibility
    - Add performance monitoring
 
 2. **Enhanced Recall Handler** (`src/mcp/recall-handler.ts`)
-   - Parse dimensional filters from requests
+   - Parse quality filters from requests
    - Apply filters before scoring
    - Return appropriate error messages
 
@@ -232,7 +232,7 @@ recall("", {
 - **Testing**: Comprehensive test coverage for all filter combinations
 
 **Evidence Trail**:
-- Implementation: New dimensional filtering service and enhanced schemas
+- Implementation: New quality filtering service and enhanced schemas
 - Test results: All scenarios passing with correct filtering behavior
 - Performance metrics: <20% latency increase maintained
 - Documentation: Updated API reference with new capabilities

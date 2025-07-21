@@ -249,7 +249,7 @@ const SCENARIOS: Record<string, TestScenario> = {
     ]
   },
   'sophisticated-filtering': {
-    description: 'Test sophisticated dimensional filtering with boolean logic and absence filtering',
+    description: 'Test sophisticated quality filtering with boolean logic and absence filtering',
     turns: [
       {
         role: 'user',
