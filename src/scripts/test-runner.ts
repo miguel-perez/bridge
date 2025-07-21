@@ -331,6 +331,7 @@ class TestRunner {
 
     // Process response and handle tool use
     const responseContent: unknown[] = [];
+    const toolUses: Array<{id: string; name: string; result: {content?: unknown[]; isError?: boolean}}> = [];
     
     for (const content of response.content) {
       if (content.type === 'text') {
@@ -372,23 +373,64 @@ class TestRunner {
             toolCall.resultText = textResponses;
           }
           
-          // Add tool result to response
-          responseContent.push({
-            type: 'text',
-            text: `Tool ${content.name} called successfully.`
+          // Store tool result for continuation
+          toolUses.push({
+            id: content.id,
+            name: content.name,
+            result: result
           });
           
         } catch (error) {
           toolCall.error = error instanceof Error ? error.message : String(error);
           console.error(`❌ Tool call failed: ${toolCall.error}`);
-          responseContent.push({
-            type: 'text',
-            text: `Tool ${content.name} failed: ${toolCall.error}`
+          
+          // Store error result
+          toolUses.push({
+            id: content.id,
+            name: content.name,
+            result: { 
+              isError: true, 
+              content: [{ type: 'text', text: `Error: ${toolCall.error}` }] 
+            }
           });
         }
         
         this.toolCalls.push(toolCall);
       }
+    }
+
+    // If there were tool uses, we need to get Claude's final response after the tool results
+    if (toolUses.length > 0) {
+      // Add tool results to messages
+      const messagesWithTools = [...formattedMessages];
+      messagesWithTools.push({
+        role: 'assistant',
+        content: response.content
+      });
+      
+      // Add tool results
+      for (const toolUse of toolUses) {
+        messagesWithTools.push({
+          role: 'user',
+          content: [{
+            type: 'tool_result',
+            tool_use_id: toolUse.id,
+            content: toolUse.result.content || []
+          }]
+        });
+      }
+      
+      // Get Claude's response after tool use
+      const continuationResponse = await this.anthropic.messages.create({
+        ...requestParams,
+        messages: messagesWithTools
+      });
+      
+      // Return the continuation response
+      return {
+        role: 'assistant',
+        content: continuationResponse.content
+      };
     }
 
     return {
