@@ -16,7 +16,83 @@ Each experiment follows this format for learning loop compatibility:
 
 ## Active Experiments
 
-*No active experiments at this time. See completed experiments below for recent work.*
+### EXP-004: Strategic Test Coverage Improvement
+
+**Purpose**: Systematically improve test coverage from 26% to 60%+ to reduce bug introduction rate
+
+**Status**: Ready to implement
+
+**Hypothesis**: The high bug fix rate (33% of commits) is directly correlated with low test coverage (26%). By strategically improving coverage in high-traffic, high-risk areas, we can reduce future bug introduction and improve development velocity.
+
+**Test Scenarios**:
+
+1. **Coverage Gap Analysis**
+   - Run coverage report with detailed file-by-file breakdown
+   - Identify critical paths with <50% coverage
+   - Prioritize by: (change frequency × complexity × criticality)
+   - Document top 10 files needing coverage
+
+2. **High-Traffic Area Testing**
+   - Focus on `src/services/` (recall, experience, unified-scoring)
+   - Add edge case tests for dimensional filtering
+   - Test error handling paths
+   - Verify timeout and failure scenarios
+
+3. **Integration Test Expansion**
+   - Add tests for complete user journeys
+   - Test interaction between services
+   - Verify MCP protocol compliance
+   - Test concurrent operations
+
+4. **Coverage Monitoring**
+   - Set up coverage threshold enforcement
+   - Add coverage badges to README
+   - Configure CI to fail below 60%
+   - Track coverage trends in learning loop
+
+**Measurable Outcomes**:
+
+- Increase line coverage from 27.4% to 60%+
+- Increase branch coverage from 19.1% to 50%+
+- Increase function coverage from 31.5% to 60%+
+- Reduce bug fix commit rate from 33% to <20%
+- Zero regressions in existing functionality
+
+**Learning Questions**:
+
+- Which types of tests provide the most bug-catching value?
+- What's the optimal balance between unit and integration tests?
+- Which uncovered code paths are most likely to harbor bugs?
+- How does coverage correlate with bug introduction in this codebase?
+
+**Implementation Plan**:
+
+1. **Phase 1: Analysis** (Day 1)
+   - Generate detailed coverage report
+   - Analyze git history for high-change files
+   - Create prioritized test list
+
+2. **Phase 2: Critical Path Tests** (Days 2-3)
+   - Write tests for top 5 critical files
+   - Focus on error paths and edge cases
+   - Ensure 80%+ coverage for these files
+
+3. **Phase 3: Service Layer Tests** (Days 4-5)
+   - Complete coverage for recall service
+   - Add missing experience service tests
+   - Test unified scoring edge cases
+
+4. **Phase 4: Integration & Monitoring** (Day 6)
+   - Add end-to-end test scenarios
+   - Set up coverage enforcement
+   - Document testing best practices
+
+**Success Criteria**:
+
+- All measurable outcomes achieved
+- No increase in test execution time >20%
+- Clear documentation of testing patterns
+- Learning loop confirms reduced bug rate
 
 ## Completed Experiments
 
