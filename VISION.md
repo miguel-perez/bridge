@@ -1,5 +1,9 @@
 # Bridge: Experiential Memory for Human-AI Collaboration
 
+**Document Purpose**: This is Bridge's conceptual vision and philosophical foundation. It describes the full potential of what Bridge aims to become, including features not yet implemented. For current technical capabilities, see TECHNICAL.md.
+
+**For Everyone**: Use this to understand Bridge's purpose, design principles, and future direction.
+
 ## The Problem
 
 Every AI conversation starts from scratch. Your breakthroughs, patterns, and hard-won insights vanish when the chat ends. You explain yourself again and again. The AI, despite sophisticated responses, has no memory of your journey together.

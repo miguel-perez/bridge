@@ -1,5 +1,9 @@
 # Bridge Experiments
 
+**Document Purpose**: This tracks active and completed experiments on Bridge functionality. Each experiment is designed to test specific features and generate learnings through the learning loop. For insights from completed experiments, see LEARNINGS.md.
+
+**For Developers**: Use this to understand what's being tested and contribute new experiments.
+
 This document outlines experiments designed to work with our learning loop. Each experiment includes specific test scenarios that allow Opus to evaluate results and suggest improvements.
 
 ## Experiment Structure
@@ -12,37 +16,68 @@ Each experiment follows this format for learning loop compatibility:
 
 ## Active Experiments
 
+### EXP-002: Dimensional Filtering and Unified Scoring
+
+**Purpose**: Test the new dimensional filtering capabilities and unified scoring system
+
+**Status**: Ready to test
+
+**Test Scenarios**:
+
+1. Pure dimensional queries (e.g., "mood.closed") should only return exact matches
+2. Array dimensional queries should require ALL dimensions to match
+3. Mixed text/dimension queries should score all experiences without filtering
+4. Unified scoring should properly weight semantic, dimensional, and temporal factors
+5. Edge cases: partial dimension names, invalid dimensions, empty results
+
+**Measurable Outcomes**:
+
+- Dimensional filtering accuracy (no false positives like mood.closed matching mood.open)
+- Unified scoring effectiveness (relevant experiences ranked higher)
+- Performance impact of the new scoring system
+- Error handling for edge cases
+
+**Learning Questions**:
+
+- Does unified scoring improve recall relevance?
+- How do different weight distributions affect results?
+- What query patterns benefit most from dimensional filtering?
+- Are there unexpected interactions between scoring components?
+
+## Completed Experiments
+
 ### EXP-001: Bridge Operations Discovery
 
 **Purpose**: Establish baseline understanding of how Bridge operations function in practice
 
+**Status**: Completed 2025-07-21
+
 **Test Scenarios**:
 
-1. Basic experience capture with varied quality signatures
-2. Similarity detection between related experiences
-3. Recall accuracy across different query types
-4. Pattern recognition in accumulated experiences
-5. Reconsider operation for evolving understanding
-6. Release operation for cleanup
+1. Basic experience capture with varied quality signatures ✓
+2. Similarity detection between related experiences ✓
+3. Recall accuracy across different query types ✓
+4. Pattern recognition in accumulated experiences ✓
+5. Reconsider operation for evolving understanding ✓
+6. Release operation for cleanup ✓
 
 **Measurable Outcomes**:
 
-- Tool activation appropriateness (when tools are used vs not used)
-- Quality signature accuracy (do the dimensions match the experience?)
-- Similarity detection effectiveness (related experiences found?)
-- Recall relevance (useful results returned?)
-- Pattern emergence (what patterns become visible?)
+- Tool activation appropriateness: Confirmed tools activate for meaningful moments
+- Quality signature accuracy: Dimensions appropriately matched experiences
+- Similarity detection effectiveness: Successfully found thematically related experiences
+- Recall relevance: Results were contextually appropriate
+- Pattern emergence: Anxiety patterns identified across temporal contexts
 
-**Learning Questions**:
+**Key Findings**:
 
-- How do quality signatures evolve with conversation depth?
-- What patterns emerge from accumulated experiences?
-- How does similarity detection handle nuanced differences?
-- What makes recall results most useful?
-- When is reconsideration most valuable?
+- Bridge successfully detected thematic similarities between anxiety experiences
+- Quality signatures showed consistent markers for emotional states
+- Average operation latency of 7.3 seconds could disrupt flow
+- Sort parameter in recall didn't affect output order (bug identified)
 
 **Evidence Trail**:
 
-- Test Results: `test-results/test-run-*.json`
-- Learning Analysis: `test-results/learning-loop-*.json`
-- Validated Insights: Added to LEARNINGS.md with references
+- Test Results: `test-results/test-run-1753069074129.json`
+- Learning Analysis: `/Users/miguel/Git/bridge/test-results/learning-loop-1753069156823.json`
+- Validated Insights: Added to LEARNINGS.md (2025-07-21 entry)

@@ -1,41 +1,14 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+**Document Purpose**: This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository. It contains practical commands, architecture overview, and development context needed for day-to-day coding tasks.
 
-## The Learning Loop
+**For Developers**: Use this as your quick reference for commands, architecture, and testing approaches.
 
-```text
-VISION → OPPORTUNITIES → EXPERIMENTS → LEARNINGS → VISION
-```
+## Development Process
 
-1. **Understand methodology**: Check LOOP.md
-2. **Find opportunity**: Check OPPORTUNITIES.md
-3. **Run experiment**: Add to EXPERIMENTS.md, design and run test
-4. **Review learnings**: Check LEARNINGS.md for insights
-5. **Update vision**: Refine based on learnings
+Bridge follows a continuous learning loop: **VISION → OPPORTUNITIES → EXPERIMENTS → LEARNINGS → VISION**
 
-## Commands
-
-```bash
-# Development
-npm run dev                       # Start MCP server in watch mode
-npm run build                     # Build TypeScript to dist/
-npm run lint                      # Run ESLint on src/**/*.ts
-npm run lint:fix                  # Auto-fix linting issues
-npm run type-check                # Type check without building
-
-# Testing
-npm test                          # Run unit tests with Jest
-npm run test:bridge               # Run all Bridge test scenarios in parallel
-npm run test:bridge <scenario>    # Run specific scenario (autonomous-bridge, with-bridge, without-bridge)
-npm run test:all                  # Run tests then learning loop
-npm run loop                      # Run learning loop analysis on test results
-
-# Build & Deploy
-npm run build:all                 # Build and bundle for production
-./build-dxt.sh                    # Build Desktop Extension (Unix)
-.\build-dxt.ps1                   # Build Desktop Extension (Windows)
-```
+See **LOOP.md** for the complete development workflow, commands, and methodology.
 
 ## Architecture
 
@@ -59,7 +32,8 @@ MCP Client (Claude) → MCP Server → Tool Handlers → Services → Storage
 
 2. **Services** (`src/services/`)
    - `experience.ts` - Remembers experiences with quality signatures
-   - `recall.ts` - Semantic search with multiple strategies
+   - `recall.ts` - Semantic search and dimensional filtering
+   - `unified-scoring.ts` - Dynamic scoring system for recall
    - `reconsider.ts` - Updates existing experiences
    - `release.ts` - Removes experiences
    - `embeddings.ts` - @xenova/transformers for semantic vectors
@@ -68,12 +42,14 @@ MCP Client (Claude) → MCP Server → Tool Handlers → Services → Storage
 3. **Storage** (`src/core/`)
    - `storage.ts` - JSON persistence to `~/.bridge/experiences.json`
    - `types.ts` - Core data structures (Source, Experience, etc.)
+   - `config.ts` - Centralized configuration and thresholds
+   - `dimensions.ts` - Known dimension definitions
    - Experiences stored with embeddings for semantic search
 
 4. **Testing Infrastructure** (`src/scripts/`)
    - `test-runner.ts` - Parallel test execution with three scenarios
    - `learning-loop.ts` - Opus 4 analyzes test results using sequential thinking
-   - Tests save individually to prevent data loss
+   - Unit tests co-located with source files (*.test.ts)
 
 ### Data Flow Example
 
@@ -89,18 +65,24 @@ experience({ source: "I feel anxious", experience: ["embodied.sensing", "mood.cl
 // 7. Claude receives: "Experienced (embodied.sensing, mood.closed)"
 ```
 
-### Test Scenarios
+### Current Implementation Status
 
-- **autonomous-bridge**: Can AI use Bridge for self-awareness?
-- **with-bridge**: Conversation with Bridge tools available
-- **without-bridge**: Control test without tools
+**What Works Today:**
+- Semantic search using transformer embeddings (all-MiniLM-L6-v2)
+- Dimensional filtering and queries
+- Unified scoring system
+- Four core operations: experience(), recall(), reconsider(), release()
 
-### Important Context
+**Next Priorities (from OPPORTUNITIES.md):**
+1. Pattern realizations with reflects field (Score: 560)
+2. Clustering mode (Score: 378)
+3. Advanced filtering options (Score: 280)
 
+**Key Context:**
 - Experiences have "quality signatures" - sparse arrays of prominent dimensions
-- The learning loop updates documentation automatically based on test insights
-- Tests run in parallel and save incrementally to handle timeouts
-- Sequential thinking is simplified (no forced categorization) to prevent Opus timeouts
+- Tests run in parallel with three scenarios
+- Sequential thinking works reliably with Opus 4
+- See TECHNICAL.md for current API reference
 
 ## External Documentation
 
@@ -114,4 +96,12 @@ experience({ source: "I feel anxious", experience: ["embodied.sensing", "mood.cl
 - **DXT Manifest Spec**: https://github.com/anthropics/dxt/blob/main/MANIFEST.md
 - **DXT Examples**: https://github.com/anthropics/dxt/tree/main/examples
 
-*See PHILOSOPHY.md for impact, LOOP.md for methodology, VISION.md for roadmap*
+## Key Documentation
+
+- **LOOP.md** - Development methodology and commands
+- **TECHNICAL.md** - Current API reference (what works today)
+- **VISION.md** - Conceptual vision and future direction
+- **OPPORTUNITIES.md** - Prioritized feature roadmap
+- **EXPERIMENTS.md** - Active tests and hypotheses
+- **LEARNINGS.md** - Validated insights from usage
+- **PHILOSOPHY.md** - Theoretical foundations

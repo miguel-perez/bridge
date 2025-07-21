@@ -41,184 +41,125 @@ recall("mood", { as: "sequence", timespan: "last week" })
 - **options**: How to analyze (optional)
   - `as`: Analysis mode ("clusters", "sequence")
   - `filter`: Narrow the scope
-  - `depth`: Level of detail ("surface", "deep")
 
-## Analysis Modes
+## Planned Features (Not Yet Implemented)
 
-### 1. Clusters Mode: Finding Themes
+### Future: Clusters Mode
 
-Groups experiences by similarity to reveal what happens in different states.
+*Status: Planned (See OPPORTUNITIES.md - Score: 378)*
 
-```javascript
-recall("mood", { as: "clusters" })
+Will group experiences by similarity to reveal patterns in different states.
 
-// Returns something like:
-{
-  clusters: [
-    {
-      signature: ["mood.open"],
-      experiences: [/* breakthrough moments, creative flows */],
-      summary: "In open states, you tend to have creative breakthroughs and connect ideas freely"
-    },
-    {
-      signature: ["mood.closed"], 
-      experiences: [/* stuck points, frustrations */],
-      summary: "Closed states often involve debugging struggles and feeling blocked"
-    }
-  ]
-}
-```
+### Future: Sequence Mode
 
-**Use clusters when you want to understand:**
-- What typically happens in certain states
-- How different dimensional combinations create different experiences
-- Common themes in your experiential landscape
+*Status: Planned (See OPPORTUNITIES.md - Score: 240)*
 
-### 2. Sequence Mode: Tracking Flows
+Will analyze temporal transitions to reveal natural rhythms.
 
-Analyzes how experiences transition over time to reveal natural rhythms.
+### Future: Pattern Realizations with reflects field
+
+*Status: Highest Priority (See OPPORTUNITIES.md - Score: 560)*
+
+Will enable capturing "aha" moments that link multiple experiences.
+
+## Current Search Capabilities
+
+### Semantic Search
+
+Bridge uses transformer-based embeddings (all-MiniLM-L6-v2) for semantic similarity:
 
 ```javascript
-recall(["focus", "mood"], { as: "sequence" })
-
-// Returns patterns like:
-{
-  sequences: [
-    {
-      pattern: [
-        ["focus.narrow", "mood.closed"],
-        ["focus.broad", "mood.open"]
-      ],
-      frequency: 8,
-      insight: "Your stuck→breakthrough pattern: intense focus with frustration often leads to expansive realization"
-    }
-  ]
-}
+// Find experiences similar in meaning
+recall("feeling anxious about presentation")
+// Finds semantically related experiences even without exact word matches
 ```
 
-**Use sequences when you want to understand:**
-- How you typically move from stuck to unstuck
-- Your decision-making patterns (OODA loops)
-- Natural cycles and rhythms in your experience
+### Dimensional Filtering
 
-## Pattern Recognition Through Collaborative Insight
-
-Patterns aren't discovered by algorithms—they're recognized through experience by both humans and AI. When either participant notices a connection, that realization becomes a new experience that reflects on the moments it connects.
-
-### How Pattern Realizations Work
+Query by specific quality dimensions:
 
 ```javascript
-// Human recognizes a pattern:
-Human: "I just realized - every time I get stuck on a bug, taking a walk leads to the solution"
+// Single dimension - finds all mood.closed experiences
+recall("mood.closed")
 
-// This creates a new experience:
-{
-  source: "I just realized - every time I get stuck...",
-  experiencer: "Human",
-  experience: ["embodied.thinking", "time.past", "mood.open"],
-  reflects: ["exp_123", "exp_456", "exp_789"]  // Links to the reflected experiences
-}
+// Multiple dimensions - must have ALL specified dimensions
+recall(["embodied.sensing", "mood.closed"])
 
-// Claude recognizes a pattern:
-Claude: "I notice that our most productive sessions happen when you start with a question rather than a statement"
-
-// This also creates a new experience:
-{
-  source: "I notice that our most productive sessions...",
-  experiencer: "Claude", 
-  experience: ["presence.collective", "time.past", "purpose.goal"],
-  reflects: ["exp_234", "exp_567", "exp_890"]
-}
-
-// Later, search for all pattern realizations:
-recall({ filter: { reflects: "only" } })
+// Base dimension matches subtypes
+recall("embodied")  // Matches embodied.thinking AND embodied.sensing
 ```
 
-## Advanced Filtering
+## Current Filtering Options
 
 ### Filter by Experiencer
 ```javascript
 recall("purpose", {
-  filter: { experiencer: "Miguel" }
+  experiencer: "Human"
 })
 ```
 
-### Filter by Time
+### Filter by Perspective
 ```javascript
-recall(["mood", "focus"], {
-  filter: { timespan: "last week" },
-  as: "sequence"
+recall("", {
+  perspective: "we"  // Find collective experiences
 })
 ```
 
-### Filter by Pattern Realizations
+### Filter by Processing Time
 ```javascript
-recall({ 
-  filter: { reflects: "only" } 
+recall("insight", {
+  processing: "long-after"  // Find retrospective insights
 })
-// Get all pattern realizations
-
-recall({ 
-  filter: { reflects: "exp_123" } 
-})
-// Find pattern realizations that reference specific experience
 ```
 
-### Filter by Dimension Presence
+### Special Queries
 ```javascript
-recall([], {
-  filter: {
-    embodied: { present: true },
-    time: { present: false }
-  }
-})
-// Find embodied experiences that aren't time-focused
+// Get recent experiences
+recall("recent")  // or recall("last")
+
+// Get all experiences (with optional filters)
+recall("", { experiencer: "Claude" })
 ```
 
-## Real-World Examples
+## Real-World Examples (Current Implementation)
 
-### Finding Your Flow States
+### Finding Experiences by Mood
 ```javascript
-const flowStates = await recall(["focus", "mood", "purpose"], {
-  filter: { 
-    mood: { present: true },
-    experiencer: "Human" 
-  },
-  as: "clusters"
+const anxiousStates = await recall("mood.closed", {
+  experiencer: "Human",
+  limit: 10
 });
-
-// Might reveal clusters like:
-// - Deep work: focus.narrow + mood.open + purpose.goal
-// - Creative exploration: focus.broad + mood.open + purpose.wander
+// Returns experiences where mood.closed was prominent
 ```
 
-### Analyzing Decision Patterns
+### Semantic Search for Themes
 ```javascript
-const decisions = await recall(["focus", "time"], {
-  as: "sequence"
+const breakthroughs = await recall("breakthrough moment finally solved", {
+  sort: "relevance"
 });
+// Uses semantic embeddings to find conceptually similar experiences
+```
 
-// Maps to OODA loop:
-// Observe: focus.narrow + time.past
-// Orient: focus.broad + time.past
-// Decide: focus.broad + time.future
-// Act: focus.narrow + time.future
+### Multi-dimensional Query
+```javascript
+const focusedAnxiety = await recall(["focus.narrow", "mood.closed"]);
+// Finds experiences that have BOTH dimensions
 ```
 
 ## Technical Foundation
 
-The enhanced recall() leverages:
-- **Semantic embeddings** for meaning-based clustering
-- **Temporal analysis** for sequence detection
-- **Dimensional signatures** for quality-based grouping
+The current recall() implementation uses:
+- **Semantic embeddings** (@xenova/transformers, all-MiniLM-L6-v2 model)
+- **Unified scoring** combining semantic similarity, text matching, and dimensional relevance
+- **Dimensional filtering** for precise quality-based queries
 
 ## Integration with Other Operations
 
-The enhanced recall() works seamlessly with other Bridge operations:
+Bridge's operations work together as a complete system:
 
 1. **experience()** captures moments
-2. **recall()** reveals patterns in those moments
-3. **reconsider()** updates understanding as patterns clarify
-4. **release()** lets go of patterns that no longer serve
+2. **recall()** searches and retrieves those moments
+3. **reconsider()** updates understanding as it deepens
+4. **release()** lets go of experiences that no longer serve
 
 This creates a living system where memory doesn't just accumulate—it crystallizes into wisdom.

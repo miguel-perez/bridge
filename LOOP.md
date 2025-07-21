@@ -2,51 +2,91 @@ VISION → OPPORTUNITIES → EXPERIMENTS → LEARNINGS → VISION
 
 # The Bridge Learning Loop
 
+**Document Purpose**: This explains Bridge's development methodology - how we systematically evolve from vision to implementation through experimentation and learning. This is our process for continuous improvement.
+
+**For Contributors**: Follow this loop when proposing new features or improvements.
+
 We use a continuous learning loop to evolve from vision to reality:
 
 1. **VISION.md** - Describes the ideal future state of Bridge
-2. **OPPORTUNITIES.md** - Questions and assumptions to test
-3. **EXPERIMENTS.md** - Small, fast tests to answer questions
-4. **LEARNINGS.md** - Reusable insights that refine the vision
+2. **OPPORTUNITIES.md** - Prioritized roadmap of features not yet implemented
+3. **EXPERIMENTS.md** - Active and completed tests on Bridge functionality
+4. **LEARNINGS.md** - Validated insights from experiments and real-world usage
 
 ## How It Works
 
-### 1. Vision Drives Questions
-- Read VISION.md sections
-- Identify assumptions and unknowns
-- Frame as testable questions in OPPORTUNITIES.md
+### 1. Vision Drives Opportunities
+- Read VISION.md and TECHNICAL.md
+- Identify gaps between vision and current implementation
+- Frame as "How Might We" (HMW) questions in OPPORTUNITIES.md
 - Score by Impact × Certainty × Urgency
+- Highest priority: Pattern realizations (Score: 560)
 
-### 2. Questions Become Experiments
-- Pick high-scoring opportunities (400+)
-- Design smallest testable version
-- Add to EXPERIMENTS.md with hypothesis
-- Run with AI UX researcher observing
+### 2. Opportunities Become Experiments
+- Pick high-scoring opportunities (400+ or strategic importance)
+- Design specific test scenarios
+- Add to EXPERIMENTS.md with measurable outcomes
+- Run tests using `npm run test:bridge`
 
 ### 3. Experiments Generate Learnings
-- AI UX researcher analyzes results
-- Extracts reusable patterns
-- Updates LEARNINGS.md automatically
-- Tracks confidence levels
+- Run learning loop with `npm run loop`
+- Opus 4 analyzes test results using sequential thinking
+- Extracts patterns and insights
+- Updates LEARNINGS.md with evidence trails
+- Documents architecture insights and behavioral patterns
 
-### 4. Learnings Update Vision
-- Review insights that challenge assumptions
-- Update VISION.md with new understanding
-- Generate new opportunities
+### 4. Learnings Inform Development
+- Review insights that reveal implementation gaps
+- Update TECHNICAL.md with current capabilities
+- Generate new opportunities from gaps
+- Implement high-priority features
 - Continue the cycle
 
-# Bridge Opportunity Backlog
+## Working with Bridge Code
 
-## How to Generate Opportunities from VISION.md
+### Development Workflow
+1. **Check current state**: Read TECHNICAL.md for what's actually implemented
+2. **Find next priority**: Check OPPORTUNITIES.md for scored features
+3. **Run tests**: Use `npm test` for unit tests, `npm run test:bridge` for scenarios
+4. **Analyze results**: Run `npm run loop` for learning loop analysis
+5. **Update docs**: Keep TECHNICAL.md current with implementation
 
-1. **Read a section** of VISION.md (e.g., understand() operation)
-2. **Ask questions** about assumptions, risks, and unknowns:
-   - "Will people actually...?"
-   - "Does this work when...?"
-   - "How do we know if...?"
-   - "What happens when...?"
-3. **Frame as testable questions** (not statements or tasks)
-4. **Break down** complex questions into sub-questions using `→`
+### Key Commands
+```bash
+# Development
+npm run dev                       # Start MCP server in watch mode
+npm run build                     # Build TypeScript to dist/
+npm run lint                      # Run ESLint
+npm run lint:fix                  # Auto-fix linting issues
+npm run type-check                # Type check without building
+
+# Testing
+npm test                          # Run unit tests with Jest
+npm run test:bridge               # Run all Bridge test scenarios
+npm run test:bridge <scenario>    # Run specific scenario
+npm run test:all                  # Run tests then learning loop
+npm run loop                      # Run learning loop analysis
+
+# Build & Deploy
+npm run build:all                 # Build and bundle for production
+./build-dxt.sh                    # Build Desktop Extension (Unix)
+.\build-dxt.ps1                   # Build Desktop Extension (Windows)
+```
+
+### Test Scenarios
+- **autonomous-bridge**: Can AI use Bridge for self-awareness?
+- **with-bridge**: Conversation with Bridge tools available
+- **without-bridge**: Control test without tools
+
+## How to Generate Opportunities from Gaps
+
+1. **Compare** VISION.md features with TECHNICAL.md implementation
+2. **Identify gaps** between vision and current state
+3. **Frame as HMW questions**:
+   - "HMW enable Bridge to reveal patterns through clustering?"
+   - "HMW capture pattern realizations as linkable experiences?"
+   - "HMW track temporal sequences to reveal rhythms?"
+4. **Include implementation notes** for each opportunity
 
 ## How to Score Opportunities
 
@@ -62,21 +102,26 @@ We use a continuous learning loop to evolve from vision to reality:
 - 4-6 = Might learn something
 - 1-3 = Moonshot - might learn nothing OR everything
 
-### Urgency (1-10): When does this opportunity expire?
-- 10 = Now (e.g., blocker, decision needed)
-- 7-9 = Next (e.g., before next minor release)
-- 4-6 = Later (e.g., before major major release)
-- 1-3 = Evergreen or never expires
+### Urgency (1-10): Timing pressure
+- 9-10 = Critical blocker - preventing core functionality
+- 7-8 = High priority - actively limiting experience
+- 5-6 = Medium priority - important but not blocking
+- 3-4 = Low priority - would be nice eventually
+- 1-2 = Future consideration
 
-## The 80/20 Prioritization Approach
+## Current Development Priorities
 
-1. **Sort by Score** (Impact × Certainty × Urgency)
-2. **Look for natural breaks** in scores (e.g., 400+, 200-400, <200)
-3. **Focus on top 20%** of opportunities that will likely generate 80% of learnings
-4. **Balance the portfolio**:
-   - Mix high-certainty validation with low-certainty exploration
-   - Include both urgent fixes and long-term bets
-   - Have 3-5 items "In Progress" maximum
+1. **Pattern Realizations** (Score: 560) - Essential for collaborative wisdom
+2. **Clustering** (Score: 378) - Core to revealing insights
+3. **Dimension Filtering** (Score: 280) - Sophisticated queries
+4. **Extensible Recall** (Score: 270) - Technical foundation
+5. **Sequence Analysis** (Score: 240) - Temporal patterns
+6. **Natural Language Time** (Score: 216) - Convenience feature
+
+### Prioritization Strategy
+- Use barbell approach: Mix high-certainty quick wins with high-impact experiments
+- Focus on features that enable collaborative wisdom building
+- Maintain backward compatibility while extending capabilities
 
 ## Documentation Structure
 

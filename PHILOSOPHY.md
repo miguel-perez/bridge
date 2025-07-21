@@ -1,4 +1,8 @@
-### A Framework for Experiential Capture
+# Bridge Philosophy: A Framework for Experiential Capture
+
+**Document Purpose**: This provides the theoretical and philosophical foundation for Bridge's approach to experiential memory. It explains the academic precedents and conceptual framework underlying our design choices.
+
+**For Researchers**: Use this to understand Bridge's intellectual heritage and theoretical basis.
 
 The Framed Moment framework synthesizes insights from micro-phenomenology, narrative therapy, experience sampling methods, and atomic knowledge systems to create a practical approach for capturing and working with discrete moments of consciousness. While building on these established foundations, the framework offers a specific implementation focused on preserving experiential wholeness in accessible first-person narratives.
 
