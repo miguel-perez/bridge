@@ -20,8 +20,8 @@ We use a continuous learning loop to evolve from vision to reality:
 - Read VISION.md and TECHNICAL.md
 - Identify gaps between vision and current implementation
 - Frame as "How Might We" (HMW) questions in OPPORTUNITIES.md
-- Score by Impact × Certainty × Urgency
-- Highest priority: Pattern realizations (Score: 560)
+- Score using methodology in OPPORTUNITIES.md (Impact × Certainty × Urgency)
+- Current highest priority: Clustering (Score: 378)
 
 ### 2. Opportunities Become Experiments
 - Pick high-scoring opportunities (400+ or strategic importance)
@@ -52,6 +52,8 @@ We use a continuous learning loop to evolve from vision to reality:
 4. **Analyze results**: Run `npm run loop` for recommendation-based analysis
 5. **Apply recommendations**: Review and implement suggested changes
 6. **Update docs**: Keep TECHNICAL.md current with implementation
+
+**Current Quality Status**: See **README.md** for current test coverage metrics (85.27% lines, 74.54% branches)
 
 ### Key Commands
 ```bash
@@ -106,33 +108,18 @@ All test results are saved to the `loop/` directory for analysis.
 
 ## How to Score Opportunities
 
-### Impact (1-10): Would the answer change our approach?
-- 10 = Would completely reshape our direction
-- 7-9 = Would significantly alter our approach
-- 4-6 = Would refine implementation details
-- 1-3 = Nice to know but won't change much
-
-### Certainty (1-10): How likely are we to get a useful answer?
-- 10 = Guaranteed to learn
-- 7-9 = Very likely to learn
-- 4-6 = Might learn something
-- 1-3 = Moonshot - might learn nothing OR everything
-
-### Urgency (1-10): Timing pressure
-- 9-10 = Critical blocker - preventing core functionality
-- 7-8 = High priority - actively limiting experience
-- 5-6 = Medium priority - important but not blocking
-- 3-4 = Low priority - would be nice eventually
-- 1-2 = Future consideration
+See **OPPORTUNITIES.md** for the complete scoring methodology (Impact × Certainty × Urgency).
 
 ## Current Development Priorities
 
-1. **Pattern Realizations** (Score: 560) - Essential for collaborative wisdom
-2. **Clustering** (Score: 378) - Core to revealing insights
-3. **Dimension Filtering** (Score: 280) - Sophisticated queries
-4. **Extensible Recall** (Score: 270) - Technical foundation
-5. **Sequence Analysis** (Score: 240) - Temporal patterns
-6. **Natural Language Time** (Score: 216) - Convenience feature
+1. **Clustering** (Score: 378) - Core to revealing insights through automatic grouping
+2. **Dimension Filtering** (Score: 280) - Sophisticated queries by dimension presence/absence
+3. **Extensible Recall** (Score: 270) - Technical foundation for future features
+4. **Sequence Analysis** (Score: 240) - Temporal patterns and transitions
+5. **Natural Language Time** (Score: 216) - Convenience feature for intuitive querying
+6. **Code Quality Monitoring** (Score: 336) - Maintain high test coverage and quality
+
+**Note**: Pattern Realizations (EXP-005) completed successfully, enabling collaborative wisdom building with `reflects` field.
 
 ### Prioritization Strategy
 - Use barbell approach: Mix high-certainty quick wins with high-impact experiments

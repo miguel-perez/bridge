@@ -77,9 +77,11 @@ experience({ source: "I feel anxious", experience: ["embodied.sensing", "mood.cl
 - Four core operations: experience(), recall(), reconsider(), release()
 
 **Next Priorities (from OPPORTUNITIES.md):**
-1. Pattern realizations with reflects field (Score: 560)
-2. Clustering mode (Score: 378)
-3. Advanced filtering options (Score: 280)
+1. Clustering mode (Score: 378) - Core to revealing insights through automatic grouping
+2. Dimension filtering (Score: 280) - Sophisticated queries by dimension presence/absence
+3. Extensible recall (Score: 270) - Technical foundation for future features
+
+**Note**: Pattern Realizations (EXP-005) completed successfully, enabling collaborative wisdom building with `reflects` field.
 
 **Key Context:**
 - Experiences have "quality signatures" - sparse arrays of prominent dimensions

@@ -68,24 +68,6 @@ Implementation would add `{ as: "sequence" }` option to recall, analyzing:
 - Recurring patterns in experience flows
 - Natural rhythms in user's experiential landscape
 
-### ✓ COMPLETED: Pattern realizations with reflects field
-
-**Status**: Completed 2025-07-21 (See EXP-005 in EXPERIMENTS.md)
-
-This opportunity has been successfully implemented with:
-- Added `reflects?: string[]` field to Source interface and Zod schemas
-- Implemented `reflects: 'only'` filter to find pattern realizations
-- Added `reflected_by` filter for reverse lookups
-- Enhanced tool descriptions with natural language patterns
-- Updated test data generation to include pattern realizations
-
-The pattern realizations feature now enables:
-- Both human and AI to capture "aha" moments about connections between experiences
-- Bidirectional linking between experiences and insights
-- Sophisticated queries for discovering pattern insights
-- Foundation for collaborative wisdom building
-
-See `src/core/types.ts` and `src/services/unified-scoring.ts` for implementation.
 
 ### HMW support natural language temporal filters like "last week"?
 
@@ -119,53 +101,6 @@ Implementation would support filters like:
 **Certainty: 9** - Clear refactoring of current parameter structure  
 **Urgency: 6** - Important before adding more options  
 **Score: 270**
-
-Implementation would:
-
-- Accept options object: `recall(query, { as, filter, limit, sort })`
-- Maintain backward compatibility
-- Enable future additions without breaking changes
-
-## Development Process Improvements
-
-### ✓ COMPLETED: Intelligent learning loop that provides actionable recommendations
-
-**Status**: Completed 2025-07-21 (See EXP-003 in EXPERIMENTS.md)
-
-This opportunity has been successfully implemented with:
-- Smart test execution (only runs when code changes)
-- Context aggregation from git, tests, and documentation
-- Prioritized recommendations with evidence trails
-- Enhanced experiment detection by content matching
-- Markdown report generation
-
-The learning loop now automatically:
-- Detects completed experiments
-- Identifies development patterns (e.g., high bug fix rates)
-- Suggests documentation updates
-- Tracks test coverage trends
-
-See `src/scripts/learning-loop.ts` for implementation.
-
-### ✓ COMPLETED: Strategic test coverage improvement
-
-**Status**: Completed 2025-07-21 (See EXP-004 in EXPERIMENTS.md)
-
-This opportunity has been successfully implemented with:
-
-- Test coverage improved from 27% to 82% (exceeding 60% target)
-- 100% coverage on all critical handler files
-- Comprehensive edge case and error path testing
-- 3,593 lines of test code added across 13 files
-
-The high test coverage now provides:
-
-- Reduced bug introduction rate
-- Confidence in refactoring
-- Clear examples of component usage
-- Protection against regressions
-
-See LEARNINGS.md for insights and patterns discovered.
 
 ### HMW maintain code quality through continuous monitoring?
 
