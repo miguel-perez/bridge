@@ -312,3 +312,46 @@ All opportunities respect these MCP realities:
 ---
 
 *This document reflects a systematic re-evaluation of all Bridge opportunities with clarified scoring criteria and MCP architectural constraints. Opportunities have been reframed to work within protocol limitations.*
+
+## New Research Questions
+
+## Research Questions
+
+These need investigation before implementation:
+
+1. What constitutes "meaningful" content for activation thresholds?
+2. How to handle contradictory memories from different perspectives?
+3. What's the best UI for memory correction workflows?
+4. How to preserve privacy while enabling pattern sharing?
+5. Can we detect false or manipulated memories?
+6. **Why does AI avoid using Bridge for self-reflection even when prompted?**
+7. **How can we transform Bridge from write-only to true bidirectional memory?**
+8. **What specific prompts trigger genuine AI introspection vs analytical deflection?**
+9. **Is the quality signature system constraining authentic expression?**
+10. **How do we measure genuine enhancement vs performative tool usage?**
+
+## Critical Priority Update
+
+### 1. Natural Activation Through Enhanced Descriptions  
+**Impact**: 9 | **Certainty**: 8 | **Urgency**: 9 | **Score**: 648
+
+Create clear tool descriptions with USE/DON'T USE guidance to naturally prevent inappropriate activations. Current immediate activation on greetings feels artificial.
+
+**Implementation**: Enhanced tool descriptions, multi-content responses with guidance, i18n-style response templates. No complex NLP or thresholds needed.
+
+**NEW INSIGHT**: Test results show this is even more critical than anticipated. AI demonstrates "performative tool usage" - using tools because they're available rather than because they add value. Enhanced descriptions must include clear value propositions for when tools genuinely enhance vs hinder conversation.
+
+## New High Priority Item
+
+### 9. Bidirectional Memory Implementation
+**Impact**: 9 | **Certainty**: 7 | **Urgency**: 8 | **Score**: 504
+
+Transform Bridge from write-only logging to true bidirectional memory system. Current implementation captures but never retrieves, failing core design intent.
+
+**Implementation**: 
+- Add retrieval triggers to natural conversation flow
+- Implement "memory surfacing" when relevant topics arise
+- Create connection-building through past experience references
+- Design retrieval patterns that feel natural, not forced
+
+**Evidence**: Zero retrieval operations across all test scenarios despite available data

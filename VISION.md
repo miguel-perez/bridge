@@ -159,3 +159,21 @@ But the core remains constant: transparent, shared, experiential memory that enh
 ---
 
 *Bridge succeeds not by hiding its nature, but by making memory formation a visible, shared, and meaningful part of human-AI dialogue.*
+
+## Critical Drift Update
+
+## Critical Design Assumption Update
+
+**Original Assumption**: Bridge would naturally function as a bidirectional memory system, with AI both storing and retrieving experiences to build continuity.
+
+**Reality Check**: Test results reveal Bridge currently functions as a write-only system. The AI never retrieves previously stored experiences, even when directly relevant to ongoing conversation. This transforms Bridge from a memory enhancement tool into merely an experiential logging system.
+
+**Vision Adjustment**: We must explicitly design retrieval mechanisms and triggers. The assumption that AI would naturally use available memories was incorrect. Bidirectional memory requires intentional design patterns, clear retrieval triggers, and possibly different tool architectures.
+
+**Implications**:
+- Need explicit retrieval operations beyond current `recall()`
+- Must design conversation patterns that naturally trigger memory surfacing
+- Consider whether current tool architecture supports true memory enhancement
+- Question whether AI's avoidance of self-referential memory is architectural or behavioral
+
+This finding fundamentally challenges our core value proposition of "continuity across conversations" and requires immediate attention to realize Bridge's intended purpose.

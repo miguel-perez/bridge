@@ -586,3 +586,23 @@ Each experiment feeds results back through the learning loop for continuous impr
 ---
 
 *All experiments are designed to produce testable variants that can be evaluated through our automated learning loop with Opus analysis.*
+
+## Active Experiments Status Update
+
+## 🔴 Active Experiments (Immediate Sprint)
+
+### 1. Natural Activation Through Enhanced Descriptions
+
+**Status**: VALIDATED - Critical insights gained
+**Test Results**: Analyzed in test-results/scenario-*.json files
+
+**Key Findings**:
+- Current immediate activation on greetings confirmed as problematic
+- AI demonstrates "performative tool usage" - using tools because available
+- Enhanced descriptions alone may not solve activation timing issues
+- Need stronger contextual triggers beyond description text
+
+**Next Steps**:
+- Implement USE/DON'T USE guidance in tool descriptions
+- Add activation threshold based on conversation depth markers
+- Test multi-content response system for better guidance
