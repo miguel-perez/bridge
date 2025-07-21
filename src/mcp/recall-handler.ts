@@ -70,20 +70,25 @@ export class RecallHandler {
       const query = recall.query || '';
       const limit = recall.limit || 10;
       
+      // Special handling for "recent" queries
+      const isRecentQuery = query.toLowerCase() === 'recent' || 
+                           query.toLowerCase() === 'last' ||
+                           query.toLowerCase() === 'latest';
+      
       // Perform recall
       const { results } = await withTimeout(
         this.recallService.search({
-          query,
-          limit,
+          query: isRecentQuery ? '' : query, // Empty query for recent to get all
+          limit: isRecentQuery ? Math.min(limit, 5) : limit, // Show fewer for recent
           // If query is provided, also use it for semantic recall
-          semantic_query: query,
+          semantic_query: isRecentQuery ? '' : query,
           semantic_threshold: 0.7,
           // Pass through all filters from the input
           experiencer: recall.experiencer,
           perspective: recall.perspective,
           processing: recall.processing,
           created: recall.created,
-          sort: recall.sort
+          sort: isRecentQuery ? 'created' : recall.sort // Force sort by created for recent
         }),
         DEFAULT_TIMEOUTS.SEARCH,
         'Recall operation'
@@ -104,8 +109,8 @@ export class RecallHandler {
         relevance_score: result.relevance_score
       }));
       
-      // Show IDs only if explicitly requested
-      const showIds = recall.show_ids || false;
+      // Always show IDs for better UX - users need them for modifications
+      const showIds = true;
       
       // Format results using conversational formatter
       const response = formatRecallResponse(recallResults, showIds);
@@ -117,7 +122,7 @@ export class RecallHandler {
       }];
       
       // Add contextual guidance
-      const guidance = this.selectRecallGuidance(query, recallResults, showIds);
+      const guidance = this.selectRecallGuidance(query, recallResults);
       if (guidance) {
         content.push({
           type: 'text',
@@ -142,38 +147,51 @@ export class RecallHandler {
    */
   private selectRecallGuidance(
     query: string, 
-    results: RecallResult[], 
-    showIds: boolean
+    results: RecallResult[]
   ): string | null {
-    // No results - suggest different search
+    // No results - provide helpful guidance based on query type
     if (results.length === 0) {
-      return "Try different search terms or use 'recall recent' to see latest experiences";
+      // Long queries often fail - suggest keywords
+      if (query.length > 30) {
+        return "Long phrases rarely match exactly. Try key words like: anxiety, presentation, nervous";
+      }
+      // Very short queries might be too broad
+      if (query.length < 3) {
+        return "Try more specific terms or 'recall recent' for latest experiences";
+      }
+      // Default guidance with examples
+      return "No matches found. Try:\n• Different keywords (mood, feeling, thought)\n• Broader terms (anxious → anxiety)\n• 'recall recent' for latest";
+    }
+    
+    // Single result - suggest actions
+    if (results.length === 1) {
+      return "To modify: use 'reconsider' with the ID\nTo remove: use 'release' with the ID";
     }
     
     // Check if this is a "recall last" query
     if (query.toLowerCase().includes('last') || query.toLowerCase().includes('recent')) {
-      if (showIds) {
-        return "To update: reconsider with ID";
-      }
+      return "Recent experiences shown with IDs for easy modification";
     }
     
     // Many results suggest patterns
-    if (results.length > 3) {
-      return "Patterns emerging";
+    if (results.length > 5) {
+      return "Multiple patterns found. Consider refining search or analyzing themes";
     }
     
-    // Check if results might need correction
-    // (This is a simple heuristic - could be improved)
-    const hasEmotionalContent = results.some(r => 
-      r.metadata?.experience?.some(q => 
-        q.includes('mood') || q.includes('embodied.sensing')
-      )
-    );
-    
-    if (hasEmotionalContent && showIds) {
-      return "To update any of these: reconsider with ID";
+    // 2-5 results with emotional content
+    if (results.length <= 5) {
+      const hasEmotionalContent = results.some(r => 
+        r.metadata?.experience?.some(q => 
+          q.includes('mood') || q.includes('embodied')
+        )
+      );
+      
+      if (hasEmotionalContent) {
+        return "Emotional experiences captured. Use IDs to update or connect insights";
+      }
     }
     
-    return null;
+    // Default for small result sets
+    return "Use the IDs above to reconsider or release specific experiences";
   }
 }

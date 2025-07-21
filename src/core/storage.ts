@@ -16,7 +16,7 @@ import type { Source, EmbeddingRecord, StorageData } from './types.js';
 /** Default storage configuration */
 export const STORAGE_DEFAULTS = {
   ENV: 'development',
-  ID_PREFIX: 'src',
+  ID_PREFIX: 'exp',
   FILE_ENCODING: 'utf8' as const,
   JSON_INDENT: 2
 } as const;
@@ -200,12 +200,14 @@ export async function storeFile(sourcePath: string, sourceId: string): Promise<s
 
 /**
  * Generates unique IDs with optional prefix.
+ * Uses shorter IDs (8 chars) for better UX while maintaining uniqueness.
  * @param prefix - Optional prefix for the ID
- * @returns Unique ID string
+ * @returns Unique ID string like 'exp_Ab3x9kLm'
  */
 export async function generateId(prefix: string = STORAGE_DEFAULTS.ID_PREFIX): Promise<string> {
   const { nanoid } = await import('nanoid');
-  const id = nanoid();
+  // Generate shorter 8-character IDs for better UX
+  const id = nanoid(8);
   return `${prefix}_${id}`;
 }
 
