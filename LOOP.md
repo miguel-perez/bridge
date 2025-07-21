@@ -76,11 +76,45 @@ npm run test:bridge:dimensional   # Test dimensional queries
 npm run test:all                  # Run tests then learning loop
 npm run loop                      # Run learning loop analysis
 
+# Quality Gates
+npm run quality-check             # Quick quality check (pre-commit level)
+npm run quality-check:full        # Full quality check (pre-push level)
+
 # Build & Deploy
 npm run build:all                 # Build and bundle for production
 ./build-dxt.sh                    # Build Desktop Extension (Unix)
 .\build-dxt.ps1                   # Build Desktop Extension (Windows)
 ```
+
+### Quality Gates
+
+Bridge uses automated quality gates to maintain high code quality:
+
+**Pre-commit Hook** (runs on `git commit`):
+- TypeScript type checking
+- ESLint validation
+- Markdown linting
+- Build verification
+- Unit tests
+- Quick integration test
+
+**Pre-push Hook** (runs on `git push`):
+- All pre-commit checks
+- Unit tests with coverage
+- All integration tests
+- Learning loop analysis
+
+**Emergency Bypass** (use sparingly):
+```bash
+SKIP_PRE_COMMIT=true git commit  # Bypass pre-commit
+SKIP_PRE_PUSH=true git push      # Bypass pre-push
+```
+
+**Quality Standards**:
+- 80%+ test coverage
+- Zero ESLint errors
+- Zero TypeScript errors
+- All tests passing
 
 ### Test Scenarios
 

@@ -1,32 +1,32 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-echo "🔍 Running pre-commit quality checks..."
+echo "🚀 Running pre-push quality checks..."
 
 # Check if we're in a CI environment (skip some checks)
 if [ "$CI" = "true" ]; then
-    echo "⚠️  CI environment detected, skipping pre-commit checks"
+    echo "⚠️  CI environment detected, skipping pre-push checks"
     exit 0
 fi
 
 # Check if user wants to bypass (with permission)
-if [ "$SKIP_PRE_COMMIT" = "true" ]; then
-    echo "⚠️  Pre-commit checks bypassed (SKIP_PRE_COMMIT=true)"
+if [ "$SKIP_PRE_PUSH" = "true" ]; then
+    echo "⚠️  Pre-push checks bypassed (SKIP_PRE_PUSH=true)"
     echo "   This should only be used in emergencies with explicit permission!"
     exit 0
 fi
 
 # Function to handle errors
 handle_error() {
-    echo "❌ Pre-commit check failed: $1"
+    echo "❌ Pre-push check failed: $1"
     echo ""
     echo "💡 To bypass this check (emergency only):"
-    echo "   SKIP_PRE_COMMIT=true git commit"
+    echo "   SKIP_PRE_PUSH=true git push"
     echo ""
     echo "💡 To fix the issues:"
     echo "   npm run lint:fix    # Fix linting issues"
     echo "   npm test           # Run tests"
-    echo "   npm run type-check # Check types"
+    echo "   npm run test:all   # Run all tests and learning loop"
     echo "   npm run build      # Build project"
     exit 1
 }
@@ -47,13 +47,17 @@ npm run lint:md || handle_error "Markdown linting failed"
 echo "🔨 Building project..."
 npm run build || handle_error "Build failed"
 
-# 5. Unit tests
-echo "🧪 Running unit tests..."
-npm test || handle_error "Unit tests failed"
+# 5. Unit tests with coverage
+echo "🧪 Running unit tests with coverage..."
+npm run test:coverage || handle_error "Unit tests failed"
 
-# 6. Quick integration test (fastest scenario)
-echo "🔗 Running quick integration test..."
-npm run test:bridge:quick || handle_error "Integration test failed"
+# 6. All integration tests (more comprehensive)
+echo "🔗 Running all integration tests..."
+npm run test:bridge || handle_error "Integration tests failed"
 
-echo "✅ All pre-commit checks passed!"
-echo "🚀 Ready to commit!"
+# 7. Learning loop analysis (optional but recommended)
+echo "🧠 Running learning loop analysis..."
+npm run loop || echo "⚠️  Learning loop analysis failed (continuing anyway)"
+
+echo "✅ All pre-push checks passed!"
+echo "🚀 Ready to push!" 

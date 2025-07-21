@@ -23,6 +23,8 @@
     "test:bridge:pattern-realizations": "npm run build && npx tsx src/scripts/test-runner.ts pattern-realizations",
     "test:bridge:quick": "npm run build && npx tsx src/scripts/test-runner.ts experience-capture",
     "test:all": "npm test && npm run test:bridge && npm run loop",
+    "quality-check": "npm run type-check && npm run lint && npm run lint:md && npm run build && npm test && npm run test:bridge:quick",
+    "quality-check:full": "npm run type-check && npm run lint && npm run lint:md && npm run build && npm run test:coverage && npm run test:bridge && npm run loop",
     "test:watch": "npm run test -- --watch",
     "test:coverage": "npm run test -- --coverage",
     "loop": "npx tsx src/scripts/learning-loop.ts",

@@ -132,3 +132,32 @@
 - Run learning loop analysis regularly
 - Follow recommendations from analysis
 - Keep experiments and learnings current
+
+## Quality Gates
+
+### Pre-commit Requirements
+- All TypeScript type checks must pass
+- Zero ESLint errors or warnings
+- All markdown files must pass linting
+- Project must build successfully
+- All unit tests must pass
+- Quick integration test must pass
+
+### Pre-push Requirements
+- All pre-commit requirements
+- Unit tests must maintain 80%+ coverage
+- All integration tests must pass
+- Learning loop analysis should complete successfully
+
+### Emergency Bypass
+- Only bypass quality gates in true emergencies
+- Use `SKIP_PRE_COMMIT=true` or `SKIP_PRE_PUSH=true` sparingly
+- Document why bypass was necessary
+- Fix issues immediately after bypass
+
+### Quality Standards
+- Maintain 80%+ test coverage
+- Zero linting errors
+- Zero TypeScript errors
+- All tests passing
+- Documentation up to date

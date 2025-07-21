@@ -102,6 +102,8 @@ https://raw.githubusercontent.com/modelcontextprotocol/typescript-sdk/refs/heads
 - **DXT Manifest Spec**: https://github.com/anthropics/dxt/blob/main/MANIFEST.md
 - **DXT Examples**: https://github.com/anthropics/dxt/tree/main/examples
 
+
+
 ## Key Documentation
 
 - **LOOP.md** - Development methodology and commands
