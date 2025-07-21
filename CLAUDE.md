@@ -30,7 +30,6 @@ npm run test:bridge               # Run all Bridge test scenarios in parallel
 npm run test:bridge <scenario>    # Run specific scenario (autonomous-bridge, with-bridge, without-bridge)
 npm run test:all                  # Run tests then learning loop
 npm run loop                      # Run learning loop analysis on test results
-npm run loop:test                 # Run learning loop in test mode (3 thoughts vs 15)
 
 # Build & Deploy
 npm run build:all                 # Build and bundle for production
