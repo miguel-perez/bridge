@@ -38,106 +38,119 @@ Each opportunity is scored on three dimensions:
 - **1-2**: Future consideration
 
 **Score = Impact × Certainty × Urgency**
-Prioritize using a barbell strategy for antifragility.
 
-## Pattern Recognition & Analysis Features
+## Barbell Strategy for Antifragility
 
-### HMW reveal temporal patterns in experiential sequences?
+Bridge uses a barbell strategy to balance stability with growth potential:
 
-**Impact: 8** - Would reveal stuck→unstuck patterns, decision flows, and personal cycles  
-**Certainty: 7** - Clear implementation path using existing temporal data and clustering patterns  
-**Urgency: 6** - Important for delivering on Bridge's pattern recognition promise  
-**Score: 336**
+### **High-Certainty Foundation (Certainty 8-9)**
+- Low-risk, high-certainty wins that build stable foundations
+- Technical debt reduction and quality improvements
+- Clear implementation paths with proven patterns
 
+### **High-Impact Experiments (Impact 7-9, Certainty 3-6)**
+- High-potential features that could transform Bridge capabilities
+- Experimental approaches with significant upside
+- Research and exploration of new paradigms
 
+### **Avoid Medium-Risk Items**
+- Features with moderate impact and moderate certainty
+- Items that could fail without significant upside
+- Fragile middle ground that doesn't contribute to antifragility
 
-
-### HMW enable natural language temporal queries?
-
-**Impact: 5** - Convenience feature for more intuitive querying  
-**Certainty: 9** - Straightforward date parsing and calculation  
-**Urgency: 4** - Current date-based filtering works but less intuitive  
-**Score: 180**
-
-
+## High-Certainty Foundation (Stability)
 
 ### HMW enable sophisticated dimensional filtering?
 
 **Impact: 8** - Enables sophisticated queries about experiential qualities and unlocks advanced use cases  
 **Certainty: 9** - Clear implementation path using existing dimensional data and proven patterns  
 **Urgency: 7** - Critical for unlocking Bridge's full potential and enabling complex queries  
-**Score: 504**
+**Score: 504** ⭐ **High-Certainty Foundation**
 
 ### HMW create extensible recall architecture?
 
 **Impact: 6** - Technical foundation that enables all future recall features  
 **Certainty: 9** - Clear refactoring of current parameter structure  
 **Urgency: 8** - Critical blocker for implementing advanced recall features  
-**Score: 432**
+**Score: 432** ⭐ **High-Certainty Foundation**
 
 ### HMW establish continuous quality monitoring?
 
 **Impact: 6** - Prevents regression and maintains the high quality achieved  
 **Certainty: 9** - Clear metrics and thresholds based on current state  
 **Urgency: 5** - Important to lock in the gains but not blocking new features  
-**Score: 270**
+**Score: 270** ⭐ **High-Certainty Foundation**
 
-## Advanced Vision Features
+### HMW enable natural language temporal queries?
+
+**Impact: 5** - Convenience feature for more intuitive querying  
+**Certainty: 9** - Straightforward date parsing and calculation  
+**Urgency: 4** - Current date-based filtering works but less intuitive  
+**Score: 180** ⭐ **High-Certainty Foundation**
+
+## High-Impact Experiments (Growth Potential)
 
 ### HMW enable collaborative memory across teams?
 
 **Impact: 7** - Would enable collaborative memory across multiple participants  
 **Certainty: 4** - Requires significant architectural changes and MCP protocol extensions  
 **Urgency: 3** - Long-term vision feature, not blocking individual use  
-**Score: 84**
-
-
+**Score: 84** 🚀 **High-Impact Experiment**
 
 ### HMW reveal patterns across multiple experiencers?
 
 **Impact: 6** - Would reveal patterns across different people's experiences  
 **Certainty: 5** - Requires analysis algorithms and multi-user data structures  
 **Urgency: 3** - Long-term vision feature, not blocking individual use  
-**Score: 90**
-
-
+**Score: 90** 🚀 **High-Impact Experiment**
 
 ### HMW anticipate patterns before they emerge?
 
 **Impact: 7** - Would anticipate patterns before they fully emerge  
 **Certainty: 3** - Requires machine learning and predictive modeling  
 **Urgency: 4** - Could enhance user experience but not blocking  
-**Score: 84**
-
-
+**Score: 84** 🚀 **High-Impact Experiment**
 
 ### HMW enable long-term life journey mapping?
 
 **Impact: 8** - Would enable long-term experiential tracking and life insights  
 **Certainty: 3** - Requires sophisticated temporal analysis and visualization  
 **Urgency: 2** - Long-term vision feature, not immediately blocking  
-**Score: 48**
+**Score: 48** 🚀 **High-Impact Experiment**
 
-## Updated Priority Order
+## Medium-Risk Items (Avoid)
 
-Based on rescored opportunities, the current development priorities are:
+### HMW reveal temporal patterns in experiential sequences?
 
-### High Priority (400+ Score)
+**Impact: 8** - Would reveal stuck→unstuck patterns, decision flows, and personal cycles  
+**Certainty: 7** - Clear implementation path using existing temporal data and clustering patterns  
+**Urgency: 6** - Important for delivering on Bridge's pattern recognition promise  
+**Score: 336** ⚠️ **Medium-Risk (Avoid)**
+
+## Barbell Strategy Priority Order
+
+Bridge prioritizes using a barbell strategy for antifragility - balancing high-certainty wins with high-impact experiments while avoiding fragile middle ground.
+
+### **High-Certainty Foundation (Implement First)**
 1. **Sophisticated Dimensional Filtering** (Score: 504) - Critical for unlocking Bridge's full potential
 2. **Extensible Recall Architecture** (Score: 432) - Technical foundation for all future features
+3. **Continuous Quality Monitoring** (Score: 270) - Maintain high quality standards
+4. **Natural Language Temporal Queries** (Score: 180) - Convenience feature
 
-### Medium Priority (200-399 Score)  
-3. **Temporal Pattern Recognition** (Score: 336) - Pattern recognition through time
-4. **Continuous Quality Monitoring** (Score: 270) - Maintain high quality standards
+### **High-Impact Experiments (Research & Prototype)**
+5. **Cross-experiencer Pattern Insights** (Score: 90) - Team collaboration features
+6. **Collaborative Memory Across Teams** (Score: 84) - Team collaboration features  
+7. **Predictive Pattern Anticipation** (Score: 84) - Advanced AI features
+8. **Long-term Life Journey Mapping** (Score: 48) - Long-term vision feature
 
-### Lower Priority (100-199 Score)
-5. **Natural Language Temporal Queries** (Score: 180) - Convenience feature
+### **Medium-Risk Items (Avoid)**
+- **Temporal Pattern Recognition** (Score: 336) - Medium impact, medium certainty, fragile middle ground
 
-### Long-term Vision (50-99 Score)
-6. **Cross-experiencer Pattern Insights** (Score: 90) - Team collaboration features
-7. **Collaborative Memory Across Teams** (Score: 84) - Team collaboration features  
-8. **Predictive Pattern Anticipation** (Score: 84) - Advanced AI features
-9. **Long-term Life Journey Mapping** (Score: 48) - Long-term vision feature
+### **Development Strategy**
+- **Phase 1**: Implement all High-Certainty Foundation items to build stable base
+- **Phase 2**: Research and prototype High-Impact Experiments in parallel
+- **Phase 3**: Scale successful experiments while maintaining foundation stability
+- **Avoid**: Medium-risk items that could fail without significant upside
 
 ### Completed Features
 For completed features and their learnings, see [LEARNINGS.md](./LEARNINGS.md).
