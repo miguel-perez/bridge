@@ -30,8 +30,7 @@ export default {
     'src/**/*.ts',
     '!src/**/*.d.ts',
     '!src/**/*.test.ts',
-    '!src/scripts/llm-integration.test.ts',
-    '!src/scripts/llm-integration-improved.ts',
+    '!src/scripts/**/*.ts',
     '!src/test-setup.ts'
   ],
   coverageReporters: ['json-summary', 'text', 'lcov'],

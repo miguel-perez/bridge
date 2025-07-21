@@ -1,9 +1,19 @@
 import { ExperienceService, experienceSchema } from './experience.js';
+import { EmbeddingService } from './embeddings.js';
+import { saveEmbedding } from '../core/storage.js';
+
+// Mock the embeddings service
+jest.mock('./embeddings.js');
+jest.mock('../core/storage.js', () => ({
+  ...jest.requireActual('../core/storage.js'),
+  saveEmbedding: jest.fn()
+}));
 
 describe('ExperienceService', () => {
   let experienceService: ExperienceService;
 
   beforeEach(() => {
+    jest.clearAllMocks();
     experienceService = new ExperienceService();
   });
 
@@ -80,6 +90,34 @@ describe('ExperienceService', () => {
       const result = await experienceService.rememberExperience(input);
 
       expect(result.source.experience).toBeUndefined();
+    });
+
+    it('should handle embedding generation failure gracefully', async () => {
+      // Mock embedding service to throw an error
+      const mockEmbeddingService = {
+        initialize: jest.fn().mockResolvedValue(undefined),
+        generateEmbedding: jest.fn().mockRejectedValue(new Error('Embedding generation failed'))
+      };
+      (EmbeddingService as jest.MockedClass<typeof EmbeddingService>).mockImplementation(() => mockEmbeddingService as any);
+
+      const input = {
+        source: 'Test experience with embedding failure',
+        experiencer: 'test_user'
+      };
+
+      // Should not throw error even if embedding fails
+      const result = await experienceService.rememberExperience(input);
+
+      expect(result.source.source).toBe('Test experience with embedding failure');
+      expect(result.source.experiencer).toBe('test_user');
+      expect(result.source.id).toBeDefined();
+      expect(result.defaultsUsed).toContain('perspective="I"');
+      expect(result.defaultsUsed).toContain('processing="during"');
+      
+      // Verify embedding was attempted but saveEmbedding was not called
+      expect(mockEmbeddingService.initialize).toHaveBeenCalled();
+      expect(mockEmbeddingService.generateEmbedding).toHaveBeenCalled();
+      expect(saveEmbedding).not.toHaveBeenCalled();
     });
   });
 
