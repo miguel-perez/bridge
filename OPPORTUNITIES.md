@@ -42,7 +42,7 @@ Prioritize using a barbell strategy for antifragility.
 
 ## Pattern Recognition & Analysis Features
 
-### HMW track temporal sequences to reveal natural rhythms and transitions?
+### HMW reveal temporal patterns in experiential sequences?
 
 **Impact: 8** - Would reveal stuck→unstuck patterns, decision flows, and personal cycles  
 **Certainty: 7** - Clear implementation path using existing temporal data and clustering patterns  
@@ -52,7 +52,7 @@ Prioritize using a barbell strategy for antifragility.
 
 
 
-### HMW support natural language temporal filters like "last week"?
+### HMW enable natural language temporal queries?
 
 **Impact: 5** - Convenience feature for more intuitive querying  
 **Certainty: 9** - Straightforward date parsing and calculation  
@@ -61,52 +61,30 @@ Prioritize using a barbell strategy for antifragility.
 
 
 
-### HMW filter experiences by dimension presence/absence?
+### HMW enable sophisticated dimensional filtering?
 
 **Impact: 8** - Enables sophisticated queries about experiential qualities and unlocks advanced use cases  
 **Certainty: 9** - Clear implementation path using existing dimensional data and proven patterns  
 **Urgency: 7** - Critical for unlocking Bridge's full potential and enabling complex queries  
 **Score: 504**
 
-Implementation would support filters like:
-
-- `{ embodied: { present: true }, time: { present: false } }`
-- Finding experiences with specific dimensional combinations
-- Excluding experiences with certain qualities
-- Complex queries like "experiences with embodied.sensing but without mood.closed"
-
-### HMW structure recall options for extensibility?
+### HMW create extensible recall architecture?
 
 **Impact: 6** - Technical foundation that enables all future recall features  
 **Certainty: 9** - Clear refactoring of current parameter structure  
 **Urgency: 8** - Critical blocker for implementing advanced recall features  
 **Score: 432**
 
-Implementation would:
-
-- Refactor recall parameters into structured options object
-- Enable clean addition of new recall modes (clusters, sequences, etc.)
-- Improve API consistency and developer experience
-- Set foundation for all future recall enhancements
-
-### HMW maintain code quality through continuous monitoring?
+### HMW establish continuous quality monitoring?
 
 **Impact: 6** - Prevents regression and maintains the high quality achieved  
 **Certainty: 9** - Clear metrics and thresholds based on current state  
 **Urgency: 5** - Important to lock in the gains but not blocking new features  
 **Score: 270**
 
-Implementation would:
-
-- Set minimum coverage thresholds (80% line, 65% branch)
-- Add pre-commit hooks for coverage checks
-- Track bug fix rate trends over time
-- Alert when quality metrics decline
-- Integrate with learning loop for proactive recommendations
-
 ## Advanced Vision Features
 
-### HMW enable multi-party memory for teams and groups?
+### HMW enable collaborative memory across teams?
 
 **Impact: 7** - Would enable collaborative memory across multiple participants  
 **Certainty: 4** - Requires significant architectural changes and MCP protocol extensions  
@@ -115,7 +93,7 @@ Implementation would:
 
 
 
-### HMW provide cross-experiencer pattern insights?
+### HMW reveal patterns across multiple experiencers?
 
 **Impact: 6** - Would reveal patterns across different people's experiences  
 **Certainty: 5** - Requires analysis algorithms and multi-user data structures  
@@ -124,7 +102,7 @@ Implementation would:
 
 
 
-### HMW implement predictive pattern matching?
+### HMW anticipate patterns before they emerge?
 
 **Impact: 7** - Would anticipate patterns before they fully emerge  
 **Certainty: 3** - Requires machine learning and predictive modeling  
@@ -133,40 +111,33 @@ Implementation would:
 
 
 
-### HMW support extended life journey mapping?
+### HMW enable long-term life journey mapping?
 
 **Impact: 8** - Would enable long-term experiential tracking and life insights  
 **Certainty: 3** - Requires sophisticated temporal analysis and visualization  
 **Urgency: 2** - Long-term vision feature, not immediately blocking  
 **Score: 48**
 
-Implementation would provide:
-
-- Long-term experiential timelines
-- Life pattern visualization and analysis
-- Milestone tracking and reflection prompts
-- Integration with external life data sources
-
 ## Updated Priority Order
 
 Based on rescored opportunities, the current development priorities are:
 
 ### High Priority (400+ Score)
-1. **Dimension Filtering** (Score: 504) - Critical for unlocking Bridge's full potential
-2. **Extensible Recall Options** (Score: 432) - Technical foundation for all future features
+1. **Sophisticated Dimensional Filtering** (Score: 504) - Critical for unlocking Bridge's full potential
+2. **Extensible Recall Architecture** (Score: 432) - Technical foundation for all future features
 
 ### Medium Priority (200-399 Score)  
-3. **Temporal Sequences** (Score: 336) - Pattern recognition through time
-4. **Code Quality Monitoring** (Score: 270) - Maintain high quality standards
+3. **Temporal Pattern Recognition** (Score: 336) - Pattern recognition through time
+4. **Continuous Quality Monitoring** (Score: 270) - Maintain high quality standards
 
 ### Lower Priority (100-199 Score)
-5. **Natural Language Time Filters** (Score: 180) - Convenience feature
+5. **Natural Language Temporal Queries** (Score: 180) - Convenience feature
 
 ### Long-term Vision (50-99 Score)
-6. **Cross-experiencer Insights** (Score: 90) - Team collaboration features
-7. **Multi-party Memory** (Score: 84) - Team collaboration features  
-8. **Predictive Pattern Matching** (Score: 84) - Advanced AI features
-9. **Life Journey Mapping** (Score: 48) - Long-term vision feature
+6. **Cross-experiencer Pattern Insights** (Score: 90) - Team collaboration features
+7. **Collaborative Memory Across Teams** (Score: 84) - Team collaboration features  
+8. **Predictive Pattern Anticipation** (Score: 84) - Advanced AI features
+9. **Long-term Life Journey Mapping** (Score: 48) - Long-term vision feature
 
 ### Completed Features
 For completed features and their learnings, see [LEARNINGS.md](./LEARNINGS.md).
