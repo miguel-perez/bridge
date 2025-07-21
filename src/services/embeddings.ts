@@ -9,6 +9,9 @@ import { bridgeLogger } from '../utils/bridge-logger.js';
 import { RateLimiter } from '../utils/security.js';
 import { withTimeout, DEFAULT_TIMEOUTS } from '../utils/timeout.js';
 
+/**
+ *
+ */
 export class EmbeddingService {
   private pipeline: FeatureExtractionPipeline | null = null;
   private modelName: string = 'Xenova/all-MiniLM-L6-v2';
@@ -17,6 +20,9 @@ export class EmbeddingService {
   private disabled = false;
   private rateLimiter = new RateLimiter(100); // 100ms between requests
   
+  /**
+   *
+   */
   async initialize(): Promise<void> {
     // Skip initialization if embeddings are disabled
     if (EMBEDDINGS_DISABLED) {
@@ -56,6 +62,9 @@ export class EmbeddingService {
     }
   }
   
+  /**
+   *
+   */
   async generateEmbedding(text: string): Promise<number[]> {
     // Return empty embedding if disabled
     if (this.disabled) {
@@ -172,6 +181,9 @@ export class EmbeddingService {
     }
   }
 
+  /**
+   *
+   */
   async generateEmbeddings(texts: string[]): Promise<number[][]> {
     await this.initialize();
     
@@ -192,10 +204,16 @@ export class EmbeddingService {
     return hash.toString();
   }
 
+  /**
+   *
+   */
   clearCache(): void {
     this.cache.clear();
   }
 
+  /**
+   *
+   */
   getCacheSize(): number {
     return this.cache.size;
   }

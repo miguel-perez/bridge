@@ -17,7 +17,13 @@ export interface ReleaseResult {
   releasedSource?: SourceRecord;
 }
 
+/**
+ *
+ */
 export class ReleaseService {
+  /**
+   *
+   */
   async releaseSource(input: ReleaseInput): Promise<ReleaseResult> {
     // Check if it's a source
     const source = await getSource(input.id);

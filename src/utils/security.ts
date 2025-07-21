@@ -143,6 +143,9 @@ export class RateLimiter {
   private lastRequest = 0;
   private readonly minInterval: number;
   
+  /**
+   *
+   */
   constructor(minIntervalMs: number = 100) {
     this.minInterval = minIntervalMs;
   }

@@ -54,6 +54,9 @@ function makeDraft202012Schema(schema: Record<string, unknown>): Record<string, 
 }
 
 // Tools array with schemas compatible with JSON Schema draft 2020-12
+/**
+ *
+ */
 export async function getTools(): Promise<Record<string, unknown>[]> {
   return [
     {

@@ -161,6 +161,9 @@ async function applyTemporalFilter(records: SourceRecord[], filter: string | { s
 }
 
 // Main search function
+/**
+ *
+ */
 export async function search(input: RecallInput): Promise<RecallServiceResponse> {
   const debugInfo: RecallServiceResponse['debug'] = {
     recall_started: new Date().toISOString(),
@@ -469,7 +472,13 @@ function determineNoResultsReason(input: RecallInput, debugInfo: RecallServiceRe
 //   return dot / (Math.sqrt(normA) * Math.sqrt(normB));
 // }
 
+/**
+ *
+ */
 export class RecallService {
+  /**
+   *
+   */
   async search(input: RecallInput): Promise<{ results: RecallServiceResult[], stats?: Record<string, unknown> }> {
     // Use the comprehensive search function that includes all filtering logic
     const searchResponse = await search(input);

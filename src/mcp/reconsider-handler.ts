@@ -12,9 +12,15 @@ import { EnrichService } from '../services/enrich.js';
 import { ReconsiderInput, type ToolResult } from './schemas.js';
 import { formatReconsiderResponse, type ExperienceResult } from '../utils/formatters.js';
 
+/**
+ *
+ */
 export class ReconsiderHandler {
   private reconsiderService: EnrichService; // Keeping enrich service but calling it reconsider
 
+  /**
+   *
+   */
   constructor() {
     this.reconsiderService = new EnrichService();
   }

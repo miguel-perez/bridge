@@ -191,6 +191,9 @@ export const ToolResultSchema = z.object({
 });
 
 // Example generation functions
+/**
+ *
+ */
 export function generateExperienceExample(): ExperienceInput {
   return {
     source: "I'm sitting at my desk, the afternoon light streaming through the window. My fingers hover over the keyboard, that familiar mix of excitement and uncertainty bubbling up. This project feels like it could be something special, but I'm not quite sure how to start.",
@@ -202,6 +205,9 @@ export function generateExperienceExample(): ExperienceInput {
   };
 }
 
+/**
+ *
+ */
 export function generateSearchExample(): SearchInput {
   return {
     query: 'creative breakthrough moments',
@@ -213,6 +219,9 @@ export function generateSearchExample(): SearchInput {
   };
 }
 
+/**
+ *
+ */
 export function generateReconsiderExample(): ReconsiderInput {
   return {
     id: 'exp_1234567890',
@@ -221,6 +230,9 @@ export function generateReconsiderExample(): ReconsiderInput {
   };
 }
 
+/**
+ *
+ */
 export function generateReleaseExample(): ReleaseInput {
   return {
     id: 'exp_1234567890',
@@ -228,6 +240,9 @@ export function generateReleaseExample(): ReleaseInput {
   };
 }
 
+/**
+ *
+ */
 export function generateBatchExperienceExample(): ExperienceInput {
   return {
     experiences: [
@@ -251,6 +266,9 @@ export function generateBatchExperienceExample(): ExperienceInput {
   };
 }
 
+/**
+ *
+ */
 export function generateBatchSearchExample(): SearchInput {
   return {
     searches: [
@@ -269,30 +287,51 @@ export function generateBatchSearchExample(): SearchInput {
 }
 
 // Type guards using Zod schemas
+/**
+ *
+ */
 export function isExperienceInput(value: unknown): value is ExperienceInput {
   return ExperienceInputSchema.safeParse(value).success;
 }
 
+/**
+ *
+ */
 export function isSearchInput(value: unknown): value is SearchInput {
   return SearchInputSchema.safeParse(value).success;
 }
 
+/**
+ *
+ */
 export function isReconsiderInput(value: unknown): value is ReconsiderInput {
   return ReconsiderInputSchema.safeParse(value).success;
 }
 
+/**
+ *
+ */
 export function isReleaseInput(value: unknown): value is ReleaseInput {
   return ReleaseInputSchema.safeParse(value).success;
 }
 
+/**
+ *
+ */
 export function isToolResult(value: unknown): value is ToolResult {
   return ToolResultSchema.safeParse(value).success;
 }
 
+/**
+ *
+ */
 export function isToolTextContent(value: unknown): value is ToolTextContent {
   return ToolTextContentSchema.safeParse(value).success;
 }
 
+/**
+ *
+ */
 export function isExperienceObject(value: unknown): value is z.infer<typeof ExperienceObject> {
   return ExperienceObject.safeParse(value).success;
 }
@@ -300,34 +339,58 @@ export function isExperienceObject(value: unknown): value is z.infer<typeof Expe
 
 
 // Utility type guards
+/**
+ *
+ */
 export function isSingleExperienceInput(value: ExperienceInput): value is ExperienceInput & { source: string } {
   return 'source' in value && typeof value.source === 'string';
 }
 
+/**
+ *
+ */
 export function isBatchExperienceInput(value: ExperienceInput): value is ExperienceInput & { experiences: NonNullable<ExperienceInput['experiences']> } {
   return 'experiences' in value && Array.isArray(value.experiences) && value.experiences.length > 0;
 }
 
+/**
+ *
+ */
 export function isSingleSearchInput(value: SearchInput): value is SearchInput & { query?: string } {
   return !('searches' in value) || !value.searches;
 }
 
+/**
+ *
+ */
 export function isBatchSearchInput(value: SearchInput): value is SearchInput & { searches: NonNullable<SearchInput['searches']> } {
   return 'searches' in value && Array.isArray(value.searches) && value.searches.length > 0;
 }
 
+/**
+ *
+ */
 export function isSingleReconsiderInput(value: ReconsiderInput): value is ReconsiderInput & { id?: string } {
   return !('reconsiderations' in value) || !value.reconsiderations;
 }
 
+/**
+ *
+ */
 export function isBatchReconsiderInput(value: ReconsiderInput): value is ReconsiderInput & { reconsiderations: NonNullable<ReconsiderInput['reconsiderations']> } {
   return 'reconsiderations' in value && Array.isArray(value.reconsiderations) && value.reconsiderations.length > 0;
 }
 
+/**
+ *
+ */
 export function isSingleReleaseInput(value: ReleaseInput): value is ReleaseInput & { id?: string } {
   return !('releases' in value) || !value.releases;
 }
 
+/**
+ *
+ */
 export function isBatchReleaseInput(value: ReleaseInput): value is ReleaseInput & { releases: NonNullable<ReleaseInput['releases']> } {
   return 'releases' in value && Array.isArray(value.releases) && value.releases.length > 0;
 }

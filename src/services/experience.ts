@@ -72,6 +72,9 @@ export interface ExperienceResult {
 export class ExperienceService {
   // private enhancedEmbeddingService: EnhancedEmbeddingService;
 
+  /**
+   *
+   */
   constructor() {
     // this.enhancedEmbeddingService = new EnhancedEmbeddingService();
   }

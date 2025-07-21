@@ -11,7 +11,13 @@ import { deleteSource } from '../core/storage.js';
 
 import { ReleaseInput, ToolResultSchema, type ToolResult } from './schemas.js';
 
+/**
+ *
+ */
 export class ReleaseHandler {
+  /**
+   *
+   */
   constructor() {
     // No dependencies needed
   }

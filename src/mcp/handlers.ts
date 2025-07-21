@@ -32,6 +32,9 @@ export class MCPToolHandlers {
   private reconsiderHandler: ReconsiderHandler;
   private releaseHandler: ReleaseHandler;
 
+  /**
+   *
+   */
   constructor() {
     this.experienceHandler = new ExperienceHandler();
     this.recallHandler = new RecallHandler();
@@ -40,6 +43,9 @@ export class MCPToolHandlers {
   }
 
   // Example handler mapping (update as needed):
+  /**
+   *
+   */
   async handle(toolName: string, args: Record<string, unknown>): Promise<Record<string, unknown>> {
     switch (toolName) {
       case 'experience':

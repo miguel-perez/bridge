@@ -24,6 +24,9 @@ export const DEFAULT_TIMEOUTS = {
  * Custom timeout error class
  */
 export class TimeoutError extends Error {
+  /**
+   *
+   */
   constructor(operation: string, timeoutMs: number) {
     super(`Operation '${operation}' timed out after ${timeoutMs}ms`);
     this.name = 'TimeoutError';
@@ -140,12 +143,18 @@ export class CircuitBreaker {
   private lastFailTime = 0;
   private state: 'closed' | 'open' | 'half-open' = 'closed';
   
+  /**
+   *
+   */
   constructor(
     private readonly failureThreshold: number = 5,
     private readonly timeoutMs: number = 60000, // 1 minute
     private readonly resetTimeoutMs: number = 300000 // 5 minutes
   ) {}
   
+  /**
+   *
+   */
   async execute<T>(operation: () => Promise<T>, operationName: string): Promise<T> {
     if (this.state === 'open') {
       const timeSinceLastFail = Date.now() - this.lastFailTime;
@@ -196,6 +205,9 @@ export class CircuitBreaker {
     this.lastFailTime = 0;
   }
   
+  /**
+   *
+   */
   getState(): { state: string; failures: number; lastFailTime: number } {
     return {
       state: this.state,

@@ -158,6 +158,9 @@ interface RelevanceBreakdown {
   filter_relevance?: number;
 }
 
+/**
+ *
+ */
 export function formatRelevanceBreakdown(breakdown: RelevanceBreakdown | null | undefined): string {
   if (!breakdown) return 'No breakdown available';
   

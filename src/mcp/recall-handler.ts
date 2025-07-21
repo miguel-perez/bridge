@@ -33,9 +33,15 @@ export interface RecallResponse {
   error?: string;
 }
 
+/**
+ *
+ */
 export class RecallHandler {
   private recallService: RecallService;
 
+  /**
+   *
+   */
   constructor() {
     this.recallService = new RecallService();
   }

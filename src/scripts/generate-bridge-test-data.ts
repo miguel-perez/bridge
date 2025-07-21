@@ -367,6 +367,9 @@ async function generateWithClaude(totalExperiences: number = DEFAULT_TOTAL): Pro
   return cacheData;
 }
 
+/**
+ *
+ */
 export async function ensureTestData(options?: { total?: number }): Promise<void> {
   // Check cache
   if (existsSync(CACHE_FILE) && !existsSync(PROGRESS_FILE)) {
@@ -419,6 +422,9 @@ async function loadCachedData(cached: CachedTestData): Promise<void> {
 }
 
 // Clear cache function
+/**
+ *
+ */
 export function clearTestDataCache(): void {
   if (existsSync(CACHE_FILE)) {
     unlinkSync(CACHE_FILE);

@@ -160,9 +160,15 @@ interface PreviousRunInfo {
 // Git Context Manager
 // ============================================================================
 
+/**
+ *
+ */
 class GitContextManager {
   private repoPath: string;
 
+  /**
+   *
+   */
   constructor(repoPath: string = process.cwd()) {
     this.repoPath = repoPath;
   }
@@ -870,6 +876,9 @@ function shouldRunTests(gitManager: GitContextManager, previousRun: PreviousRunI
   return false;
 }
 
+/**
+ *
+ */
 async function runAnalysis(options: { days?: number } = {}): Promise<AnalysisReport> {
   const startTime = Date.now();
   const days = options.days || 30;
