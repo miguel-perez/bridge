@@ -3,8 +3,6 @@
  * 
  * This module coordinates all MCP tool handlers for Bridge, delegating to
  * individual handler classes for better organization and maintainability.
- * 
- * @module mcp/handlers
  */
 
 import { ExperienceHandler } from './experience-handler.js';
@@ -33,7 +31,9 @@ export class MCPToolHandlers {
   private releaseHandler: ReleaseHandler;
 
   /**
-   *
+   * Initializes all MCP tool handlers
+   * @remarks
+   * Creates instances of all individual handlers for coordinated tool processing.
    */
   constructor() {
     this.experienceHandler = new ExperienceHandler();
@@ -42,9 +42,15 @@ export class MCPToolHandlers {
     this.releaseHandler = new ReleaseHandler();
   }
 
-  // Example handler mapping (update as needed):
   /**
-   *
+   * Routes tool requests to appropriate handlers
+   * @remarks
+   * Main entry point for all MCP tool operations. Routes requests based on tool name
+   * to the appropriate handler for processing.
+   * @param toolName - Name of the tool to execute
+   * @param args - Arguments for the tool operation
+   * @returns Tool result from the appropriate handler
+   * @throws Error When tool name is not recognized
    */
   async handle(toolName: string, args: Record<string, unknown>): Promise<Record<string, unknown>> {
     switch (toolName) {

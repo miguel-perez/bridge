@@ -56,17 +56,20 @@ export interface ExperienceResponse {
  * });
  * // Returns: "Experienced 2 moments..."
  * ```
- * @throws {ValidationError} When input validation fails
- * @throws {ServiceError} When underlying service operations fail
- * @see {@link ExperienceService} for core business logic
- * @see {@link RecallService} for similarity detection
+ * @throws ValidationError When input validation fails
+ * @throws ServiceError When underlying service operations fail
+ * @see ExperienceService for core business logic
+ * @see RecallService for similarity detection
  */
 export class ExperienceHandler {
   private experienceService: ExperienceService;
   private recallService: RecallService;
 
   /**
-   *
+   * Initializes the ExperienceHandler with required services
+   * @remarks
+   * Creates instances of ExperienceService for core business logic
+   * and RecallService for similarity detection capabilities.
    */
   constructor() {
     this.experienceService = new ExperienceService();
@@ -81,8 +84,8 @@ export class ExperienceHandler {
    * and batch experience capture modes.
    * @param args - Experience input data from MCP client
    * @returns Formatted tool result compliant with MCP protocol
-   * @throws {ValidationError} When required fields are missing
-   * @throws {ServiceError} When experience processing fails
+   * @throws ValidationError When required fields are missing
+   * @throws ServiceError When experience processing fails
    */
   async handle(args: ExperienceInput): Promise<ToolResult> {
     try {
@@ -108,8 +111,8 @@ export class ExperienceHandler {
    * for enhanced user experience.
    * @param experience - Experience input data to process
    * @returns Formatted tool result with natural language response
-   * @throws {Error} When source content is missing
-   * @throws {ServiceError} When experience processing fails
+   * @throws Error When source content is missing
+   * @throws ServiceError When experience processing fails
    */
   private async handleRegularExperience(
     experience: ExperienceInput

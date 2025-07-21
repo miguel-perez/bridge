@@ -73,7 +73,9 @@ export class ExperienceService {
   // private enhancedEmbeddingService: EnhancedEmbeddingService;
 
   /**
-   *
+   * Initializes the ExperienceService
+   * @remarks
+   * Sets up the service for experience capture and storage operations.
    */
   constructor() {
     // this.enhancedEmbeddingService = new EnhancedEmbeddingService();

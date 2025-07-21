@@ -25,7 +25,11 @@ export const DEFAULT_TIMEOUTS = {
  */
 export class TimeoutError extends Error {
   /**
-   *
+   * Creates a new TimeoutError
+   * @remarks
+   * Custom error class for timeout operations with descriptive messages.
+   * @param operation - Name of the operation that timed out
+   * @param timeoutMs - Timeout duration in milliseconds
    */
   constructor(operation: string, timeoutMs: number) {
     super(`Operation '${operation}' timed out after ${timeoutMs}ms`);

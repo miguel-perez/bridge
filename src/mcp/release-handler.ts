@@ -3,8 +3,6 @@
  * 
  * Handles release tool requests for deleting experiential records.
  * Supports both single items and batch operations with optional reasons.
- * 
- * @module mcp/release-handler
  */
 
 import { deleteSource } from '../core/storage.js';
@@ -12,11 +10,16 @@ import { deleteSource } from '../core/storage.js';
 import { ReleaseInput, ToolResultSchema, type ToolResult } from './schemas.js';
 
 /**
- *
+ * Handles release requests from MCP clients
+ * @remarks
+ * Provides capability to permanently delete experiential records.
+ * Supports both single and batch release operations with optional reasons.
  */
 export class ReleaseHandler {
   /**
-   *
+   * Initializes the ReleaseHandler
+   * @remarks
+   * No external dependencies required for release operations.
    */
   constructor() {
     // No dependencies needed

@@ -55,7 +55,11 @@ function makeDraft202012Schema(schema: Record<string, unknown>): Record<string, 
 
 // Tools array with schemas compatible with JSON Schema draft 2020-12
 /**
- *
+ * Returns MCP tool definitions for Bridge
+ * @remarks
+ * Provides tool schemas and descriptions for all Bridge operations.
+ * Each tool includes detailed usage guidelines and examples.
+ * @returns Array of tool definitions compatible with MCP protocol
  */
 export async function getTools(): Promise<Record<string, unknown>[]> {
   return [

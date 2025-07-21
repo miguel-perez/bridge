@@ -2,8 +2,6 @@
  * MCP Recall Tool Handler
  * 
  * Implements basic Bridge Recall API for source retrieval.
- * 
- * @module mcp/recall-handler
  */
 
 import { RecallService } from '../services/recall.js';
@@ -34,13 +32,18 @@ export interface RecallResponse {
 }
 
 /**
- *
+ * Handles recall requests from MCP clients
+ * @remarks
+ * Provides semantic search capabilities for retrieving stored experiences.
+ * Supports text queries, dimensional filtering, and recent experience retrieval.
  */
 export class RecallHandler {
   private recallService: RecallService;
 
   /**
-   *
+   * Initializes the RecallHandler with required services
+   * @remarks
+   * Creates instance of RecallService for semantic search capabilities.
    */
   constructor() {
     this.recallService = new RecallService();
@@ -68,7 +71,12 @@ export class RecallHandler {
   }
 
   /**
-   * Handle regular recall
+   * Processes recall requests with semantic search capabilities
+   * @remarks
+   * Handles text queries, dimensional filtering, and recent experience retrieval.
+   * Supports both semantic and dimensional search modes.
+   * @param recall - Search input containing query and filter parameters
+   * @returns Formatted recall results with relevance scores
    */
   private async handleRegularRecall(
     recall: SearchInput

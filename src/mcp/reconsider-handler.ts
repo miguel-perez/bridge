@@ -4,8 +4,6 @@
  * Handles reconsider tool requests for correcting or updating existing experiences.
  * Supports partial updates to any field including content, experience analysis, metadata,
  * and experiential qualities. Useful for refining how we remember shared moments.
- * 
- * @module mcp/reconsider-handler
  */
 
 import { EnrichService } from '../services/enrich.js';
@@ -13,13 +11,18 @@ import { ReconsiderInput, type ToolResult } from './schemas.js';
 import { formatReconsiderResponse, type ExperienceResult } from '../utils/formatters.js';
 
 /**
- *
+ * Handles reconsider requests from MCP clients
+ * @remarks
+ * Provides capability to update and refine existing experiences.
+ * Supports both single and batch reconsideration operations.
  */
 export class ReconsiderHandler {
   private reconsiderService: EnrichService; // Keeping enrich service but calling it reconsider
 
   /**
-   *
+   * Initializes the ReconsiderHandler with required services
+   * @remarks
+   * Creates instance of EnrichService for experience update capabilities.
    */
   constructor() {
     this.reconsiderService = new EnrichService();
@@ -46,7 +49,12 @@ export class ReconsiderHandler {
   }
 
   /**
-   * Handle regular reconsider
+   * Processes reconsider requests for updating existing experiences
+   * @remarks
+   * Handles both single and batch reconsideration operations.
+   * Validates required fields and processes updates through EnrichService.
+   * @param reconsider - Reconsider input containing ID and update data
+   * @returns Formatted reconsider results with update confirmation
    */
   private async handleRegularReconsider(
     reconsider: ReconsiderInput

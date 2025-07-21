@@ -144,7 +144,10 @@ export class RateLimiter {
   private readonly minInterval: number;
   
   /**
-   *
+   * Creates a new RateLimiter instance
+   * @remarks
+   * Configures rate limiting with minimum interval between requests.
+   * @param minIntervalMs - Minimum time between requests in milliseconds
    */
   constructor(minIntervalMs: number = 100) {
     this.minInterval = minIntervalMs;

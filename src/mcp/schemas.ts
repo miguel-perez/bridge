@@ -192,7 +192,10 @@ export const ToolResultSchema = z.object({
 
 // Example generation functions
 /**
- *
+ * Generates an example experience input for testing and documentation
+ * @remarks
+ * Provides a realistic example of single experience capture with quality signatures.
+ * @returns Example experience input with embodied sensing and mood dimensions
  */
 export function generateExperienceExample(): ExperienceInput {
   return {
@@ -206,7 +209,10 @@ export function generateExperienceExample(): ExperienceInput {
 }
 
 /**
- *
+ * Generates an example search input for testing and documentation
+ * @remarks
+ * Provides a realistic example of semantic search with filters and limits.
+ * @returns Example search input with query and dimensional filters
  */
 export function generateSearchExample(): SearchInput {
   return {
@@ -220,7 +226,10 @@ export function generateSearchExample(): SearchInput {
 }
 
 /**
- *
+ * Generates an example reconsider input for testing and documentation
+ * @remarks
+ * Provides a realistic example of experience update with ID and new content.
+ * @returns Example reconsider input with source ID and updated experience
  */
 export function generateReconsiderExample(): ReconsiderInput {
   return {
@@ -231,7 +240,10 @@ export function generateReconsiderExample(): ReconsiderInput {
 }
 
 /**
- *
+ * Generates an example release input for testing and documentation
+ * @remarks
+ * Provides a realistic example of experience deletion with ID and reason.
+ * @returns Example release input with source ID and release reason
  */
 export function generateReleaseExample(): ReleaseInput {
   return {

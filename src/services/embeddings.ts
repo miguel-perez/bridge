@@ -10,7 +10,10 @@ import { RateLimiter } from '../utils/security.js';
 import { withTimeout, DEFAULT_TIMEOUTS } from '../utils/timeout.js';
 
 /**
- *
+ * Service for generating semantic embeddings using transformer models
+ * @remarks
+ * Provides text-to-vector conversion for semantic search capabilities.
+ * Uses the all-MiniLM-L6-v2 model for fast, high-quality embeddings.
  */
 export class EmbeddingService {
   private pipeline: FeatureExtractionPipeline | null = null;
@@ -21,7 +24,10 @@ export class EmbeddingService {
   private rateLimiter = new RateLimiter(100); // 100ms between requests
   
   /**
-   *
+   * Initializes the embedding service
+   * @remarks
+   * Loads the transformer model and sets up the pipeline for embedding generation.
+   * Handles graceful degradation if embeddings are disabled or unavailable.
    */
   async initialize(): Promise<void> {
     // Skip initialization if embeddings are disabled
@@ -63,7 +69,12 @@ export class EmbeddingService {
   }
   
   /**
-   *
+   * Generates semantic embedding for given text
+   * @remarks
+   * Converts text to vector representation for semantic similarity calculations.
+   * Includes caching and rate limiting for performance optimization.
+   * @param text - Text to convert to embedding
+   * @returns Vector representation of the text
    */
   async generateEmbedding(text: string): Promise<number[]> {
     // Return empty embedding if disabled
