@@ -292,6 +292,24 @@ These could be implemented in a day or two:
 
 ## Research Questions
 
+## Research Questions
+
+These need investigation before implementation:
+
+1. What constitutes "meaningful" content for activation thresholds?
+2. How to handle contradictory memories from different perspectives?
+3. What's the best UI for memory correction workflows?
+4. How to preserve privacy while enabling pattern sharing?
+5. Can we detect false or manipulated memories?
+6. **Why does AI avoid using Bridge for self-reflection even when explicitly prompted?**
+7. **How can we transform Bridge from write-only to true bidirectional memory?**
+8. **What architectural constraints prevent AI from retrieving stored memories?**
+9. **Is the abstract quality signature system fundamentally incompatible with retrieval?**
+10. **How do we measure genuine memory enhancement vs performative tool usage?**
+11. **Why does AI choose analytical deflection over experiential exploration?**
+12. **What specific prompts would force genuine introspection without escape routes?**
+
+
 These need investigation before implementation:
 
 1. What constitutes "meaningful" content for activation thresholds?
@@ -331,6 +349,23 @@ These need investigation before implementation:
 10. **How do we measure genuine enhancement vs performative tool usage?**
 
 ## Critical Priority Update
+
+### 0. Bidirectional Memory Implementation [NEW - CRITICAL]
+**Impact**: 9 | **Certainty**: 7 | **Urgency**: 10 | **Score**: 630
+
+Transform Bridge from write-only logging to true bidirectional memory system. Current implementation captures but never retrieves, failing core design intent.
+
+**Evidence**: Zero retrieval operations across all test scenarios despite available data. AI treats Bridge as one-way annotation rather than memory system.
+
+**Implementation**: 
+- Design natural retrieval triggers based on conversational context
+- Implement "memory surfacing" when relevant topics arise
+- Create explicit prompts that encourage memory reference
+- Add retrieval metrics to track actual memory usage
+- Consider architectural changes if behavioral modification insufficient
+
+**Why Critical**: Without retrieval, Bridge cannot deliver its core value proposition of "continuity across conversations." This is not an enhancement but a fundamental requirement.
+
 
 ### 1. Natural Activation Through Enhanced Descriptions  
 **Impact**: 9 | **Certainty**: 8 | **Urgency**: 9 | **Score**: 648

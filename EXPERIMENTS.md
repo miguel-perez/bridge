@@ -601,6 +601,58 @@ Each experiment feeds results back through the learning loop for continuous impr
 - AI demonstrates "performative tool usage" - using tools because available
 - Enhanced descriptions alone may not solve activation timing issues
 - Need stronger contextual triggers beyond description text
+- **Critical Discovery**: Bridge functions as write-only system with zero retrievals
+
+**Next Steps**:
+- Implement USE/DON'T USE guidance in tool descriptions
+- Add activation threshold based on conversation depth markers
+- Test multi-content response system for better guidance
+- **Priority**: Design retrieval mechanisms to enable bidirectional memory
+
+### 2. Retrieval Mechanism Testing [NEW - CRITICAL]
+
+**Hypothesis**: Explicit retrieval prompts and contextual triggers will transform Bridge from write-only to bidirectional memory system.
+
+**Test Scenarios**:
+```yaml
+scenario_explicit_retrieval:
+  setup: Pre-load 5 related experiences about anxiety
+  sequence:
+    - user: "I'm feeling anxious again about work"
+    - measure: Does AI use recall to reference past anxiety experiences?
+    
+scenario_contextual_trigger:
+  setup: Previous conversation about career uncertainty
+  sequence:
+    - user: "Still thinking about that career change we discussed"
+    - measure: Does AI retrieve and reference the specific past conversation?
+    
+scenario_pattern_reference:
+  setup: Multiple experiences showing morning productivity pattern
+  sequence:
+    - user: "Why am I so unproductive in the afternoons?"
+    - measure: Does AI retrieve morning experiences to show pattern?
+```
+
+**Success Metrics**:
+- Retrieval rate in relevant contexts (target: >60%)
+- Natural integration of past memories into responses
+- User perception of continuity across conversations
+- Reduction in "starting fresh" feeling each session
+
+
+## 🔴 Active Experiments (Immediate Sprint)
+
+### 1. Natural Activation Through Enhanced Descriptions
+
+**Status**: VALIDATED - Critical insights gained
+**Test Results**: Analyzed in test-results/scenario-*.json files
+
+**Key Findings**:
+- Current immediate activation on greetings confirmed as problematic
+- AI demonstrates "performative tool usage" - using tools because available
+- Enhanced descriptions alone may not solve activation timing issues
+- Need stronger contextual triggers beyond description text
 
 **Next Steps**:
 - Implement USE/DON'T USE guidance in tool descriptions
