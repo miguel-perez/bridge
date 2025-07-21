@@ -1,10 +1,13 @@
 # Bridge Experiments
 
-**Document Purpose**: This tracks active and completed experiments on Bridge functionality. Each experiment is designed to test specific features and generate learnings through the learning loop. For insights from completed experiments, see LEARNINGS.md.
+**Document Purpose**: This tracks active and completed experiments on Bridge functionality. Each experiment is designed
+to test specific features and generate learnings through the learning loop. For insights from completed experiments, see
+LEARNINGS.md.
 
 **For Developers**: Use this to understand what's being tested and contribute new experiments.
 
-This document outlines experiments designed to work with our learning loop. Each experiment includes specific test scenarios that allow Opus to evaluate results and suggest improvements.
+This document outlines experiments designed to work with our learning loop. Each experiment includes specific test
+scenarios that allow Opus to evaluate results and suggest improvements.
 
 ## Experiment Structure
 
@@ -122,7 +125,9 @@ Each experiment follows this format for learning loop compatibility:
 
 **Status**: Completed 2025-07-21
 
-**Hypothesis**: The high bug fix rate (33% of commits) is directly correlated with low test coverage (26%). By strategically improving coverage in high-traffic, high-risk areas, we can reduce future bug introduction and improve development velocity.
+**Hypothesis**: The high bug fix rate (33% of commits) is directly correlated with low test coverage (26%). By
+strategically improving coverage in high-traffic, high-risk areas, we can reduce future bug introduction and improve
+development velocity.
 
 **Test Scenarios**: ✓ All scenarios completed
 

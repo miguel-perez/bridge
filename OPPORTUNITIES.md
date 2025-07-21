@@ -1,10 +1,13 @@
 # Bridge Opportunities
 
-**Document Purpose**: This is the prioritized roadmap of features not yet implemented in Bridge. Each opportunity is scored systematically to guide development decisions. These are future possibilities, not current capabilities.
+**Document Purpose**: This is the prioritized roadmap of features not yet implemented in Bridge. Each opportunity is
+scored systematically to guide development decisions. These are future possibilities, not current capabilities.
 
 **For Developers**: Use this to understand what's coming next and contribute to high-priority features.
 
-This document comprehensively lists all potential features and improvements for Bridge, organized by priority based on systematic scoring. All opportunities have been evaluated for compatibility with MCP (Model Context Protocol) constraints.
+This document comprehensively lists all potential features and improvements for Bridge, organized by priority based on
+systematic scoring. All opportunities have been evaluated for compatibility with MCP (Model Context Protocol)
+constraints.
 
 ## Scoring Methodology
 

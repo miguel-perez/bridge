@@ -1,6 +1,7 @@
 # Bridge Desktop Extension (DXT)
 
-Bridge is now available as a Desktop Extension for Claude Desktop, providing seamless integration for phenomenological data capture and analysis directly within your AI conversations.
+Bridge is now available as a Desktop Extension for Claude Desktop, providing seamless integration for phenomenological
+data capture and analysis directly within your AI conversations.
 
 ## Installation
 

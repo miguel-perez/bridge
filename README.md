@@ -1,6 +1,7 @@
 # Bridge
 
-Bridge is an MCP (Model Context Protocol) server that enables shared experiential memory between humans and AI. It captures meaningful moments with quality signatures, enabling pattern recognition and collaborative wisdom building.
+Bridge is an MCP (Model Context Protocol) server that enables shared experiential memory between humans and AI. It
+captures meaningful moments with quality signatures, enabling pattern recognition and collaborative wisdom building.
 
 ## Overview
 

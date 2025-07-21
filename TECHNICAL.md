@@ -1,6 +1,7 @@
 # Bridge Technical Documentation
 
-This document covers the technical details of Bridge's operations, clearly distinguishing between current capabilities and planned features.
+This document covers the technical details of Bridge's operations, clearly distinguishing between current capabilities
+and planned features.
 
 ## Current Operations (Implemented)
 

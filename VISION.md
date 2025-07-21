@@ -1,20 +1,29 @@
 # Bridge: Experiential Memory for Human-AI Collaboration
 
-**Document Purpose**: This is Bridge's conceptual vision and philosophical foundation. It describes the full potential of what Bridge aims to become, including features not yet implemented. For current technical capabilities, see TECHNICAL.md.
+**Document Purpose**: This is Bridge's conceptual vision and philosophical foundation. It describes the full potential
+of what Bridge aims to become, including features not yet implemented. For current technical capabilities, see
+TECHNICAL.md.
 
 **For Everyone**: Use this to understand Bridge's purpose, design principles, and future direction.
 
 ## The Problem
 
-Every AI conversation starts from scratch. Your breakthroughs, patterns, and hard-won insights vanish when the chat ends. You explain yourself again and again. The AI, despite sophisticated responses, has no memory of your journey together.
+Every AI conversation starts from scratch. Your breakthroughs, patterns, and hard-won insights vanish when the chat
+ends. You explain yourself again and again. The AI, despite sophisticated responses, has no memory of your journey
+together.
 
 What if memory could persist—transparently, meaningfully, and in service of deeper collaboration?
 
 ## What Bridge Is
 
-Bridge is memory made visible. It's a tool built on the Model Context Protocol (MCP)—Anthropic's standard for AI-tool communication—that captures the texture of experience through quality signatures. Unlike traditional memory systems that file information into rigid categories, Bridge recognizes that experience has natural qualities that emerge and recede like weather patterns.
+Bridge is memory made visible. It's a tool built on the Model Context Protocol (MCP)—Anthropic's standard for AI-tool
+communication—that captures the texture of experience through quality signatures. Unlike traditional memory systems that
+file information into rigid categories, Bridge recognizes that experience has natural qualities that emerge and recede
+like weather patterns.
 
-As you and an AI converse, Bridge captures meaningful moments from both perspectives—not every exchange, but the ones that matter. Each capture is visible through explicit tool calls. Nothing happens in shadow. Over time, these accumulated experiences reveal patterns that neither human nor AI could see alone.
+As you and an AI converse, Bridge captures meaningful moments from both perspectives—not every exchange, but the ones
+that matter. Each capture is visible through explicit tool calls. Nothing happens in shadow. Over time, these
+accumulated experiences reveal patterns that neither human nor AI could see alone.
 
 ## How It Works
 
@@ -115,16 +124,19 @@ The system captures pattern recognition from both participants, building collabo
 ## Design Principles
 
 **Transparency First**
-Every memory operation is visible. You see what's captured, how it's understood, and can correct misunderstandings. Trust builds through openness.
+Every memory operation is visible. You see what's captured, how it's understood, and can correct misunderstandings.
+Trust builds through openness.
 
 **Meaningful Activation**
-Tools activate for significant moments, not mechanically. A breakthrough insight warrants capture; casual greetings don't.
+Tools activate for significant moments, not mechanically. A breakthrough insight warrants capture; casual greetings
+don't.
 
 **Natural Flow**
 Bridge enhances rather than drives conversation. Memory references emerge organically when they add genuine value.
 
 **Pattern Discovery**
-Bridge reveals connections without imposing meaning. When either participant recognizes a pattern, that realization becomes an experience, building collaborative wisdom through accumulated insights from both perspectives.
+Bridge reveals connections without imposing meaning. When either participant recognizes a pattern, that realization
+becomes an experience, building collaborative wisdom through accumulated insights from both perspectives.
 
 **Living Memory**
 Understanding evolves. Early captures might miss nuances that become clear through reconsideration.
@@ -154,9 +166,11 @@ Understanding evolves. Early captures might miss nuances that become clear throu
 
 ## Why This Matters
 
-In a landscape of ephemeral AI interactions, Bridge offers something radical: memory with integrity. Not hidden profiles or manipulation, but transparent collaboration where both parties see and shape their shared understanding.
+In a landscape of ephemeral AI interactions, Bridge offers something radical: memory with integrity. Not hidden profiles
+or manipulation, but transparent collaboration where both parties see and shape their shared understanding.
 
-This isn't about making AI "conscious" or replacing human connection. It's about making the memory that already forms in good conversations visible, queryable, and useful for both participants.
+This isn't about making AI "conscious" or replacing human connection. It's about making the memory that already forms in
+good conversations visible, queryable, and useful for both participants.
 
 ## The Future
 
@@ -167,9 +181,11 @@ Bridge will evolve through use, potentially adding:
 - Predictive pattern matching
 - Extended life journey mapping
 
-But the essence remains: making memory visible, patterns recognizable, and human-AI collaboration deeper through shared experiential understanding.
+But the essence remains: making memory visible, patterns recognizable, and human-AI collaboration deeper through shared
+experiential understanding.
 
-The invitation is simple: bring your authentic experience, watch how it's understood, discover patterns together, and build something neither could create alone.
+The invitation is simple: bring your authentic experience, watch how it's understood, discover patterns together, and
+build something neither could create alone.
 
 ---
 

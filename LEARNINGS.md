@@ -1,6 +1,7 @@
 # Bridge Learnings
 
-**Document Purpose**: This captures validated insights from experiments and real-world usage. Each learning includes evidence trails and practical implications. These are proven findings, not hypotheses.
+**Document Purpose**: This captures validated insights from experiments and real-world usage. Each learning includes
+evidence trails and practical implications. These are proven findings, not hypotheses.
 
 **For Everyone**: Use this to understand what we've discovered about Bridge's behavior and best practices.
 
@@ -71,7 +72,8 @@ This document captures validated insights from Bridge experiments with clear evi
 
 ### 2025-07-21 - Dimensional Filtering Fix
 
-**Key Achievement**: Fixed critical bug where partial dimension matching caused false positives (e.g., "mood.closed" matching "mood.open")
+**Key Achievement**: Fixed critical bug where partial dimension matching caused false positives (e.g., "mood.closed"
+matching "mood.open")
 
 **Technical Implementation**:
 - Implemented unified scoring system with dynamic weight calculation
@@ -79,7 +81,8 @@ This document captures validated insights from Bridge experiments with clear evi
 - Mixed text/dimension queries now score all experiences without filtering
 - Comprehensive test coverage added for dimensional filtering
 
-**Impact**: Recall operations now correctly filter experiences when querying by dimensions, ensuring more accurate and relevant results.
+**Impact**: Recall operations now correctly filter experiences when querying by dimensions, ensuring more accurate and
+relevant results.
 
 **Evidence Trail**:
 - Commit: 0379376 "fix: dimensional filtering for recall queries"
@@ -89,12 +92,16 @@ This document captures validated insights from Bridge experiments with clear evi
 ### 2025-07-21 - Learning Loop Analysis (EXP-001)
 
 **Patterns Observed**:
-- Bridge successfully detected thematic similarities between anxiety experiences across different temporal contexts (Turn 3: identified connection between future presentation anxiety and past familiar anxiety feelings)
-- Quality signatures showed consistent core markers for anxiety states: "embodied.sensing" and "mood.closed" appeared in both experiences while temporal qualities appropriately varied
+- Bridge successfully detected thematic similarities between anxiety experiences across different temporal contexts
+(Turn 3: identified connection between future presentation anxiety and past familiar anxiety feelings)
+- Quality signatures showed consistent core markers for anxiety states: "embodied.sensing" and "mood.closed" appeared in
+both experiences while temporal qualities appropriately varied
 
 **Limitations Identified**:
-- Average operation latency of 7.3 seconds per tool call could disrupt conversational flow, particularly during similarity detection
-- Sort parameter in recall operation didn't affect output order despite "sort: created" specification, suggesting potential functionality issue (now fixed)
+- Average operation latency of 7.3 seconds per tool call could disrupt conversational flow, particularly during
+similarity detection
+- Sort parameter in recall operation didn't affect output order despite "sort: created" specification, suggesting
+potential functionality issue (now fixed)
 
 **Evidence Trail**:
 - Experiment: EXP-001 (see EXPERIMENTS.md)

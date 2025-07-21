@@ -2,7 +2,8 @@ VISION → OPPORTUNITIES → EXPERIMENTS → LEARNINGS → VISION
 
 # The Bridge Learning Loop
 
-**Document Purpose**: This explains Bridge's development methodology - how we systematically evolve from vision to implementation through experimentation and learning. This is our process for continuous improvement.
+**Document Purpose**: This explains Bridge's development methodology - how we systematically evolve from vision to
+implementation through experimentation and learning. This is our process for continuous improvement.
 
 **For Contributors**: Follow this loop when proposing new features or improvements.
 

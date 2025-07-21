@@ -1,6 +1,8 @@
 # CLAUDE.md
 
-**Document Purpose**: This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository. It contains practical commands, architecture overview, and development context needed for day-to-day coding tasks.
+**Document Purpose**: This file provides guidance to Claude Code (claude.ai/code) when working with code in this
+repository. It contains practical commands, architecture overview, and development context needed for day-to-day coding
+tasks.
 
 **For Developers**: Use this as your quick reference for commands, architecture, and testing approaches.
 
@@ -14,7 +16,8 @@ See **LOOP.md** for the complete development workflow, commands, and methodology
 
 ### Core Flow
 
-Bridge is an MCP (Model Context Protocol) server that enables shared experiential memory between humans and AI. The architecture follows a service-oriented pattern:
+Bridge is an MCP (Model Context Protocol) server that enables shared experiential memory between humans and AI. The
+architecture follows a service-oriented pattern:
 
 ```text
 MCP Client (Claude) → MCP Server → Tool Handlers → Services → Storage
@@ -87,7 +90,8 @@ experience({ source: "I feel anxious", experience: ["embodied.sensing", "mood.cl
 ## External Documentation
 
 ### Core References
-- **MCP TypeScript SDK**: https://raw.githubusercontent.com/modelcontextprotocol/typescript-sdk/refs/heads/main/README.md
+- **MCP TypeScript SDK**:
+https://raw.githubusercontent.com/modelcontextprotocol/typescript-sdk/refs/heads/main/README.md
 - **MCP Introduction**: https://modelcontextprotocol.io/introduction
 - **Anthropic Cookbook**: https://github.com/anthropics/anthropic-cookbook
 
