@@ -42,6 +42,22 @@ Prioritize using a barbell strategy for antifragility.
 
 ## Pattern Recognition & Analysis Features
 
+### HMW capture pattern realizations as linkable experiences?
+
+**Impact: 8** - Enables collaborative wisdom building through linked insights  
+**Certainty: 8** - Clear implementation path using existing experience structure  
+**Urgency: 6** - Important for building on accumulated experiences  
+**Score: 384**
+
+**Status: ✓ COMPLETED (See EXP-005 in EXPERIMENTS.md)**
+
+Implementation added `reflects` field to experiences, enabling:
+
+- Pattern realizations that link to specific experiences
+- Bidirectional filtering (`reflects` and `reflected_by`)
+- Collaborative wisdom building through linked insights
+- 100% backward compatibility with existing experiences
+
 ### HMW enable Bridge to reveal patterns through clustering similar experiences?
 
 **Impact: 9** - Core to the vision of revealing insights neither human nor AI could see alone  
@@ -118,3 +134,61 @@ Implementation would:
 - Track bug fix rate trends over time
 - Alert when quality metrics decline
 - Integrate with learning loop for proactive recommendations
+
+## Advanced Vision Features
+
+### HMW enable multi-party memory for teams and groups?
+
+**Impact: 8** - Would enable collaborative memory across multiple participants  
+**Certainty: 5** - Requires significant architectural changes for multi-user support  
+**Urgency: 4** - Valuable for team collaboration but not core to individual use  
+**Score: 160**
+
+Implementation would support:
+
+- Multiple experiencers in shared memory space
+- Team pattern recognition across participants
+- Privacy controls and permission management
+- Cross-participant experience linking
+
+### HMW provide cross-experiencer pattern insights?
+
+**Impact: 7** - Would reveal patterns across different people's experiences  
+**Certainty: 6** - Requires analysis algorithms for cross-experiencer patterns  
+**Urgency: 4** - Valuable for team insights but not blocking individual use  
+**Score: 168**
+
+Implementation would analyze:
+
+- Common patterns across different experiencers
+- Shared dimensional signatures in team contexts
+- Collective wisdom building through cross-participant insights
+- Privacy-preserving pattern analysis
+
+### HMW implement predictive pattern matching?
+
+**Impact: 8** - Would anticipate patterns before they fully emerge  
+**Certainty: 4** - Requires machine learning and predictive modeling  
+**Urgency: 5** - Could significantly enhance user experience  
+**Score: 160**
+
+Implementation would:
+
+- Predict likely dimensional transitions
+- Suggest pattern realizations before explicit recognition
+- Alert to emerging patterns in real-time
+- Provide anticipatory insights based on historical data
+
+### HMW support extended life journey mapping?
+
+**Impact: 9** - Would enable long-term experiential tracking and life insights  
+**Certainty: 4** - Requires sophisticated temporal analysis and visualization  
+**Urgency: 3** - Long-term vision feature, not immediately blocking  
+**Score: 108**
+
+Implementation would provide:
+
+- Long-term experiential timelines
+- Life pattern visualization and analysis
+- Milestone tracking and reflection prompts
+- Integration with external life data sources
