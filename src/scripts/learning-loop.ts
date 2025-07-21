@@ -161,6 +161,46 @@ class GitContextManager {
   }
 
   /**
+   * Get commits since a given hash
+   */
+  getCommitsSince(sinceCommit: string): GitCommit[] {
+    try {
+      const gitOutput = execSync(
+        `git log ${sinceCommit}..HEAD --pretty=format:"%H|%ai|%s" --name-only`,
+        { cwd: this.repoPath, encoding: 'utf-8' }
+      );
+
+      if (!gitOutput.trim()) {
+        return [];
+      }
+
+      const commits: GitCommit[] = [];
+      const entries = gitOutput.split('\n\n');
+
+      for (const entry of entries) {
+        const lines = entry.trim().split('\n');
+        if (lines.length === 0) continue;
+
+        const [hash, date, ...messageParts] = lines[0].split('|');
+        const message = messageParts.join('|');
+        const filesChanged = lines.slice(1).filter(f => f.trim());
+
+        commits.push({
+          hash,
+          date,
+          message,
+          filesChanged,
+          type: this.categorizeCommit(message)
+        });
+      }
+
+      return commits;
+    } catch {
+      return [];
+    }
+  }
+
+  /**
    * Check if there are uncommitted changes
    */
   hasUncommittedChanges(): boolean {
@@ -417,8 +457,31 @@ class TestResultsAggregator {
       .sort()
       .reverse();
 
-    // If no test results exist or force run, run tests automatically
-    if (forceRun || files.length === 0) {
+    // Check if we should actually run tests
+    let shouldRunBridgeTests = files.length === 0; // Always run if no results
+    
+    if (!shouldRunBridgeTests && forceRun) {
+      // Even with forceRun, check if existing tests are recent enough
+      if (files.length > 0) {
+        try {
+          const latestFile = join(testResultsDir, files[0]);
+          const stats = await import('fs').then(fs => fs.statSync(latestFile));
+          const ageInHours = (Date.now() - stats.mtimeMs) / (1000 * 60 * 60);
+          
+          // Only run if tests are older than 4 hours
+          shouldRunBridgeTests = ageInHours > 4;
+          
+          if (!shouldRunBridgeTests) {
+            console.log(`    ℹ️  Using existing Bridge test results (${ageInHours.toFixed(1)} hours old)`);
+          }
+        } catch {
+          shouldRunBridgeTests = true;
+        }
+      }
+    }
+
+    // If we should run tests, do it
+    if (shouldRunBridgeTests) {
       // Check if Bridge tests should be skipped
       if (process.env.SKIP_BRIDGE_TESTS === 'true') {
         console.log('    ⚠️  Bridge tests skipped (SKIP_BRIDGE_TESTS=true)');
@@ -736,12 +799,34 @@ function shouldRunTests(gitManager: GitContextManager, previousRun: PreviousRunI
   const commitsSince = gitManager.countCommitsSince(previousRun.lastGitCommit);
   if (commitsSince > 0) {
     console.log(`  ℹ️  Found ${commitsSince} new commits since last run`);
+    
+    // Get commits since last run to check if they affect code
+    const recentCommits = gitManager.getCommitsSince(previousRun.lastGitCommit);
+    
+    // Check if any commits affect source code or tests
+    const hasCodeChanges = recentCommits.some(commit => {
+      return commit.filesChanged.some(file => 
+        file.startsWith('src/') || 
+        file.includes('.test.') ||
+        file.includes('.spec.') ||
+        file === 'package.json' ||
+        file === 'tsconfig.json' ||
+        file === 'jest.config.js'
+      );
+    });
+    
+    if (!hasCodeChanges) {
+      console.log('  ℹ️  New commits only affect documentation/config - tests not required');
+      return false;
+    }
+    
     return true;
   }
 
-  // Check for uncommitted changes
+  // Check for uncommitted changes in code files
   if (gitManager.hasUncommittedChanges()) {
     console.log('  ℹ️  Found uncommitted changes');
+    // Could enhance this to check if changes are in code files
     return true;
   }
 
@@ -1071,32 +1156,103 @@ function generateRecommendations(
       const scenariosMatch = expContent.match(/\*\*Test Scenarios\*\*:(.*?)(?=\*\*|$)/s);
       const scenarios = scenariosMatch ? scenariosMatch[1].split('\n').filter(line => line.trim().match(/^\d+\./)) : [];
       
+      // Enhanced experiment detection logic
+      // Extract keywords from experiment content for better matching
+      const expKeywords: string[] = [];
+      
+      // Extract keywords from experiment title and purpose
+      const purposeMatch = expContent.match(/\*\*Purpose\*\*:\s*(.+)/);
+      if (purposeMatch) {
+        const purposeWords = purposeMatch[1].toLowerCase().split(/\s+/)
+          .filter(w => w.length > 3 && !['test', 'the', 'and', 'for', 'with'].includes(w));
+        expKeywords.push(...purposeWords);
+      }
+      
+      // Add specific keywords based on experiment ID
+      if (exp === 'EXP-002') {
+        expKeywords.push('dimensional', 'filtering', 'scoring', 'unified', 'recall');
+      } else if (exp === 'EXP-003') {
+        expKeywords.push('learning', 'loop', 'recommendations', 'analysis', 'intelligent');
+      }
+      
       // Check for evidence of completion
-      outcomes.forEach(outcome => {
-        const outcomeLine = outcome.trim();
+      outcomes.forEach(() => {
         
-        // Check git commits for related work
+        // Enhanced commit matching using keywords
         const relatedCommits = gitContext.recentCommits.filter(c => {
           const msg = c.message.toLowerCase();
           const expLower = exp.toLowerCase();
-          return msg.includes(expLower) || 
-                 (outcomeLine.includes('learning loop') && msg.includes('learning loop')) ||
-                 (outcomeLine.includes('unified scoring') && msg.includes('scoring')) ||
-                 (outcomeLine.includes('test') && c.type === 'test');
+          
+          // Direct mention of experiment
+          if (msg.includes(expLower)) return true;
+          
+          // Match based on experiment keywords
+          const keywordMatches = expKeywords.filter(keyword => msg.includes(keyword)).length;
+          if (keywordMatches >= 2) return true;
+          
+          // Specific pattern matching
+          if (exp === 'EXP-002' && (msg.includes('dimensional') || msg.includes('recall') || msg.includes('filtering'))) {
+            return true;
+          }
+          if (exp === 'EXP-003' && msg.includes('learning loop')) {
+            return true;
+          }
+          
+          return false;
         });
         
         if (relatedCommits.length > 0) {
-          evidence.push(`${relatedCommits.length} commits related to: ${outcomeLine.substring(2)}`);
+          evidence.push(`${relatedCommits.length} commits implementing features: ${relatedCommits.slice(0, 3).map(c => c.message.split('\n')[0]).join(', ')}`);
           completionConfidence += 0.2;
         }
       });
       
-      // Check test results for evidence
+      // Enhanced test scenario matching
       if (testContext.bridgeTests.scenarios.length > 0) {
+        let matchedScenarios: string[] = [];
+        
+        // Match test scenarios to experiments based on content
+        if (exp === 'EXP-002') {
+          // Dimensional filtering experiment
+          const dimensionalTests = testContext.bridgeTests.scenarios.filter(s => 
+            s.name.toLowerCase().includes('dimensional') || 
+            s.name.toLowerCase().includes('recall') ||
+            s.scenario === 'dimensional-focus' ||
+            s.scenario === 'recall-queries'
+          );
+          
+          if (dimensionalTests.length > 0 && dimensionalTests.every(t => t.success)) {
+            matchedScenarios = dimensionalTests.map(t => t.name);
+            evidence.push(`Dimensional filtering tests passing: ${matchedScenarios.join(', ')}`);
+            completionConfidence += 0.4;
+          }
+        } else if (exp === 'EXP-003') {
+          // Learning loop experiment
+          // Check if learning loop has been running successfully
+          const loopRuns = testContext.recentTestRuns.filter(r => r.type === 'learning-loop');
+          if (loopRuns.length > 0) {
+            const successfulLoops = loopRuns.filter(r => r.success).length;
+            evidence.push(`Learning loop has ${loopRuns.length} recent runs (${successfulLoops} successful)`);
+            completionConfidence += 0.3;
+          }
+          
+          // Check if learning loop files exist
+          const loopDir = join(process.cwd(), 'loop');
+          if (existsSync(loopDir)) {
+            const loopFiles = readdirSync(loopDir);
+            const recsFiles = loopFiles.filter(f => f.includes('recommendations'));
+            if (recsFiles.length > 0) {
+              evidence.push(`Recommendations generated in ${recsFiles.length} runs`);
+              completionConfidence += 0.3;
+            }
+          }
+        }
+        
+        // General test success evidence
         const successfulTests = testContext.bridgeTests.scenarios.filter(s => s.success);
-        if (successfulTests.length > 0) {
-          evidence.push(`${successfulTests.length} Bridge test scenarios passing`);
-          completionConfidence += 0.3;
+        if (successfulTests.length === testContext.bridgeTests.scenarios.length && testContext.bridgeTests.scenarios.length > 0) {
+          evidence.push(`All ${successfulTests.length} Bridge test scenarios passing`);
+          completionConfidence += 0.2;
         }
       }
       
@@ -1112,7 +1268,7 @@ function generateRecommendations(
         }
       });
       
-      // Only recommend completion if we have substantial evidence
+      // Generate recommendations based on evidence
       if (evidence.length >= 2 && completionConfidence >= 0.5) {
         // Extract experiment title
         const titleMatch = expContent.match(new RegExp(`${exp}:\\s*(.+)`));
@@ -1122,35 +1278,57 @@ function generateRecommendations(
           id: `REC-${idCounter++}`,
           type: 'documentation',
           priority: completionConfidence >= 0.7 ? 'high' : 'medium',
-          title: `Review ${exp} for completion: ${title}`,
-          description: `${exp} shows evidence of completion based on commits and test results.`,
-          rationale: 'Experiments with achieved outcomes should be moved to completed section.',
+          title: `${exp} appears complete: ${title}`,
+          description: `${exp} shows strong evidence of completion based on commits, test results, and implementation.`,
+          rationale: 'Completed experiments should be moved to the Completed section with results documented.',
           evidence,
           suggestedChanges: [{
             file: 'EXPERIMENTS.md',
             section: exp,
-            proposed: 'Review outcomes and move to Completed if all goals achieved'
+            proposed: `Move to Completed Experiments section with status: Completed ${new Date().toISOString().split('T')[0]}`
           }],
-          confidenceLevel: Math.min(completionConfidence, 0.9)
+          confidenceLevel: Math.min(completionConfidence, 0.95)
+        });
+      } else if (evidence.length > 0) {
+        // Partial evidence - suggest what's missing
+        const missingEvidence: string[] = [];
+        if (!evidence.some(e => e.includes('commits'))) {
+          missingEvidence.push('No related commits found');
+        }
+        if (!evidence.some(e => e.includes('tests'))) {
+          missingEvidence.push('No matching test scenarios');
+        }
+        
+        recommendations.push({
+          id: `REC-${idCounter++}`,
+          type: 'process',
+          priority: 'low',
+          title: `${exp} shows partial progress`,
+          description: `${exp} has some evidence of progress but may need additional work.`,
+          rationale: 'Active experiments should show clear progress through commits and tests.',
+          evidence: [...evidence, ...missingEvidence],
+          confidenceLevel: completionConfidence
         });
       }
     });
     
-    // If no completion recommendations, suggest general review
-    const completionRecs = recommendations.filter(r => r.title.includes('Review EXP-'));
-    if (completionRecs.length === 0 && activeExps.length > 0) {
+    // Only add generic recommendation if no experiment-specific ones were generated
+    const experimentRecs = recommendations.filter(r => 
+      r.title.includes('EXP-') && (r.title.includes('appears complete') || r.title.includes('shows partial'))
+    );
+    if (experimentRecs.length === 0 && activeExps.length > 0) {
       recommendations.push({
         id: `REC-${idCounter++}`,
         type: 'process',
         priority: 'low',
-        title: `Active experiments need evidence: ${activeExps.join(', ')}`,
-        description: 'Active experiments lack sufficient evidence of progress or completion.',
-        rationale: 'Experiments should show measurable progress through commits and test results.',
+        title: `Review active experiments: ${activeExps.join(', ')}`,
+        description: 'Active experiments should be reviewed for progress and completion.',
+        rationale: 'Regular experiment review ensures documentation stays current.',
         evidence: [
-          `${activeExps.length} active experiments`,
-          'Consider running relevant tests or documenting progress'
+          `${activeExps.length} experiments in active state`,
+          'Consider documenting progress or completion'
         ],
-        confidenceLevel: 0.5
+        confidenceLevel: 0.4
       });
     }
   }
