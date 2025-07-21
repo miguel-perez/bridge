@@ -101,10 +101,15 @@ export class RecallHandler {
       // Perform recall
       const { results, clusters } = await withTimeout(
         this.recallService.search({
-          query: isRecentQuery ? '' : query, // Empty query for recent to get all
+          query: isRecentQuery ? '' : (query || undefined), // Empty query for recent to get all
           limit: isRecentQuery ? Math.min(limit, 5) : limit, // Show fewer for recent
-          // Only use semantic query if NOT a pure quality query and is a string
-          semantic_query: isRecentQuery || isPureQuality ? '' : (typeof query === 'string' ? query : ''),
+          // Set semantic query based on query type
+          semantic_query: isRecentQuery ? '' : (
+            !query ? undefined :
+            isPureQuality && typeof query === 'string' ? '' : 
+            typeof query === 'string' ? query : 
+            Array.isArray(query) ? query.join(' ') : ''
+          ),
           semantic_threshold: SEMANTIC_CONFIG.DEFAULT_THRESHOLD,
           // Pass through all filters from the input
           experiencer: recall.experiencer,
@@ -115,14 +120,15 @@ export class RecallHandler {
           // Handle clustering if requested
           as: recall.as
         }),
-        DEFAULT_TIMEOUTS.SEARCH,
+        DEFAULT_TIMEOUTS.EXPERIENCE,
         'Recall operation'
       );
       
       // Convert results to RecallResult format for formatter
       const recallResults: RecallResult[] = results.map(result => ({
         id: result.id,
-        content: result.content || '',
+        type: result.type,
+        content: result.content,
         snippet: result.snippet,
         metadata: result.metadata ? {
           created: typeof result.metadata.created === 'string' ? result.metadata.created : new Date().toISOString(),
@@ -133,9 +139,6 @@ export class RecallHandler {
         } : undefined,
         relevance_score: result.relevance_score
       }));
-      
-      // Always show IDs for better UX - users need them for modifications
-      const showIds = true;
       
       // Build multi-content response
       const content: Array<{ type: 'text', text: string }> = [];
@@ -149,7 +152,7 @@ export class RecallHandler {
         });
       } else {
         // Format results using conversational formatter for regular recall
-        const response = formatRecallResponse(recallResults, showIds);
+        const response = formatRecallResponse(recallResults, true);
         content.push({
           type: 'text',
           text: response
@@ -171,7 +174,7 @@ export class RecallHandler {
         isError: true,
         content: [{
           type: 'text',
-          text: error instanceof Error ? error.message : 'Unknown error'
+          text: 'I encountered an error while searching for experiences. Please try again.'
         }]
       };
     }
@@ -200,6 +203,17 @@ export class RecallHandler {
     
     // Single result - suggest actions
     if (results.length === 1) {
+      // Check for emotional content first
+      const hasEmotionalContent = results.some(r => 
+        r.metadata?.experience?.some(q => 
+          q.includes('mood') || q.includes('embodied')
+        )
+      );
+      
+      if (hasEmotionalContent) {
+        return "Emotional experiences captured. Use IDs to modify or release.";
+      }
+      
       return "To modify: use 'reconsider' with the ID\nTo remove: use 'release' with the ID";
     }
     
@@ -209,25 +223,23 @@ export class RecallHandler {
     }
     
     // Many results suggest patterns
-    if (results.length > 5) {
-      return "Many results may suggest patterns";
+    if (results.length > 2) {
+      return "Multiple matches found. Use IDs to modify specific experiences.";
     }
     
-    // 2-5 results with emotional content
-    if (results.length <= 5) {
-      const hasEmotionalContent = results.some(r => 
-        r.metadata?.experience?.some(q => 
-          q.includes('mood') || q.includes('embodied')
-        )
-      );
-      
-      if (hasEmotionalContent) {
-        return "Use IDs to update or connect insights";
-      }
+    // Check for emotional content in multiple results
+    const hasEmotionalContent = results.some(r => 
+      r.metadata?.experience?.some(q => 
+        q.includes('mood') || q.includes('embodied')
+      )
+    );
+    
+    if (hasEmotionalContent) {
+      return "Emotional experiences captured. Use IDs to modify or release.";
     }
     
     // Default for small result sets
-    return "Use the IDs above to reconsider or release specific experiences";
+    return "Use IDs to modify or release specific experiences.";
   }
 
   /**

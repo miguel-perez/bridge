@@ -389,6 +389,9 @@ describe('RecallHandler', () => {
           type: 'experience',
           content: 'I feel anxious about the presentation',
           snippet: 'I feel anxious about the presentation',
+          metadata: {
+            experience: ['mood.closed']
+          },
           relevance_score: 0.9
         }],
         stats: { total: 1 }
@@ -448,11 +451,19 @@ describe('RecallHandler', () => {
       });
 
       expect(mockFormatRecallResponse).toHaveBeenCalledWith(
-        mockResults,
-        expect.objectContaining({
-          query: 'test',
-          limit: 10
-        })
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: 'exp_123',
+            type: 'experience',
+            content: 'Test experience',
+            snippet: 'Test experience',
+            metadata: expect.objectContaining({
+              experience: ['mood.open']
+            }),
+            relevance_score: 0.8
+          })
+        ]),
+        true
       );
     });
 
@@ -476,7 +487,7 @@ describe('RecallHandler', () => {
 
       expect(mockFormatRecallResponse).toHaveBeenCalledWith(
         mockResults,
-        expect.any(Object)
+        true
       );
     });
 
@@ -499,7 +510,7 @@ describe('RecallHandler', () => {
 
       expect(mockFormatRecallResponse).toHaveBeenCalledWith(
         mockResults,
-        expect.any(Object)
+        true
       );
     });
 
@@ -525,8 +536,19 @@ describe('RecallHandler', () => {
       });
 
       expect(mockFormatRecallResponse).toHaveBeenCalledWith(
-        mockResults,
-        expect.any(Object)
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: 'exp_123',
+            type: 'experience',
+            content: 'Test experience',
+            snippet: 'Test experience',
+            metadata: expect.objectContaining({
+              experience: ['mood.open']
+            }),
+            relevance_score: 0.8
+          })
+        ]),
+        true
       );
     });
   });
@@ -544,7 +566,8 @@ describe('RecallHandler', () => {
 
       expect(mockWithTimeout).toHaveBeenCalledWith(
         expect.any(Promise),
-        30000
+        30000,
+        'Recall operation'
       );
     });
   });

@@ -152,7 +152,8 @@ export interface ExperienceResult {
  */
 export interface RecallResult {
   id: string;
-  content: string;
+  type: string;
+  content?: string;
   snippet?: string;
   metadata?: {
     created: string;
