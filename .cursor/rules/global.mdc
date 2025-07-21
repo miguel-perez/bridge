@@ -1,3 +1,131 @@
 ---
+description: Global Development Rules for Bridge
+globs: ["**/*"]
 alwaysApply: true
 ---
+
+# Global Development Rules
+
+## Code Quality Principles
+
+### DRY (Don't Repeat Yourself)
+- Extract common patterns into reusable functions
+- Use shared constants for repeated values
+- Create utility functions for common operations
+- Avoid duplicating business logic across handlers
+
+### Single Responsibility
+- Each function should have one clear purpose
+- Classes should represent a single concept
+- Files should focus on one domain area
+- Handlers should only handle MCP protocol concerns
+
+### Type Safety
+- Use TypeScript strict mode
+- Avoid `any` types unless absolutely necessary
+- Define interfaces for all data structures
+- Use Zod schemas for runtime validation
+
+## Documentation Standards
+
+### JSDoc Requirements
+- Document all public API functions
+- Include `@param` and `@returns` for complex functions
+- Use `@example` for non-obvious usage patterns
+- Add `@throws` for functions that can throw exceptions
+
+### Code Comments
+- Explain "why" not "what" in comments
+- Use comments for complex business logic
+- Document workarounds and edge cases
+- Keep comments up to date with code changes
+
+## Error Handling
+
+### Graceful Degradation
+- Handle errors at appropriate levels
+- Provide meaningful error messages
+- Log errors for debugging
+- Don't crash the application on recoverable errors
+
+### Validation
+- Validate all external inputs
+- Use Zod schemas for MCP tool inputs
+- Sanitize file paths and user content
+- Check for required fields before processing
+
+## Performance Guidelines
+
+### Efficient Operations
+- Minimize file system operations
+- Cache expensive computations
+- Use appropriate data structures
+- Profile code before optimizing
+
+### Memory Management
+- Avoid memory leaks in long-running processes
+- Clean up resources properly
+- Use streaming for large datasets
+- Monitor memory usage in production
+
+## Security Best Practices
+
+### Input Validation
+- Validate all user inputs
+- Prevent path traversal attacks
+- Sanitize content before storage
+- Use parameterized queries (when applicable)
+
+### Data Protection
+- Store sensitive data locally only
+- Don't log sensitive information
+- Use secure random generation for IDs
+- Validate file permissions before operations
+
+## Testing Requirements
+
+### Test Coverage
+- Write tests for all new functionality
+- Test error paths and edge cases
+- Maintain high test coverage
+- Use descriptive test names
+
+### Test Quality
+- Tests should be independent
+- Mock external dependencies
+- Use realistic test data
+- Test both success and failure scenarios
+
+## Git Workflow
+
+### Commit Messages
+- Use conventional commit format
+- Write descriptive commit messages
+- Reference issues when applicable
+- Keep commits focused and atomic
+
+### Code Review
+- Review all changes before merging
+- Check for security vulnerabilities
+- Ensure tests pass
+- Verify documentation is updated
+
+## Bridge-Specific Guidelines
+
+### MCP Protocol
+- Follow MCP specification strictly
+- Use proper error codes and messages
+- Validate all tool inputs with Zod
+- Return structured responses
+
+### Experiential Data
+- Respect user privacy and data ownership
+- Store all data locally
+- Use quality signatures for experiences
+- Maintain data integrity and consistency
+
+### Learning Loop Integration
+- Update documentation when features change
+- Run learning loop analysis regularly
+- Follow recommendations from analysis
+- Keep experiments and learnings current
