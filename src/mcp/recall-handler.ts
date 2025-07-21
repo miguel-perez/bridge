@@ -10,6 +10,7 @@ import { RecallService } from '../services/recall.js';
 import { withTimeout, DEFAULT_TIMEOUTS } from '../utils/timeout.js';
 import { SearchInput, ToolResultSchema, type ToolResult } from './schemas.js';
 import { formatRecallResponse, type RecallResult } from '../utils/formatters.js';
+import { SEMANTIC_CONFIG } from '../core/config.js';
 
 export interface RecallResponse {
   success: boolean;
@@ -70,19 +71,27 @@ export class RecallHandler {
       const query = recall.query || '';
       const limit = recall.limit || 10;
       
-      // Special handling for "recent" queries
-      const isRecentQuery = query.toLowerCase() === 'recent' || 
-                           query.toLowerCase() === 'last' ||
-                           query.toLowerCase() === 'latest';
+      // Special handling for "recent" queries (only for string queries)
+      const isRecentQuery = typeof query === 'string' && (
+        query.toLowerCase() === 'recent' || 
+        query.toLowerCase() === 'last' ||
+        query.toLowerCase() === 'latest'
+      );
+      
+      // Import needed function for checking dimensional queries
+      const { isQueryPurelyDimensional } = await import('../services/unified-scoring.js');
+      
+      // Check if this is a pure dimensional query
+      const isPureDimensional = query && isQueryPurelyDimensional(query);
       
       // Perform recall
       const { results } = await withTimeout(
         this.recallService.search({
           query: isRecentQuery ? '' : query, // Empty query for recent to get all
           limit: isRecentQuery ? Math.min(limit, 5) : limit, // Show fewer for recent
-          // If query is provided, also use it for semantic recall
-          semantic_query: isRecentQuery ? '' : query,
-          semantic_threshold: 0.7,
+          // Only use semantic query if NOT a pure dimensional query and is a string
+          semantic_query: isRecentQuery || isPureDimensional ? '' : (typeof query === 'string' ? query : ''),
+          semantic_threshold: SEMANTIC_CONFIG.DEFAULT_THRESHOLD,
           // Pass through all filters from the input
           experiencer: recall.experiencer,
           perspective: recall.perspective,
@@ -122,7 +131,7 @@ export class RecallHandler {
       }];
       
       // Add contextual guidance
-      const guidance = this.selectRecallGuidance(query, recallResults);
+      const guidance = this.selectRecallGuidance(typeof query === 'string' ? query : query.join(' '), recallResults);
       if (guidance) {
         content.push({
           type: 'text',
@@ -153,14 +162,14 @@ export class RecallHandler {
     if (results.length === 0) {
       // Long queries often fail - suggest keywords
       if (query.length > 30) {
-        return "Long phrases rarely match exactly. Try key words like: anxiety, presentation, nervous";
+        return "Long phrases rarely match exactly.";
       }
       // Very short queries might be too broad
       if (query.length < 3) {
         return "Try more specific terms or 'recall recent' for latest experiences";
       }
       // Default guidance with examples
-      return "No matches found. Try:\n• Different keywords (mood, feeling, thought)\n• Broader terms (anxious → anxiety)\n• 'recall recent' for latest";
+      return "No matches found. Try:\n• Different dimensions\n• Broader terms\n• 'recall recent' for latest";
     }
     
     // Single result - suggest actions
@@ -175,7 +184,7 @@ export class RecallHandler {
     
     // Many results suggest patterns
     if (results.length > 5) {
-      return "Multiple patterns found. Consider refining search or analyzing themes";
+      return "Many results may suggest patterns";
     }
     
     // 2-5 results with emotional content
@@ -187,7 +196,7 @@ export class RecallHandler {
       );
       
       if (hasEmotionalContent) {
-        return "Emotional experiences captured. Use IDs to update or connect insights";
+        return "Use IDs to update or connect insights";
       }
     }
     

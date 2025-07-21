@@ -97,7 +97,10 @@ export const ExperienceInputSchema = z.object({
 
 // SEARCH tool input
 export const SearchInputSchema = z.object({
-  query: z.string().describe('Search query for semantic matching').optional(),
+  query: z.union([
+    z.string().describe('Search query for semantic matching'),
+    z.array(z.string()).describe('Array of dimensions or search terms')
+  ]).describe('Search query - can be a string or array of dimensions').optional(),
   limit: z.number().describe('Maximum number of results to return').optional(),
   offset: z.number().describe('Number of results to skip for pagination').optional(),
   experiencer: z.string().describe('Filter by experiencer').optional(),

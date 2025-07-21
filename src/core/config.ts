@@ -18,6 +18,26 @@ export interface BridgeConfig {
 }
 
 /**
+ * Semantic search configuration constants
+ */
+export const SEMANTIC_CONFIG = {
+  // Default threshold for semantic similarity (0-1 scale)
+  // Lower values (0.3-0.5) = more inclusive, finds conceptually related matches
+  // Higher values (0.7-0.9) = more strict, only very similar matches
+  DEFAULT_THRESHOLD: 0.5,
+  
+  // Threshold for finding similar experiences during capture
+  SIMILARITY_DETECTION_THRESHOLD: 0.35,
+  
+  // Scoring weights for recall operations
+  SCORING_WEIGHTS: {
+    TEXT_MATCH: 0.5,      // 50% - Exact/partial text matching
+    SEMANTIC: 0.3,        // 30% - Semantic similarity via embeddings
+    FILTER: 0.2          // 20% - Metadata filters (experiencer, perspective, etc.)
+  }
+} as const;
+
+/**
  * Expands common path variables like ~ and ${HOME}
  * @param path Path that may contain variables
  * @returns Expanded path

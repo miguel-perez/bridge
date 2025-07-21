@@ -8,6 +8,7 @@ import {
   type ExperienceResult
 } from '../utils/formatters.js';
 import { Messages, formatMessage } from '../utils/messages.js';
+import { SEMANTIC_CONFIG } from '../core/config.js';
 
 export interface ExperienceResponse {
   success: boolean;
@@ -171,7 +172,7 @@ export class ExperienceHandler {
         // Get similar count for more detailed guidance
         const similarResults = await this.recallService.search({
           semantic_query: result.source.source,
-          semantic_threshold: 0.35,
+          semantic_threshold: SEMANTIC_CONFIG.SIMILARITY_DETECTION_THRESHOLD,
           limit: 10
         });
         

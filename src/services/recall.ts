@@ -2,6 +2,10 @@ import { SourceRecord } from '../core/types.js';
 import { getAllRecords } from '../core/storage.js';
 import { embeddingService } from './embeddings.js';
 import { findSimilarByEmbedding } from './embedding-search.js';
+import { SEMANTIC_CONFIG } from '../core/config.js';
+import { 
+  applyFiltersAndScore
+} from './unified-scoring.js';
 
 // Debug mode configuration
 const DEBUG_MODE = process.env.BRIDGE_RECALL_DEBUG === 'true' || process.env.BRIDGE_DEBUG === 'true';
@@ -35,7 +39,7 @@ function logRecallError(context: string, error: unknown, details?: unknown): { e
 }
 
 export interface RecallInput {
-  query?: string;
+  query?: string | string[];
   limit?: number;
   offset?: number;
   type?: string[];
@@ -71,13 +75,20 @@ export interface RecallServiceResult {
     vector_similarity?: number;
     semantic_similarity?: number;
     filter_relevance?: number;
+    // New unified scoring fields
+    semantic?: number;
+    dimensional?: number;
+    exact?: number;
+    recency?: number;
+    density?: number;
+    weights?: Record<string, number>;
   };
 }
 
 export interface RecallServiceResponse {
   results: RecallServiceResult[];
   total: number;
-  query: string;
+  query: string | string[];
   filters: Record<string, any>;
   debug?: {
     recall_started: string;
@@ -117,128 +128,10 @@ export interface RecallServiceResponse {
   };
 }
 
-// Calculate text relevance score based on query matching
-function calculateTextRelevance(record: SourceRecord, query: string | undefined): number {
-  // For empty/undefined queries, return 1 to allow all records to be found
-  if (!query || !query.trim()) {
-    // Empty query - return 1 to show all results
-    return 1;
-  }
-  
-  const queryLower = query.toLowerCase();
-  const contentLower = record.source.toLowerCase();
-  
-  // Check for exact phrase match in content (highest score)
-  if (contentLower.includes(queryLower)) {
-    return 0.9;
-  }
-  
-  // Check for word matches
-  const queryWords = queryLower.split(/\s+/).filter(word => word.length > 2);
-  if (queryWords.length === 0) return 0;
-  
-  let matchedWords = 0;
-  for (const word of queryWords) {
-    if (contentLower.includes(word)) {
-      matchedWords++;
-    }
-  }
-  
-  // Calculate word match ratio
-  const wordMatchRatio = matchedWords / queryWords.length;
-  
-  // Check for partial matches (substring matches)
-  let partialMatches = 0;
-  for (const word of queryWords) {
-    if (word.length > 3) {
-      // Check if any word in content contains this query word as a substring
-      const contentWords = contentLower.split(/\s+/);
-      for (const contentWord of contentWords) {
-        if (contentWord.includes(word)) {
-          partialMatches++;
-          break;
-        }
-      }
-    }
-  }
-  
-  const partialMatchRatio = partialMatches / queryWords.length;
-  
-  // Combine scores: exact phrase > word matches > partial matches
-  return Math.max(wordMatchRatio * 0.7, partialMatchRatio * 0.4);
-}
+// Legacy scoring functions - replaced by unified scoring
+// Kept for reference only
 
-// Calculate filter relevance score
-function calculateFilterRelevance(record: SourceRecord, input: RecallInput): number {
-  const relevance = 1.0; // Start with full relevance
-  
-  // Check if record matches all applied filters
-  // Type filtering removed - type field no longer exists in data model
-  
-  if (input.experiencer && record.experiencer !== input.experiencer) {
-    return 0;
-  }
-  
-  if (input.perspective && record.perspective !== input.perspective) {
-    return 0;
-  }
-  
-  if (input.processing && record.processing !== input.processing) {
-    return 0;
-  }
-  
-  if (input.crafted !== undefined && record.crafted !== input.crafted) {
-    return 0;
-  }
-  
-  // Check experiential qualities filters
-  if (record.experience) {
-    // TODO: Implement filtering based on experience array if needed.
-    // Legacy min/max filter logic for theoretical types removed.
-  }
-  
-  return relevance;
-}
 
-// Calculate overall relevance score
-function calculateRelevanceScore(
-  record: SourceRecord, 
-  input: RecallInput, 
-  semanticSimilarity?: number
-): { score: number; breakdown: any } {
-  const textMatch = calculateTextRelevance(record, input.query || '');
-  const filterRelevance = calculateFilterRelevance(record, input);
-  
-  // Combine scores with weights
-  let finalScore = 0;
-  const breakdown: any = {
-    text_match: textMatch,
-    filter_relevance: filterRelevance
-  };
-  
-  // Balanced scoring: text (50%), semantic (30%), filters (20%)
-  if (input.query && input.query.trim()) {
-    finalScore += textMatch * 0.5;
-  } else {
-    // For empty queries, give a base score to all records
-    finalScore += 0.5;
-    // Empty query - add base score
-  }
-  
-  // Filter relevance affects overall score
-  finalScore += filterRelevance * 0.2;
-  
-  // Semantic similarity is now a major component
-  if (semanticSimilarity !== undefined) {
-    breakdown.semantic_similarity = semanticSimilarity;
-    finalScore += semanticSimilarity * 0.3;
-  }
-  
-  return {
-    score: Math.min(finalScore, 1.0),
-    breakdown
-  };
-}
 
 /**
  * Applies temporal filtering to records based on date ranges.
@@ -297,8 +190,8 @@ export async function search(input: RecallInput): Promise<RecallServiceResponse>
     addDebugLog('Recall input', {
       query: input.query,
       hasQuery: !!input.query,
-      queryLength: input.query?.length,
-      queryTrimmed: input.query?.trim(),
+      queryLength: typeof input.query === 'string' ? input.query.length : input.query?.length,
+      queryTrimmed: typeof input.query === 'string' ? input.query.trim() : undefined,
       filters: Object.entries(input).filter(([k, v]) => k !== 'query' && v !== undefined).map(([k, v]) => ({ [k]: v }))
     });
     
@@ -380,7 +273,7 @@ export async function search(input: RecallInput): Promise<RecallServiceResponse>
         const similarResults = await findSimilarByEmbedding(
           queryEmbedding,
           input.limit ? input.limit * 2 : 100,  // Get more results to filter later
-          input.semantic_threshold || 0.7
+          input.semantic_threshold || SEMANTIC_CONFIG.DEFAULT_THRESHOLD
         );
         
         addDebugLog(`Found ${similarResults.length} semantically similar results with threshold ${input.semantic_threshold || 0.7}`);
@@ -421,30 +314,35 @@ export async function search(input: RecallInput): Promise<RecallServiceResponse>
       }
     }
 
-    // Calculate relevance scores for all filtered records
-    const recordsWithRelevance = filteredRecords.map((record: any) => {
-      const relevance = calculateRelevanceScore(
-        record, 
-        input, 
-        semanticSimilarityMap[record.id]
-      );
-      return { ...record, _relevance: relevance };
-    });
-
-    // If a text query is provided, filter out records with zero text relevance
-    let finalRecords = recordsWithRelevance;
-    if (input.query && input.query.trim()) {
-      const beforeCount = finalRecords.length;
-      finalRecords = finalRecords.filter((r: any) => r._relevance.breakdown.text_match > 0);
-      const afterCount = finalRecords.length;
-      addDebugLog(`Text relevance filter applied: ${beforeCount} -> ${afterCount} records`);
-    } else {
-      addDebugLog('No text query provided, skipping text relevance filter', {
-        queryValue: input.query,
-        queryTrimmed: input.query?.trim(),
-        recordCount: finalRecords.length
-      });
+    // Build semantic scores map
+    const semanticScoresMap = new Map<string, number>();
+    for (const [id, score] of Object.entries(semanticSimilarityMap)) {
+      semanticScoresMap.set(id, score);
     }
+
+    // Apply unified scoring (filters already applied above)
+    const scoredExperiences = applyFiltersAndScore(
+      filteredRecords,
+      input.query || input.semantic_query || '',
+      {}, // Filters already applied
+      semanticScoresMap
+    );
+
+    // Convert to records with relevance for compatibility
+    const recordsWithRelevance = scoredExperiences.map(scored => ({
+      ...scored.experience,
+      _relevance: {
+        score: scored.score,
+        breakdown: {
+          ...scored.factors,
+          weights: scored.weights
+        }
+      }
+    }));
+
+    // Keep only records with non-zero scores
+    const finalRecords = recordsWithRelevance.filter((r: any) => r._relevance.score > 0);
+    addDebugLog(`Score filter applied: ${recordsWithRelevance.length} -> ${finalRecords.length} records`);
 
     // Apply sorting (default to created date for recency)
     const sortType = input.sort || 'created';

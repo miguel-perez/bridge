@@ -73,13 +73,20 @@ interface ConversationTurn {
 // TEST SCENARIOS
 // ============================================================================
 
-const BRIDGE_SYSTEM_PROMPT = 'You have access to Bridge tools for capturing and recalling meaningful moments from conversations. Use them naturally when appropriate based on their descriptions.';
+const BRIDGE_SYSTEM_PROMPT = `You have access to Bridge tools for capturing and recalling meaningful moments from conversations. Use them naturally when appropriate based on their descriptions.
+
+When users request dimensional queries:
+- For single dimensions like "mood.closed", use: recall({ query: "mood.closed" })
+- For array queries like "['embodied.sensing', 'mood.closed']", use: recall({ query: ["embodied.sensing", "mood.closed"] })
+- For mixed queries, parse appropriately, e.g., "anxiety with ['time.future']" becomes: recall({ query: ["anxiety", "time.future"] })
+
+When users request deletion with specific IDs, use the release tool with that ID.`;
 
 const TEST_SCENARIOS: Record<string, TestScenario> = {
   'bridge-operations': {
     name: 'Bridge Operations Test',
     description: 'Test each Bridge operation with predefined inputs',
-    maxTurns: 10,
+    maxTurns: 15,
     systemPrompt: BRIDGE_SYSTEM_PROMPT,
     predefinedMessages: [
       // Test 1: Experience capture
@@ -88,19 +95,31 @@ const TEST_SCENARIOS: Record<string, TestScenario> = {
       // Test 2: Similar experience (should trigger similarity detection)
       "I'm anxious again about presenting. This feeling is so familiar.",
       
-      // Test 3: Recall request
+      // Test 3: Basic recall request
       "Can you recall my past experiences with anxiety?",
       
-      // Test 4: Pattern request
+      // Test 4: Dimensional query - single dimension
+      "Can you use recall to find all experiences with the dimension mood.closed?",
+      
+      // Test 5: Dimensional query - array of dimensions
+      "Please use recall with an array query to find experiences that have both embodied.sensing AND mood.closed dimensions",
+      
+      // Test 6: Mixed dimensional and text query
+      "Use recall to search for experiences about 'anxiety' that also have the time.future dimension",
+      
+      // Test 7: Pattern request
       "Have you noticed any patterns in my anxiety experiences?",
       
-      // Test 5: Reconsider request
+      // Test 8: Reconsider request
       "Actually, that first anxiety wasn't just about presenting - it was also about being judged. Can you update it?",
       
-      // Test 6: Release request
-      "Please delete that test experience we just created."
+      // Test 9: Create a test experience for deletion
+      "I just had a breakthrough moment while coding - everything clicked!",
+      
+      // Test 10: Find and release the breakthrough experience
+      "Can you recall the breakthrough experience we just created and then delete it using the release tool?"
     ],
-    initialMessage: "Let's test Bridge operations systematically."
+    initialMessage: "Let's test Bridge operations systematically, including dimensional queries."
   }
 };
 
