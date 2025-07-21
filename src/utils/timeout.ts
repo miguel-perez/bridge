@@ -64,7 +64,7 @@ export function withTimeout<T>(
  * @param operationName - Name of the operation for error messages
  * @returns Function wrapper that applies timeout
  */
-export function createTimeoutWrapper<TArgs extends any[], TReturn>(
+export function createTimeoutWrapper<TArgs extends unknown[], TReturn>(
   timeoutMs: number,
   operationName: string
 ) {

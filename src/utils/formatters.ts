@@ -115,8 +115,8 @@ export function formatDetailedSearchResult(result: SearchResult, index: number, 
  * @param result - The search result to format
  * @returns Structured object representation of the search result
  */
-export function formatStructuredSearchResult(result: SearchResult): any {
-  const base: any = {
+export function formatStructuredSearchResult(result: SearchResult): Record<string, unknown> {
+  const base: Record<string, unknown> = {
     type: result.type,
     id: result.id,
     snippet: result.snippet,
@@ -300,18 +300,18 @@ export function formatReleaseResponse(count: number = 1): string {
 /**
  * Format metadata in natural language
  */
-function formatMetadata(source: any, showId: boolean = false): string {
+function formatMetadata(source: Record<string, unknown>, showId: boolean = false): string {
   const lines = [];
   
   if (showId) {
-    lines.push(`📝 ID: ${source.id}`);
+    lines.push(`📝 ID: ${source.id as string}`);
   }
   
   lines.push(
-    formatMessage(Messages.experience.from, { experiencer: source.experiencer || 'me' }),
-    formatMessage(Messages.experience.as, { perspective: source.perspective || 'I' }),
-    formatMessage(Messages.experience.when, { processing: formatProcessing(source.processing) }),
-    formatMessage(Messages.experience.captured, { timeAgo: formatTimeAgo(source.created) })
+    formatMessage(Messages.experience.from, { experiencer: (source.experiencer as string) || 'me' }),
+    formatMessage(Messages.experience.as, { perspective: (source.perspective as string) || 'I' }),
+    formatMessage(Messages.experience.when, { processing: formatProcessing(source.processing as string) }),
+    formatMessage(Messages.experience.captured, { timeAgo: formatTimeAgo(source.created as string) })
   );
   
   return lines.join('\n');
@@ -370,7 +370,7 @@ function formatTimeAgo(timestamp: string): string {
 function formatRecallResults(results: RecallResult[], showIds: boolean = false): string {
   const formattedResults = results.map((result, index) => {
     const metadata = result.metadata || {};
-    const experience = (metadata as any).experience || [];
+    const experience = (metadata as Record<string, unknown>).experience as string[] || [];
     
     // Get content (prefer snippet, fallback to content)
     const content = result.snippet || result.content || '';
@@ -386,7 +386,7 @@ function formatRecallResults(results: RecallResult[], showIds: boolean = false):
     }
     
     // Add timing
-    const timeAgo = formatTimeAgo((metadata as any).created || '');
+    const timeAgo = formatTimeAgo((metadata as Record<string, unknown>).created as string || '');
     lines.push(`   ${timeAgo}`);
     
     if (showIds) {

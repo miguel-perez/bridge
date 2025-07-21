@@ -7,9 +7,9 @@
  */
 
 interface BridgeLogger {
-  log: (...args: any[]) => void;
-  warn: (...args: any[]) => void;
-  error: (...args: any[]) => void;
+  log: (...args: unknown[]) => void;
+  warn: (...args: unknown[]) => void;
+  error: (...args: unknown[]) => void;
 }
 
 /**

@@ -89,7 +89,7 @@ export const Messages = {
  * @param values - Object with replacement values
  * @returns String with placeholders replaced
  */
-export function formatMessage(template: string, values: Record<string, any>): string {
+export function formatMessage(template: string, values: Record<string, unknown>): string {
   return template.replace(/{(\w+)}/g, (match, key) => {
     return values[key] !== undefined ? String(values[key]) : match;
   });

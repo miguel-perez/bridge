@@ -22,7 +22,7 @@ const DEFAULT_TOTAL = 100;
 interface CachedTestData {
   version: string;
   generatedAt: string;
-  storageSnapshot: any;
+  storageSnapshot: Record<string, unknown>;
 }
 
 interface GenerationProgress {
@@ -36,7 +36,7 @@ async function generateSingleExperience(
   experienceNum: number,
   anthropic: Anthropic,
   mcpClient: MCPClient,
-  toolSchemas: any[]
+  toolSchemas: Record<string, unknown>[]
 ): Promise<boolean> {
   // Miguel's contexts and interests
   const miguelContexts = [

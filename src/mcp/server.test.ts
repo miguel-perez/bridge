@@ -100,7 +100,7 @@ describe('MCP Server - Utility Functions', () => {
   });
 
   describe('MCP Protocol Handlers', () => {
-    let mockHandlers: any;
+    let mockHandlers: Record<string, unknown>;
     let mockGetTools: jest.Mock;
 
     beforeEach(() => {
@@ -211,7 +211,7 @@ describe('MCP Server - Utility Functions', () => {
     it('should handle stringified error arrays', () => {
       const stringifiedErrors = '[{"message": "Field required"}, {"message": "Invalid value"}]';
       const parsed = JSON.parse(stringifiedErrors);
-      const messages = parsed.map((e: any) => e.message).join('; ');
+      const messages = parsed.map((e: Record<string, unknown>) => (e.message as string)).join('; ');
       expect(messages).toBe('Field required; Invalid value');
     });
   });

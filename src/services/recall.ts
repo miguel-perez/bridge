@@ -52,7 +52,7 @@ export interface RecallInput {
   // NOTE: Quality filtering now uses prominent_qualities (simple array), not min/max per theoretical dimension.
   // For legacy support, you may implement mapping if needed.
   // Vector similarity recall (deprecated - use semantic recall instead)
-  vector?: any;
+  vector?: Record<string, unknown>;
   vector_similarity_threshold?: number;
   // Semantic recall
   semantic_query?: string;
@@ -68,7 +68,7 @@ export interface RecallServiceResult {
   type: string;
   snippet: string;
   content?: string; // Full original content
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   relevance_score: number; // Always present, 0-1 scale
   relevance_breakdown?: {
     text_match?: number;
@@ -89,7 +89,7 @@ export interface RecallServiceResponse {
   results: RecallServiceResult[];
   total: number;
   query: string | string[];
-  filters: Record<string, any>;
+  filters: Record<string, unknown>;
   debug?: {
     recall_started: string;
     total_records: number;
@@ -470,7 +470,7 @@ function determineNoResultsReason(input: RecallInput, debugInfo: RecallServiceRe
 // }
 
 export class RecallService {
-  async search(input: RecallInput): Promise<{ results: RecallServiceResult[], stats?: any }> {
+  async search(input: RecallInput): Promise<{ results: RecallServiceResult[], stats?: Record<string, unknown> }> {
     // Use the comprehensive search function that includes all filtering logic
     const searchResponse = await search(input);
     
