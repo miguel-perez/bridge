@@ -884,8 +884,7 @@ function shouldRunTests(gitManager: GitContextManager, previousRun: PreviousRunI
  * @remarks
  * Main analysis function that aggregates git, test, and documentation context
  * to generate actionable recommendations for Bridge development.
- * @param options - Analysis configuration options
- * @param options.days - Number of days of history to analyze
+ * @param options - Analysis configuration options with optional days property
  * @returns Comprehensive analysis report with recommendations
  */
 async function runAnalysis(options: { days?: number } = {}): Promise<AnalysisReport> {

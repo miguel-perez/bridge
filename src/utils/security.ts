@@ -59,7 +59,7 @@ export function sanitizeUserInput(input: string, maxLength: number = MAX_INPUT_L
  * Validates file access permissions and prevents path traversal attacks
  * 
  * @param filePath - File path to validate
- * @throws {McpError} If file path is invalid or unsafe
+ * @throws McpError If file path is invalid or unsafe
  */
 export function validateFileAccess(filePath: string): void {
   if (typeof filePath !== 'string' || !filePath.trim()) {

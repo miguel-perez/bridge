@@ -38,8 +38,8 @@ export const SEMANTIC_CONFIG = {
 } as const;
 
 /**
- * Expands common path variables like ~ and ${HOME}
- * @param path Path that may contain variables
+ * Expands common path variables like ~ and $HOME
+ * @param path - Path that may contain variables
  * @returns Expanded path
  */
 function expandPath(path: string): string {
@@ -67,9 +67,9 @@ function expandPath(path: string): string {
  * Get the default data file path for Bridge experiential data
  * @remarks
  * Priority order:
- *   1. User config from DXT (BRIDGE_FILE_PATH env var)
- *   2. Environment variable BRIDGE_FILE_PATH
- *   3. Default: ~/bridge.json (cross-platform)
+ * 1. User config from DXT (BRIDGE_FILE_PATH env var)
+ * 2. Environment variable BRIDGE_FILE_PATH
+ * 3. Default: ~/bridge.json (cross-platform)
  * @returns Path to bridge.json
  */
 function getDefaultDataFilePath(): string {
@@ -83,7 +83,7 @@ function getDefaultDataFilePath(): string {
 
 /**
  * Get the default Bridge configuration, using environment variables and smart defaults.
- * @returns {BridgeConfig}
+ * @returns Bridge configuration object
  */
 function getDefaultConfig(): BridgeConfig {
   return {
@@ -98,7 +98,7 @@ let currentConfig = getDefaultConfig();
 
 /**
  * Get a copy of the current Bridge configuration.
- * @returns {BridgeConfig}
+ * @returns Bridge configuration object
  */
 export function getConfig(): BridgeConfig {
   return { ...currentConfig };
@@ -106,7 +106,7 @@ export function getConfig(): BridgeConfig {
 
 /**
  * Update the current Bridge configuration with partial updates.
- * @param updates Partial config fields to update
+ * @param updates - Partial config fields to update
  */
 export function updateConfig(updates: Partial<BridgeConfig>): void {
   currentConfig = { ...currentConfig, ...updates };
@@ -114,7 +114,7 @@ export function updateConfig(updates: Partial<BridgeConfig>): void {
 
 /**
  * Set the data file path in the current config.
- * @param path Path to bridge.json
+ * @param path - Path to bridge.json
  */
 export function setDataFilePath(path: string): void {
   if (typeof path !== 'string' || path.trim().length === 0) {
@@ -125,7 +125,7 @@ export function setDataFilePath(path: string): void {
 
 /**
  * Get the data file path from the current config.
- * @returns {string}
+ * @returns Data file path string
  */
 export function getDataFilePath(): string {
   return currentConfig.dataFilePath;
@@ -133,13 +133,14 @@ export function getDataFilePath(): string {
 
 /**
  * Check if debug mode is enabled.
- * @returns {boolean}
+ * @returns True if debug mode is enabled
  */
 export function isDebugMode(): boolean {
   return currentConfig.debugMode;
 }
 
 /**
+ * Deprecated function - use isDebugMode instead
  * @deprecated Use isDebugMode instead. This alias is for backward compatibility only.
  */
 export function isSearchDebugMode(): boolean {
@@ -158,6 +159,7 @@ export function validateConfiguration(): void {
 }
 
 /**
+ * Deprecated export - use getDataFilePath instead
  * @deprecated Use getDataFilePath instead. This export is for backward compatibility only.
  */
 export const config = {

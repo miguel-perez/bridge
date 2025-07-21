@@ -3,8 +3,6 @@
  * 
  * This module implements the Model Context Protocol (MCP) server for Bridge,
  * providing tools for experiencing, recalling, and enriching experiential data.
- * 
- * @module mcp/server
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -92,7 +90,7 @@ function parseStringifiedJson(obj: unknown): unknown {
  * 3. Sets up storage configuration
  * 4. Initializes the vector store
  * 
- * @throws {Error} If configuration fails
+ * @throws Error If configuration fails
  */
 async function initializeConfiguration(serverInstance?: Server): Promise<void> {
   try {

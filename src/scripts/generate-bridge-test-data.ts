@@ -372,8 +372,7 @@ async function generateWithClaude(totalExperiences: number = DEFAULT_TOTAL): Pro
  * @remarks
  * Checks for cached test data and generates new data if needed.
  * Supports both cached and fresh data generation modes.
- * @param options - Configuration options for data generation
- * @param options.total - Total number of experiences to generate
+ * @param options - Configuration options for data generation with optional total property
  */
 export async function ensureTestData(options?: { total?: number }): Promise<void> {
   // Check cache

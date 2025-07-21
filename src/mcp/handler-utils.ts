@@ -3,8 +3,6 @@
  * 
  * This module provides common formatting and utility functions used across
  * all MCP tool handlers for consistent response formatting.
- * 
- * @module mcp/handler-utils
  */
 
 import type { SourceRecord, Experience } from '../core/types.js';
