@@ -62,6 +62,7 @@ interface ToolCall {
   toolName: string;
   arguments: Record<string, any>;
   result?: any;
+  resultText?: string[];  // Store text responses for analysis
   error?: string;
 }
 
@@ -474,6 +475,19 @@ class BridgeTestRunner {
         });
         toolCall.result = result;
         console.log(`✅ Tool call successful: ${toolUse.name}`);
+        
+        // Display full tool response for visibility
+        if (result.content && Array.isArray(result.content)) {
+          console.log(`📝 Tool response:`);
+          const textResponses: string[] = [];
+          result.content.forEach((item: any, index: number) => {
+            if (item.type === 'text') {
+              console.log(`   ${index + 1}. ${item.text}`);
+              textResponses.push(item.text);
+            }
+          });
+          toolCall.resultText = textResponses;
+        }
         
         toolResults.push({
           type: 'tool_result',
