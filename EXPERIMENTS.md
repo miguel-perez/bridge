@@ -19,6 +19,47 @@ Each experiment follows this format for learning loop compatibility:
 
 ## Active Experiments
 
+### EXP-006: Clustering Similar Experiences
+**Status**: Active  
+**Purpose**: Enable Bridge to reveal patterns by automatically clustering similar experiences
+
+**Test Scenarios**:
+1. **Basic Clustering Evidence**
+   - Input: Multiple experiences with overlapping dimensions
+   - Expected: Recall returns structured clusters, not flat list
+   - Evidence: Loop sees `{ clusters: [...] }` in output
+
+2. **Cluster Quality Evidence** 
+   - Input: Experiences with clear semantic/dimensional similarities
+   - Expected: Clusters group logically similar experiences
+   - Evidence: Loop sees meaningful cluster summaries and groupings
+
+3. **Filtering Integration Evidence**
+   - Input: Filtered clustering request
+   - Expected: Only relevant experiences are clustered
+   - Evidence: Loop sees filtered clusters match input criteria
+
+4. **Edge Case Evidence**
+   - Input: Too few experiences or highly diverse data
+   - Expected: Graceful degradation (single cluster or individual clusters)
+   - Evidence: Loop sees appropriate handling of edge cases
+
+**Measurable Outcomes**:
+- ✅ Clusters are returned in structured format
+- ✅ Each cluster contains multiple experience IDs
+- ✅ Clusters have meaningful summaries/labels
+- ✅ Filtering works correctly with clustering
+- ✅ Edge cases are handled gracefully
+- ✅ Output is MCP protocol compliant
+
+**Learning Questions**:
+- Do clusters reveal meaningful patterns?
+- Is the output format useful for both humans and LLMs?
+- Does clustering work reliably across different datasets?
+- How does clustering interact with other recall features?
+
+**Evidence Trail**: Integration test results, cluster output validation, learning loop analysis
+
 ## Completed Experiments
 
 ### EXP-005: Pattern Realizations with reflects Field
