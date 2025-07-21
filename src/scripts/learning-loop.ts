@@ -1581,7 +1581,7 @@ function generateRecommendations(
         const semanticMatches = [
           // Common scenario patterns
           { pattern: 'clustering', keywords: ['cluster', 'group', 'similar', 'pattern'] },
-          { pattern: 'dimensional', keywords: ['dimension', 'filter', 'recall', 'query'] },
+          { pattern: 'quality', keywords: ['quality', 'filter', 'recall', 'query'] },
           { pattern: 'experience', keywords: ['experience', 'capture', 'remember'] },
           { pattern: 'recall', keywords: ['recall', 'search', 'find', 'query'] },
           { pattern: 'reconsider', keywords: ['reconsider', 'update', 'evolve', 'change'] },
@@ -1704,7 +1704,7 @@ function generateRecommendations(
             if (keywordMatches >= 2) return true;
             
             // Specific pattern matching
-            if (exp === 'EXP-002' && (msg.includes('dimensional') || msg.includes('recall') || msg.includes('filtering'))) {
+            if (exp === 'EXP-002' && (msg.includes('quality') || msg.includes('recall') || msg.includes('filtering'))) {
               return true;
             }
             if (exp === 'EXP-003' && msg.includes('learning loop')) {

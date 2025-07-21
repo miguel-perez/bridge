@@ -35,7 +35,7 @@ MCP Client (Claude) → MCP Server → Tool Handlers → Services → Storage
 
 2. **Services** (`src/services/`)
    - `experience.ts` - Remembers experiences with quality signatures
-   - `recall.ts` - Semantic search and dimensional filtering
+   - `recall.ts` - Semantic search and quality filtering
    - `unified-scoring.ts` - Dynamic scoring system for recall
    - `reconsider.ts` - Updates existing experiences
    - `release.ts` - Removes experiences
@@ -46,7 +46,7 @@ MCP Client (Claude) → MCP Server → Tool Handlers → Services → Storage
    - `storage.ts` - JSON persistence to `~/.bridge/experiences.json`
    - `types.ts` - Core data structures (Source, Experience, etc.)
    - `config.ts` - Centralized configuration and thresholds
-   - `dimensions.ts` - Known dimension definitions
+   - `dimensions.ts` - Known quality definitions
    - Experiences stored with embeddings for semantic search
 
 4. **Testing Infrastructure** (`src/scripts/`)
@@ -72,19 +72,19 @@ experience({ source: "I feel anxious", experience: ["embodied.sensing", "mood.cl
 
 **What Works Today:**
 - Semantic search using transformer embeddings (all-MiniLM-L6-v2)
-- Dimensional filtering and queries
+- Quality filtering and queries
 - Unified scoring system
 - Four core operations: experience(), recall(), reconsider(), release()
 
 **Next Priorities (from OPPORTUNITIES.md):**
 1. Clustering mode (Score: 378) - Core to revealing insights through automatic grouping
-2. Dimension filtering (Score: 280) - Sophisticated queries by dimension presence/absence
+2. Quality filtering (Score: 280) - Sophisticated queries by quality presence/absence
 3. Extensible recall (Score: 270) - Technical foundation for future features
 
 **Note**: Pattern Realizations (EXP-005) completed successfully, enabling collaborative wisdom building with `reflects` field.
 
 **Key Context:**
-- Experiences have "quality signatures" - sparse arrays of prominent dimensions
+- Experiences have "quality signatures" - sparse arrays of prominent qualities
 - Tests run in parallel with three scenarios
 - Sequential thinking works reliably with Opus 4
 - See TECHNICAL.md for current API reference

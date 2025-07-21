@@ -35,7 +35,7 @@ export interface RecallResponse {
  * Handles recall requests from MCP clients
  * @remarks
  * Provides semantic search capabilities for retrieving stored experiences.
- * Supports text queries, dimensional filtering, and recent experience retrieval.
+ * Supports text queries, quality filtering, and recent experience retrieval.
  */
 export class RecallHandler {
   private recallService: RecallService;
@@ -73,8 +73,8 @@ export class RecallHandler {
   /**
    * Processes recall requests with semantic search capabilities
    * @remarks
-   * Handles text queries, dimensional filtering, and recent experience retrieval.
-   * Supports both semantic and dimensional search modes.
+   * Handles text queries, quality filtering, and recent experience retrieval.
+   * Supports both semantic and quality search modes.
    * @param recall - Search input containing query and filter parameters
    * @returns Formatted recall results with relevance scores
    */
@@ -92,19 +92,19 @@ export class RecallHandler {
         query.toLowerCase() === 'latest'
       );
       
-      // Import needed function for checking dimensional queries
-      const { isQueryPurelyDimensional } = await import('../services/unified-scoring.js');
+      // Import needed function for checking quality queries
+      const { isQueryPurelyQuality } = await import('../services/unified-scoring.js');
       
-      // Check if this is a pure dimensional query
-      const isPureDimensional = query && isQueryPurelyDimensional(query);
+      // Check if this is a pure quality query
+      const isPureQuality = query && isQueryPurelyQuality(query);
       
       // Perform recall
       const { results, clusters } = await withTimeout(
         this.recallService.search({
           query: isRecentQuery ? '' : query, // Empty query for recent to get all
           limit: isRecentQuery ? Math.min(limit, 5) : limit, // Show fewer for recent
-          // Only use semantic query if NOT a pure dimensional query and is a string
-          semantic_query: isRecentQuery || isPureDimensional ? '' : (typeof query === 'string' ? query : ''),
+          // Only use semantic query if NOT a pure quality query and is a string
+          semantic_query: isRecentQuery || isPureQuality ? '' : (typeof query === 'string' ? query : ''),
           semantic_threshold: SEMANTIC_CONFIG.DEFAULT_THRESHOLD,
           // Pass through all filters from the input
           experiencer: recall.experiencer,
@@ -234,7 +234,7 @@ export class RecallHandler {
    * Formats clustering results for user-friendly display
    */
   private formatClusterResponse(
-    clusters: Array<{ id: string; summary: string; experienceIds: string[]; commonDimensions: string[]; size: number }>
+    clusters: Array<{ id: string; summary: string; experienceIds: string[]; commonQualities: string[]; size: number }>
   ): string {
     if (clusters.length === 0) {
       return "No clusters found.";
@@ -246,8 +246,8 @@ export class RecallHandler {
       response += `${index + 1}. **${cluster.summary}**\n`;
       response += `   Size: ${cluster.size} experience${cluster.size === 1 ? '' : 's'}\n`;
       
-      if (cluster.commonDimensions.length > 0) {
-        response += `   Common dimensions: ${cluster.commonDimensions.join(', ')}\n`;
+      if (cluster.commonQualities.length > 0) {
+        response += `   Common qualities: ${cluster.commonQualities.join(', ')}\n`;
       }
       
       // Show experience IDs in the cluster

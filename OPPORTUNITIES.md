@@ -60,28 +60,28 @@ Bridge uses a barbell strategy to balance stability with growth potential:
 
 ## High-Certainty Foundation (Stability)
 
-### HMW enable sophisticated dimensional filtering?
+### HMW enable sophisticated quality filtering?
 
 **Impact: 8** - Enables sophisticated queries about experiential qualities and unlocks advanced use cases  
-**Certainty: 9** - Clear implementation path using existing dimensional data and proven patterns  
+**Certainty: 9** - Clear implementation path using existing quality data and proven patterns  
 **Urgency: 7** - Critical for unlocking Bridge's full potential and enabling complex queries  
 **Score: 504** ⭐ **High-Certainty Foundation**
 
 **What This Actually Means:**
-Enable complex dimensional queries that go beyond simple exact matches. Currently, Bridge only supports basic dimensional filtering - we need advanced patterns like presence/absence filtering, dimension combinations, and sophisticated boolean logic.
+Enable complex quality queries that go beyond simple exact matches. Currently, Bridge only supports basic quality filtering - we need advanced patterns like presence/absence filtering, quality combinations, and sophisticated boolean logic.
 
 **Current Limitations:**
 - **Only exact matches**: `recall("mood.closed")` finds experiences WITH mood.closed
-- **Only AND logic**: `recall(["embodied.thinking", "mood.open"])` requires BOTH dimensions
-- **No absence filtering**: Cannot find experiences WITHOUT specific dimensions
-- **No OR logic**: Cannot find experiences with EITHER dimension A OR dimension B
+- **Only AND logic**: `recall(["embodied.thinking", "mood.open"])` requires BOTH qualities
+- **No absence filtering**: Cannot find experiences WITHOUT specific qualities
+- **No OR logic**: Cannot find experiences with EITHER quality A OR quality B
 - **No complex combinations**: Cannot do "mood.closed AND (embodied.thinking OR focus.narrow)"
 
 **Specific Implementation:**
 - **Presence/Absence filtering**: `{ embodied: { present: true }, mood: { present: false } }`
 - **Boolean combinations**: `{ mood: "closed", embodied: ["thinking", "sensing"] }` (OR logic)
 - **Complex queries**: `{ mood: "closed", embodied: { present: true }, focus: { present: false } }`
-- **Dimension ranges**: `{ mood: ["open", "closed"], time: "future" }` (multiple values)
+- **Quality ranges**: `{ mood: ["open", "closed"], time: "future" }` (multiple values)
 - **Nested logic**: Support for parentheses and complex boolean expressions
 
 **Why This Matters:**
@@ -91,11 +91,11 @@ Enable complex dimensional queries that go beyond simple exact matches. Currentl
 - **Supports research**: Enables sophisticated experiential analysis
 
 **Current State:**
-- ✅ Basic dimensional filtering: `recall("mood.closed")`
-- ✅ Multi-dimensional AND: `recall(["embodied.thinking", "mood.open"])`
-- ✅ Base dimension matching: `recall("embodied")` matches subtypes
-- ❌ No absence filtering: Cannot exclude dimensions
-- ❌ No OR logic: Cannot combine dimensions with OR
+- ✅ Basic quality filtering: `recall("mood.closed")`
+- ✅ Multi-quality AND: `recall(["embodied.thinking", "mood.open"])`
+- ✅ Base quality matching: `recall("embodied")` matches subtypes
+- ❌ No absence filtering: Cannot exclude qualities
+- ❌ No OR logic: Cannot combine qualities with OR
 - ❌ No complex boolean expressions: No nested logic support
 
 ### HMW establish continuous quality monitoring?

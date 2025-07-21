@@ -214,7 +214,7 @@ export function generateExperienceExample(): ExperienceInput {
  * Generates an example search input for testing and documentation
  * @remarks
  * Provides a realistic example of semantic search with filters and limits.
- * @returns Example search input with query and dimensional filters
+ * @returns Example search input with query and quality filters
  */
 export function generateSearchExample(): SearchInput {
   return {

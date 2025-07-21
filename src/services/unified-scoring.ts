@@ -4,11 +4,11 @@
  */
 
 import type { SourceRecord } from '../core/types.js';
-import { KNOWN_DIMENSIONS } from '../core/dimensions.js';
+import { KNOWN_QUALITIES } from '../core/dimensions.js';
 
 export interface ScoringFactors {
   semantic: number;
-  dimensional: number;
+  quality: number;
   exact: number;
   recency: number;
   density: number;
@@ -16,7 +16,7 @@ export interface ScoringFactors {
 
 export interface ScoringWeights {
   semantic: number;
-  dimensional: number;
+  quality: number;
   exact: number;
   recency: number;
   density: number;
@@ -41,10 +41,10 @@ export function scoreExperience(
   // Always calculate all factors
   const factors: ScoringFactors = {
     semantic: semanticSimilarity ?? 0,
-    dimensional: calculateDimensionalRelevance(query, experience),
+    quality: calculateQualityRelevance(query, experience),
     exact: calculateExactMatches(query, experience),
     recency: calculateRecencyScore(experience),
-    density: calculateDimensionalDensity(experience)
+    density: calculateQualityDensity(experience)
   };
   
   // Dynamic weight calculation based on query characteristics
@@ -53,7 +53,7 @@ export function scoreExperience(
   // Single scoring formula
   const score = 
     factors.semantic * weights.semantic +
-    factors.dimensional * weights.dimensional +
+    factors.quality * weights.quality +
     factors.exact * weights.exact +
     factors.recency * weights.recency +
     factors.density * weights.density;
@@ -70,28 +70,28 @@ export function calculateDynamicWeights(
 ): ScoringWeights {
   const weights: ScoringWeights = {
     semantic: 0.5,    // Base weight
-    dimensional: 0.3, // Base weight
+    quality: 0.3,     // Base weight
     exact: 0.1,       // Base weight
     recency: 0.05,    // Base weight
     density: 0.05     // Base weight
   };
   
   // Detect query characteristics
-  const isDimensional = isQueryDimensional(query);
+  const isQuality = isQueryQuality(query);
   const hasExactMatch = factors.exact > 0.8; // Strong exact match
-  const dimensionalStrength = factors.dimensional;
+  const qualityStrength = factors.quality;
   
   // Adjust weights based on query nature
-  if (isDimensional && dimensionalStrength > 0.5) {
-    // Query matches known dimensions strongly
-    weights.dimensional = 0.6;
+  if (isQuality && qualityStrength > 0.5) {
+    // Query matches known qualities strongly
+    weights.quality = 0.6;
     weights.semantic = 0.3;
     weights.exact = 0.05;
   } else if (hasExactMatch) {
     // Boost exact matches when they occur
     weights.exact = 0.25;
     weights.semantic = 0.45;
-    weights.dimensional = 0.2;
+    weights.quality = 0.2;
   }
   
   // Normalize to sum to 1.0
@@ -104,181 +104,136 @@ export function calculateDynamicWeights(
 }
 
 /**
- * Calculate dimensional relevance for both string and array queries
+ * Calculate quality relevance for both string and array queries
+ * Matches query qualities against experience qualities
  */
-export function calculateDimensionalRelevance(
+export function calculateQualityRelevance(
   query: string | string[],
   experience: SourceRecord
 ): number {
-  const queryDimensions = extractDimensions(query);
-  if (queryDimensions.length === 0) return 0;
+  const queryQualities = extractQualities(query);
+  if (queryQualities.length === 0) return 0;
   
+  const experienceQualities = experience.experience || [];
   let relevance = 0;
-  const experienceDimensions = experience.experience || [];
   
-  for (const qDim of queryDimensions) {
-    for (const eDim of experienceDimensions) {
-      if (dimensionsMatch(qDim, eDim)) {
+  for (const qQual of queryQualities) {
+    for (const eQual of experienceQualities) {
+      if (qualitiesMatch(qQual, eQual)) {
         relevance += 1.0;
-      } else if (dimensionsPartialMatch(qDim, eDim)) {
-        relevance += 0.5; // "embodied" matches "embodied.thinking"
+      } else if (qualitiesPartialMatch(qQual, eQual)) {
+        relevance += 0.5;
       }
     }
   }
   
-  return Math.min(relevance / queryDimensions.length, 1.0);
+  return Math.min(relevance / queryQualities.length, 1.0);
 }
 
 /**
- * Calculate exact text matches
+ * Calculate exact text matches (case-insensitive)
+ * Excludes quality queries from exact matching
  */
 export function calculateExactMatches(
   query: string | string[],
   experience: SourceRecord
 ): number {
-  const sourceLower = experience.source.toLowerCase();
-  let totalScore = 0;
-  let count = 0;
+  const queryTerms = Array.isArray(query) ? query : [query];
+  const sourceText = experience.source.toLowerCase();
+  let exactMatches = 0;
   
-  const queries = Array.isArray(query) ? query : [query];
-  
-  for (const q of queries) {
-    // Skip dimensional queries
-    if ((KNOWN_DIMENSIONS as readonly string[]).includes(q)) continue;
+  for (const q of queryTerms) {
+    const term = q.toLowerCase().trim();
+    if (term.length === 0) continue;
     
-    const queryLower = q.toLowerCase();
-    count++;
+    // Skip quality queries
+    if ((KNOWN_QUALITIES as readonly string[]).includes(q)) continue;
     
-    // Full phrase match
-    if (sourceLower.includes(queryLower)) {
-      totalScore += 1.0;
-      continue;
-    }
-    
-    // Check for word stem matches (e.g., "anxiety" matches "anxious")
-    // Try multiple stem patterns
-    const stems = [
-      queryLower.replace(/y$/, 'i'),    // anxiety -> anxiet -> anxious
-      queryLower.replace(/ty$/, 't'),   // anxiety -> anxiet
-      queryLower.replace(/iety$/, 'ious'), // anxiety -> anxious
-      queryLower.slice(0, -1),          // Remove last char
-      queryLower.slice(0, -2)           // Remove last 2 chars
-    ];
-    
-    let stemFound = false;
-    for (const stem of stems) {
-      if (stem.length > 3 && sourceLower.includes(stem)) {
-        totalScore += 0.8;
-        stemFound = true;
+    // Check for exact word matches
+    const words = sourceText.split(/\s+/);
+    for (const word of words) {
+      if (word === term) {
+        exactMatches += 1.0;
         break;
       }
     }
-    if (stemFound) continue;
-    
-    // Partial word matches
-    const queryWords = queryLower.split(/\s+/).filter(w => w.length > 2);
-    if (queryWords.length > 0) {
-      const matchingWords = queryWords.filter(word => 
-        sourceLower.includes(word)
-      );
-      totalScore += matchingWords.length / queryWords.length;
-    }
   }
   
-  return count > 0 ? totalScore / count : 0;
+  return Math.min(exactMatches / queryTerms.length, 1.0);
 }
 
 /**
- * Calculate recency score with exponential decay
+ * Calculate recency score (newer experiences get higher scores)
+ * Uses exponential decay with 30-day half-life
  */
 export function calculateRecencyScore(experience: SourceRecord): number {
   const now = new Date();
   const created = new Date(experience.created);
-  const ageInDays = (now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24);
-  return Math.exp(-ageInDays / 90); // 90-day half-life
-}
-
-/**
- * Calculate dimensional density (rewards richer experiences)
- */
-export function calculateDimensionalDensity(experience: SourceRecord): number {
-  const dimensionCount = experience.experience?.length || 0;
-  return Math.min(dimensionCount / 5, 1.0);
-}
-
-/**
- * Extract known dimensions from query
- */
-export function extractDimensions(query: string | string[]): string[] {
-  if (Array.isArray(query)) {
-    return query.filter(q => (KNOWN_DIMENSIONS as readonly string[]).includes(q));
-  }
+  const daysDiff = (now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24);
   
-  if (typeof query === 'string') {
-    // Check if the entire query is a dimension
-    if ((KNOWN_DIMENSIONS as readonly string[]).includes(query)) return [query];
+  // Exponential decay with 30-day half-life
+  const halfLife = 30;
+  return Math.exp(-Math.log(2) * daysDiff / halfLife);
+}
+
+/**
+ * Calculate quality density (rewards richer experiences)
+ */
+export function calculateQualityDensity(experience: SourceRecord): number {
+  const qualityCount = experience.experience?.length || 0;
+  return Math.min(qualityCount / 5, 1.0);
+}
+
+/**
+ * Extract quality terms from query
+ */
+export function extractQualities(query: string | string[]): string[] {
+  const queryTerms = Array.isArray(query) ? query : [query];
+  const qualities: string[] = [];
+  
+  for (const term of queryTerms) {
+    const trimmed = term.trim();
+    if (trimmed.length === 0) continue;
     
-    // Extract dimensions from text
-    const foundDimensions: string[] = [];
-    for (const dim of KNOWN_DIMENSIONS) {
-      if (query.includes(dim)) {
-        foundDimensions.push(dim);
-      } else {
-        // Check for base dimension (e.g., "embodied" in query matches "embodied.thinking")
-        const baseDim = dim.split('.')[0];
-        if (query.includes(baseDim) && !foundDimensions.some(fd => fd.startsWith(baseDim))) {
-          foundDimensions.push(baseDim);
-        }
-      }
+    // Check if term is a known quality
+    if ((KNOWN_QUALITIES as readonly string[]).includes(trimmed)) {
+      qualities.push(trimmed);
     }
-    
-    return foundDimensions;
   }
   
-  return [];
+  return qualities;
 }
 
 /**
- * Check if query is primarily dimensional
+ * Check if query contains quality terms
  */
-export function isQueryDimensional(query: string | string[]): boolean {
-  const dimensions = extractDimensions(query);
-  if (Array.isArray(query)) return dimensions.length === query.length;
-  if (typeof query === 'string') return dimensions.includes(query);
-  return false;
+export function isQueryQuality(query: string | string[]): boolean {
+  return extractQualities(query).length > 0;
 }
 
 /**
- * Check if query contains ONLY dimensional terms (no mixed text)
+ * Check if query is purely quality-based (no semantic content)
  */
-export function isQueryPurelyDimensional(query: string | string[]): boolean {
-  if (Array.isArray(query)) {
-    // All elements must be dimensions
-    return query.every(q => (KNOWN_DIMENSIONS as readonly string[]).includes(q));
-  }
-  if (typeof query === 'string') {
-    // Single string must be a known dimension
-    return (KNOWN_DIMENSIONS as readonly string[]).includes(query);
-  }
-  return false;
+export function isQueryPurelyQuality(query: string | string[]): boolean {
+  const queryTerms = Array.isArray(query) ? query : [query];
+  const qualities = extractQualities(query);
+  
+  // Query is purely quality if all terms are qualities
+  return qualities.length > 0 && qualities.length === queryTerms.length;
 }
 
 /**
- * Check if two dimensions match exactly
+ * Check if two qualities match exactly
  */
-function dimensionsMatch(dim1: string, dim2: string): boolean {
-  return dim1 === dim2;
+function qualitiesMatch(qual1: string, qual2: string): boolean {
+  return qual1 === qual2;
 }
 
 /**
- * Check if two dimensions partially match (base dimension matches)
- * e.g., "embodied" matches "embodied.thinking" but NOT "embodied.sensing"
+ * Check if qualities partially match (e.g., "embodied" matches "embodied.thinking")
  */
-function dimensionsPartialMatch(dim1: string, dim2: string): boolean {
-  // Only match if one is a prefix of the other
-  // "embodied" matches "embodied.thinking" 
-  // "embodied.thinking" does NOT match "embodied.sensing"
-  return (dim1.startsWith(dim2 + '.') || dim2.startsWith(dim1 + '.'));
+function qualitiesPartialMatch(qual1: string, qual2: string): boolean {
+  return qual1.startsWith(qual2 + '.') || qual2.startsWith(qual1 + '.');
 }
 
 /**
@@ -326,24 +281,24 @@ export function applyFiltersAndScore(
       });
     }
   
-  // Dimensional filter: For pure dimensional queries, only return experiences with matching dimensions
-  if (query && isQueryPurelyDimensional(query)) {
-    const queryDimensions = extractDimensions(query);
+  // Quality filter: For pure quality queries, only return experiences with matching qualities
+  if (query && isQueryPurelyQuality(query)) {
+    const queryQualities = extractQualities(query);
     filtered = filtered.filter(exp => {
-      const experienceDimensions = exp.experience || [];
+      const experienceQualities = exp.experience || [];
       
       if (Array.isArray(query)) {
-        // For array queries, ALL dimensions must match
-        return queryDimensions.every(qDim => 
-          experienceDimensions.some(eDim => 
-            dimensionsMatch(qDim, eDim) || dimensionsPartialMatch(qDim, eDim)
+        // For array queries, ALL qualities must match
+        return queryQualities.every(qQual => 
+          experienceQualities.some(eQual => 
+            qualitiesMatch(qQual, eQual) || qualitiesPartialMatch(qQual, eQual)
           )
         );
       } else {
-        // For single dimension queries, at least one must match
-        return queryDimensions.some(qDim => 
-          experienceDimensions.some(eDim => 
-            dimensionsMatch(qDim, eDim) || dimensionsPartialMatch(qDim, eDim)
+        // For single quality queries, at least one must match
+        return queryQualities.some(qQual => 
+          experienceQualities.some(eQual => 
+            qualitiesMatch(qQual, eQual) || qualitiesPartialMatch(qQual, eQual)
           )
         );
       }

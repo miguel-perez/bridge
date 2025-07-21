@@ -4,14 +4,14 @@ export interface ExperienceCluster {
   id: string;
   summary: string;
   experienceIds: string[];
-  commonDimensions: string[];
+  commonQualities: string[];
   size: number;
   semanticSimilarity?: number;
 }
 
 /**
- * Clusters experiences based on dimensional similarity and semantic content
- * Uses a hybrid approach: dimensional exact matches first, then semantic similarity
+ * Clusters experiences based on quality similarity and semantic content
+ * Uses a hybrid approach: quality exact matches first, then semantic similarity
  */
 export async function clusterExperiences(experiences: SourceRecord[]): Promise<ExperienceCluster[]> {
   if (experiences.length === 0) {
@@ -19,21 +19,20 @@ export async function clusterExperiences(experiences: SourceRecord[]): Promise<E
   }
 
   if (experiences.length === 1) {
-    const experience = experiences[0];
     return [{
-      id: `cluster-${experience.id}`,
-      summary: generateClusterSummary([experience]),
-      experienceIds: [experience.id],
-      commonDimensions: experience.experience || [],
+      id: `cluster-${experiences[0].id}`,
+      summary: generateClusterSummary(experiences),
+      experienceIds: [experiences[0].id],
+      commonQualities: experiences[0].experience || [],
       size: 1
     }];
   }
 
-  // Step 1: Cluster by dimensional similarity (exact matches)
-  const dimensionalClusters = clusterByDimensions(experiences);
+  // Step 1: Cluster by quality similarity (exact matches)
+  const qualityClusters = clusterByQualities(experiences);
   
   // Step 2: For clusters with multiple experiences, refine by semantic similarity
-  const refinedClusters = await refineClustersBySemanticSimilarity(dimensionalClusters);
+  const refinedClusters = await refineClustersBySemanticSimilarity(qualityClusters);
   
   // Step 3: Generate final cluster summaries
   return refinedClusters.map(cluster => ({
@@ -43,26 +42,26 @@ export async function clusterExperiences(experiences: SourceRecord[]): Promise<E
 }
 
 /**
- * Groups experiences by exact dimensional signature matches
+ * Groups experiences by exact quality signature matches
  */
-function clusterByDimensions(experiences: SourceRecord[]): ExperienceCluster[] {
-  const dimensionGroups = new Map<string, string[]>();
+function clusterByQualities(experiences: SourceRecord[]): ExperienceCluster[] {
+  const qualityGroups = new Map<string, string[]>();
   
   experiences.forEach(experience => {
-    const dimensions = experience.experience || [];
-    const dimensionKey = dimensions.sort().join('|');
+    const qualities = experience.experience || [];
+    const qualityKey = qualities.sort().join('|');
     
-    if (!dimensionGroups.has(dimensionKey)) {
-      dimensionGroups.set(dimensionKey, []);
+    if (!qualityGroups.has(qualityKey)) {
+      qualityGroups.set(qualityKey, []);
     }
-    dimensionGroups.get(dimensionKey)!.push(experience.id);
+    qualityGroups.get(qualityKey)!.push(experience.id);
   });
   
-  return Array.from(dimensionGroups.entries()).map(([dimensionKey, experienceIds]) => ({
-    id: `cluster-${dimensionKey.slice(0, 8)}`,
+  return Array.from(qualityGroups.entries()).map(([qualityKey, experienceIds]) => ({
+    id: `cluster-${qualityKey.slice(0, 8)}`,
     summary: '', // Will be generated later
     experienceIds,
-    commonDimensions: dimensionKey.split('|'),
+    commonQualities: qualityKey.split('|'),
     size: experienceIds.length
   }));
 }
@@ -99,83 +98,97 @@ async function splitClusterBySemanticSimilarity(cluster: ExperienceCluster): Pro
   // 3. Create sub-clusters based on similarity thresholds
   
   // For now, return the original cluster
-  // This can be enhanced later with actual semantic clustering
   return [cluster];
 }
 
 /**
- * Generates a meaningful summary for a cluster of experiences
+ * Generates a summary for a cluster of experiences
  */
 function generateClusterSummary(experiences: SourceRecord[]): string {
-  if (experiences.length === 0) {
-    return 'Empty cluster';
-  }
+  if (experiences.length === 0) return '';
   
   if (experiences.length === 1) {
-    const experience = experiences[0];
-    return `Single experience: ${experience.source.substring(0, 100)}${experience.source.length > 100 ? '...' : ''}`;
+    const commonQualities = getCommonQualities(experiences);
+    
+    if (commonQualities.length > 0) {
+      return `${experiences.length} experience with ${commonQualities.join(', ')}`;
+    }
+    
+    return `${experiences.length} experience`;
   }
   
-  // Analyze common patterns
-  const commonDimensions = getCommonDimensions(experiences);
-  const commonThemes = extractCommonThemes(experiences);
+  const commonQualities = getCommonQualities(experiences);
+  const themes = extractCommonThemes(experiences);
   
-  if (commonThemes.length > 0) {
-    return `${experiences.length} experiences about ${commonThemes.join(', ')}`;
+  if (commonQualities.length > 0) {
+    return `${experiences.length} experiences with ${commonQualities.join(', ')}`;
   }
   
-  if (commonDimensions.length > 0) {
-    return `${experiences.length} experiences with ${commonDimensions.join(', ')}`;
+  if (themes.length > 0) {
+    return `${experiences.length} experiences about ${themes.join(', ')}`;
   }
   
-  return `${experiences.length} similar experiences`;
+  return `${experiences.length} experiences`;
 }
 
 /**
- * Finds dimensions that are common across all experiences in a cluster
+ * Finds qualities that are common across all experiences in a cluster
  */
-function getCommonDimensions(experiences: SourceRecord[]): string[] {
+function getCommonQualities(experiences: SourceRecord[]): string[] {
   if (experiences.length === 0) return [];
   
-  const allDimensions = experiences
+  const allQualities = experiences
     .map(exp => exp.experience || [])
-    .filter(dims => dims.length > 0);
+    .filter(qualities => qualities.length > 0);
   
-  if (allDimensions.length === 0) return [];
+  if (allQualities.length === 0) return [];
   
-  // Find dimensions that appear in all experiences
-  const firstDimensions = new Set(allDimensions[0]);
+  // Find qualities that appear in all experiences
+  const firstQualities = new Set(allQualities[0]);
   
-  for (let i = 1; i < allDimensions.length; i++) {
-    const currentDimensions = new Set(allDimensions[i]);
-    for (const dim of firstDimensions) {
-      if (!currentDimensions.has(dim)) {
-        firstDimensions.delete(dim);
+  for (let i = 1; i < allQualities.length; i++) {
+    const currentQualities = new Set(allQualities[i]);
+    for (const qual of firstQualities) {
+      if (!currentQualities.has(qual)) {
+        firstQualities.delete(qual);
       }
     }
   }
   
-  return Array.from(firstDimensions);
+  return Array.from(firstQualities);
 }
 
 /**
  * Extracts common themes from experience sources
  */
 function extractCommonThemes(experiences: SourceRecord[]): string[] {
+  // This is a simplified implementation
+  // In a full implementation, you would:
+  // 1. Extract keywords from experience sources
+  // 2. Use NLP techniques to identify common themes
+  // 3. Return the most frequent themes
+  
   const themes: string[] = [];
   
   // Simple keyword extraction
-  const keywords = ['anxiety', 'anxious', 'excited', 'focused', 'overwhelmed', 'stuck', 'energized'];
+  const allText = experiences.map(exp => exp.source.toLowerCase()).join(' ');
+  const words = allText.split(/\s+/).filter(word => word.length > 3);
   
-  const sourceText = experiences.map(exp => exp.source.toLowerCase()).join(' ');
+  // Count word frequencies
+  const wordCounts = new Map<string, number>();
+  words.forEach(word => {
+    wordCounts.set(word, (wordCounts.get(word) || 0) + 1);
+  });
   
-  for (const keyword of keywords) {
-    if (sourceText.includes(keyword)) {
-      themes.push(keyword);
+  // Find words that appear in multiple experiences
+  const threshold = Math.max(2, experiences.length / 2);
+  for (const [word, count] of wordCounts.entries()) {
+    if (count >= threshold) {
+      themes.push(word);
     }
   }
   
-  return themes.slice(0, 3); // Limit to top 3 themes
+  return themes.slice(0, 3); // Return top 3 themes
 }
 
  

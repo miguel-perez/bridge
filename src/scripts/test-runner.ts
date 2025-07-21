@@ -102,7 +102,7 @@ const SCENARIOS: Record<string, TestScenario> = {
     ]
   },
   'recall-queries': {
-    description: 'Test recall with text, dimensional, and mixed queries',
+    description: 'Test recall with text, quality, and mixed queries',
     turns: [
       {
         role: 'user',
@@ -225,8 +225,8 @@ const SCENARIOS: Record<string, TestScenario> = {
       }
     ]
   },
-  'dimensional-focus': {
-    description: 'Deep dive into dimensional filtering patterns',
+  'quality-focus': {
+    description: 'Deep dive into quality filtering patterns',
     turns: [
       {
         role: 'user',

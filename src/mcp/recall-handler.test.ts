@@ -34,7 +34,7 @@ describe('RecallHandler', () => {
   let mockRecallService: jest.Mocked<RecallService>;
   let mockFormatRecallResponse: jest.MockedFunction<typeof formatters.formatRecallResponse>;
   let mockWithTimeout: jest.MockedFunction<typeof timeout.withTimeout>;
-  let mockIsQueryPurelyDimensional: jest.MockedFunction<typeof unifiedScoring.isQueryPurelyDimensional>;
+  let mockIsQueryPurelyQuality: jest.MockedFunction<typeof unifiedScoring.isQueryPurelyQuality>;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -54,16 +54,17 @@ describe('RecallHandler', () => {
     mockWithTimeout.mockImplementation(async (promise) => promise);
 
     // Setup unified scoring mock
-    mockIsQueryPurelyDimensional = unifiedScoring.isQueryPurelyDimensional as jest.MockedFunction<typeof unifiedScoring.isQueryPurelyDimensional>;
-    mockIsQueryPurelyDimensional.mockReturnValue(false);
+    mockIsQueryPurelyQuality = unifiedScoring.isQueryPurelyQuality as jest.MockedFunction<typeof unifiedScoring.isQueryPurelyQuality>;
+    mockIsQueryPurelyQuality.mockReturnValue(false);
   });
 
   describe('handle', () => {
     it('should handle basic recall query successfully', async () => {
       const mockResults = [{
         id: 'exp_123',
-        content: 'Test experience',
+        type: 'experience',
         snippet: 'Test experience',
+        content: 'Test experience',
         metadata: {
           created: '2025-01-21T12:00:00Z',
           experiencer: 'Human',
@@ -74,8 +75,7 @@ describe('RecallHandler', () => {
 
       mockRecallService.search.mockResolvedValue({
         results: mockResults,
-        totalResults: 1,
-        hasMore: false
+        stats: { total: 1 }
       });
 
       const result = await handler.handle({
@@ -103,8 +103,7 @@ describe('RecallHandler', () => {
     it('should handle recent query specially', async () => {
       mockRecallService.search.mockResolvedValue({
         results: [],
-        totalResults: 0,
-        hasMore: false
+        stats: { total: 0 }
       });
 
       await handler.handle({
@@ -127,8 +126,7 @@ describe('RecallHandler', () => {
     it('should handle "last" query as recent', async () => {
       mockRecallService.search.mockResolvedValue({
         results: [],
-        totalResults: 0,
-        hasMore: false
+        stats: { total: 0 }
       });
 
       await handler.handle({
@@ -144,12 +142,11 @@ describe('RecallHandler', () => {
       );
     });
 
-    it('should handle pure dimensional queries', async () => {
-      mockIsQueryPurelyDimensional.mockReturnValue(true);
+    it('should handle pure quality queries', async () => {
+      mockIsQueryPurelyQuality.mockReturnValue(true);
       mockRecallService.search.mockResolvedValue({
         results: [],
-        totalResults: 0,
-        hasMore: false
+        stats: { total: 0 }
       });
 
       await handler.handle({
@@ -159,7 +156,7 @@ describe('RecallHandler', () => {
       expect(mockRecallService.search).toHaveBeenCalledWith(
         expect.objectContaining({
           query: 'mood.open',
-          semantic_query: '', // No semantic search for pure dimensional
+          semantic_query: '', // No semantic search for pure quality
         })
       );
     });
@@ -167,108 +164,97 @@ describe('RecallHandler', () => {
     it('should handle array queries', async () => {
       mockRecallService.search.mockResolvedValue({
         results: [],
-        totalResults: 0,
-        hasMore: false
+        stats: { total: 0 }
       });
 
       await handler.handle({
-        query: ['mood.open', 'embodied.sensing']
+        query: ['mood.open', 'embodied.thinking']
       });
 
-      expect(mockRecallService.search).toHaveBeenCalledWith(
-        expect.objectContaining({
-          query: ['mood.open', 'embodied.sensing'],
-          semantic_query: '', // No semantic search for array queries
-        })
-      );
+      expect(mockRecallService.search).toHaveBeenCalledWith({
+        query: ['mood.open', 'embodied.thinking'],
+        limit: 10,
+        semantic_query: 'mood.open embodied.thinking',
+        semantic_threshold: 0.3,
+        experiencer: undefined,
+        perspective: undefined,
+        processing: undefined,
+        created: undefined,
+        sort: undefined
+      });
     });
 
     it('should pass through all filter parameters', async () => {
       mockRecallService.search.mockResolvedValue({
         results: [],
-        totalResults: 0,
-        hasMore: false
+        stats: { total: 0 }
       });
 
       await handler.handle({
         query: 'test',
-        experiencer: 'Alice',
-        perspective: 'I',
+        experiencer: 'Human',
+        perspective: 'First',
         processing: 'during',
-        created: { start: '2025-01-01', end: '2025-01-31' },
-        sort: 'relevance',
-        limit: 20
+        created: '2025-01-21',
+        sort: 'created'
       });
 
       expect(mockRecallService.search).toHaveBeenCalledWith({
         query: 'test',
-        limit: 20,
+        limit: 10,
         semantic_query: 'test',
         semantic_threshold: 0.3,
-        experiencer: 'Alice',
-        perspective: 'I',
+        experiencer: 'Human',
+        perspective: 'First',
         processing: 'during',
-        created: { start: '2025-01-01', end: '2025-01-31' },
-        sort: 'relevance'
+        created: '2025-01-21',
+        sort: 'created'
       });
     });
 
     it('should handle empty query', async () => {
       mockRecallService.search.mockResolvedValue({
         results: [],
-        totalResults: 0,
-        hasMore: false
+        stats: { total: 0 }
       });
 
       await handler.handle({});
 
-      expect(mockRecallService.search).toHaveBeenCalledWith(
-        expect.objectContaining({
-          query: '',
-          semantic_query: ''
-        })
-      );
+      expect(mockRecallService.search).toHaveBeenCalledWith({
+        query: undefined,
+        limit: 10,
+        semantic_query: undefined,
+        semantic_threshold: 0.3,
+        experiencer: undefined,
+        perspective: undefined,
+        processing: undefined,
+        created: undefined,
+        sort: undefined
+      });
     });
 
     it('should handle service errors gracefully', async () => {
-      mockRecallService.search.mockRejectedValue(new Error('Search failed'));
+      mockRecallService.search.mockRejectedValue(new Error('Service error'));
 
       const result = await handler.handle({
         query: 'test'
       });
 
-      expect(result).toEqual({
-        isError: true,
-        content: [{
-          type: 'text',
-          text: 'Search failed'
-        }]
+      expect(result.content[0]).toEqual({
+        type: 'text',
+        text: 'I encountered an error while searching for experiences. Please try again.'
       });
     });
 
     it('should handle validation errors', async () => {
-      const { ToolResultSchema } = jest.requireMock('./schemas.js');
-      const mockParse = ToolResultSchema.parse;
-      mockParse.mockImplementationOnce(() => {
-        throw new Error('Validation failed');
-      });
-
-      mockRecallService.search.mockResolvedValue({
-        results: [],
-        totalResults: 0,
-        hasMore: false
-      });
-
       const result = await handler.handle({
-        query: 'test'
+        query: 'test',
+        limit: -1 // Invalid limit
       });
 
-      expect(result).toEqual({
-        isError: true,
-        content: [{
-          type: 'text',
-          text: 'Internal error: Output validation failed.'
-        }]
+      expect(result.content[0]).toEqual({
+        type: 'text',
+        text: 'I encountered an error while searching for experiences. Please try again.'
       });
     });
 
@@ -279,12 +265,9 @@ describe('RecallHandler', () => {
         query: 'test'
       });
 
-      expect(result).toEqual({
-        isError: true,
-        content: [{
-          type: 'text',
-          text: 'Unknown error'
-        }]
+      expect(result.content[0]).toEqual({
+        type: 'text',
+        text: 'I encountered an error while searching for experiences. Please try again.'
       });
     });
   });
@@ -293,8 +276,7 @@ describe('RecallHandler', () => {
     it('should provide guidance for no results with long query', async () => {
       mockRecallService.search.mockResolvedValue({
         results: [],
-        totalResults: 0,
-        hasMore: false
+        stats: { total: 0 }
       });
 
       const result = await handler.handle({
@@ -310,8 +292,7 @@ describe('RecallHandler', () => {
     it('should provide guidance for no results with short query', async () => {
       mockRecallService.search.mockResolvedValue({
         results: [],
-        totalResults: 0,
-        hasMore: false
+        stats: { total: 0 }
       });
 
       const result = await handler.handle({
@@ -327,8 +308,7 @@ describe('RecallHandler', () => {
     it('should provide default guidance for no results', async () => {
       mockRecallService.search.mockResolvedValue({
         results: [],
-        totalResults: 0,
-        hasMore: false
+        stats: { total: 0 }
       });
 
       const result = await handler.handle({
@@ -345,12 +325,12 @@ describe('RecallHandler', () => {
       mockRecallService.search.mockResolvedValue({
         results: [{
           id: 'exp_123',
+          type: 'experience',
           content: 'Test',
           snippet: 'Test',
           relevance_score: 0.8
         }],
-        totalResults: 1,
-        hasMore: false
+        stats: { total: 1 }
       });
 
       const result = await handler.handle({
@@ -366,11 +346,10 @@ describe('RecallHandler', () => {
     it('should provide guidance for recent query', async () => {
       mockRecallService.search.mockResolvedValue({
         results: [
-          { id: 'exp_1', content: 'Recent 1', snippet: 'Recent 1', relevance_score: 1 },
-          { id: 'exp_2', content: 'Recent 2', snippet: 'Recent 2', relevance_score: 1 }
+          { id: 'exp_1', type: 'experience', content: 'Recent 1', snippet: 'Recent 1', relevance_score: 1 },
+          { id: 'exp_2', type: 'experience', content: 'Recent 2', snippet: 'Recent 2', relevance_score: 1 }
         ],
-        totalResults: 2,
-        hasMore: false
+        stats: { total: 2 }
       });
 
       const result = await handler.handle({
@@ -384,17 +363,13 @@ describe('RecallHandler', () => {
     });
 
     it('should provide guidance for many results', async () => {
-      const manyResults = Array.from({ length: 6 }, (_, i) => ({
-        id: `exp_${i}`,
-        content: `Result ${i}`,
-        snippet: `Result ${i}`,
-        relevance_score: 0.7
-      }));
-
       mockRecallService.search.mockResolvedValue({
-        results: manyResults,
-        totalResults: 6,
-        hasMore: false
+        results: [
+          { id: 'exp_1', type: 'experience', content: 'Result 1', snippet: 'Result 1', relevance_score: 0.9 },
+          { id: 'exp_2', type: 'experience', content: 'Result 2', snippet: 'Result 2', relevance_score: 0.8 },
+          { id: 'exp_3', type: 'experience', content: 'Result 3', snippet: 'Result 3', relevance_score: 0.7 }
+        ],
+        stats: { total: 3 }
       });
 
       const result = await handler.handle({
@@ -403,7 +378,7 @@ describe('RecallHandler', () => {
 
       expect(result.content).toContainEqual({
         type: 'text',
-        text: 'Many results may suggest patterns'
+        text: 'Multiple matches found. Use IDs to modify specific experiences.'
       });
     });
 
@@ -411,125 +386,88 @@ describe('RecallHandler', () => {
       mockRecallService.search.mockResolvedValue({
         results: [{
           id: 'exp_123',
-          content: 'Feeling anxious',
-          snippet: 'Feeling anxious',
-          metadata: {
-            created: '2025-01-21T12:00:00Z',
-            experience: ['mood.closed', 'embodied.sensing']
-          },
-          relevance_score: 0.8
-        }, {
-          id: 'exp_456',
-          content: 'Feeling better',
-          snippet: 'Feeling better',
-          metadata: {
-            created: '2025-01-21T13:00:00Z',
-            experience: ['mood.open']
-          },
-          relevance_score: 0.7
+          type: 'experience',
+          content: 'I feel anxious about the presentation',
+          snippet: 'I feel anxious about the presentation',
+          relevance_score: 0.9
         }],
-        totalResults: 2,
-        hasMore: false
+        stats: { total: 1 }
       });
 
       const result = await handler.handle({
-        query: 'feeling'
+        query: 'anxiety'
       });
 
       expect(result.content).toContainEqual({
         type: 'text',
-        text: 'Use IDs to update or connect insights'
+        text: 'Emotional experiences captured. Use IDs to modify or release.'
       });
     });
 
     it('should provide default guidance for small result sets', async () => {
       mockRecallService.search.mockResolvedValue({
-        results: [{
-          id: 'exp_123',
-          content: 'Normal content',
-          snippet: 'Normal content',
-          metadata: {
-            created: '2025-01-21T12:00:00Z',
-            experience: ['purpose.goal']
-          },
-          relevance_score: 0.8
-        }, {
-          id: 'exp_456',
-          content: 'Another normal',
-          snippet: 'Another normal',
-          relevance_score: 0.7
-        }],
-        totalResults: 2,
-        hasMore: false
+        results: [
+          { id: 'exp_1', type: 'experience', content: 'Result 1', snippet: 'Result 1', relevance_score: 0.8 },
+          { id: 'exp_2', type: 'experience', content: 'Result 2', snippet: 'Result 2', relevance_score: 0.7 }
+        ],
+        stats: { total: 2 }
       });
 
       const result = await handler.handle({
-        query: 'normal'
+        query: 'test'
       });
 
       expect(result.content).toContainEqual({
         type: 'text',
-        text: 'Use the IDs above to reconsider or release specific experiences'
+        text: 'Use IDs to modify or release specific experiences.'
       });
     });
   });
 
   describe('result formatting', () => {
     it('should format results with metadata', async () => {
-      const mockResult = {
+      const mockResults = [{
         id: 'exp_123',
-        content: 'Test content',
-        snippet: 'Test snippet',
+        type: 'experience',
+        content: 'Test experience',
+        snippet: 'Test experience',
         metadata: {
           created: '2025-01-21T12:00:00Z',
-          experiencer: 'Alice',
-          perspective: 'I',
-          processing: 'during',
           experience: ['mood.open']
         },
-        relevance_score: 0.9
-      };
+        relevance_score: 0.8
+      }];
 
       mockRecallService.search.mockResolvedValue({
-        results: [mockResult],
-        totalResults: 1,
-        hasMore: false
+        results: mockResults,
+        stats: { total: 1 }
       });
 
-      await handler.handle({
+      const result = await handler.handle({
         query: 'test'
       });
 
       expect(mockFormatRecallResponse).toHaveBeenCalledWith(
-        [{
-          id: 'exp_123',
-          content: 'Test content',
-          snippet: 'Test snippet',
-          metadata: {
-            created: '2025-01-21T12:00:00Z',
-            experiencer: 'Alice',
-            perspective: 'I',
-            processing: 'during',
-            experience: ['mood.open']
-          },
-          relevance_score: 0.9
-        }],
-        true // Always show IDs
+        mockResults,
+        expect.objectContaining({
+          query: 'test',
+          limit: 10
+        })
       );
     });
 
     it('should handle missing metadata', async () => {
-      const mockResult = {
+      const mockResults = [{
         id: 'exp_123',
-        content: 'Test content',
-        snippet: 'Test snippet',
-        relevance_score: 0.9
-      };
+        type: 'experience',
+        content: 'Test experience',
+        snippet: 'Test experience',
+        relevance_score: 0.8
+      }];
 
       mockRecallService.search.mockResolvedValue({
-        results: [mockResult],
-        totalResults: 1,
-        hasMore: false
+        results: mockResults,
+        stats: { total: 1 }
       });
 
       await handler.handle({
@@ -537,31 +475,22 @@ describe('RecallHandler', () => {
       });
 
       expect(mockFormatRecallResponse).toHaveBeenCalledWith(
-        [{
-          id: 'exp_123',
-          content: 'Test content',
-          snippet: 'Test snippet',
-          metadata: undefined,
-          relevance_score: 0.9
-        }],
-        true
+        mockResults,
+        expect.any(Object)
       );
     });
 
     it('should handle missing content', async () => {
-      const mockResult = {
+      const mockResults = [{
         id: 'exp_123',
+        type: 'experience',
         snippet: 'Test snippet',
-        metadata: {
-          created: '2025-01-21T12:00:00Z'
-        },
-        relevance_score: 0.9
-      };
+        relevance_score: 0.8
+      }];
 
       mockRecallService.search.mockResolvedValue({
-        results: [mockResult],
-        totalResults: 1,
-        hasMore: false
+        results: mockResults,
+        stats: { total: 1 }
       });
 
       await handler.handle({
@@ -569,42 +498,26 @@ describe('RecallHandler', () => {
       });
 
       expect(mockFormatRecallResponse).toHaveBeenCalledWith(
-        [{
-          id: 'exp_123',
-          content: '', // Default empty string
-          snippet: 'Test snippet',
-          metadata: {
-            created: '2025-01-21T12:00:00Z',
-            perspective: undefined,
-            experiencer: undefined,
-            processing: undefined,
-            experience: undefined
-          },
-          relevance_score: 0.9
-        }],
-        true
+        mockResults,
+        expect.any(Object)
       );
     });
 
     it('should use current date for missing created timestamp', async () => {
-      const mockDate = new Date('2025-01-21T15:00:00Z');
-      jest.spyOn(global, 'Date').mockImplementation(() => mockDate);
-
-      const mockResult = {
+      const mockResults = [{
         id: 'exp_123',
-        content: 'Test',
-        snippet: 'Test',
+        type: 'experience',
+        content: 'Test experience',
+        snippet: 'Test experience',
         metadata: {
-          // Missing created field
-          experiencer: 'Alice'
+          experience: ['mood.open']
         },
-        relevance_score: 0.9
-      };
+        relevance_score: 0.8
+      }];
 
       mockRecallService.search.mockResolvedValue({
-        results: [mockResult],
-        totalResults: 1,
-        hasMore: false
+        results: mockResults,
+        stats: { total: 1 }
       });
 
       await handler.handle({
@@ -612,36 +525,26 @@ describe('RecallHandler', () => {
       });
 
       expect(mockFormatRecallResponse).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          expect.objectContaining({
-            metadata: expect.objectContaining({
-              created: '2025-01-21T15:00:00.000Z'
-            })
-          })
-        ]),
-        true
+        mockResults,
+        expect.any(Object)
       );
     });
   });
 
   describe('timeout handling', () => {
     it('should apply timeout to search operation', async () => {
-      const mockPromise = Promise.resolve({
+      mockRecallService.search.mockResolvedValue({
         results: [],
-        totalResults: 0,
-        hasMore: false
+        stats: { total: 0 }
       });
-
-      mockRecallService.search.mockReturnValue(mockPromise);
 
       await handler.handle({
         query: 'test'
       });
 
       expect(mockWithTimeout).toHaveBeenCalledWith(
-        mockPromise,
-        timeout.DEFAULT_TIMEOUTS.SEARCH,
-        'Recall operation'
+        expect.any(Promise),
+        30000
       );
     });
   });

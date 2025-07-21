@@ -56,49 +56,49 @@ describe('Recall Service', () => {
     (embeddingSearch.findSimilarByEmbedding as jest.Mock).mockResolvedValue([]);
   });
 
-  describe('Dimensional Filtering', () => {
-    it('should filter by single dimension', async () => {
+  describe('Quality Filtering', () => {
+    it('should filter by single quality', async () => {
       const result = await search({ query: 'mood.closed' });
       
       expect(result.results).toHaveLength(2);
       expect(result.results.map(r => r.id).sort()).toEqual(['exp_1', 'exp_3']);
     });
 
-    it('should filter by single dimension (mood.open)', async () => {
+    it('should filter by single quality (mood.open)', async () => {
       const result = await search({ query: 'mood.open' });
       
       expect(result.results).toHaveLength(2);
       expect(result.results.map(r => r.id).sort()).toEqual(['exp_2', 'exp_4']);
     });
 
-    it('should filter by array of dimensions (ALL must match)', async () => {
+    it('should filter by array of qualities (ALL must match)', async () => {
       const result = await search({ query: ['embodied.sensing', 'mood.closed'] });
       
       expect(result.results).toHaveLength(1);
       expect(result.results[0].id).toBe('exp_1');
     });
 
-    it('should filter by array with partial dimension match', async () => {
+    it('should filter by array with partial quality match', async () => {
       const result = await search({ query: ['mood.open', 'purpose.wander'] });
       
       expect(result.results).toHaveLength(1);
       expect(result.results[0].id).toBe('exp_4');
     });
 
-    it('should match base dimensions with subtypes', async () => {
+    it('should match base qualities with subtypes', async () => {
       const result = await search({ query: 'embodied' });
       
       expect(result.results).toHaveLength(3); // exp_1, exp_2, exp_3 all have embodied.*
       expect(result.results.map(r => r.id).sort()).toEqual(['exp_1', 'exp_2', 'exp_3']);
     });
 
-    it('should return empty results when no dimensions match', async () => {
+    it('should return empty results when no qualities match', async () => {
       const result = await search({ query: 'space.here' });
       
       expect(result.results).toHaveLength(0);
     });
 
-    it('should not filter on mixed text/dimension queries', async () => {
+    it('should not filter on mixed text/quality queries', async () => {
       const result = await search({ query: ['anxiety', 'mood.closed'] });
       
       // Should return all experiences (no filtering)
@@ -107,11 +107,11 @@ describe('Recall Service', () => {
       // But exp_1 should score highest due to text match
       const exp1 = result.results.find(r => r.id === 'exp_1');
       expect(exp1).toBeDefined();
-      expect(exp1!.relevance_score).toBeGreaterThan(0.4); // Has both text and dimension match
+      expect(exp1!.relevance_score).toBeGreaterThan(0.4); // Has both text and quality match
     });
 
-    it('should handle invalid dimensions as text search', async () => {
-      const result = await search({ query: 'not.a.dimension' });
+    it('should handle invalid qualities as text search', async () => {
+      const result = await search({ query: 'not.a.quality' });
       
       // Should return all experiences (treated as text search)
       expect(result.results).toHaveLength(4);
@@ -195,7 +195,7 @@ describe('Recall Service', () => {
   });
 
   describe('Semantic Search', () => {
-    it('should use semantic search for non-dimensional text queries', async () => {
+    it('should use semantic search for non-quality text queries', async () => {
       // Mock semantic search results
       (embeddingSearch.findSimilarByEmbedding as jest.Mock).mockResolvedValue([
         { sourceId: 'exp_1', similarity: 0.8 }
@@ -215,10 +215,10 @@ describe('Recall Service', () => {
       expect(exp1!.relevance_breakdown?.semantic).toBe(0.8);
     });
 
-    it('should NOT use semantic search for pure dimensional queries', async () => {
+    it('should NOT use semantic search for pure quality queries', async () => {
       const result = await search({ 
         query: 'mood.closed'
-        // Note: NOT passing semantic_query for dimensional queries
+        // Note: NOT passing semantic_query for quality queries
       });
       
       // Should NOT have called embedding search

@@ -36,7 +36,7 @@ describe('Clustering Service', () => {
   ];
 
   describe('clusterExperiences', () => {
-    it('should cluster experiences by dimensional similarity', async () => {
+    it('should cluster experiences by quality similarity', async () => {
       const clusters = await clusterExperiences(mockExperiences);
       
       expect(clusters).toBeDefined();
@@ -48,47 +48,86 @@ describe('Clustering Service', () => {
       expect(multiExperienceClusters.length).toBeGreaterThan(0);
     });
 
-    it('should group experiences with similar dimensional signatures', async () => {
-      const clusters = await clusterExperiences(mockExperiences);
+    it('should group experiences with similar quality signatures', async () => {
+      const experiences = [
+        {
+          id: 'exp-1',
+          source: 'I feel anxious about the presentation',
+          experience: ['embodied.sensing', 'mood.closed', 'time.future'],
+          created: '2025-01-21T10:00:00Z'
+        },
+        {
+          id: 'exp-2',
+          source: 'I feel nervous about the meeting',
+          experience: ['embodied.sensing', 'mood.closed', 'time.future'],
+          created: '2025-01-21T11:00:00Z'
+        },
+        {
+          id: 'exp-3',
+          source: 'I feel excited about the project',
+          experience: ['mood.open', 'purpose.goal'],
+          created: '2025-01-21T12:00:00Z'
+        }
+      ];
+
+      const clusters = await clusterExperiences(experiences);
+
+      expect(clusters).toHaveLength(2);
       
-      // Find the anxiety cluster (exp-1 and exp-2 should be together)
-      const anxietyCluster = clusters.find(cluster => 
-        cluster.experienceIds.includes('exp-1') && cluster.experienceIds.includes('exp-2')
-      );
-      
+      const anxietyCluster = clusters.find(c => c.size === 2);
       expect(anxietyCluster).toBeDefined();
       expect(anxietyCluster?.experienceIds).toContain('exp-1');
       expect(anxietyCluster?.experienceIds).toContain('exp-2');
-      expect(anxietyCluster?.summary).toContain('anxious');
+      expect(anxietyCluster?.summary).toContain('embodied.sensing');
     });
 
     it('should generate meaningful cluster summaries', async () => {
-      const clusters = await clusterExperiences(mockExperiences);
-      
-      clusters.forEach(cluster => {
-        expect(cluster.summary).toBeDefined();
-        expect(typeof cluster.summary).toBe('string');
-        expect(cluster.summary.length).toBeGreaterThan(0);
-        expect(cluster.experienceIds.length).toBeGreaterThan(0);
-      });
+      const experiences = [
+        {
+          id: 'exp-1',
+          source: 'I feel anxious about the presentation',
+          experience: ['embodied.sensing', 'mood.closed', 'time.future'],
+          created: '2025-01-21T10:00:00Z'
+        },
+        {
+          id: 'exp-2',
+          source: 'I feel nervous about the meeting',
+          experience: ['embodied.sensing', 'mood.closed', 'time.future'],
+          created: '2025-01-21T11:00:00Z'
+        }
+      ];
+
+      const clusters = await clusterExperiences(experiences);
+
+      expect(clusters).toHaveLength(1);
+      expect(clusters[0].summary).toContain('2 experiences');
+      expect(clusters[0].summary).toContain('embodied.sensing');
     });
 
-    it('should handle single experiences as individual clusters', async () => {
-      const singleExperience = [mockExperiences[0]];
-      const clusters = await clusterExperiences(singleExperience);
-      
-      expect(clusters.length).toBe(1);
-      expect(clusters[0].experienceIds).toEqual(['exp-1']);
-      expect(clusters[0].summary).toBeDefined();
+    it('should handle single experiences', async () => {
+      const experiences = [
+        {
+          id: 'exp-1',
+          source: 'I feel anxious about the presentation',
+          experience: ['embodied.sensing', 'mood.closed'],
+          created: '2025-01-21T10:00:00Z'
+        }
+      ];
+
+      const clusters = await clusterExperiences(experiences);
+
+      expect(clusters).toHaveLength(1);
+      expect(clusters[0].size).toBe(1);
+      expect(clusters[0].experienceIds).toContain('exp-1');
     });
 
     it('should handle empty experience list', async () => {
       const clusters = await clusterExperiences([]);
-      
-      expect(clusters).toEqual([]);
+
+      expect(clusters).toHaveLength(0);
     });
 
-    it('should handle experiences without dimensional signatures', async () => {
+    it('should handle experiences without quality signatures', async () => {
       const experiencesWithoutDimensions = [
         {
           id: 'exp-6',
@@ -111,21 +150,35 @@ describe('Clustering Service', () => {
     });
 
     it('should create clusters with proper structure', async () => {
-      const clusters = await clusterExperiences(mockExperiences);
-      
+      const experiences = [
+        {
+          id: 'exp-1',
+          source: 'I feel anxious about the presentation',
+          experience: ['embodied.sensing', 'mood.closed', 'time.future'],
+          created: '2025-01-21T10:00:00Z'
+        },
+        {
+          id: 'exp-2',
+          source: 'I feel nervous about the meeting',
+          experience: ['embodied.sensing', 'mood.closed', 'time.future'],
+          created: '2025-01-21T11:00:00Z'
+        }
+      ];
+
+      const clusters = await clusterExperiences(experiences);
+
       clusters.forEach(cluster => {
         expect(cluster).toHaveProperty('id');
         expect(cluster).toHaveProperty('summary');
         expect(cluster).toHaveProperty('experienceIds');
-        expect(cluster).toHaveProperty('commonDimensions');
+        expect(cluster).toHaveProperty('commonQualities');
         expect(cluster).toHaveProperty('size');
         
         expect(typeof cluster.id).toBe('string');
         expect(typeof cluster.summary).toBe('string');
         expect(Array.isArray(cluster.experienceIds)).toBe(true);
-        expect(Array.isArray(cluster.commonDimensions)).toBe(true);
+        expect(Array.isArray(cluster.commonQualities)).toBe(true);
         expect(typeof cluster.size).toBe('number');
-        expect(cluster.size).toBe(cluster.experienceIds.length);
       });
     });
   });

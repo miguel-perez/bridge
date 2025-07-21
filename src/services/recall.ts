@@ -80,7 +80,7 @@ export interface RecallServiceResult {
     filter_relevance?: number;
     // New unified scoring fields
     semantic?: number;
-    dimensional?: number;
+    quality?: number;
     exact?: number;
     recency?: number;
     density?: number;
@@ -97,7 +97,7 @@ export interface RecallServiceResponse {
     id: string;
     summary: string;
     experienceIds: string[];
-    commonDimensions: string[];
+    commonQualities: string[];
     size: number;
   }>;
   debug?: {
@@ -510,7 +510,7 @@ export class RecallService {
    * @param input - Recall input parameters
    * @returns Search results with statistics
    */
-  async search(input: RecallInput): Promise<{ results: RecallServiceResult[], clusters?: Array<{ id: string; summary: string; experienceIds: string[]; commonDimensions: string[]; size: number }>, stats?: Record<string, unknown> }> {
+  async search(input: RecallInput): Promise<{ results: RecallServiceResult[], clusters?: Array<{ id: string; summary: string; experienceIds: string[]; commonQualities: string[]; size: number }>, stats?: Record<string, unknown> }> {
     // Use the comprehensive search function that includes all filtering logic
     const searchResponse = await search(input);
     

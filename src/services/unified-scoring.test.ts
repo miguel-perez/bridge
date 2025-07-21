@@ -2,7 +2,7 @@ import { describe, it, expect } from '@jest/globals';
 import { applyFiltersAndScore } from './unified-scoring.js';
 import type { SourceRecord } from '../core/types.js';
 
-describe('Dimensional Filtering', () => {
+describe('Quality Filtering', () => {
   const mockExperiences: SourceRecord[] = [
     {
       id: 'exp_1',
@@ -59,8 +59,8 @@ describe('Dimensional Filtering', () => {
     expect(results).toHaveLength(3);
   });
 
-  it('should not filter on mixed text/dimension queries', () => {
-    const query = ['anxiety', 'mood.closed'];
+  it('should not filter on mixed text/quality queries', () => {
+    const query = ['anxious', 'mood.closed'];
     const results = applyFiltersAndScore(mockExperiences, query, {}, new Map());
     
     // Mixed queries should score all experiences (not filter)
@@ -70,7 +70,7 @@ describe('Dimensional Filtering', () => {
     const exp1Result = results.find(r => r.experience.id === 'exp_1');
     expect(exp1Result).toBeDefined();
     
-    // exp_1 should have high exact match score for "anxiety" -> "anxious"
+    // exp_1 should have exact match score for "anxious" (exact word match)
     expect(exp1Result!.factors.exact).toBeGreaterThan(0);
     
     // exp_1 should score higher than exp_2 (which has no matches)
