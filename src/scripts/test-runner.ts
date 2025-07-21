@@ -232,7 +232,9 @@ class TestRunner {
       }
 
       // Run conversation
-      while (this.turnCount < scenario.maxTurns) {
+      let messageIndex = 0;
+      
+      while (this.turnCount < scenario.maxTurns && messageIndex < scenario.predefinedMessages.length) {
         this.turnCount++;
         console.log(`\n--- Turn ${this.turnCount} ---`);
 
@@ -241,16 +243,14 @@ class TestRunner {
         };
 
         // Get Claude's response
-        const assistantMessage = await this.getClaudeResponse(
+        const finalMessage = await this.getClaudeResponse(
           scenario.systemPrompt || '',
           this.messages
         );
         
-        if (assistantMessage) {
-          this.messages.push(assistantMessage);
-          
+        if (finalMessage) {
           // Extract response details for conversation flow
-          const responseDetails = this.extractResponseDetails(assistantMessage);
+          const responseDetails = this.extractResponseDetails(finalMessage);
           currentTurn.assistantResponse = responseDetails;
           
           // Display summary
@@ -259,25 +259,27 @@ class TestRunner {
           }
         }
 
-        // Check if we're done with predefined messages
-        if (this.turnCount > scenario.predefinedMessages.length) {
-          console.log('🏁 All predefined messages processed');
-          this.conversationFlow.push(currentTurn);
-          break;
+        // Add the next user message if we have one
+        if (messageIndex < scenario.predefinedMessages.length) {
+          const predefinedContent = scenario.predefinedMessages[messageIndex];
+          currentTurn.userMessage = predefinedContent;
+          
+          const userMessage = {
+            role: 'user' as const,
+            content: predefinedContent
+          };
+          console.log(`👤 User: ${predefinedContent}`);
+          this.messages.push(userMessage);
+          messageIndex++;
         }
 
-        // Get next user message
-        const predefinedContent = scenario.predefinedMessages[this.turnCount - 1];
-        currentTurn.userMessage = predefinedContent;
-        
-        const userMessage = {
-          role: 'user' as const,
-          content: predefinedContent
-        };
-        console.log(`👤 User: ${predefinedContent}`);
-        this.messages.push(userMessage);
-        
+        // Save current turn
         this.conversationFlow.push(currentTurn);
+      }
+
+      // If we've processed all messages, indicate completion
+      if (messageIndex >= scenario.predefinedMessages.length) {
+        console.log('🏁 All predefined messages processed');
       }
 
       // Complete result
@@ -326,8 +328,8 @@ class TestRunner {
     return result;
   }
 
-  private extractResponseDetails(message: Message): ConversationTurn['assistantResponse'] {
-    const details: ConversationTurn['assistantResponse'] = {};
+  private extractResponseDetails(message: Message): ConversationTurn['assistantResponse'] & {hasToolUse?: boolean} {
+    const details: ConversationTurn['assistantResponse'] & {hasToolUse?: boolean} = {};
     
     if (typeof message.content === 'string') {
       details.text = message.content;
@@ -338,6 +340,7 @@ class TestRunner {
         arguments: Record<string, unknown>;
         result: string[];
       }> = [];
+      let hasToolUse = false;
       
       for (const content of message.content) {
         if (typeof content === 'object' && content !== null && 'type' in content) {
@@ -346,6 +349,7 @@ class TestRunner {
           if (typedContent.type === 'text' && typedContent.text) {
             textParts.push(typedContent.text);
           } else if (typedContent.type === 'tool_use' && typedContent.name && typedContent.input) {
+            hasToolUse = true;
             // Find the corresponding tool call result
             const toolCall = this.toolCalls.find(tc => 
               tc.toolName === typedContent.name && 
@@ -368,6 +372,8 @@ class TestRunner {
       if (toolCallDetails.length > 0) {
         details.toolCalls = toolCallDetails;
       }
+      
+      details.hasToolUse = hasToolUse;
     }
     
     return details;
@@ -376,6 +382,11 @@ class TestRunner {
   private async getClaudeResponse(systemPrompt: string, messages: Message[]): Promise<Message> {
     console.log('🤖 Getting Claude response...');
     
+    // Handle the response recursively to deal with multiple tool uses
+    return this.handleClaudeResponse(systemPrompt, messages);
+  }
+
+  private async handleClaudeResponse(systemPrompt: string, messages: Message[]): Promise<Message> {
     // Format messages for Anthropic API
     const formattedMessages = messages.map(msg => ({
       role: msg.role,
@@ -407,9 +418,11 @@ class TestRunner {
 
     // Process response and handle tool use
     const toolUses: Array<{id: string; name: string; result: {content?: unknown[]; isError?: boolean}}> = [];
+    let hasToolUse = false;
     
     for (const content of response.content) {
       if (content.type === 'tool_use' && this.mcpClient) {
+        hasToolUse = true;
         // Call the tool
         console.log(`🔧 Calling tool: ${content.name}`);
         
@@ -417,13 +430,13 @@ class TestRunner {
           timestamp: new Date(),
           turn: this.turnCount,
           toolName: content.name,
-          arguments: content.input
+          arguments: content.input as Record<string, unknown>
         };
         
         try {
           const result = await this.mcpClient.callTool({
             name: content.name,
-            arguments: content.input
+            arguments: content.input as Record<string, unknown>
           });
           
           toolCall.result = result;
@@ -448,7 +461,9 @@ class TestRunner {
           toolUses.push({
             id: content.id,
             name: content.name,
-            result: result
+            result: {
+              content: result.content
+            }
           });
           
         } catch (error) {
@@ -470,18 +485,17 @@ class TestRunner {
       }
     }
 
-    // If there were tool uses, we need to get Claude's final response after the tool results
-    if (toolUses.length > 0) {
-      // Add tool results to messages
-      const messagesWithTools = [...formattedMessages];
-      messagesWithTools.push({
+    // If there were tool uses, we need to handle the continuation properly
+    if (hasToolUse) {
+      // First, add the assistant message with tool uses to our conversation
+      this.messages.push({
         role: 'assistant',
         content: response.content
       });
       
-      // Add tool results
+      // Then add tool results as user messages
       for (const toolUse of toolUses) {
-        messagesWithTools.push({
+        this.messages.push({
           role: 'user',
           content: [{
             type: 'tool_result',
@@ -491,23 +505,18 @@ class TestRunner {
         });
       }
       
-      // Get Claude's response after tool use
-      const continuationResponse = await this.anthropic.messages.create({
-        ...requestParams,
-        messages: messagesWithTools
-      });
-      
-      // Return the continuation response
-      return {
-        role: 'assistant',
-        content: continuationResponse.content
-      };
+      // Get Claude's response after tool use - this may include more tool uses
+      // Use recursive call to handle any additional tool uses
+      return this.handleClaudeResponse(systemPrompt, this.messages);
     }
 
-    return {
-      role: 'assistant',
+    // No tool use, just add and return the response
+    const finalResponse = {
+      role: 'assistant' as const,
       content: response.content
     };
+    this.messages.push(finalResponse);
+    return finalResponse;
   }
 }
 
