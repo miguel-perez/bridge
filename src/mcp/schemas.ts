@@ -121,6 +121,7 @@ export const SearchInputSchema = z.object({
     }).describe('Date range')
   ]).describe('Filter by creation date').optional(),
   sort: SortEnum.optional(),
+  as: z.enum(['clusters']).describe('Return results as clusters of similar experiences instead of individual results').optional(),
   show_ids: z.boolean().describe('Deprecated - IDs are always shown. This parameter is ignored.').optional(),
   searches: z.array(z.object({
     query: z.string().describe('Search query for semantic matching').optional(),
@@ -141,7 +142,8 @@ export const SearchInputSchema = z.object({
         end: z.string().describe('End date (YYYY-MM-DD format)')
       }).describe('Date range')
     ]).describe('Filter by creation date').optional(),
-    sort: SortEnum.optional()
+    sort: SortEnum.optional(),
+    as: z.enum(['clusters']).describe('Return results as clusters of similar experiences instead of individual results').optional()
   })).describe('Array of search queries to execute (for batch operations)').optional()
 }).strict();
 

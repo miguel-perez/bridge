@@ -99,7 +99,7 @@ export class RecallHandler {
       const isPureDimensional = query && isQueryPurelyDimensional(query);
       
       // Perform recall
-      const { results } = await withTimeout(
+      const { results, clusters } = await withTimeout(
         this.recallService.search({
           query: isRecentQuery ? '' : query, // Empty query for recent to get all
           limit: isRecentQuery ? Math.min(limit, 5) : limit, // Show fewer for recent
@@ -111,7 +111,9 @@ export class RecallHandler {
           perspective: recall.perspective,
           processing: recall.processing,
           created: recall.created,
-          sort: isRecentQuery ? 'created' : recall.sort // Force sort by created for recent
+          sort: isRecentQuery ? 'created' : recall.sort, // Force sort by created for recent
+          // Handle clustering if requested
+          as: recall.as
         }),
         DEFAULT_TIMEOUTS.SEARCH,
         'Recall operation'
@@ -135,14 +137,24 @@ export class RecallHandler {
       // Always show IDs for better UX - users need them for modifications
       const showIds = true;
       
-      // Format results using conversational formatter
-      const response = formatRecallResponse(recallResults, showIds);
-      
       // Build multi-content response
-      const content: Array<{ type: 'text', text: string }> = [{
-        type: 'text',
-        text: response
-      }];
+      const content: Array<{ type: 'text', text: string }> = [];
+      
+      // Handle clustering response if clusters are available
+      if (clusters && clusters.length > 0) {
+        const clusterResponse = this.formatClusterResponse(clusters);
+        content.push({
+          type: 'text',
+          text: clusterResponse
+        });
+      } else {
+        // Format results using conversational formatter for regular recall
+        const response = formatRecallResponse(recallResults, showIds);
+        content.push({
+          type: 'text',
+          text: response
+        });
+      }
       
       // Add contextual guidance
       const guidance = this.selectRecallGuidance(typeof query === 'string' ? query : query.join(' '), recallResults);
@@ -216,5 +228,32 @@ export class RecallHandler {
     
     // Default for small result sets
     return "Use the IDs above to reconsider or release specific experiences";
+  }
+
+  /**
+   * Formats clustering results for user-friendly display
+   */
+  private formatClusterResponse(
+    clusters: Array<{ id: string; summary: string; experienceIds: string[]; commonDimensions: string[]; size: number }>
+  ): string {
+    if (clusters.length === 0) {
+      return "No clusters found.";
+    }
+
+    let response = `Found ${clusters.length} cluster${clusters.length === 1 ? '' : 's'} of similar experiences:\n\n`;
+
+    clusters.forEach((cluster, index) => {
+      response += `${index + 1}. **${cluster.summary}**\n`;
+      response += `   Size: ${cluster.size} experience${cluster.size === 1 ? '' : 's'}\n`;
+      
+      if (cluster.commonDimensions.length > 0) {
+        response += `   Common dimensions: ${cluster.commonDimensions.join(', ')}\n`;
+      }
+      
+      // Show experience IDs in the cluster
+      response += `   Experiences: ${cluster.experienceIds.join(', ')}\n\n`;
+    });
+
+    return response;
   }
 }

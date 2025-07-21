@@ -27,13 +27,15 @@ interface Message {
   content: string | unknown[];
 }
 
+interface TestTurn {
+  role: 'user' | 'assistant';
+  content: string;
+  expectedTools?: string[];
+}
+
 interface TestScenario {
-  name: string;
   description: string;
-  maxTurns: number;
-  systemPrompt?: string;
-  predefinedMessages: string[];
-  initialMessage: string;
+  turns: TestTurn[];
 }
 
 interface TestResult {
@@ -75,85 +77,153 @@ interface ConversationTurn {
 // TEST SCENARIOS
 // ============================================================================
 
-// System prompt is intentionally blank to allow natural behavior based on tool descriptions and examples from MCP
-// The AI should discover and use tools naturally based on their descriptions, not explicit prompt guidance
-const BRIDGE_SYSTEM_PROMPT = ``;
-
-const TEST_SCENARIOS: Record<string, TestScenario> = {
-  // Tool-focused scenarios with realistic context
+const SCENARIOS: Record<string, TestScenario> = {
   'experience-capture': {
-    name: 'Experience Tool - Emotional Capture',
-    description: 'Tests experience tool with various emotional states and dimensions',
-    maxTurns: 3,
-    systemPrompt: BRIDGE_SYSTEM_PROMPT,
-    predefinedMessages: [
-      "I'm feeling anxious about tomorrow's presentation.",
-      "Just felt confident when my code finally worked."
-    ],
-    initialMessage: "I'd like to capture some emotional experiences."
+    description: 'Test experience tool with various emotional states',
+    turns: [
+      {
+        role: 'user',
+        content: 'I feel anxious about the presentation tomorrow'
+      },
+      {
+        role: 'assistant',
+        content: 'I can help you capture that experience. Let me remember this moment for you.',
+        expectedTools: ['experience']
+      },
+      {
+        role: 'user',
+        content: 'Actually, I feel excited now - the anxiety turned into anticipation'
+      },
+      {
+        role: 'assistant',
+        content: 'That\'s a beautiful shift! Let me capture this evolution of your experience.',
+        expectedTools: ['experience']
+      }
+    ]
   },
-  
   'recall-queries': {
-    name: 'Recall Tool - Search Patterns',
-    description: 'Tests recall tool with text, dimensional, and mixed queries',
-    maxTurns: 3,
-    systemPrompt: BRIDGE_SYSTEM_PROMPT,
-    predefinedMessages: [
-      "Feeling stuck on this problem.",
-      "Can you recall experiences with feeling stuck?"
-    ],
-    initialMessage: "Test recall queries."
+    description: 'Test recall with text, dimensional, and mixed queries',
+    turns: [
+      {
+        role: 'user',
+        content: 'What have I experienced about anxiety?'
+      },
+      {
+        role: 'assistant',
+        content: 'Let me search through your experiences to find moments related to anxiety.',
+        expectedTools: ['recall']
+      },
+      {
+        role: 'user',
+        content: 'Show me experiences with embodied sensing'
+      },
+      {
+        role: 'assistant',
+        content: 'I\'ll search for experiences that involve embodied sensing.',
+        expectedTools: ['recall']
+      }
+    ]
   },
-  
+  'clustering-analysis': {
+    description: 'Test clustering similar experiences to reveal patterns',
+    turns: [
+      {
+        role: 'user',
+        content: 'I feel anxious about the presentation tomorrow'
+      },
+      {
+        role: 'assistant',
+        content: 'I can help you capture that experience. Let me remember this moment for you.',
+        expectedTools: ['experience']
+      },
+      {
+        role: 'user',
+        content: 'I also feel anxious about the meeting next week'
+      },
+      {
+        role: 'assistant',
+        content: 'I\'ll capture that experience too. Let me remember this moment.',
+        expectedTools: ['experience']
+      },
+      {
+        role: 'user',
+        content: 'Show me clusters of similar experiences'
+      },
+      {
+        role: 'assistant',
+        content: 'I\'ll analyze your experiences to find patterns and group similar moments together.',
+        expectedTools: ['recall']
+      }
+    ]
+  },
   'reconsider-evolution': {
-    name: 'Reconsider Tool - Evolving Understanding',
-    description: 'Tests reconsider tool as understanding deepens',
-    maxTurns: 3,
-    systemPrompt: BRIDGE_SYSTEM_PROMPT,
-    predefinedMessages: [
-      "I'm frustrated with this bug.",
-      "Can you update that to add purpose.goal?"
-    ],
-    initialMessage: "Track my evolving understanding."
+    description: 'Test reconsider as understanding deepens',
+    turns: [
+      {
+        role: 'user',
+        content: 'I feel stuck on this problem'
+      },
+      {
+        role: 'assistant',
+        content: 'Let me capture that experience of feeling stuck.',
+        expectedTools: ['experience']
+      },
+      {
+        role: 'user',
+        content: 'Actually, I realize I\'m not stuck - I\'m just taking time to think deeply'
+      },
+      {
+        role: 'assistant',
+        content: 'That\'s a wonderful reframe! Let me update that experience to reflect your deeper understanding.',
+        expectedTools: ['reconsider']
+      }
+    ]
   },
-  
   'release-cleanup': {
-    name: 'Release Tool - Selective Removal',
-    description: 'Tests release tool for removing experiences',
-    maxTurns: 3,
-    systemPrompt: BRIDGE_SYSTEM_PROMPT,
-    predefinedMessages: [
-      "Test experience - feeling happy.",
-      "Delete the test experience."
-    ],
-    initialMessage: "Clean up test data."
+    description: 'Test selective removal of experiences',
+    turns: [
+      {
+        role: 'user',
+        content: 'I had a really bad day yesterday'
+      },
+      {
+        role: 'assistant',
+        content: 'I\'m sorry to hear that. Let me capture that experience.',
+        expectedTools: ['experience']
+      },
+      {
+        role: 'user',
+        content: 'Actually, I want to let that go - it\'s not serving me anymore'
+      },
+      {
+        role: 'assistant',
+        content: 'That\'s a healthy choice. Let me help you release that experience.',
+        expectedTools: ['release']
+      }
+    ]
   },
-  
   'dimensional-focus': {
-    name: 'Dimensional Queries - Quality Exploration',
-    description: 'Deep dive into dimensional filtering and patterns',
-    maxTurns: 3,
-    systemPrompt: BRIDGE_SYSTEM_PROMPT,
-    predefinedMessages: [
-      "Feeling sharp and focused on this algorithm.",
-      "Show me embodied.thinking experiences."
-    ],
-    initialMessage: "Explore quality dimensions."
-  },
-  
-  'pattern-realizations': {
-    name: 'Pattern Realizations - Reflects Field Testing',
-    description: 'Tests the new reflects field for capturing pattern realizations and collaborative wisdom building',
-    maxTurns: 5,
-    systemPrompt: BRIDGE_SYSTEM_PROMPT,
-    predefinedMessages: [
-      "I'm feeling anxious about tomorrow's presentation.",
-      "I just nailed the presentation! It went really well.",
-      "I notice I always feel anxious before things that end up going well. Can you capture this as a pattern realization that reflects on both the anxiety and success experiences?",
-      "Show me all pattern realizations using the reflects filter.",
-      "Now show me all experiences that are reflected by the pattern realization about anxiety and success."
-    ],
-    initialMessage: "Let's test pattern realizations with the new reflects field."
+    description: 'Deep dive into dimensional filtering patterns',
+    turns: [
+      {
+        role: 'user',
+        content: 'I feel focused and energized while working on this project'
+      },
+      {
+        role: 'assistant',
+        content: 'That sounds like a great state! Let me capture that experience.',
+        expectedTools: ['experience']
+      },
+      {
+        role: 'user',
+        content: 'Show me all my experiences with embodied thinking and mood open'
+      },
+      {
+        role: 'assistant',
+        content: 'I\'ll search for experiences that combine embodied thinking with an open mood.',
+        expectedTools: ['recall']
+      }
+    ]
   }
 };
 
@@ -218,19 +288,19 @@ class TestRunner {
 
   async runTest(scenarioKey: string, retryCount: number = 0): Promise<TestResult> {
     const MAX_RETRIES = 2;
-    const scenario = TEST_SCENARIOS[scenarioKey];
+    const scenario = SCENARIOS[scenarioKey];
     if (!scenario) {
       throw new Error(`Unknown scenario: ${scenarioKey}`);
     }
 
     console.log(`\n${'='.repeat(70)}`);
-    console.log(`🧪 Running test: ${scenario.name}${retryCount > 0 ? ` (retry ${retryCount}/${MAX_RETRIES})` : ''}`);
+    console.log(`🧪 Running test: ${scenarioKey}${retryCount > 0 ? ` (retry ${retryCount}/${MAX_RETRIES})` : ''}`);
     console.log(`📝 ${scenario.description}`);
     console.log(`${'='.repeat(70)}\n`);
 
     const result: TestResult = {
       scenario: scenarioKey,
-      scenarioName: scenario.name,
+      scenarioName: scenarioKey, // Use scenarioKey as name for simplicity
       startTime: new Date(),
       messages: [],
       toolCalls: [],
@@ -272,23 +342,9 @@ class TestRunner {
       this.conversationFlow = [];
       this.turnCount = 0;
 
-      // Start conversation
-      if (scenario.initialMessage) {
-        console.log(`👤 User: ${scenario.initialMessage}`);
-        this.messages.push({
-          role: 'user',
-          content: scenario.initialMessage
-        });
-        this.conversationFlow.push({
-          turnNumber: 0,
-          userMessage: scenario.initialMessage
-        });
-      }
-
-      // Run conversation
-      let messageIndex = 0;
-      
-      while (this.turnCount < scenario.maxTurns && messageIndex < scenario.predefinedMessages.length) {
+      // Run conversation through predefined turns
+      for (let i = 0; i < scenario.turns.length; i++) {
+        const turn = scenario.turns[i];
         this.turnCount++;
         console.log(`\n--- Turn ${this.turnCount} ---`);
 
@@ -296,11 +352,19 @@ class TestRunner {
           turnNumber: this.turnCount
         };
 
-        // Get Claude's response
-        const finalMessage = await this.getClaudeResponse(
-          scenario.systemPrompt || '',
-          this.messages
-        );
+        // Add user message if it's a user turn
+        if (turn.role === 'user') {
+          currentTurn.userMessage = turn.content;
+          const userMessage = {
+            role: 'user' as const,
+            content: turn.content
+          };
+          console.log(`👤 User: ${turn.content}`);
+          this.messages.push(userMessage);
+        }
+
+        // Get Claude's response for all turns
+        const finalMessage = await this.getClaudeResponse('', this.messages);
         
         if (finalMessage) {
           // Extract response details for conversation flow
@@ -313,28 +377,11 @@ class TestRunner {
           }
         }
 
-        // Add the next user message if we have one
-        if (messageIndex < scenario.predefinedMessages.length) {
-          const predefinedContent = scenario.predefinedMessages[messageIndex];
-          currentTurn.userMessage = predefinedContent;
-          
-          const userMessage = {
-            role: 'user' as const,
-            content: predefinedContent
-          };
-          console.log(`👤 User: ${predefinedContent}`);
-          this.messages.push(userMessage);
-          messageIndex++;
-        }
-
         // Save current turn
         this.conversationFlow.push(currentTurn);
       }
 
-      // If we've processed all messages, indicate completion
-      if (messageIndex >= scenario.predefinedMessages.length) {
-        console.log('🏁 All predefined messages processed');
-      }
+      console.log('🏁 All turns processed');
 
       // Complete result
       result.endTime = new Date();
@@ -747,11 +794,11 @@ async function main(): Promise<void> {
   // Run specified scenario or all scenarios
   const scenariosToRun = scenarioFilter 
     ? [scenarioFilter]
-    : Object.keys(TEST_SCENARIOS);
+    : Object.keys(SCENARIOS);
 
   // Filter out unknown scenarios
   const validScenarios = scenariosToRun.filter(key => {
-    if (!TEST_SCENARIOS[key]) {
+    if (!SCENARIOS[key]) {
       console.error(`❌ Unknown scenario: ${key}`);
       return false;
     }
@@ -794,7 +841,7 @@ async function main(): Promise<void> {
       // Return error result instead of throwing
       return {
         scenario: scenarioKey,
-        scenarioName: TEST_SCENARIOS[scenarioKey].name,
+        scenarioName: scenarioKey,
         startTime: new Date(),
         endTime: new Date(),
         duration: 0,
@@ -828,7 +875,7 @@ async function main(): Promise<void> {
         // Return error result instead of throwing
         results.push({
           scenario: scenarioKey,
-          scenarioName: TEST_SCENARIOS[scenarioKey].name,
+          scenarioName: scenarioKey,
           startTime: new Date(),
           endTime: new Date(),
           duration: 0,

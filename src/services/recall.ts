@@ -6,6 +6,7 @@ import { SEMANTIC_CONFIG } from '../core/config.js';
 import { 
   applyFiltersAndScore
 } from './unified-scoring.js';
+import { clusterExperiences } from './clustering.js';
 
 // Debug mode configuration
 const DEBUG_MODE = process.env.BRIDGE_RECALL_DEBUG === 'true' || process.env.BRIDGE_DEBUG === 'true';
@@ -61,6 +62,8 @@ export interface RecallInput {
   id?: string;
   // Display options
   show_ids?: boolean;
+  // Clustering option
+  as?: 'clusters';
 }
 
 export interface RecallServiceResult {
@@ -90,6 +93,13 @@ export interface RecallServiceResponse {
   total: number;
   query: string | string[];
   filters: Record<string, unknown>;
+  clusters?: Array<{
+    id: string;
+    summary: string;
+    experienceIds: string[];
+    commonDimensions: string[];
+    size: number;
+  }>;
   debug?: {
     recall_started: string;
     total_records: number;
@@ -409,11 +419,20 @@ export async function search(input: RecallInput): Promise<RecallServiceResponse>
       relevance_breakdown: record._relevance.breakdown
     }));
 
+    // Handle clustering if requested
+    let clusters;
+    if (input.as === 'clusters') {
+      addDebugLog('Clustering requested, generating clusters from results');
+      clusters = await clusterExperiences(finalRecords);
+      addDebugLog(`Generated ${clusters.length} clusters from ${finalRecords.length} experiences`);
+    }
+
     return {
       results,
       total: results.length,
       query: input.query || '',
       filters: Object.fromEntries(Object.entries(input).filter(([, v]) => v !== undefined && v !== '')),
+      clusters,
       debug: DEBUG_MODE ? debugInfo : undefined
     };
     
@@ -491,13 +510,14 @@ export class RecallService {
    * @param input - Recall input parameters
    * @returns Search results with statistics
    */
-  async search(input: RecallInput): Promise<{ results: RecallServiceResult[], stats?: Record<string, unknown> }> {
+  async search(input: RecallInput): Promise<{ results: RecallServiceResult[], clusters?: Array<{ id: string; summary: string; experienceIds: string[]; commonDimensions: string[]; size: number }>, stats?: Record<string, unknown> }> {
     // Use the comprehensive search function that includes all filtering logic
     const searchResponse = await search(input);
     
-          // Convert RecallServiceResponse to the expected format
+    // Convert RecallServiceResponse to the expected format
     return { 
       results: searchResponse.results as RecallServiceResult[], 
+      clusters: searchResponse.clusters,
       stats: { 
         total: searchResponse.total,
         query: searchResponse.query,
