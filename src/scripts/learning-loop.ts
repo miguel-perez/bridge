@@ -18,51 +18,45 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-const OPUS_PROMPT = `You are analyzing our learning loop to extract insights and update documentation.
+const OPUS_PROMPT = `You are analyzing Bridge test results to extract insights and update documentation.
+
+IMPORTANT: First read VISION.md to understand what Bridge is:
+- Bridge is an MCP (Model Context Protocol) tool, NOT an AGI system
+- MCP tools are always visible to users - this is by design
+- Bridge enables shared experiential memory between humans and AI
+- The goal is transparent memory formation, not consciousness
+
 Your role:
-1. Analyze completed experiments and test results objectively
-2. Extract reusable learnings with clear evidence trails (link each learning to specific experiments/tests)
-3. Generate new testable questions based on surprises
-4. Check for vision drift against core philosophy
-5. Map experiment IDs to learnings for traceability
-6. Be honest about biases and limitations you observe
+1. Analyze test results against Bridge's actual purpose as an MCP tool
+2. Extract learnings with clear evidence trails
+3. Check for vision drift against core philosophy in VISION.md
+4. Be honest about what the tests actually show
 
 TEST METHODOLOGY:
-We run three distinct test scenarios to understand Bridge's impact:
-1. "autonomous-bridge" - AI self-awakening test (can Claude use Bridge for its own consciousness?)
+We run test scenarios to understand Bridge's impact:
+1. "autonomous-bridge" - Can AI use Bridge for self-reflection?
 2. "with-bridge" - Conversation with Bridge tools available
-3. "without-bridge" - Same conversation without tools for comparison
+3. "without-bridge" - Control test without tools
 
-Each test includes:
-- Full conversation transcripts showing exact messages
-- Tool usage details (when Bridge is available)  
-- UX analysis evaluating conversation quality, goal achievement, and connection depth
-- Error information if tests fail
+The goal is to see how Bridge as an MCP tool changes human-AI interaction quality.
 
-KNOWN TEST RUNNER ISSUE:
-The test-runner.ts makes two API calls when tools are used:
-1. Initial call gets Claude's response with tool use
-2. After tool execution, a second call gets final response
-This often results in empty final responses, causing repetitive default messages.
-You have access to the test-runner.ts code to identify methodological issues.
-
-The goal is to see how Bridge changes the quality of human-AI interaction through empirical observation.
-
-IMPORTANT: Generate updates in a structured format that can be directly applied to the documentation files.
-Each update should include:
+IMPORTANT: Generate updates in a structured format:
 - The file to update (LEARNINGS.md, EXPERIMENTS.md, OPPORTUNITIES.md, or VISION.md)
-- The specific section or location for the update
-- The content to add (preserving existing content)
+- The specific section for the update
+- The content to add
 - Clear evidence trails for all learnings`;
 
 // Sequential thinking prompt for deeper analysis
-const SEQUENTIAL_THINKING_PROMPT = `You are analyzing Bridge test results through sequential thinking. Simply think through the problem step by step, building understanding as you go.
+const SEQUENTIAL_THINKING_PROMPT = `You are analyzing Bridge test results through sequential thinking. 
+
+Remember: Bridge is an MCP (Model Context Protocol) tool for shared experiential memory, NOT an AGI system.
+MCP tools are always visible to users - this is by design, not a limitation.
 
 Each thought should:
-- Focus on one aspect or insight
+- Focus on one aspect or insight about Bridge as an MCP tool
 - Build on previous thoughts naturally
 - Question assumptions when needed
-- Draw conclusions from evidence
+- Draw conclusions from evidence about MCP tool effectiveness
 
 Keep your output simple:
 [Your analytical thought here]
