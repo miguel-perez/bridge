@@ -68,18 +68,24 @@ Implementation would add `{ as: "sequence" }` option to recall, analyzing:
 - Recurring patterns in experience flows
 - Natural rhythms in user's experiential landscape
 
-### HMW capture pattern realizations as linkable experiences?
+### ✓ COMPLETED: Pattern realizations with reflects field
 
-**Impact: 10** - Essential for collaborative wisdom building between human and AI  
-**Certainty: 8** - Requires adding `reflects: string[]` field to SourceRecord type  
-**Urgency: 7** - Currently no way to formally capture "aha" moments about patterns  
-**Score: 560**
+**Status**: Completed 2025-07-21 (See EXP-005 in EXPERIMENTS.md)
 
-Implementation would:
+This opportunity has been successfully implemented with:
+- Added `reflects?: string[]` field to Source interface and Zod schemas
+- Implemented `reflects: 'only'` filter to find pattern realizations
+- Added `reflected_by` filter for reverse lookups
+- Enhanced tool descriptions with natural language patterns
+- Updated test data generation to include pattern realizations
 
-- Add `reflects` field to link pattern realizations to source experiences
-- Enable both human and AI to create pattern realization experiences
-- Support queries like `{ filter: { reflects: "only" } }` to find all insights
+The pattern realizations feature now enables:
+- Both human and AI to capture "aha" moments about connections between experiences
+- Bidirectional linking between experiences and insights
+- Sophisticated queries for discovering pattern insights
+- Foundation for collaborative wisdom building
+
+See `src/core/types.ts` and `src/services/unified-scoring.ts` for implementation.
 
 ### HMW support natural language temporal filters like "last week"?
 

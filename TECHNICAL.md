@@ -36,7 +36,11 @@ recall("recent")  // or "last"
 
 // Filtering by experiencer
 recall("", { experiencer: "Human" })
-```
+
+// Pattern realization queries
+recall("", { filter: { reflects: "only" } })  // Find all pattern realizations
+recall("", { filter: { reflected_by: "exp-123" } })  // Find experiences reflected by specific insight
+recall("", { filter: { reflects: ["exp-123", "exp-456"] } })  // Find insights reflecting on specific experiences
 
 ### Current Parameters
 
@@ -50,6 +54,9 @@ recall("", { experiencer: "Human" })
   - `experiencer`: Filter by who experienced it
   - `limit`: Maximum results to return
   - `offset`: For pagination
+  - `filter`: Advanced filtering options
+    - `reflects`: "only" to find pattern realizations, or array of experience IDs
+    - `reflected_by`: Experience ID to find experiences reflected by that insight
 
 ## Planned Features (Not Yet Implemented)
 
@@ -65,11 +72,29 @@ Will group experiences by similarity to reveal patterns in different states.
 
 Will analyze temporal transitions to reveal natural rhythms.
 
-### Future: Pattern Realizations with reflects field
+### Pattern Realizations with reflects field
 
-*Status: Highest Priority (See OPPORTUNITIES.md - Score: 560)*
+*Status: Implemented (See EXP-005 in EXPERIMENTS.md)*
 
-Will enable capturing "aha" moments that link multiple experiences.
+Enables capturing "aha" moments that link multiple experiences through the `reflects` field.
+
+```javascript
+// Create a pattern realization that reflects on multiple experiences
+experience({
+  source: "I notice I always feel anxious before things that end up going well",
+  experience: ["mood.closed", "embodied.sensing"],
+  reflects: ["exp-123", "exp-456"]  // Links to specific experiences
+})
+
+// Find all pattern realizations
+recall("", { filter: { reflects: "only" } })
+
+// Find experiences reflected by a specific insight
+recall("", { filter: { reflected_by: "exp-789" } })
+
+// Find insights that reflect on specific experiences
+recall("", { filter: { reflects: ["exp-123"] } })
+```
 
 ## Current Search Capabilities
 

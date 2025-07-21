@@ -459,7 +459,7 @@ class TestRunner {
     }));
 
     // Create message with tool support if MCP client is available
-    const requestParams: Record<string, unknown> = {
+    const requestParams: any = {
       model: "claude-3-5-sonnet-20241022",
       max_tokens: 2000,
       messages: formattedMessages
@@ -573,7 +573,7 @@ class TestRunner {
       // Get Claude's response after tool use
       try {
         // Create a new request with the updated messages
-        const continuationParams = {
+        const continuationParams: any = {
           model: "claude-3-5-sonnet-20241022",
           max_tokens: 2000,
           messages: this.messages.map(msg => ({

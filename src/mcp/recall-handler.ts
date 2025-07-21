@@ -123,11 +123,11 @@ export class RecallHandler {
         content: result.content || '',
         snippet: result.snippet,
         metadata: result.metadata ? {
-          created: result.metadata.created || new Date().toISOString(),
-          perspective: result.metadata.perspective,
-          experiencer: result.metadata.experiencer,
-          processing: result.metadata.processing,
-          experience: result.metadata.experience
+          created: typeof result.metadata.created === 'string' ? result.metadata.created : new Date().toISOString(),
+          perspective: typeof result.metadata.perspective === 'string' ? result.metadata.perspective : undefined,
+          experiencer: typeof result.metadata.experiencer === 'string' ? result.metadata.experiencer : undefined,
+          processing: typeof result.metadata.processing === 'string' ? result.metadata.processing : undefined,
+          experience: Array.isArray(result.metadata.experience) ? result.metadata.experience : undefined
         } : undefined,
         relevance_score: result.relevance_score
       }));
