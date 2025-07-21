@@ -596,7 +596,7 @@ class TestRunner {
           }));
         }
         
-        const continuationResponse = await this.anthropic.messages.create(continuationParams as any);
+        const continuationResponse = await this.anthropic.messages.create(continuationParams as any); // eslint-disable-line @typescript-eslint/no-explicit-any
         
         // Process the continuation response for tool uses
         let hasContinuationToolUse = false;

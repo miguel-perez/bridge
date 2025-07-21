@@ -3,8 +3,6 @@
  * 
  * Tests MCP protocol compliance, request handlers, and server functionality.
  * These tests would have caught the missing initialize handler issue.
- * 
- * @module mcp/server.test
  */
 
 import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';

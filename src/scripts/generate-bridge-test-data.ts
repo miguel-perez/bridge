@@ -105,7 +105,7 @@ Important: Create a natural, conversational experience that feels real and speci
         role: 'user',
         content: prompt
       }],
-      tools: toolSchemas as unknown as any[]
+      tools: toolSchemas as unknown as any[] // eslint-disable-line @typescript-eslint/no-explicit-any
     });
     
     // Process the response
@@ -169,7 +169,7 @@ Use the experience tool with the reflects field set to: ${JSON.stringify(selecte
         role: 'user',
         content: prompt
       }],
-      tools: toolSchemas as unknown as any[]
+      tools: toolSchemas as unknown as any[] // eslint-disable-line @typescript-eslint/no-explicit-any
     });
     
     // Process the response

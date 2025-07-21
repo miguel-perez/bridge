@@ -1,7 +1,5 @@
 /**
  * Tests for core types and validation functions
- * 
- * @module core/types.test
  */
 
 import {

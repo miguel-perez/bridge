@@ -2,8 +2,6 @@
  * Schema validation tests
  * 
  * Tests for Zod schema validation, example generation, and type inference.
- * 
- * @module mcp/schemas.test
  */
 
 import { describe, it, expect } from '@jest/globals';
