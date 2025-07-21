@@ -419,6 +419,12 @@ class TestResultsAggregator {
 
     // If no test results exist or force run, run tests automatically
     if (forceRun || files.length === 0) {
+      // Check if Bridge tests should be skipped
+      if (process.env.SKIP_BRIDGE_TESTS === 'true') {
+        console.log('    ⚠️  Bridge tests skipped (SKIP_BRIDGE_TESTS=true)');
+        return { scenarios: [], totalDuration: 0 };
+      }
+      
       console.log(forceRun ? '    🚀 Running Bridge tests (changes detected)...' : '    ⚠️  No Bridge test results found');
       if (!forceRun) {
         console.log('    🚀 Running Bridge tests automatically...');
@@ -426,7 +432,14 @@ class TestResultsAggregator {
       
       try {
         // Run Bridge tests with a timeout to prevent hanging
-        execSync('npm run test:bridge', {
+        // Use BRIDGE_TEST_MODE env var to control which tests run
+        const testCommand = process.env.BRIDGE_TEST_MODE === 'quick' 
+          ? 'npm run test:bridge:quick'
+          : 'npm run test:bridge';
+        
+        console.log(`    🎯 Running: ${testCommand}`);
+        
+        execSync(testCommand, {
           cwd: this.repoPath,
           encoding: 'utf-8',
           stdio: 'inherit', // Show test output to user

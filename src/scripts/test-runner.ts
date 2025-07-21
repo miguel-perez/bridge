@@ -87,77 +87,61 @@ const TEST_SCENARIOS: Record<string, TestScenario> = {
   'experience-capture': {
     name: 'Experience Tool - Emotional Capture',
     description: 'Tests experience tool with various emotional states and dimensions',
-    maxTurns: 4,
+    maxTurns: 3,
     systemPrompt: BRIDGE_SYSTEM_PROMPT,
     predefinedMessages: [
-      "I'm feeling really anxious about tomorrow's presentation. My heart is racing just thinking about it.",
-      "Earlier I felt a surge of confidence when my code finally worked after hours of debugging.",
-      "We had such a great team meeting today - everyone was contributing and building on each other's ideas."
+      "I'm feeling anxious about tomorrow's presentation.",
+      "Just felt confident when my code finally worked."
     ],
-    initialMessage: "I'd like to capture some emotional experiences from my day."
+    initialMessage: "I'd like to capture some emotional experiences."
   },
   
   'recall-queries': {
     name: 'Recall Tool - Search Patterns',
     description: 'Tests recall tool with text, dimensional, and mixed queries',
-    maxTurns: 5,
+    maxTurns: 3,
     systemPrompt: BRIDGE_SYSTEM_PROMPT,
     predefinedMessages: [
-      "Let me capture this feeling of being stuck on a problem.",
-      "Can you recall my experiences with feeling stuck?",
-      "Show me all experiences with mood.closed",
-      "Search for experiences with ['embodied.sensing', 'mood.closed']"
+      "Feeling stuck on this problem.",
+      "Can you recall experiences with feeling stuck?"
     ],
-    initialMessage: "I want to test different recall query patterns."
+    initialMessage: "Test recall queries."
   },
   
   'reconsider-evolution': {
     name: 'Reconsider Tool - Evolving Understanding',
     description: 'Tests reconsider tool as understanding deepens',
-    maxTurns: 6,
+    maxTurns: 3,
     systemPrompt: BRIDGE_SYSTEM_PROMPT,
     predefinedMessages: [
-      "I'm frustrated with this bug - nothing seems to work.",
-      "Actually, wait - I think I see the pattern now. This might be interesting.",
-      "Can you recall that frustration I just shared?",
-      "I realize now it wasn't just frustration - it was also curiosity driving me. Can you update that experience to add purpose.goal?",
-      "And thinking more, it was definitely embodied.thinking not just sensing. Please update that too.",
-      "Actually, can you also change the perspective from 'I' to 'we' since my teammate was helping?"
+      "I'm frustrated with this bug.",
+      "Can you update that to add purpose.goal?"
     ],
-    initialMessage: "Let me track how my understanding of this problem evolves."
+    initialMessage: "Track my evolving understanding."
   },
   
   'release-cleanup': {
     name: 'Release Tool - Selective Removal',
     description: 'Tests release tool for removing experiences',
-    maxTurns: 6,
+    maxTurns: 3,
     systemPrompt: BRIDGE_SYSTEM_PROMPT,
     predefinedMessages: [
-      "Just testing Bridge - this is a test experience.",
-      "Another test - feeling happy about testing.",
-      "Real experience: I'm genuinely excited about this project's potential.",
-      "Can you show me all recent experiences?",
-      "Please delete the test experiences but keep the real one about project excitement.",
-      "Can you confirm those test experiences are gone?"
+      "Test experience - feeling happy.",
+      "Delete the test experience."
     ],
-    initialMessage: "I need to clean up some test data while preserving real experiences."
+    initialMessage: "Clean up test data."
   },
   
   'dimensional-focus': {
     name: 'Dimensional Queries - Quality Exploration',
     description: 'Deep dive into dimensional filtering and patterns',
-    maxTurns: 7,
+    maxTurns: 3,
     systemPrompt: BRIDGE_SYSTEM_PROMPT,
     predefinedMessages: [
-      "Feeling mentally sharp and focused on solving this algorithm.",
-      "My body is tense from sitting too long, but my mind is still engaged.",
-      "Taking a break - feeling more relaxed and open to new ideas.",
-      "Show me all embodied.thinking experiences",
-      "What about embodied.sensing experiences?",
-      "Find experiences that have focus.narrow",
-      "Can you search for experiences with multiple dimensions like ['mood.open', 'embodied.thinking']?"
+      "Feeling sharp and focused on this algorithm.",
+      "Show me embodied.thinking experiences."
     ],
-    initialMessage: "I want to explore how different qualities show up in my experiences."
+    initialMessage: "Explore quality dimensions."
   }
 };
 
