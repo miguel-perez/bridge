@@ -19,12 +19,12 @@ Each experiment follows this format for learning loop compatibility:
 
 ## Active Experiments
 
-### EXP-008: Sophisticated Quality Filtering
+### EXP-008: Sophisticated Quality Filtering with Terminology Standardization
 **Status**: Active 2025-07-21  
-**Purpose**: Enable complex quality queries with boolean logic, absence filtering, and advanced combinations
+**Purpose**: Enable complex quality queries with boolean logic, absence filtering, and advanced combinations, while standardizing terminology throughout the codebase
 
 **Design Overview**:
-Transform Bridge's quality filtering from simple exact matches to a sophisticated query system that supports complex boolean logic, presence/absence filtering, and nested expressions.
+Transform Bridge's quality filtering from simple exact matches to a sophisticated query system that supports complex boolean logic, presence/absence filtering, and nested expressions. Additionally, standardize all terminology from "dimensional" to "quality" throughout the codebase for consistency and intuitiveness.
 
 **Technical Architecture**:
 
@@ -174,10 +174,37 @@ recall("", {
 - ✅ Presence/absence filtering works for all qualities
 - ✅ Error handling provides clear validation messages
 - ✅ Schema validation catches invalid filter structures
+- ✅ Terminology standardized throughout codebase (dimensional → quality)
+- ✅ All service files use consistent "quality" terminology
+- ✅ Documentation updated to use "quality" consistently
+- ✅ Variable names and function names updated for clarity
 
 **Implementation Plan**:
 
-### Phase 1: Core Infrastructure (Week 1)
+### Phase 1: Terminology Standardization (Week 1)
+1. **Update Core Files** (`src/core/dimensions.ts`)
+   - Rename KNOWN_DIMENSIONS → KNOWN_QUALITIES
+   - Update type names and exports
+   - Maintain backward compatibility
+
+2. **Update Service Files**
+   - `src/services/clustering.ts`: dimensionalClusters → qualityClusters, commonDimensions → commonQualities
+   - `src/services/recall.ts`: dimensional filtering → quality filtering
+   - `src/services/unified-scoring.ts`: dimensional relevance → quality relevance
+   - Update all variable names and function names
+
+3. **Update Documentation**
+   - `CLAUDE.md`: Update all "dimensional" references to "quality"
+   - `OPPORTUNITIES.md`: Update opportunity descriptions
+   - `TECHNICAL.md`: Update API documentation
+   - Ensure consistent terminology throughout
+
+4. **Unit Tests** (Update existing tests)
+   - Update test descriptions and variable names
+   - Ensure all tests pass with new terminology
+   - Add tests for terminology consistency
+
+### Phase 2: Quality Filtering Infrastructure (Week 2)
 1. **Create QualityFilterService** (`src/services/quality-filter.ts`)
    - Filter expression parsing
    - Boolean logic evaluation
@@ -193,7 +220,7 @@ recall("", {
    - Test boolean logic combinations
    - Test edge cases and error conditions
 
-### Phase 2: Integration (Week 2)
+### Phase 3: Integration and Advanced Features (Week 3)
 1. **Update Unified Scoring** (`src/services/unified-scoring.ts`)
    - Integrate QualityFilterService
    - Maintain backward compatibility
@@ -209,18 +236,17 @@ recall("", {
    - Test with real Bridge data
    - Verify performance characteristics
 
-### Phase 3: Advanced Features (Week 3)
-1. **Query Optimization**
-   - Index dimensional signatures for faster filtering
+4. **Query Optimization**
+   - Index quality signatures for faster filtering
    - Cache common filter patterns
    - Optimize boolean expression evaluation
 
-2. **Enhanced Error Handling**
+5. **Enhanced Error Handling**
    - Detailed validation error messages
    - Suggestions for correct filter syntax
    - Graceful degradation for invalid filters
 
-3. **Documentation and Examples**
+6. **Documentation and Examples**
    - Update TECHNICAL.md with new capabilities
    - Add comprehensive examples
    - Create migration guide for advanced users
@@ -230,12 +256,16 @@ recall("", {
 - **Complexity**: Start with simple presence/absence, add boolean logic incrementally
 - **Backward Compatibility**: Maintain existing query format alongside new capabilities
 - **Testing**: Comprehensive test coverage for all filter combinations
+- **Terminology Migration**: Use aliases and gradual deprecation to avoid breaking changes
+- **Documentation Sync**: Ensure all docs are updated together to prevent confusion
 
 **Evidence Trail**:
 - Implementation: New quality filtering service and enhanced schemas
 - Test results: All scenarios passing with correct filtering behavior
 - Performance metrics: <20% latency increase maintained
 - Documentation: Updated API reference with new capabilities
+- Terminology consistency: All files use "quality" terminology consistently
+- Migration success: Backward compatibility maintained during terminology transition
 
 ## Completed Experiments
 
