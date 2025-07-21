@@ -247,6 +247,47 @@ const SCENARIOS: Record<string, TestScenario> = {
         expectedTools: ['recall']
       }
     ]
+  },
+  'sophisticated-filtering': {
+    description: 'Test sophisticated dimensional filtering with boolean logic and absence filtering',
+    turns: [
+      {
+        role: 'user',
+        content: 'I feel anxious about the presentation tomorrow'
+      },
+      {
+        role: 'assistant',
+        content: 'I\'ve captured that experience with the following qualities: embodied.sensing, mood.closed, time.future',
+        expectedTools: ['experience']
+      },
+      {
+        role: 'user',
+        content: 'I also feel anxious about the meeting next week'
+      },
+      {
+        role: 'assistant',
+        content: 'I can see from your past experiences that anxiety often shows up as embodied.sensing and mood.closed. Let me capture this one too.',
+        expectedTools: ['experience']
+      },
+      {
+        role: 'user',
+        content: 'Show me experiences with embodied dimensions but without mood dimensions'
+      },
+      {
+        role: 'assistant',
+        content: 'I\'ll search for experiences that have embodied qualities but no mood dimensions.',
+        expectedTools: ['recall']
+      },
+      {
+        role: 'user',
+        content: 'Now show me experiences with either embodied thinking OR focus narrow, but only if they also have mood closed'
+      },
+      {
+        role: 'assistant',
+        content: 'I\'ll search for experiences that have mood.closed AND either embodied.thinking OR focus.narrow.',
+        expectedTools: ['recall']
+      }
+    ]
   }
 };
 

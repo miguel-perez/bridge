@@ -17,6 +17,226 @@ Each experiment follows this format for learning loop compatibility:
 3. **Learning Questions**: What insights we seek
 4. **Evidence Trail**: Links to test results and learnings
 
+## Active Experiments
+
+### EXP-008: Sophisticated Dimensional Filtering
+**Status**: Active 2025-07-21  
+**Purpose**: Enable complex dimensional queries with boolean logic, absence filtering, and advanced combinations
+
+**Design Overview**:
+Transform Bridge's dimensional filtering from simple exact matches to a sophisticated query system that supports complex boolean logic, presence/absence filtering, and nested expressions.
+
+**Technical Architecture**:
+
+### 1. Enhanced Schema Design
+```typescript
+// New dimensional filter structure
+interface DimensionalFilter {
+  // Presence/Absence filtering
+  embodied?: { present: boolean } | string | string[];
+  focus?: { present: boolean } | string | string[];
+  mood?: { present: boolean } | string | string[];
+  purpose?: { present: boolean } | string | string[];
+  space?: { present: boolean } | string | string[];
+  time?: { present: boolean } | string | string[];
+  presence?: { present: boolean } | string | string[];
+  
+  // Complex boolean expressions
+  $and?: DimensionalFilter[];
+  $or?: DimensionalFilter[];
+  $not?: DimensionalFilter;
+}
+
+// Enhanced SearchInputSchema
+export const SearchInputSchema = z.object({
+  // ... existing fields ...
+  dimensions: DimensionalFilterSchema.optional(),
+  // ... rest of schema
+});
+```
+
+### 2. Query Processing Pipeline
+```typescript
+// New dimensional filtering service
+export class DimensionalFilterService {
+  // Parse complex dimensional queries
+  parseDimensionalFilter(filter: DimensionalFilter): FilterExpression;
+  
+  // Evaluate filter expressions against experiences
+  evaluateFilter(experience: SourceRecord, filter: FilterExpression): boolean;
+  
+  // Support for complex boolean logic
+  evaluateBooleanExpression(expression: BooleanExpression): boolean;
+}
+```
+
+### 3. Backward Compatibility Strategy
+- **Phase 1**: Add new `dimensions` field alongside existing `query` field
+- **Phase 2**: Enhance existing `query` array support for simple OR logic
+- **Phase 3**: Deprecate old dimensional query format with migration path
+
+**Test Scenarios**:
+
+### Scenario 1: Presence/Absence Filtering
+```javascript
+// Test absence filtering
+recall("", { 
+  dimensions: { 
+    mood: { present: false },  // Find experiences WITHOUT mood dimensions
+    embodied: { present: true } // But WITH embodied dimensions
+  }
+});
+
+// Expected: Experiences with embodied dimensions but no mood dimensions
+// Test data: 3 experiences with embodied.thinking, 2 with mood.closed, 1 with both
+// Should return: 2 experiences (embodied.thinking without mood)
+```
+
+### Scenario 2: OR Logic with Multiple Values
+```javascript
+// Test OR logic within a dimension
+recall("", { 
+  dimensions: { 
+    embodied: ["thinking", "sensing"],  // embodied.thinking OR embodied.sensing
+    mood: "closed"  // AND mood.closed
+  }
+});
+
+// Expected: Experiences with (embodied.thinking OR embodied.sensing) AND mood.closed
+// Test data: 4 experiences with various combinations
+// Should return: 2 experiences matching the OR+AND pattern
+```
+
+### Scenario 3: Complex Boolean Expressions
+```javascript
+// Test nested boolean logic
+recall("", { 
+  dimensions: { 
+    $and: [
+      { mood: "closed" },
+      { 
+        $or: [
+          { embodied: "thinking" },
+          { focus: "narrow" }
+        ]
+      }
+    ]
+  }
+});
+
+// Expected: mood.closed AND (embodied.thinking OR focus.narrow)
+// Test data: 6 experiences with various combinations
+// Should return: 3 experiences matching the complex pattern
+```
+
+### Scenario 4: Mixed Semantic and Dimensional Queries
+```javascript
+// Test semantic search with dimensional filtering
+recall("anxiety nervousness", { 
+  dimensions: { 
+    embodied: { present: true },
+    focus: { present: false }
+  }
+});
+
+// Expected: Semantic matches for "anxiety nervousness" that have embodied dimensions but no focus
+// Test data: 5 experiences with anxiety-related content and various dimensional signatures
+// Should return: 2 experiences matching semantic + dimensional criteria
+```
+
+### Scenario 5: Edge Cases and Error Handling
+```javascript
+// Test invalid dimension names
+recall("", { 
+  dimensions: { 
+    invalid_dimension: "value"  // Should be ignored or return error
+  }
+});
+
+// Test empty filter objects
+recall("", { 
+  dimensions: {}  // Should return all experiences
+});
+
+// Test conflicting presence/absence
+recall("", { 
+  dimensions: { 
+    mood: { present: true, absent: true }  // Should return validation error
+  }
+});
+```
+
+**Success Criteria**:
+- ✅ All test scenarios pass with correct filtering results
+- ✅ Backward compatibility maintained (existing queries work unchanged)
+- ✅ Performance impact <20% increase in recall latency
+- ✅ Complex boolean expressions evaluate correctly
+- ✅ Presence/absence filtering works for all dimensions
+- ✅ Error handling provides clear validation messages
+- ✅ Schema validation catches invalid filter structures
+
+**Implementation Plan**:
+
+### Phase 1: Core Infrastructure (Week 1)
+1. **Create DimensionalFilterService** (`src/services/dimensional-filter.ts`)
+   - Filter expression parsing
+   - Boolean logic evaluation
+   - Presence/absence checking
+
+2. **Enhanced Schema Definition** (`src/mcp/schemas.ts`)
+   - Add DimensionalFilterSchema
+   - Update SearchInputSchema with dimensions field
+   - Add validation for complex filter structures
+
+3. **Unit Tests** (`src/services/dimensional-filter.test.ts`)
+   - Test all filter types individually
+   - Test boolean logic combinations
+   - Test edge cases and error conditions
+
+### Phase 2: Integration (Week 2)
+1. **Update Unified Scoring** (`src/services/unified-scoring.ts`)
+   - Integrate DimensionalFilterService
+   - Maintain backward compatibility
+   - Add performance monitoring
+
+2. **Enhanced Recall Handler** (`src/mcp/recall-handler.ts`)
+   - Parse dimensional filters from requests
+   - Apply filters before scoring
+   - Return appropriate error messages
+
+3. **Integration Tests** (`src/scripts/test-runner.ts`)
+   - Add sophisticated-filtering scenario
+   - Test with real Bridge data
+   - Verify performance characteristics
+
+### Phase 3: Advanced Features (Week 3)
+1. **Query Optimization**
+   - Index dimensional signatures for faster filtering
+   - Cache common filter patterns
+   - Optimize boolean expression evaluation
+
+2. **Enhanced Error Handling**
+   - Detailed validation error messages
+   - Suggestions for correct filter syntax
+   - Graceful degradation for invalid filters
+
+3. **Documentation and Examples**
+   - Update TECHNICAL.md with new capabilities
+   - Add comprehensive examples
+   - Create migration guide for advanced users
+
+**Risk Mitigation**:
+- **Performance**: Implement query optimization and caching
+- **Complexity**: Start with simple presence/absence, add boolean logic incrementally
+- **Backward Compatibility**: Maintain existing query format alongside new capabilities
+- **Testing**: Comprehensive test coverage for all filter combinations
+
+**Evidence Trail**:
+- Implementation: New dimensional filtering service and enhanced schemas
+- Test results: All scenarios passing with correct filtering behavior
+- Performance metrics: <20% latency increase maintained
+- Documentation: Updated API reference with new capabilities
+
 ## Completed Experiments
 
 ### EXP-007: Enhanced Learning Loop with Rich Test Evidence
