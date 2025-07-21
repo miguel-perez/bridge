@@ -49,7 +49,9 @@ Prioritize using a barbell strategy for antifragility.
 **Urgency: 6** - Important for delivering on Bridge's promise but basic recall works without it  
 **Score: 378**
 
-Implementation would add `{ as: "clusters" }` option to recall, grouping experiences by:
+**Status: ✓ COMPLETED (See EXP-006 in EXPERIMENTS.md)**
+
+Implementation added `{ as: "clusters" }` option to recall, grouping experiences by:
 
 - Similar dimensional signatures
 - Semantic similarity of content

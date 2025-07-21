@@ -54,17 +54,32 @@ recall("", { filter: { reflects: ["exp-123", "exp-456"] } })  // Find insights r
   - `experiencer`: Filter by who experienced it
   - `limit`: Maximum results to return
   - `offset`: For pagination
+  - `as`: Output format
+    - `"clusters"`: Return experiences grouped into clusters of similar experiences
   - `filter`: Advanced filtering options
     - `reflects`: "only" to find pattern realizations, or array of experience IDs
     - `reflected_by`: Experience ID to find experiences reflected by that insight
 
+## Current Analysis Modes
+
+### Clustering Analysis
+
+*Status: Implemented (See EXP-006 in EXPERIMENTS.md)*
+
+Groups experiences by similarity to reveal patterns in different states.
+
+```javascript
+// Return experiences as clusters instead of flat list
+recall("anxiety", { as: "clusters" })
+
+// Clusters are returned with:
+// - Common dimensional signatures
+// - Meaningful summaries
+// - Experience IDs in each cluster
+// - Cluster size and themes
+```
+
 ## Planned Features (Not Yet Implemented)
-
-### Future: Advanced Analysis Modes
-
-*Status: Planned - These features appear in documentation but are NOT functional*
-
-Will group experiences by similarity to reveal patterns in different states.
 
 ### Future: Sequence Mode
 
@@ -178,6 +193,14 @@ const breakthroughs = await recall("breakthrough moment finally solved", {
 ```javascript
 const focusedAnxiety = await recall(["focus.narrow", "mood.closed"]);
 // Finds experiences that have BOTH dimensions
+```
+
+### Clustering Analysis
+```javascript
+const anxietyClusters = await recall("anxiety", { as: "clusters" });
+// Returns experiences grouped into clusters like:
+// - "2 experiences about anxious" (embodied.sensing, mood.closed)
+// - "3 experiences about focused work" (focus.narrow, purpose.goal)
 ```
 
 ## Technical Foundation

@@ -8,7 +8,7 @@ captures meaningful moments with quality signatures, enabling pattern recognitio
 Bridge creates a persistent memory layer for AI interactions, allowing both humans and AI to:
 - Capture experiences with dimensional qualities
 - Recall past experiences through semantic search
-- Discover patterns across accumulated experiences
+- Discover patterns through clustering analysis
 - Build collaborative understanding over time
 
 ## Installation
@@ -56,6 +56,9 @@ recall("breakthrough moments")
 
 // Dimensional filtering
 recall("mood.closed")  // Exact matches only
+
+// Clustering analysis
+recall("anxiety", { as: "clusters" })  // Group similar experiences
 
 // Recent experiences
 recall("recent")

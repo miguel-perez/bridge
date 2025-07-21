@@ -17,89 +17,38 @@ Each experiment follows this format for learning loop compatibility:
 3. **Learning Questions**: What insights we seek
 4. **Evidence Trail**: Links to test results and learnings
 
-## Active Experiments
+## Completed Experiments
 
 ### EXP-007: Enhanced Learning Loop with Rich Test Evidence
-**Status**: Active  
+**Status**: Completed 2025-07-21  
 **Purpose**: Enhance learning loop to provide beautifully formatted conversation flow and tool calls for more compelling recommendations
 
-**Test Scenarios**:
-1. **Conversation Flow Extraction Evidence**
-   - Input: Test results with conversationFlow or messages arrays
-   - Expected: Learning loop extracts and formats user-assistant interactions
-   - Evidence: Loop shows formatted conversation turns with proper indentation
+**Key Outcomes**: ✅ All success criteria met
+- Conversation flow extracted from both conversationFlow and messages arrays
+- Tool calls display arguments and results in readable format
+- Content-rich scenarios prioritized over summary-only scenarios
+- Test evidence includes actual user-assistant interactions
+- Recommendations are more compelling and actionable
+- Long content appropriately truncated for readability
 
-2. **Tool Call Formatting Evidence**
-   - Input: Test results with tool calls and their arguments/results
-   - Expected: Learning loop displays tool calls with arguments and results
-   - Evidence: Loop shows formatted tool calls like "experience(source: '...', ...) → Result"
+**Technical Implementation**: Enhanced extractTestContent method, added conversation flow and tool call formatting, implemented content prioritization logic
 
-3. **Content Prioritization Evidence**
-   - Input: Multiple test result files (combined and individual)
-   - Expected: Learning loop prioritizes scenarios with rich content over summary data
-   - Evidence: Loop prefers individual scenario files with conversation flow over combined files
-
-4. **Evidence Citation Evidence**
-   - Input: Successful and failed test scenarios
-   - Expected: Learning loop cites specific test content in recommendations
-   - Evidence: Loop includes conversation snippets and tool usage in evidence arrays
-
-**Measurable Outcomes**:
-- ✅ Conversation flow is extracted from both conversationFlow and messages arrays
-- ✅ Tool calls show arguments and results in readable format
-- ✅ Content-rich scenarios are prioritized over summary-only scenarios
-- ✅ Test evidence includes actual user-assistant interactions
-- ✅ Recommendations are more compelling and actionable
-- ✅ Long content is appropriately truncated for readability
-
-**Learning Questions**:
-- Does rich test evidence make recommendations more compelling?
-- Is the conversation flow extraction robust across different test formats?
-- Does tool call formatting help developers understand test behavior?
-- How does content prioritization affect recommendation quality?
-
-**Evidence Trail**: Learning loop analysis results, recommendation quality assessment, developer feedback
+**Evidence**: Learning loop analysis shows dramatically improved evidence quality, commit 65e6f1b
 
 ### EXP-006: Clustering Similar Experiences
-**Status**: Active  
+**Status**: Completed 2025-07-21  
 **Purpose**: Enable Bridge to reveal patterns by automatically clustering similar experiences
 
-**Test Scenarios**:
-1. **Basic Clustering Evidence**
-   - Input: Multiple experiences with overlapping dimensions
-   - Expected: Recall returns structured clusters, not flat list
-   - Evidence: Loop sees `{ clusters: [...] }` in output
+**Key Outcomes**: ✅ All success criteria met
+- Clusters returned in structured format with `{ as: "clusters" }` option
+- Each cluster contains multiple experience IDs with meaningful summaries
+- Filtering works correctly with clustering
+- Edge cases handled gracefully (single/individual clusters)
+- Output is MCP protocol compliant
 
-2. **Cluster Quality Evidence** 
-   - Input: Experiences with clear semantic/dimensional similarities
-   - Expected: Clusters group logically similar experiences
-   - Evidence: Loop sees meaningful cluster summaries and groupings
+**Technical Implementation**: Added clustering service, enhanced recall handler, implemented dimensional and semantic clustering
 
-3. **Filtering Integration Evidence**
-   - Input: Filtered clustering request
-   - Expected: Only relevant experiences are clustered
-   - Evidence: Loop sees filtered clusters match input criteria
-
-4. **Edge Case Evidence**
-   - Input: Too few experiences or highly diverse data
-   - Expected: Graceful degradation (single cluster or individual clusters)
-   - Evidence: Loop sees appropriate handling of edge cases
-
-**Measurable Outcomes**:
-- ✅ Clusters are returned in structured format
-- ✅ Each cluster contains multiple experience IDs
-- ✅ Clusters have meaningful summaries/labels
-- ✅ Filtering works correctly with clustering
-- ✅ Edge cases are handled gracefully
-- ✅ Output is MCP protocol compliant
-
-**Learning Questions**:
-- Do clusters reveal meaningful patterns?
-- Is the output format useful for both humans and LLMs?
-- Does clustering work reliably across different datasets?
-- How does clustering interact with other recall features?
-
-**Evidence Trail**: Integration test results, cluster output validation, learning loop analysis
+**Evidence**: Integration tests passing, learning loop analysis complete, commit e468d67
 
 ## Completed Experiments
 
