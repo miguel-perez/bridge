@@ -174,7 +174,7 @@ export function isValidQualityType(value: string): boolean {
  * Validates if a value is a valid perspective
  */
 export function isValidPerspective(value: string): value is Perspective {
-  return PERSPECTIVES.includes(value as any) || (typeof value === 'string' && value.length > 0);
+  return PERSPECTIVES.includes(value as typeof PERSPECTIVES[number]) || (typeof value === 'string' && value.length > 0);
 }
 
 /**
@@ -188,40 +188,43 @@ export function isValidProcessingLevel(value: string): value is ProcessingLevel 
  * Type guard to check if an object is a valid Source
  */
 export function isValidSource(source: unknown): source is Source {
-  return typeof source === 'object' && source !== null &&
-    typeof (source as any).id === 'string' && (source as any).id.length > 0 &&
-    typeof (source as any).source === 'string' && (source as any).source.length > 0 &&
-    typeof (source as any).created === 'string' &&
-    ((source as any).experience === undefined || (
-      Array.isArray((source as any).experience) && 
-      (source as any).experience.length >= 0
+  if (typeof source !== 'object' || source === null) return false;
+  
+  const src = source as Record<string, unknown>;
+  
+  return typeof src.id === 'string' && src.id.length > 0 &&
+    typeof src.source === 'string' && src.source.length > 0 &&
+    typeof src.created === 'string' &&
+    (src.experience === undefined || (
+      Array.isArray(src.experience) && 
+      src.experience.length >= 0
     )) &&
-    ((source as any).perspective === undefined || isValidPerspective((source as any).perspective)) &&
-    ((source as any).processing === undefined || isValidProcessingLevel((source as any).processing)) &&
-    ((source as any).reflects === undefined || (
-      Array.isArray((source as any).reflects) && 
-      (source as any).reflects.every((item: unknown) => typeof item === 'string')
+    (src.perspective === undefined || (typeof src.perspective === 'string' && isValidPerspective(src.perspective))) &&
+    (src.processing === undefined || (typeof src.processing === 'string' && isValidProcessingLevel(src.processing))) &&
+    (src.reflects === undefined || (
+      Array.isArray(src.reflects) && 
+      src.reflects.every((item: unknown) => typeof item === 'string')
     ));
 }
 
 /**
  * Validates a source object using Zod schema
  */
-export function validateSource(source: unknown) {
+export function validateSource(source: unknown): Source {
   return SourceSchema.parse(source);
 }
 
 /**
  * Validates an experience object using Zod schema
  */
-export function validateExperience(experience: unknown) {
+export function validateExperience(experience: unknown): Experience {
   return ExperienceSchema.parse(experience);
 }
 
 /**
  * Validates storage data using Zod schema
  */
-export function validateStorageData(data: unknown) {
+export function validateStorageData(data: unknown): StorageData {
   return StorageDataSchema.parse(data);
 }
 

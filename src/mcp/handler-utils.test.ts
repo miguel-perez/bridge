@@ -114,8 +114,8 @@ describe('Handler Utilities', () => {
     });
 
     it('should handle null/undefined gracefully', () => {
-      expect(formatDate(null as any)).toBe('Unknown date');
-      expect(formatDate(undefined as any)).toBe('Unknown date');
+      expect(formatDate(null as unknown as string)).toBe('Unknown date');
+      expect(formatDate(undefined as unknown as string)).toBe('Unknown date');
     });
 
     it('should handle date parsing errors', () => {
@@ -123,7 +123,7 @@ describe('Handler Utilities', () => {
       const originalDate = global.Date;
       global.Date = jest.fn(() => {
         throw new Error('Date error');
-      }) as any;
+      }) as unknown as typeof Date;
       
       expect(formatDate('2025-01-21')).toBe('Invalid date');
       
@@ -160,13 +160,13 @@ describe('Handler Utilities', () => {
     });
 
     it('should handle missing created date', () => {
-      const source: SourceRecord = {
+      const source = {
         id: 'test',
         source: 'content',
         experiencer: 'Bob',
         perspective: 'we',
         processing: 'long-after'
-      };
+      } as SourceRecord;
       
       const result = formatMetadata(source);
       expect(result).toBe('Bob | we | long-after');
@@ -210,8 +210,8 @@ describe('Handler Utilities', () => {
     });
 
     it('should handle null/undefined content', () => {
-      expect(formatContent(null as any)).toBe('No content');
-      expect(formatContent(undefined as any)).toBe('No content');
+      expect(formatContent(null as unknown as string)).toBe('No content');
+      expect(formatContent(undefined as unknown as string)).toBe('No content');
     });
 
     it('should handle content exactly at snippet length', () => {
@@ -352,7 +352,8 @@ describe('Handler Utilities', () => {
     it('should handle missing created date', () => {
       const source: SourceRecord = {
         id: 'exp_789',
-        source: 'No date content'
+        source: 'No date content',
+        created: '2025-01-21T12:00:00Z'
       };
       
       const result = formatSource(source);

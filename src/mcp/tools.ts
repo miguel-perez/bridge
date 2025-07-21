@@ -47,14 +47,14 @@ export const ReconsiderInputJsonSchema = zodToJsonSchema(ReconsiderInputSchema);
 export const ReleaseInputJsonSchema = zodToJsonSchema(ReleaseInputSchema);
 
 // Utility to post-process schema for MCP compatibility
-function makeDraft202012Schema(schema: any): any {
+function makeDraft202012Schema(schema: Record<string, unknown>): Record<string, unknown> {
   // Add the required $schema property for JSON Schema draft 2020-12
   schema['$schema'] = 'https://json-schema.org/draft/2020-12/schema';
   return schema;
 }
 
 // Tools array with schemas compatible with JSON Schema draft 2020-12
-export async function getTools(): Promise<any[]> {
+export async function getTools(): Promise<Record<string, unknown>[]> {
   return [
     {
       name: 'experience',

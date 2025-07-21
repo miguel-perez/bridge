@@ -55,7 +55,7 @@ function mcpLog(level: 'info' | 'warn' | 'error', message: string, serverInstanc
  * @param obj - The object to parse
  * @returns The parsed object with any stringified JSON converted back to objects
  */
-function parseStringifiedJson(obj: any): any {
+function parseStringifiedJson(obj: unknown): unknown {
   if (typeof obj === 'string') {
     // Check if string looks like JSON (starts with { or [)
     const trimmed = obj.trim();
@@ -74,8 +74,8 @@ function parseStringifiedJson(obj: any): any {
   } else if (Array.isArray(obj)) {
     return obj.map(parseStringifiedJson);
   } else if (obj && typeof obj === 'object' && obj !== null) {
-    const result: any = {};
-    for (const [key, value] of Object.entries(obj)) {
+    const result: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
       result[key] = parseStringifiedJson(value);
     }
     return result;
@@ -236,7 +236,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   try {
     // Parse stringified JSON in arguments before passing to handlers
-    const parsedArgs = parseStringifiedJson(args);
+    const parsedArgs = parseStringifiedJson(args) as Record<string, unknown>;
 
     switch (name) {
       case 'experience':
@@ -301,7 +301,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         try {
           const arr = JSON.parse(err.message);
           if (Array.isArray(arr)) {
-            errorMessage = arr.map((e: any) => e.message || JSON.stringify(e)).join('; ');
+            errorMessage = arr.map((e: Record<string, unknown>) => (e.message as string) || JSON.stringify(e)).join('; ');
           } else {
             errorMessage = err.message;
           }

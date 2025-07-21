@@ -40,7 +40,7 @@ export class MCPToolHandlers {
   }
 
   // Example handler mapping (update as needed):
-  async handle(toolName: string, args: any): Promise<any> {
+  async handle(toolName: string, args: Record<string, unknown>): Promise<Record<string, unknown>> {
     switch (toolName) {
       case 'experience':
         return this.experienceHandler.handle(args);

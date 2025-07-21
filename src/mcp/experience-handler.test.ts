@@ -58,7 +58,7 @@ describe('ExperienceHandler', () => {
     // Setup message mocks
     mockFormatMessage = messages.formatMessage as jest.MockedFunction<typeof messages.formatMessage>;
     mockFormatMessage.mockReturnValue('Similar experience found');
-    (messages.Messages as any) = {
+    (messages.Messages as Record<string, unknown>) = {
       experience: {
         similar: 'Similar: {content}'
       }

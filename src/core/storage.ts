@@ -241,10 +241,10 @@ async function readData(): Promise<StorageData> {
     }
     
     // Clean up any legacy type fields from records
-    const sources: Source[] = data.sources.map((s: any) => {
-      const newObj = { ...s };
-      delete newObj.type;
-      delete newObj.embedding; // Remove embedding field from sources
+    const sources: Source[] = data.sources.map((s) => {
+      const newObj = { ...s } as Source;
+      delete (newObj as unknown as Record<string, unknown>).type;
+      delete (newObj as unknown as Record<string, unknown>).embedding; // Remove embedding field from sources
       return newObj;
     });
     

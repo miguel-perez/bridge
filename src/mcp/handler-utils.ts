@@ -151,7 +151,14 @@ export function formatContent(content: string, narrative?: string, includeFullCo
  * @param breakdown - The relevance breakdown object
  * @returns Formatted relevance breakdown string
  */
-export function formatRelevanceBreakdown(breakdown: any): string {
+interface RelevanceBreakdown {
+  text_match?: number;
+  vector_similarity?: number;
+  semantic_similarity?: number;
+  filter_relevance?: number;
+}
+
+export function formatRelevanceBreakdown(breakdown: RelevanceBreakdown | null | undefined): string {
   if (!breakdown) return 'No breakdown available';
   
   const parts = [];

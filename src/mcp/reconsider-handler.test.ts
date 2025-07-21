@@ -23,7 +23,7 @@ describe('ReconsiderHandler', () => {
     // Mock EnrichService
     mockEnrichService = {
       enrichSource: jest.fn()
-    } as any;
+    } as jest.Mocked<EnrichService>;
     (EnrichService as jest.MockedClass<typeof EnrichService>).mockImplementation(() => mockEnrichService);
     
     // Mock formatters

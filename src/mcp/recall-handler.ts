@@ -27,7 +27,7 @@ export interface RecallResponse {
       experience?: string[];
     };
     relevance_score: number;
-    relevance_breakdown: any;
+    relevance_breakdown: Record<string, unknown>;
   }>;
   total?: number;
   error?: string;

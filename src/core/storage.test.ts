@@ -2,14 +2,14 @@ import { describe, it, expect, jest, beforeAll, beforeEach, afterEach } from '@j
 import type { Source } from './types.js';
 
 // Need to mock before imports for dynamic imports
-let generateId: any;
-let validateFilePath: any;
-let saveSource: any;
-let updateSource: any;
-let getSource: any;
-let getAllRecords: any;
-let clearTestStorage: any;
-let setupTestStorage: any;
+let generateId: (prefix?: string) => Promise<string>;
+let validateFilePath: (filePath: string, allowedRoots?: string[]) => Promise<boolean>;
+let saveSource: (source: Source) => Promise<Source>;
+let updateSource: (source: Source) => Promise<Source>;
+let getSource: (id: string) => Promise<Source | null>;
+let getAllRecords: () => Promise<Source[]>;
+let clearTestStorage: () => Promise<void>;
+let setupTestStorage: (testName: string) => void;
 
 beforeAll(async () => {
   // Mock nanoid module before importing storage
