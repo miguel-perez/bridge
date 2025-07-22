@@ -381,7 +381,9 @@ describe('ExperienceHandler', () => {
 
   describe('guidance selection', () => {
     it('should provide guidance for first experience', async () => {
-      mockGetAllRecords.mockResolvedValue([{}]); // Only one record (the one we just created)
+      mockGetAllRecords.mockResolvedValue([
+        { id: 'exp_1', source: 'Test', created: '2025-01-21T12:00:00Z' },
+      ]); // Only one record (the one we just created)
 
       const mockResult = {
         source: {
@@ -389,13 +391,12 @@ describe('ExperienceHandler', () => {
           source: 'My first experience',
           created: '2025-01-21T12:00:00Z',
         },
+        defaultsUsed: [],
       };
 
       mockExperienceService.rememberExperience.mockResolvedValue(mockResult);
       mockRecallService.search.mockResolvedValue({
         results: [],
-        totalResults: 0,
-        hasMore: false,
       });
 
       const result = await handler.handle({
@@ -410,7 +411,12 @@ describe('ExperienceHandler', () => {
     });
 
     it('should provide guidance for multiple similar experiences', async () => {
-      mockGetAllRecords.mockResolvedValue([{}, {}, {}, {}]); // Multiple records
+      mockGetAllRecords.mockResolvedValue([
+        { id: 'exp_1', source: 'Test 1', created: '2025-01-21T12:00:00Z' },
+        { id: 'exp_2', source: 'Test 2', created: '2025-01-21T12:00:00Z' },
+        { id: 'exp_3', source: 'Test 3', created: '2025-01-21T12:00:00Z' },
+        { id: 'exp_4', source: 'Test 4', created: '2025-01-21T12:00:00Z' },
+      ]); // Multiple records
 
       const mockResult = {
         source: {
@@ -418,27 +424,32 @@ describe('ExperienceHandler', () => {
           source: 'Another anxious moment',
           created: '2025-01-21T12:00:00Z',
         },
+        defaultsUsed: [],
       };
 
       mockExperienceService.rememberExperience.mockResolvedValue(mockResult);
 
       // First search for similar experience detection
       mockRecallService.search.mockResolvedValueOnce({
-        results: [{ id: 'exp_456', content: 'Anxious', relevance_score: 0.7 }],
-        totalResults: 1,
-        hasMore: false,
+        results: [
+          {
+            id: 'exp_456',
+            type: 'experience',
+            content: 'Anxious',
+            snippet: 'Anxious',
+            relevance_score: 0.7,
+          },
+        ],
       });
 
       // Second search for guidance selection - filter out the current ID
       mockRecallService.search.mockResolvedValueOnce({
         results: [
-          { id: 'exp_456', relevance_score: 0.7 },
-          { id: 'exp_789', relevance_score: 0.6 },
-          { id: 'exp_012', relevance_score: 0.5 },
-          { id: 'exp_345', relevance_score: 0.3 }, // Below threshold
+          { id: 'exp_456', type: 'experience', snippet: 'Anxious', relevance_score: 0.7 },
+          { id: 'exp_789', type: 'experience', snippet: 'Anxious', relevance_score: 0.6 },
+          { id: 'exp_012', type: 'experience', snippet: 'Anxious', relevance_score: 0.5 },
+          { id: 'exp_345', type: 'experience', snippet: 'Anxious', relevance_score: 0.3 }, // Below threshold
         ],
-        totalResults: 4,
-        hasMore: false,
       });
 
       const result = await handler.handle({
@@ -452,7 +463,10 @@ describe('ExperienceHandler', () => {
     });
 
     it('should provide guidance for emotional qualities', async () => {
-      mockGetAllRecords.mockResolvedValue([{}, {}]);
+      mockGetAllRecords.mockResolvedValue([
+        { id: 'exp_1', source: 'Test 1', created: '2025-01-21T12:00:00Z' },
+        { id: 'exp_2', source: 'Test 2', created: '2025-01-21T12:00:00Z' },
+      ]);
 
       const mockResult = {
         source: {
@@ -461,13 +475,12 @@ describe('ExperienceHandler', () => {
           created: '2025-01-21T12:00:00Z',
           experience: ['mood.open', 'embodied.thinking'],
         },
+        defaultsUsed: [],
       };
 
       mockExperienceService.rememberExperience.mockResolvedValue(mockResult);
       mockRecallService.search.mockResolvedValue({
         results: [],
-        totalResults: 0,
-        hasMore: false,
       });
 
       const result = await handler.handle({
@@ -482,7 +495,11 @@ describe('ExperienceHandler', () => {
     });
 
     it('should provide no guidance for routine captures', async () => {
-      mockGetAllRecords.mockResolvedValue([{}, {}, {}]);
+      mockGetAllRecords.mockResolvedValue([
+        { id: 'exp_1', source: 'Test 1', created: '2025-01-21T12:00:00Z' },
+        { id: 'exp_2', source: 'Test 2', created: '2025-01-21T12:00:00Z' },
+        { id: 'exp_3', source: 'Test 3', created: '2025-01-21T12:00:00Z' },
+      ]);
 
       const mockResult = {
         source: {
@@ -491,13 +508,12 @@ describe('ExperienceHandler', () => {
           created: '2025-01-21T12:00:00Z',
           experience: ['purpose.goal'],
         },
+        defaultsUsed: [],
       };
 
       mockExperienceService.rememberExperience.mockResolvedValue(mockResult);
       mockRecallService.search.mockResolvedValue({
         results: [],
-        totalResults: 0,
-        hasMore: false,
       });
 
       const result = await handler.handle({
@@ -518,13 +534,12 @@ describe('ExperienceHandler', () => {
           source: 'Test',
           created: '2025-01-21T12:00:00Z',
         },
+        defaultsUsed: [],
       };
 
       mockExperienceService.rememberExperience.mockResolvedValue(mockResult);
       mockRecallService.search.mockResolvedValue({
         results: [],
-        totalResults: 0,
-        hasMore: false,
       });
 
       const result = await handler.handle({
@@ -545,13 +560,12 @@ describe('ExperienceHandler', () => {
           source: 'Test',
           created: '2025-01-21T12:00:00Z',
         },
+        defaultsUsed: [],
       };
 
       mockExperienceService.rememberExperience.mockResolvedValue(mockResult);
       mockRecallService.search.mockResolvedValue({
         results: [],
-        totalResults: 0,
-        hasMore: false,
       });
 
       await handler.handle({
@@ -595,13 +609,12 @@ describe('ExperienceHandler', () => {
           created: '2025-01-21T12:00:00Z',
           crafted: true,
         },
+        defaultsUsed: [],
       };
 
       mockExperienceService.rememberExperience.mockResolvedValue(mockResult);
       mockRecallService.search.mockResolvedValue({
         results: [],
-        totalResults: 0,
-        hasMore: false,
       });
 
       await handler.handle({
@@ -621,7 +634,7 @@ describe('ExperienceHandler', () => {
         source: 'Full experience',
         experiencer: 'Test User',
         perspective: 'we',
-        processing: 'long-after',
+        processing: 'long-after' as const,
         crafted: false,
         experience: ['mood.open', 'presence.collective'],
       };
@@ -632,13 +645,12 @@ describe('ExperienceHandler', () => {
           ...fullInput,
           created: '2025-01-21T12:00:00Z',
         },
+        defaultsUsed: [],
       };
 
       mockExperienceService.rememberExperience.mockResolvedValue(mockResult);
       mockRecallService.search.mockResolvedValue({
         results: [],
-        totalResults: 0,
-        hasMore: false,
       });
 
       await handler.handle(fullInput);
