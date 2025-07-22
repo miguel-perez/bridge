@@ -2,7 +2,7 @@
 
 **Document Purpose**: This is Bridge's conceptual vision and philosophical foundation. It describes the full potential
 of what Bridge aims to become, including features not yet implemented. For current technical capabilities, see
-TECHNICAL.md.
+README.md.
 
 **For Everyone**: Use this to understand Bridge's purpose, design principles, and future direction.
 

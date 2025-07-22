@@ -280,7 +280,7 @@ export class QualityMetricsService {
     let score = 0;
 
     // Core documentation (5 points)
-    const coreDocs = ['README.md', 'DXT-README.md', 'TECHNICAL.md'];
+    const coreDocs = ['README.md', 'DXT-README.md'];
     const existingDocs = coreDocs.filter((doc) => existsSync(join(process.cwd(), doc)));
     score += (existingDocs.length / coreDocs.length) * 5;
 
