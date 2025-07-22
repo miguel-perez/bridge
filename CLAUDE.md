@@ -52,13 +52,13 @@ MCP Client (Claude) → MCP Server → Tool Handlers → Services → Storage
 4. **Testing Infrastructure** (`src/scripts/`)
    - `test-runner.ts` - Parallel test execution with three scenarios
    - `learning-loop.ts` - Opus 4 analyzes test results using sequential thinking
-   - Unit tests co-located with source files (*.test.ts)
+   - Unit tests co-located with source files (\*.test.ts)
 
 ### Data Flow Example
 
 ```typescript
 // 1. Claude calls experience tool
-experience({ source: "I feel anxious", experience: ["embodied.sensing", "mood.closed"] })
+experience({ source: 'I feel anxious', experience: ['embodied.sensing', 'mood.closed'] });
 
 // 2. MCP server routes to ExperienceHandler
 // 3. Handler validates and calls ExperienceService
@@ -71,12 +71,14 @@ experience({ source: "I feel anxious", experience: ["embodied.sensing", "mood.cl
 ### Current Implementation Status
 
 **What Works Today:**
+
 - Semantic search using transformer embeddings (all-MiniLM-L6-v2)
 - Quality filtering and queries
 - Unified scoring system
 - Four core operations: experience(), recall(), reconsider(), release()
 
 **Next Priorities (from OPPORTUNITIES.md):**
+
 1. Clustering mode (Score: 378) - Core to revealing insights through automatic grouping
 2. Quality filtering (Score: 280) - Sophisticated queries by quality presence/absence
 3. Extensible recall (Score: 270) - Technical foundation for future features
@@ -84,30 +86,31 @@ experience({ source: "I feel anxious", experience: ["embodied.sensing", "mood.cl
 **Note**: Pattern Realizations (EXP-005) completed successfully, enabling collaborative wisdom building with `reflects` field.
 
 **Key Context:**
+
 - Experiences have "quality signatures" - sparse arrays of prominent qualities
 - Tests run in parallel with three scenarios
 - Sequential thinking works reliably with Opus 4
-- See TECHNICAL.md for current API reference
+- See README.md for current API reference
 
 ## External Documentation
 
 ### Core References
+
 - **MCP TypeScript SDK**:
-https://raw.githubusercontent.com/modelcontextprotocol/typescript-sdk/refs/heads/main/README.md
+  https://raw.githubusercontent.com/modelcontextprotocol/typescript-sdk/refs/heads/main/README.md
 - **MCP Introduction**: https://modelcontextprotocol.io/introduction
 - **Anthropic Cookbook**: https://github.com/anthropics/anthropic-cookbook
 
 ### Desktop Extension (DXT)
+
 - **DXT Documentation**: https://github.com/anthropics/dxt/blob/main/README.md
 - **DXT Manifest Spec**: https://github.com/anthropics/dxt/blob/main/MANIFEST.md
 - **DXT Examples**: https://github.com/anthropics/dxt/tree/main/examples
 
-
-
 ## Key Documentation
 
 - **LOOP.md** - Development methodology and commands
-- **TECHNICAL.md** - Current API reference (what works today)
+- **README.md** - Current API reference (what works today)
 - **VISION.md** - Conceptual vision and future direction
 - **OPPORTUNITIES.md** - Prioritized feature roadmap
 - **EXPERIMENTS.md** - Active tests and hypotheses

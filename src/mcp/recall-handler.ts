@@ -1,6 +1,6 @@
 /**
  * MCP Recall Tool Handler
- * 
+ *
  * Implements basic Bridge Recall API for source retrieval.
  */
 
@@ -51,7 +51,7 @@ export class RecallHandler {
 
   /**
    * Handles recall requests
-   * 
+   *
    * @param args - The recall arguments containing queries and filters
    * @returns Formatted recall results
    */
@@ -63,9 +63,7 @@ export class RecallHandler {
     } catch (err) {
       return {
         isError: true,
-        content: [
-          { type: 'text', text: 'Internal error: Output validation failed.' }
-        ]
+        content: [{ type: 'text', text: 'Internal error: Output validation failed.' }],
       };
     }
   }
@@ -78,122 +76,155 @@ export class RecallHandler {
    * @param recall - Search input containing query and filter parameters
    * @returns Formatted recall results with relevance scores
    */
-  private async handleRegularRecall(
-    recall: SearchInput
-  ): Promise<ToolResult> {
+  private async handleRegularRecall(recall: SearchInput): Promise<ToolResult> {
     try {
       const query = recall.query || '';
       const limit = recall.limit || 10;
-      
+
       // Special handling for "recent" queries (only for string queries)
-      const isRecentQuery = typeof query === 'string' && (
-        query.toLowerCase() === 'recent' || 
-        query.toLowerCase() === 'last' ||
-        query.toLowerCase() === 'latest'
-      );
-      
+      const isRecentQuery =
+        typeof query === 'string' &&
+        (query.toLowerCase() === 'recent' ||
+          query.toLowerCase() === 'last' ||
+          query.toLowerCase() === 'latest');
+
       // Import needed function for checking quality queries
       const { isQueryPurelyQuality } = await import('../services/unified-scoring.js');
-      
+
       // Check if this is a pure quality query
       const isPureQuality = query && isQueryPurelyQuality(query);
-      
+
       // Perform recall
-      const { results, clusters } = await withTimeout(
+      const { results, clusters, stats } = await withTimeout(
         this.recallService.search({
-          query: isRecentQuery ? '' : (query || undefined), // Empty query for recent to get all
+          query: isRecentQuery ? '' : query || undefined, // Empty query for recent to get all
           limit: isRecentQuery ? Math.min(limit, 5) : limit, // Show fewer for recent
           // Set semantic query based on query type
-          semantic_query: isRecentQuery ? '' : (
-            !query ? undefined :
-            isPureQuality && typeof query === 'string' ? '' : 
-            typeof query === 'string' ? query : 
-            Array.isArray(query) ? query.join(' ') : ''
-          ),
+          semantic_query: isRecentQuery
+            ? ''
+            : !query
+              ? undefined
+              : isPureQuality && typeof query === 'string'
+                ? ''
+                : typeof query === 'string'
+                  ? query
+                  : Array.isArray(query)
+                    ? query.join(' ')
+                    : '',
           semantic_threshold: SEMANTIC_CONFIG.DEFAULT_THRESHOLD,
           // Pass through all filters from the input
           experiencer: recall.experiencer,
           perspective: recall.perspective,
           processing: recall.processing,
+          crafted: recall.crafted,
           created: recall.created,
           sort: isRecentQuery ? 'created' : recall.sort, // Force sort by created for recent
           // Handle clustering if requested
           as: recall.as,
           // Pass sophisticated quality filters
-          qualities: recall.qualities
+          qualities: recall.qualities,
         }),
         DEFAULT_TIMEOUTS.EXPERIENCE,
         'Recall operation'
       );
-      
+
       // Convert results to RecallResult format for formatter
-      const recallResults: RecallResult[] = results.map(result => ({
+      const recallResults: RecallResult[] = results.map((result) => ({
         id: result.id,
         type: result.type,
         content: result.content,
         snippet: result.snippet,
-        metadata: result.metadata ? {
-          created: typeof result.metadata.created === 'string' ? result.metadata.created : new Date().toISOString(),
-          perspective: typeof result.metadata.perspective === 'string' ? result.metadata.perspective : undefined,
-          experiencer: typeof result.metadata.experiencer === 'string' ? result.metadata.experiencer : undefined,
-          processing: typeof result.metadata.processing === 'string' ? result.metadata.processing : undefined,
-          experience: Array.isArray(result.metadata.experience) ? result.metadata.experience : undefined
-        } : undefined,
-        relevance_score: result.relevance_score
+        metadata: result.metadata
+          ? {
+              created:
+                typeof result.metadata.created === 'string'
+                  ? result.metadata.created
+                  : new Date().toISOString(),
+              perspective:
+                typeof result.metadata.perspective === 'string'
+                  ? result.metadata.perspective
+                  : undefined,
+              experiencer:
+                typeof result.metadata.experiencer === 'string'
+                  ? result.metadata.experiencer
+                  : undefined,
+              processing:
+                typeof result.metadata.processing === 'string'
+                  ? result.metadata.processing
+                  : undefined,
+              experience: Array.isArray(result.metadata.experience)
+                ? result.metadata.experience
+                : undefined,
+            }
+          : undefined,
+        relevance_score: result.relevance_score,
       }));
-      
+
       // Build multi-content response
-      const content: Array<{ type: 'text', text: string }> = [];
-      
+      const content: Array<{ type: 'text'; text: string }> = [];
+
       // Handle clustering response if clusters are available
       if (clusters && clusters.length > 0) {
         const clusterResponse = this.formatClusterResponse(clusters);
         content.push({
           type: 'text',
-          text: clusterResponse
+          text: clusterResponse,
         });
       } else {
-        // Format results using conversational formatter for regular recall
-        const response = formatRecallResponse(recallResults, true);
+        // Calculate metadata for pagination using service response
+        const total = (stats?.total as number) || results.length;
+        const hasMore = recall.limit ? total > recall.limit : false;
+
+        // Format results using conversational formatter for regular recall with metadata
+        const response = formatRecallResponse(
+          recallResults,
+          true,
+          total,
+          hasMore,
+          recall.limit,
+          recall.offset
+        );
         content.push({
           type: 'text',
-          text: response
+          text: response,
         });
       }
-      
+
       // Add contextual guidance
-      const guidance = this.selectRecallGuidance(typeof query === 'string' ? query : query.join(' '), recallResults);
+      const guidance = this.selectRecallGuidance(
+        typeof query === 'string' ? query : query.join(' '),
+        recallResults
+      );
       if (guidance) {
         content.push({
           type: 'text',
-          text: guidance
+          text: guidance,
         });
       }
-      
+
       return { content };
     } catch (error) {
       return {
         isError: true,
-        content: [{
-          type: 'text',
-          text: 'I encountered an error while searching for experiences. Please try again.'
-        }]
+        content: [
+          {
+            type: 'text',
+            text: 'I encountered an error while searching for experiences. Please try again.',
+          },
+        ],
       };
     }
   }
-  
+
   /**
    * Select appropriate guidance for recall results
    */
-  private selectRecallGuidance(
-    query: string, 
-    results: RecallResult[]
-  ): string | null {
+  private selectRecallGuidance(query: string, results: RecallResult[]): string | null {
     // No results - provide helpful guidance based on query type
     if (results.length === 0) {
       // Long queries often fail - suggest keywords
       if (query.length > 30) {
-        return "Long phrases rarely match exactly.";
+        return 'Long phrases rarely match exactly.';
       }
       // Very short queries might be too broad
       if (query.length < 3) {
@@ -202,56 +233,58 @@ export class RecallHandler {
       // Default guidance with examples
       return "No matches found. Try:\n• Different qualities\n• Broader terms\n• 'recall recent' for latest";
     }
-    
+
     // Single result - suggest actions
     if (results.length === 1) {
       // Check for emotional content first
-      const hasEmotionalContent = results.some(r => 
-        r.metadata?.experience?.some(q => 
-          q.includes('mood') || q.includes('embodied')
-        )
+      const hasEmotionalContent = results.some((r) =>
+        r.metadata?.experience?.some((q) => q.includes('mood') || q.includes('embodied'))
       );
-      
+
       if (hasEmotionalContent) {
-        return "Emotional experiences captured. Use IDs to modify or release.";
+        return 'Emotional experiences captured. Use IDs to modify or release.';
       }
-      
+
       return "To modify: use 'reconsider' with the ID\nTo remove: use 'release' with the ID";
     }
-    
+
     // Check if this is a "recall last" query
     if (query.toLowerCase().includes('last') || query.toLowerCase().includes('recent')) {
-      return "Recent experiences shown with IDs for easy modification";
+      return 'Recent experiences shown with IDs for easy modification';
     }
-    
+
     // Many results suggest patterns
     if (results.length > 2) {
-      return "Multiple matches found. Use IDs to modify specific experiences.";
+      return 'Multiple matches found. Use IDs to modify specific experiences.';
     }
-    
+
     // Check for emotional content in multiple results
-    const hasEmotionalContent = results.some(r => 
-      r.metadata?.experience?.some(q => 
-        q.includes('mood') || q.includes('embodied')
-      )
+    const hasEmotionalContent = results.some((r) =>
+      r.metadata?.experience?.some((q) => q.includes('mood') || q.includes('embodied'))
     );
-    
+
     if (hasEmotionalContent) {
-      return "Emotional experiences captured. Use IDs to modify or release.";
+      return 'Emotional experiences captured. Use IDs to modify or release.';
     }
-    
+
     // Default for small result sets
-    return "Use IDs to modify or release specific experiences.";
+    return 'Use IDs to modify or release specific experiences.';
   }
 
   /**
    * Formats clustering results for user-friendly display
    */
   private formatClusterResponse(
-    clusters: Array<{ id: string; summary: string; experienceIds: string[]; commonQualities: string[]; size: number }>
+    clusters: Array<{
+      id: string;
+      summary: string;
+      experienceIds: string[];
+      commonQualities: string[];
+      size: number;
+    }>
   ): string {
     if (clusters.length === 0) {
-      return "No clusters found.";
+      return 'No clusters found.';
     }
 
     let response = `Found ${clusters.length} cluster${clusters.length === 1 ? '' : 's'} of similar experiences:\n\n`;
@@ -259,11 +292,11 @@ export class RecallHandler {
     clusters.forEach((cluster, index) => {
       response += `${index + 1}. **${cluster.summary}**\n`;
       response += `   Size: ${cluster.size} experience${cluster.size === 1 ? '' : 's'}\n`;
-      
+
       if (cluster.commonQualities.length > 0) {
         response += `   Common qualities: ${cluster.commonQualities.join(', ')}\n`;
       }
-      
+
       // Show experience IDs in the cluster
       response += `   Experiences: ${cluster.experienceIds.join(', ')}\n\n`;
     });

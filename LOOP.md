@@ -18,7 +18,7 @@ We use a continuous learning loop to evolve from vision to reality:
 
 ### 1. Vision Drives Opportunities
 
-- Read VISION.md and TECHNICAL.md
+- Read VISION.md and README.md
 - Identify gaps between vision and current implementation
 - Frame as "How Might We" (HMW) questions in OPPORTUNITIES.md
 - Score using methodology in OPPORTUNITIES.md (Impact × Certainty × Urgency)
@@ -42,7 +42,7 @@ We use a continuous learning loop to evolve from vision to reality:
 ### 4. Learnings Inform Development
 
 - Review insights that reveal implementation gaps
-- Update TECHNICAL.md with current capabilities
+- Update README.md with current capabilities
 - Generate new opportunities from gaps
 - Implement high-priority features
 - Continue the cycle
@@ -51,12 +51,12 @@ We use a continuous learning loop to evolve from vision to reality:
 
 ### Development Workflow
 
-1. **Check current state**: Read TECHNICAL.md for what's actually implemented
+1. **Check current state**: Read README.md for what's actually implemented
 2. **Find next priority**: Check OPPORTUNITIES.md for scored features
 3. **Run tests**: Use `npm test` for unit tests, `npm run test:bridge` for scenarios
 4. **Analyze results**: Run `npm run loop` for recommendation-based analysis
 5. **Apply recommendations**: Review and implement suggested changes
-6. **Update docs**: Keep TECHNICAL.md current with implementation
+6. **Update docs**: Keep README.md current with implementation
 
 **Current Quality Status**: See **README.md** for current test coverage metrics (85.27% lines, 74.54% branches)
 
@@ -144,7 +144,7 @@ All test results are saved to the `loop/` directory for analysis.
 
 ## How to Generate Opportunities from Gaps
 
-1. **Compare** VISION.md features with TECHNICAL.md implementation
+1. **Compare** VISION.md features with README.md implementation
 2. **Identify gaps** between vision and current state
 3. **Frame as HMW questions**:
    - "HMW enable Bridge to reveal patterns through clustering?"

@@ -6,6 +6,7 @@ captures meaningful moments with quality signatures, enabling pattern recognitio
 ## Overview
 
 Bridge creates a persistent memory layer for AI interactions, allowing both humans and AI to:
+
 - Capture experiences with quality signatures
 - Recall past experiences through semantic search
 - Discover patterns through clustering analysis
@@ -41,41 +42,49 @@ See [DXT-README.md](./DXT-README.md) for Claude Desktop integration.
 ## Core Operations
 
 ### 1. Experience
+
 Capture meaningful moments with quality signatures:
+
 ```javascript
-experience("Just had a breakthrough with the algorithm", {
-  experience: ["embodied.thinking", "mood.open", "purpose.goal"]
-})
+experience('Just had a breakthrough with the algorithm', {
+  experience: ['embodied.thinking', 'mood.open', 'purpose.goal'],
+});
 ```
 
 ### 2. Recall
+
 Search experiences with semantic, quality, and temporal scoring:
+
 ```javascript
 // Semantic search
-recall("breakthrough moments")
+recall('breakthrough moments');
 
 // Quality filtering
-recall("mood.closed")  // Exact matches only
+recall('mood.closed'); // Exact matches only
 
 // Clustering analysis
-recall("anxiety", { as: "clusters" })  // Group similar experiences
+recall('anxiety', { as: 'clusters' }); // Group similar experiences
 
 // Recent experiences
-recall("recent")
+recall('recent');
 ```
 
 ### 3. Reconsider
+
 Update experiences as understanding deepens:
+
 ```javascript
 reconsider(experienceId, {
-  experience: ["embodied.thinking", "mood.open", "focus.narrow"]
-})
+  experience: ['embodied.thinking', 'mood.open', 'focus.narrow'],
+});
 ```
 
 ### 4. Release
+
 Remove experiences that no longer serve:
+
 ```javascript
-release(experienceId, "Test data cleanup")
+release(experienceId, 'Test data cleanup');
 ```
 
 ## Quality Dimensions
@@ -83,7 +92,7 @@ release(experienceId, "Test data cleanup")
 Bridge uses seven quality pairs to capture experience characteristics:
 
 - **embodied**: thinking/sensing
-- **focus**: narrow/broad  
+- **focus**: narrow/broad
 - **mood**: open/closed
 - **purpose**: goal/wander
 - **space**: here/there
@@ -93,6 +102,7 @@ Bridge uses seven quality pairs to capture experience characteristics:
 ## Development
 
 Bridge maintains high code quality with comprehensive test coverage:
+
 - **85.27%** line coverage (exceeds 80% target)
 - **74.54%** branch coverage (exceeds 65% target)
 - **88.1%** function coverage
@@ -119,7 +129,7 @@ npm run type-check
 ## Documentation
 
 - [PHILOSOPHY.md](./PHILOSOPHY.md) - Core vision and principles
-- [TECHNICAL.md](./TECHNICAL.md) - Implementation details
+- [README.md](./README.md) - Implementation details and API reference
 - [EXPERIMENTS.md](./EXPERIMENTS.md) - Active and completed experiments
 - [LEARNINGS.md](./LEARNINGS.md) - Validated insights from usage
 - [OPPORTUNITIES.md](./OPPORTUNITIES.md) - Prioritized feature roadmap

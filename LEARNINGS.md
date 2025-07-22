@@ -456,7 +456,7 @@ relevant results.
 **Changes Made**:
 
 - Removed duplicate content about sequences and pattern recognition from VISION.md
-- Created TECHNICAL.md for detailed API documentation and recall() functionality
+- Consolidated technical documentation into README.md for better accessibility
 - Streamlined VISION.md to focus on conceptual overview and user benefits
 
 **Impact**: Clearer documentation structure helps users understand Bridge at appropriate levels of detail
@@ -464,7 +464,7 @@ relevant results.
 **Evidence Trail**:
 
 - Commit: 5282bda "docs: clean up VISION.md and separate technical details"
-- New file: TECHNICAL.md
+- Decommissioned: TECHNICAL.md (consolidated into README.md)
 - Updated: VISION.md
 
 ### 2025-07-20 - Learning Loop Optimization

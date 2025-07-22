@@ -34,27 +34,21 @@ Bridge recognizes experience through seven dimensions that may prominently emerg
 - **embodied** - How experience manifests
   - `.thinking` - Mental processing, analysis, strategy
   - `.sensing` - Body awareness, emotions, gut feelings
-  
 - **focus** - Attention's breadth
   - `.narrow` - Concentrated, single-task, tunnel vision
   - `.broad` - Multi-aware, juggling, overwhelmed
-  
-- **mood** - Emotional atmosphere  
+- **mood** - Emotional atmosphere
   - `.open` - Expansive, curious, flowing
   - `.closed` - Contracted, defensive, blocked
-  
 - **purpose** - Directional quality
   - `.goal` - Clear direction, working toward
   - `.wander` - Exploration, seeing what emerges
-  
 - **space** - Sense of location
   - `.here` - Physically grounded, present environment
   - `.there` - Mentally elsewhere, displaced
-  
 - **time** - Temporal orientation
   - `.past` - Remembering, processing history
   - `.future` - Planning, anticipating
-  
 - **presence** - Social dimension
   - `.individual` - Solitary experience
   - `.collective` - Shared, together
@@ -70,13 +64,13 @@ Bridge provides four core operations that work together to create a living memor
 **reconsider()** - Update understanding as it deepens over time
 **release()** - Let go of what no longer serves
 
-For detailed API documentation and examples, see [TECHNICAL.md](./TECHNICAL.md).
+For detailed API documentation and examples, see [README.md](./README.md).
 
 ### Pattern Recognition in Action
 
 Patterns emerge through insight from both participants. The system captures pattern recognition from both human and AI perspectives, building collaborative wisdom through accumulated insights.
 
-For detailed examples and implementation patterns, see [TECHNICAL.md](./TECHNICAL.md).
+For detailed examples and implementation patterns, see [README.md](./README.md).
 
 ## Design Principles
 
@@ -103,7 +97,7 @@ Understanding evolves. Early captures might miss nuances that become clear throu
 ### What Humans Gain
 
 - Continuity across conversations
-- Pattern recognition in their own experience  
+- Pattern recognition in their own experience
 - Visible, correctable memory formations
 - Deeper self-awareness through reflection
 
@@ -140,4 +134,4 @@ build something neither could create alone.
 
 ---
 
-*For technical details and API documentation, see [TECHNICAL.md](./TECHNICAL.md)*
+_For technical details and API documentation, see [README.md](./README.md)_
