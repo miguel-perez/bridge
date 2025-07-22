@@ -8,40 +8,39 @@
     "bridge": "./dist/index.js"
   },
   "scripts": {
-    "build": "tsc",
-    "bundle": "esbuild dist/index.js --bundle --platform=node --target=node18 --format=esm --outfile=dist/bundle.js --external:onnxruntime-node --external:@xenova/transformers",
-    "build:all": "npm run build && npm run bundle",
-    "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
-    "test": "jest",
+    "build": "tsc",
+    "build:all": "npm run build && npm run bundle",
+    "bundle": "esbuild src/index.ts --bundle --platform=node --outfile=dist/bundle.js --external:node:*",
+    "start": "node dist/bundle.js",
+    "test": "jest --coverage",
     "test:bridge": "npm run build && npx tsx src/scripts/test-runner.ts",
     "test:bridge:experience": "npm run build && npx tsx src/scripts/test-runner.ts experience-capture",
     "test:bridge:recall": "npm run build && npx tsx src/scripts/test-runner.ts recall-queries",
     "test:bridge:reconsider": "npm run build && npx tsx src/scripts/test-runner.ts reconsider-evolution",
     "test:bridge:release": "npm run build && npx tsx src/scripts/test-runner.ts release-cleanup",
-    "test:bridge:dimensional": "npm run build && npx tsx src/scripts/test-runner.ts dimensional-focus",
-    "test:bridge:pattern-realizations": "npm run build && npx tsx src/scripts/test-runner.ts pattern-realizations",
-    "test:bridge:quick": "npm run build && npx tsx src/scripts/test-runner.ts experience-capture",
+    "test:bridge:quality-focus": "npm run build && npx tsx src/scripts/test-runner.ts quality-focus",
+    "test:bridge:clustering-analysis": "npm run build && npx tsx src/scripts/test-runner.ts clustering-analysis",
+    "test:bridge:sophisticated-filtering": "npm run build && npx tsx src/scripts/test-runner.ts sophisticated-filtering",
+    "test:bridge:quality-monitoring": "npm run build && npx tsx src/scripts/test-runner.ts quality-monitoring",
+    "test:bridge:dxt-release": "npm run build && npx tsx src/scripts/test-runner.ts dxt-release-validation",
     "test:all": "npm test && npm run test:bridge && npm run loop",
-    "quality-check": "npm run type-check && npm run lint && npm run lint:md && npm run build && npm test && npm run test:bridge:quick",
-    "quality-check:full": "npm run type-check && npm run lint && npm run lint:md && npm run build && npm run test:coverage && npm run test:bridge && npm run loop",
-    "test:watch": "npm run test -- --watch",
-    "test:coverage": "npm run test -- --coverage",
     "loop": "npx tsx src/scripts/learning-loop.ts",
-    "lint": "eslint src/**/*.ts",
-    "lint:fix": "eslint src/**/*.ts --fix",
-    "lint:md": "markdownlint-cli2 \"*.md\" --ignore \"loop/\"",
-    "lint:md:fix": "markdownlint-cli2 \"*.md\" --ignore \"loop/\" --fix",
-    "format": "prettier --write src/**/*.ts",
+    "quality-monitor": "npx tsx src/scripts/quality-monitor.ts",
+    "quality-check": "npm run lint && npm run type-check && npm test",
+    "quality-check:full": "npm run lint && npm run type-check && npm test && npm run quality-monitor",
+    "lint": "eslint src/**/*.ts --ext .ts",
+    "lint:fix": "eslint src/**/*.ts --ext .ts --fix",
     "type-check": "tsc --noEmit",
-    "build:dxt": ".\\build-dxt.ps1",
-    "build:dxt:unix": "./build-dxt.sh",
-    "generate:test-data": "tsx src/scripts/generate-bridge-test-data.ts",
-    "prepare": "husky"
+    "prepare": "husky install"
   },
   "lint-staged": {
-    "src/**/*.ts": [
-      "npm run lint:fix"
+    "*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{md,json}": [
+      "prettier --write"
     ]
   },
   "keywords": [

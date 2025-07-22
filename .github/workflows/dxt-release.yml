@@ -1,0 +1,222 @@
+name: DXT Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger on version tags
+  workflow_dispatch:  # Allow manual triggering
+    inputs:
+      version:
+        description: 'Version to release (e.g., 0.1.1)'
+        required: true
+        default: '0.1.0'
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for versioning
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run quality checks
+        run: |
+          echo "🔍 Running comprehensive quality checks..."
+          npm run quality-check:full
+      
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            # Extract version from tag
+            VERSION=${GITHUB_REF#refs/tags/}
+            echo "version=${VERSION#v}" >> $GITHUB_OUTPUT
+          fi
+          echo "📦 Building version: ${{ steps.version.outputs.version }}"
+      
+      - name: Update manifest version
+        run: |
+          echo "📝 Updating manifest version to ${{ steps.version.outputs.version }}"
+          node -e "
+            const manifest = require('./manifest.json');
+            manifest.version = '${{ steps.version.outputs.version }}';
+            require('fs').writeFileSync('manifest.json', JSON.stringify(manifest, null, 2));
+          "
+      
+      - name: Build DXT package
+        run: |
+          echo "🔨 Building DXT package..."
+          ./build-dxt.sh
+          
+          # Validate DXT package
+          echo "✅ Validating DXT package..."
+          unzip -t bridge.dxt > /dev/null
+          unzip -Z1 bridge.dxt | grep -q "index.js"
+          unzip -Z1 bridge.dxt | grep -q "manifest.json"
+          
+          # Check package size
+          SIZE=$(ls -lh bridge.dxt | awk '{print $5}')
+          echo "📦 DXT package size: ${SIZE}"
+          
+          # Verify manifest in package
+          echo "📋 Verifying package manifest..."
+          unzip -p bridge.dxt manifest.json | jq -r '.version' | grep -q "${{ steps.version.outputs.version }}"
+      
+      - name: Generate release notes
+        id: release-notes
+        run: |
+          echo "📝 Generating release notes..."
+          
+          # Get commits since last release
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            # For manual releases, get recent commits
+            COMMITS=$(git log --oneline -10)
+          else
+            # For tag releases, get commits since last tag
+            PREV_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+            if [ -n "$PREV_TAG" ]; then
+              COMMITS=$(git log --oneline ${PREV_TAG}..HEAD)
+            else
+              COMMITS=$(git log --oneline -10)
+            fi
+          fi
+          
+          # Generate release notes
+          cat > release-notes.md << EOF
+          # Bridge DXT v${{ steps.version.outputs.version }}
+          
+          ## 🚀 What's New
+          
+          Bridge Desktop Extension (DXT) for Claude Desktop - enabling shared experiential consciousness between humans and AI.
+          
+          ## 📦 Installation
+          
+          1. Download \`bridge.dxt\` from this release
+          2. Open Claude Desktop
+          3. Go to Settings → Extensions
+          4. Click "Load from file..." and select the downloaded file
+          5. Configure your data file path in extension settings
+          
+          ## 🔧 Features
+          
+          - **Experience Capture**: Remember moments with quality signatures
+          - **Semantic Search**: Find experiences through natural language
+          - **Pattern Recognition**: Discover insights through clustering
+          - **Local Storage**: All data stored locally on your machine
+          
+          ## 🛠️ Technical Details
+          
+          - **Runtime**: Node.js 18+
+          - **Storage**: Local JSON file
+          - **Embeddings**: Generated locally using Xenova transformers
+          - **Architecture**: MCP server with stdio transport
+          
+          ## 📋 Recent Changes
+          
+          \`\`\`
+          $COMMITS
+          \`\`\`
+          
+          ## 🔒 Privacy & Security
+          
+          - All data stored locally on your machine
+          - No external API calls for core functionality
+          - Embeddings generated locally
+          - Optional LLM enrichment requires API key
+          
+          ## 🐛 Support
+          
+          For issues and support, visit: https://github.com/miguel-perez/bridge/issues
+          EOF
+          
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          cat release-notes.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: bridge.dxt
+          body: ${{ steps.release-notes.outputs.notes }}
+          draft: false
+          prerelease: false
+          generate_release_notes: false
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Bridge DXT v${{ steps.version.outputs.version }}
+      
+      - name: Upload DXT to release assets
+        run: |
+          echo "📤 Uploading DXT package to release assets..."
+          gh release upload v${{ steps.version.outputs.version }} bridge.dxt --clobber
+      
+      - name: Validate release
+        run: |
+          echo "✅ Validating release..."
+          
+          # Check release was created
+          gh release view v${{ steps.version.outputs.version }}
+          
+          # Check assets were uploaded
+          ASSETS=$(gh release view v${{ steps.version.outputs.version }} --json assets --jq '.assets[].name')
+          echo "📦 Release assets: $ASSETS"
+          
+          if echo "$ASSETS" | grep -q "bridge.dxt"; then
+            echo "✅ DXT package successfully uploaded to release"
+          else
+            echo "❌ DXT package not found in release assets"
+            exit 1
+          fi
+      
+      - name: Update DXT-README with release info
+        run: |
+          echo "📝 Updating DXT-README with release information..."
+          
+          # Add release badge
+          sed -i '1s/^/# Bridge Desktop Extension (DXT)\n\n![Release](https://img.shields.io\/github\/v\/release\/miguel-perez\/bridge?label=Latest%20Release&style=flat-square)\n\n/' DXT-README.md
+          
+          # Update installation instructions
+          sed -i 's/## Installation/## Installation\n\n**Latest Release**: [v${{ steps.version.outputs.version }}](https:\/\/github.com\/miguel-perez\/bridge\/releases\/latest)\n\n### From Release/' DXT-README.md
+          
+          # Add release download instructions
+          cat >> DXT-README.md << 'EOF'
+          
+          ### From Release
+          
+          1. **Download from GitHub Release**:
+             - Go to [Latest Release](https://github.com/miguel-perez/bridge/releases/latest)
+             - Download `bridge.dxt`
+             - Install in Claude Desktop as described above
+          
+          ### From Source
+          
+          EOF
+      
+      - name: Commit updated documentation
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add DXT-README.md
+          git commit -m "docs: update DXT-README with release v${{ steps.version.outputs.version }}" || echo "No changes to commit"
+          git push
+      
+      - name: Success notification
+        run: |
+          echo "🎉 Bridge DXT v${{ steps.version.outputs.version }} successfully released!"
+          echo "📦 Download: https://github.com/miguel-perez/bridge/releases/latest"
+          echo "📋 Release notes: https://github.com/miguel-perez/bridge/releases/tag/v${{ steps.version.outputs.version }}" 

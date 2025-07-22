@@ -31,25 +31,21 @@ handle_error() {
     exit 1
 }
 
-# 1. Type checking
+# 1. Lint-staged (runs on changed files only)
+echo "🧹 Running lint-staged on changed files..."
+npx lint-staged || handle_error "lint-staged failed"
+
+# 2. Type checking (full project)
 echo "📝 Checking TypeScript types..."
 npm run type-check || handle_error "TypeScript type checking failed"
 
-# 2. Linting
-echo "🧹 Running ESLint..."
-npm run lint || handle_error "ESLint found issues"
-
-# 3. Markdown linting
-echo "📖 Checking markdown files..."
-npm run lint:md || handle_error "Markdown linting failed"
-
-# 4. Build verification
+# 3. Build verification
 echo "🔨 Building project..."
 npm run build || handle_error "Build failed"
 
-# 5. Unit tests
+# 4. Unit tests (full project)
 echo "🧪 Running unit tests..."
 npm test || handle_error "Unit tests failed"
 
 echo "✅ All pre-commit checks passed!"
-echo "🚀 Ready to commit!"
+echo "�� Ready to commit!"

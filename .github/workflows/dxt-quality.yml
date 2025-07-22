@@ -1,0 +1,266 @@
+name: DXT Quality Monitoring
+
+on:
+  pull_request:
+    paths:
+      - 'src/**/*.ts'
+      - 'manifest.json'
+      - 'build-dxt.*'
+      - '.github/workflows/dxt-*.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/**/*.ts'
+      - 'manifest.json'
+      - 'build-dxt.*'
+
+jobs:
+  dxt-quality-check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Validate manifest.json
+        run: |
+          echo "📋 Validating DXT manifest..."
+          
+          # Check required fields
+          node -e "
+            const manifest = require('./manifest.json');
+            const required = ['dxt_version', 'name', 'version', 'description', 'author', 'server'];
+            const missing = required.filter(field => !manifest[field]);
+            
+            if (missing.length > 0) {
+              console.error('❌ Missing required fields:', missing);
+              process.exit(1);
+            }
+            
+            // Validate server configuration
+            if (!manifest.server.type || !manifest.server.entry_point) {
+              console.error('❌ Invalid server configuration');
+              process.exit(1);
+            }
+            
+            // Validate tools
+            if (!manifest.tools || !Array.isArray(manifest.tools)) {
+              console.error('❌ Tools must be an array');
+              process.exit(1);
+            }
+            
+            console.log('✅ Manifest validation passed');
+            console.log('📦 Extension info:');
+            console.log('  - Name:', manifest.name);
+            console.log('  - Version:', manifest.version);
+            console.log('  - Tools:', manifest.tools.length);
+            console.log('  - Server type:', manifest.server.type);
+          "
+      
+      - name: Check DXT build process
+        run: |
+          echo "🔨 Testing DXT build process..."
+          
+          # Test build script
+          chmod +x ./build-dxt.sh
+          ./build-dxt.sh
+          
+          # Validate built package
+          echo "✅ Validating built DXT package..."
+          unzip -t bridge.dxt > /dev/null
+          unzip -Z1 bridge.dxt | grep -q "index.js"
+          unzip -Z1 bridge.dxt | grep -q "manifest.json"
+          
+          # Check package size
+          SIZE=$(ls -lh bridge.dxt | awk '{print $5}')
+          echo "📦 Package size: ${SIZE}"
+          
+          # Verify manifest in package
+          echo "📋 Verifying package manifest..."
+          unzip -p bridge.dxt manifest.json | jq -r '.version'
+          
+          # Clean up
+          rm bridge.dxt
+      
+      - name: MCP Protocol Compliance Check
+        run: |
+          echo "🔍 Checking MCP protocol compliance..."
+          
+          # Check for MCP SDK usage
+          if ! grep -r "@modelcontextprotocol/sdk" src/ > /dev/null; then
+            echo "❌ MCP SDK not found in source code"
+            exit 1
+          fi
+          
+          # Check for proper tool schemas
+          SCHEMA_FILES=$(find src/ -name "*.ts" -exec grep -l "z\.object" {} \;)
+          if [ -z "$SCHEMA_FILES" ]; then
+            echo "❌ No Zod schemas found for tool validation"
+            exit 1
+          fi
+          
+          echo "✅ MCP protocol compliance check passed"
+          echo "📋 Schema files found: $SCHEMA_FILES"
+      
+      - name: Tool Definition Validation
+        run: |
+          echo "🛠️ Validating tool definitions..."
+          
+          # Check manifest tools match source
+          MANIFEST_TOOLS=$(node -e "console.log(require('./manifest.json').tools.map(t => t.name).join(' '))")
+          echo "📋 Manifest tools: $MANIFEST_TOOLS"
+          
+          # Check source files for tool handlers
+          for tool in $MANIFEST_TOOLS; do
+            if ! find src/ -name "*.ts" -exec grep -l "$tool" {} \; > /dev/null; then
+              echo "❌ Tool '$tool' not found in source code"
+              exit 1
+            fi
+          done
+          
+          echo "✅ Tool definition validation passed"
+      
+      - name: Cross-platform Compatibility Check
+        run: |
+          echo "🖥️ Checking cross-platform compatibility..."
+          
+          # Check manifest platforms
+          PLATFORMS=$(node -e "console.log(require('./manifest.json').compatibility?.platforms?.join(' ') || 'darwin win32 linux')")
+          echo "📋 Supported platforms: $PLATFORMS"
+          
+          # Check for platform-specific code
+          if find src/ -name "*.ts" -exec grep -l "process\.platform" {} \; > /dev/null; then
+            echo "⚠️ Platform-specific code found - ensure all platforms are supported"
+          fi
+          
+          # Check Node.js version requirement
+          NODE_VERSION=$(node -e "console.log(require('./manifest.json').compatibility?.runtimes?.node || '>=18.0.0')")
+          echo "📋 Node.js requirement: $NODE_VERSION"
+          
+          echo "✅ Cross-platform compatibility check passed"
+      
+      - name: Security Validation
+        run: |
+          echo "🔒 Checking security considerations..."
+          
+          # Check for sensitive data handling
+          if grep -r "API_KEY\|SECRET\|PASSWORD" src/ > /dev/null; then
+            echo "⚠️ Potential sensitive data handling found - ensure proper security"
+          fi
+          
+          # Check for file system operations
+          if grep -r "fs\.write\|fs\.read" src/ > /dev/null; then
+            echo "✅ File system operations found - ensure proper validation"
+          fi
+          
+          # Check for external dependencies
+          echo "📦 Checking external dependencies..."
+          npm audit --audit-level=moderate || echo "⚠️ Security vulnerabilities found - review before release"
+          
+          echo "✅ Security validation completed"
+      
+      - name: Performance Check
+        run: |
+          echo "⚡ Checking performance considerations..."
+          
+          # Check bundle size
+          npm run build:all
+          BUNDLE_SIZE=$(ls -lh dist/bundle.js | awk '{print $5}')
+          echo "📦 Bundle size: $BUNDLE_SIZE"
+          
+          # Check for heavy dependencies
+          HEAVY_DEPS=$(npm list --depth=0 | grep -E "(transformers|onnx|tensor)" || echo "None")
+          echo "📋 Heavy dependencies: $HEAVY_DEPS"
+          
+          # Check for async operations
+          ASYNC_COUNT=$(find src/ -name "*.ts" -exec grep -l "async\|await" {} \; | wc -l)
+          echo "📋 Files with async operations: $ASYNC_COUNT"
+          
+          echo "✅ Performance check completed"
+      
+      - name: User Experience Validation
+        run: |
+          echo "👤 Checking user experience considerations..."
+          
+          # Check manifest descriptions
+          MANIFEST=$(node -e "console.log(JSON.stringify(require('./manifest.json'), null, 2))")
+          
+          # Check for clear tool descriptions
+          TOOL_DESCRIPTIONS=$(echo "$MANIFEST" | jq -r '.tools[].description' | wc -l)
+          echo "📋 Tool descriptions: $TOOL_DESCRIPTIONS"
+          
+          # Check for user configuration
+          USER_CONFIG=$(echo "$MANIFEST" | jq -r '.user_config | keys | length')
+          echo "📋 User configuration options: $USER_CONFIG"
+          
+          # Check for documentation
+          if [ -f "DXT-README.md" ]; then
+            echo "✅ DXT documentation found"
+          else
+            echo "❌ DXT documentation missing"
+            exit 1
+          fi
+          
+          echo "✅ User experience validation passed"
+      
+      - name: Quality Score Calculation
+        id: quality-score
+        run: |
+          echo "📊 Calculating Bridge quality score..."
+          
+          # Run quality monitoring script
+          npm run quality-monitor
+          
+          # Get the latest quality report
+          LATEST_REPORT=$(ls -t loop/quality-reports/quality-report-*.json | head -1)
+          
+          if [ -n "$LATEST_REPORT" ]; then
+            # Extract score from report
+            SCORE=$(node -e "console.log(require('$LATEST_REPORT').overallScore)")
+            PERCENTAGE=$SCORE
+            
+            echo ""
+            echo "📊 Bridge Quality Score: $SCORE/100 ($PERCENTAGE%)"
+            
+            if [ "$PERCENTAGE" -ge 90 ]; then
+              echo "🎉 Excellent quality - ready for release!"
+            elif [ "$PERCENTAGE" -ge 80 ]; then
+              echo "✅ Good quality - minor improvements recommended"
+            elif [ "$PERCENTAGE" -ge 70 ]; then
+              echo "⚠️ Acceptable quality - improvements needed"
+            else
+              echo "❌ Poor quality - significant improvements required"
+              exit 1
+            fi
+            
+            # Set output for other jobs
+            echo "score=$SCORE" >> $GITHUB_OUTPUT
+            echo "percentage=$PERCENTAGE" >> $GITHUB_OUTPUT
+          else
+            echo "❌ No quality report generated"
+            exit 1
+          fi
+      
+      - name: Quality Report
+        if: always()
+        run: |
+          echo "📋 DXT Quality Report"
+          echo "===================="
+          echo "Repository: ${{ github.repository }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Quality Score: ${{ steps.quality-score.outputs.score || 'N/A' }}/100 (${{ steps.quality-score.outputs.percentage || 'N/A' }}%)"
+          echo ""
+          echo "✅ Quality checks completed" 

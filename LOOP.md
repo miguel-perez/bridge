@@ -17,6 +17,7 @@ We use a continuous learning loop to evolve from vision to reality:
 ## How It Works
 
 ### 1. Vision Drives Opportunities
+
 - Read VISION.md and TECHNICAL.md
 - Identify gaps between vision and current implementation
 - Frame as "How Might We" (HMW) questions in OPPORTUNITIES.md
@@ -24,12 +25,14 @@ We use a continuous learning loop to evolve from vision to reality:
 - Current highest priority: Clustering (Score: 378)
 
 ### 2. Opportunities Become Experiments
+
 - Pick high-scoring opportunities (400+ or strategic importance)
 - Design specific test scenarios
 - Add to EXPERIMENTS.md with measurable outcomes
 - Run tests using `npm run test:bridge`
 
 ### 3. Experiments Generate Learnings
+
 - Run learning loop with `npm run loop`
 - Analyzes git history, test results, and documentation
 - Generates prioritized recommendations
@@ -37,6 +40,7 @@ We use a continuous learning loop to evolve from vision to reality:
 - Suggests updates to documentation files
 
 ### 4. Learnings Inform Development
+
 - Review insights that reveal implementation gaps
 - Update TECHNICAL.md with current capabilities
 - Generate new opportunities from gaps
@@ -46,6 +50,7 @@ We use a continuous learning loop to evolve from vision to reality:
 ## Working with Bridge Code
 
 ### Development Workflow
+
 1. **Check current state**: Read TECHNICAL.md for what's actually implemented
 2. **Find next priority**: Check OPPORTUNITIES.md for scored features
 3. **Run tests**: Use `npm test` for unit tests, `npm run test:bridge` for scenarios
@@ -56,6 +61,7 @@ We use a continuous learning loop to evolve from vision to reality:
 **Current Quality Status**: See **README.md** for current test coverage metrics (85.27% lines, 74.54% branches)
 
 ### Key Commands
+
 ```bash
 # Development
 npm run dev                       # Start MCP server in watch mode
@@ -72,9 +78,11 @@ npm run test:bridge:experience    # Test experience tool capture
 npm run test:bridge:recall        # Test recall search patterns
 npm run test:bridge:reconsider    # Test reconsider evolution
 npm run test:bridge:release       # Test release cleanup
-npm run test:bridge:quality   # Test quality queries
+npm run test:bridge:quality-monitoring # Test quality monitoring capabilities
+npm run test:bridge:dxt-release   # Test DXT release validation
 npm run test:all                  # Run tests then learning loop
 npm run loop                      # Run learning loop analysis
+npm run quality-monitor           # Generate quality report and check release criteria
 
 # Quality Gates
 npm run quality-check             # Quick quality check (pre-commit level)
@@ -91,6 +99,7 @@ npm run build:all                 # Build and bundle for production
 Bridge uses automated quality gates to maintain high code quality:
 
 **Pre-commit Hook** (runs on `git commit`):
+
 - TypeScript type checking
 - ESLint validation
 - Markdown linting
@@ -99,18 +108,21 @@ Bridge uses automated quality gates to maintain high code quality:
 - Quick integration test
 
 **Pre-push Hook** (runs on `git push`):
+
 - All pre-commit checks
 - Unit tests with coverage
 - All integration tests
 - Learning loop analysis
 
 **Emergency Bypass** (use sparingly):
+
 ```bash
 SKIP_PRE_COMMIT=true git commit  # Bypass pre-commit
 SKIP_PRE_PUSH=true git push      # Bypass pre-push
 ```
 
 **Quality Standards**:
+
 - 80%+ test coverage
 - Zero ESLint errors
 - Zero TypeScript errors
@@ -121,7 +133,7 @@ SKIP_PRE_PUSH=true git push      # Bypass pre-push
 Bridge tests run sequentially by default to avoid resource contention. Each scenario focuses on specific tools:
 
 - **experience-capture**: Tests experience tool with various emotional states
-- **recall-queries**: Tests recall with text, quality, and mixed queries  
+- **recall-queries**: Tests recall with text, quality, and mixed queries
 - **reconsider-evolution**: Tests reconsider as understanding deepens
 - **release-cleanup**: Tests selective removal of experiences
 - **quality-focus**: Deep dive into quality filtering patterns
@@ -145,6 +157,7 @@ All test results are saved to the `loop/` directory for analysis.
 See **OPPORTUNITIES.md** for the complete scoring methodology (Impact × Certainty × Urgency).
 
 ### Prioritization Strategy
+
 - Use barbell approach: Mix high-certainty quick wins with high-impact experiments
 - Focus on features that enable collaborative wisdom building
 - Maintain backward compatibility while extending capabilities
@@ -152,6 +165,7 @@ See **OPPORTUNITIES.md** for the complete scoring methodology (Impact × Certain
 ## Documentation Structure
 
 ### Core Learning Loop (4 files)
+
 - **VISION.md** - What we're building
 - **OPPORTUNITIES.md** - Questions to test
 - **EXPERIMENTS.md** - Active tests and progress
@@ -162,6 +176,7 @@ Each document has one clear purpose and can be read in under 2 minutes.
 ### Evidence Traceability
 
 The enhanced loop creates clear evidence trails:
+
 - Each learning links to specific experiments and test files
 - Confidence levels (Low/Medium/High) based on sample size
 - Raw data references (e.g., "4/5 users in test-2025-07-18.json")
@@ -172,6 +187,7 @@ The enhanced loop creates clear evidence trails:
 Run `npm run loop` to analyze your project and generate recommendations:
 
 ### What It Analyzes
+
 - **Git History**: Recent commits, development velocity, focus areas
 - **Test Results**: Unit tests with coverage, Bridge integration tests
 - **Documentation**: All markdown files for gaps and inconsistencies
@@ -180,13 +196,16 @@ Run `npm run loop` to analyze your project and generate recommendations:
 - **Previous Runs**: Compares with last run to detect changes
 
 ### Automatic Test Execution
+
 The learning loop will automatically run tests when:
+
 - No test results exist in the `loop/` directory
 - New commits have been made since the last run
 - Uncommitted changes are detected in the repository
 - Coverage data is older than 24 hours
 
 ### What You Get
+
 - **Prioritized Recommendations**: Sorted by critical/high/medium/low priority
 - **Evidence-Based**: Each recommendation includes specific evidence
 - **Actionable**: Clear suggestions for what to change
@@ -194,6 +213,7 @@ The learning loop will automatically run tests when:
 - **Reports**: Both JSON and Markdown formats in loop/
 
 ### CLI Options
+
 ```bash
 npm run loop                    # Full analysis (default: 30 days)
 npm run loop -- -d 7           # Analyze last 7 days only
@@ -203,6 +223,7 @@ npm run loop -- --help         # Show all options
 ```
 
 ### Example Recommendations
+
 - Complete experiments that appear finished
 - Add tests for areas with high bug fix rates
 - Update documentation that's lagging behind features
