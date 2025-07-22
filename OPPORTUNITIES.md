@@ -60,43 +60,7 @@ Bridge uses a barbell strategy to balance stability with growth potential:
 
 ## High-Certainty Foundation (Stability)
 
-### HMW enable sophisticated quality filtering?
 
-**Impact: 8** - Enables sophisticated queries about experiential qualities and unlocks advanced use cases  
-**Certainty: 9** - Clear implementation path using existing quality data and proven patterns  
-**Urgency: 7** - Critical for unlocking Bridge's full potential and enabling complex queries  
-**Score: 504** ⭐ **High-Certainty Foundation**
-
-**What This Actually Means:**
-Enable complex quality queries that go beyond simple exact matches. Currently, Bridge only supports basic quality filtering - we need advanced patterns like presence/absence filtering, quality combinations, and sophisticated boolean logic.
-
-**Current Limitations:**
-- **Only exact matches**: `recall("mood.closed")` finds experiences WITH mood.closed
-- **Only AND logic**: `recall(["embodied.thinking", "mood.open"])` requires BOTH qualities
-- **No absence filtering**: Cannot find experiences WITHOUT specific qualities
-- **No OR logic**: Cannot find experiences with EITHER quality A OR quality B
-- **No complex combinations**: Cannot do "mood.closed AND (embodied.thinking OR focus.narrow)"
-
-**Specific Implementation:**
-- **Presence/Absence filtering**: `{ embodied: { present: true }, mood: { present: false } }`
-- **Boolean combinations**: `{ mood: "closed", embodied: ["thinking", "sensing"] }` (OR logic)
-- **Complex queries**: `{ mood: "closed", embodied: { present: true }, focus: { present: false } }`
-- **Quality ranges**: `{ mood: ["open", "closed"], time: "future" }` (multiple values)
-- **Nested logic**: Support for parentheses and complex boolean expressions
-
-**Why This Matters:**
-- **Unlocks advanced use cases**: "Show me anxious states that aren't focused" or "Find open moods during thinking"
-- **Enables pattern discovery**: Complex queries reveal hidden experiential patterns
-- **Improves user experience**: More intuitive and powerful querying capabilities
-- **Supports research**: Enables sophisticated experiential analysis
-
-**Current State:**
-- ✅ Basic quality filtering: `recall("mood.closed")`
-- ✅ Multi-quality AND: `recall(["embodied.thinking", "mood.open"])`
-- ✅ Base quality matching: `recall("embodied")` matches subtypes
-- ❌ No absence filtering: Cannot exclude qualities
-- ❌ No OR logic: Cannot combine qualities with OR
-- ❌ No complex boolean expressions: No nested logic support
 
 ### HMW establish continuous quality monitoring?
 
@@ -114,6 +78,12 @@ Automate quality checks to prevent the high test coverage and code quality from 
 - **Automated alerts**: Notify when quality metrics decline
 - **Quality dashboard**: Track coverage, lint errors, and performance over time
 - **Learning loop integration**: Include quality trends in development recommendations
+
+#### DXT Compliance
+
+- Generate and validate manifest.json
+- Use Github Releases for .dxt files
+- Incorporate DXT manifest and standards into workflow
 
 **Why This Matters:**
 - **Prevents regression**: Catches quality issues before they compound
@@ -179,9 +149,8 @@ Automate quality checks to prevent the high test coverage and code quality from 
 Bridge prioritizes using a barbell strategy for antifragility - balancing high-certainty wins with high-impact experiments while avoiding fragile middle ground.
 
 ### **High-Certainty Foundation (Implement First)**
-1. **Sophisticated Quality Filtering** (Score: 504) - Critical for unlocking Bridge's full potential
-2. **Continuous Quality Monitoring** (Score: 270) - Maintain high quality standards
-3. **Natural Language Temporal Queries** (Score: 180) - Convenience feature
+1. **Continuous Quality Monitoring** (Score: 270) - Maintain high quality standards
+2. **Natural Language Temporal Queries** (Score: 180) - Convenience feature
 
 ### **High-Impact Experiments (Research & Prototype)**
 4. **Cross-experiencer Pattern Insights** (Score: 90) - Team collaboration features

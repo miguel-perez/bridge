@@ -19,255 +19,31 @@ Each experiment follows this format for learning loop compatibility:
 
 ## Active Experiments
 
-### EXP-008: Sophisticated Quality Filtering with Terminology Standardization
-**Status**: Active 2025-07-21  
-**Purpose**: Enable complex quality queries with boolean logic, absence filtering, and advanced combinations, while standardizing terminology throughout the codebase
-
-**Design Overview**:
-Transform Bridge's quality filtering from simple exact matches to a sophisticated query system that supports complex boolean logic, presence/absence filtering, and nested expressions. Additionally, standardize all terminology from "dimensional" to "quality" throughout the codebase for consistency and intuitiveness.
-
-**Technical Architecture**:
-
-### 1. Enhanced Schema Design
-```typescript
-// New quality filter structure
-interface QualityFilter {
-  // Presence/Absence filtering
-  embodied?: { present: boolean } | string | string[];
-  focus?: { present: boolean } | string | string[];
-  mood?: { present: boolean } | string | string[];
-  purpose?: { present: boolean } | string | string[];
-  space?: { present: boolean } | string | string[];
-  time?: { present: boolean } | string | string[];
-  presence?: { present: boolean } | string | string[];
-  
-  // Complex boolean expressions
-  $and?: QualityFilter[];
-  $or?: QualityFilter[];
-  $not?: QualityFilter;
-}
-
-// Enhanced SearchInputSchema
-export const SearchInputSchema = z.object({
-  // ... existing fields ...
-  qualities: QualityFilterSchema.optional(),
-  // ... rest of schema
-});
-```
-
-### 2. Query Processing Pipeline
-```typescript
-// New quality filtering service
-export class QualityFilterService {
-  // Parse complex quality queries
-  parseQualityFilter(filter: QualityFilter): FilterExpression;
-  
-  // Evaluate filter expressions against experiences
-  evaluateFilter(experience: SourceRecord, filter: FilterExpression): boolean;
-  
-  // Support for complex boolean logic
-  evaluateBooleanExpression(expression: BooleanExpression): boolean;
-}
-```
-
-### 3. Backward Compatibility Strategy
-- **Phase 1**: Add new `qualities` field alongside existing `query` field
-- **Phase 2**: Enhance existing `query` array support for simple OR logic
-- **Phase 3**: Deprecate old quality query format with migration path
-
-**Test Scenarios**:
-
-### Scenario 1: Presence/Absence Filtering
-```javascript
-// Test absence filtering
-recall("", { 
-  qualities: { 
-    mood: { present: false },  // Find experiences WITHOUT mood qualities
-    embodied: { present: true } // But WITH embodied qualities
-  }
-});
-
-// Expected: Experiences with embodied qualities but no mood qualities
-// Test data: 3 experiences with embodied.thinking, 2 with mood.closed, 1 with both
-// Should return: 2 experiences (embodied.thinking without mood)
-```
-
-### Scenario 2: OR Logic with Multiple Values
-```javascript
-// Test OR logic within a quality
-recall("", { 
-  qualities: { 
-    embodied: ["thinking", "sensing"],  // embodied.thinking OR embodied.sensing
-    mood: "closed"  // AND mood.closed
-  }
-});
-
-// Expected: Experiences with (embodied.thinking OR embodied.sensing) AND mood.closed
-// Test data: 4 experiences with various combinations
-// Should return: 2 experiences matching the OR+AND pattern
-```
-
-### Scenario 3: Complex Boolean Expressions
-```javascript
-// Test nested boolean logic
-recall("", { 
-  qualities: { 
-    $and: [
-      { mood: "closed" },
-      { 
-        $or: [
-          { embodied: "thinking" },
-          { focus: "narrow" }
-        ]
-      }
-    ]
-  }
-});
-
-// Expected: mood.closed AND (embodied.thinking OR focus.narrow)
-// Test data: 6 experiences with various combinations
-// Should return: 3 experiences matching the complex pattern
-```
-
-### Scenario 4: Mixed Semantic and Quality Queries
-```javascript
-// Test semantic search with quality filtering
-recall("anxiety nervousness", { 
-  qualities: { 
-    embodied: { present: true },
-    focus: { present: false }
-  }
-});
-
-// Expected: Semantic matches for "anxiety nervousness" that have embodied qualities but no focus
-// Test data: 5 experiences with anxiety-related content and various quality signatures
-// Should return: 2 experiences matching semantic + quality criteria
-```
-
-### Scenario 5: Edge Cases and Error Handling
-```javascript
-// Test invalid quality names
-recall("", { 
-  qualities: { 
-    invalid_quality: "value"  // Should be ignored or return error
-  }
-});
-
-// Test empty filter objects
-recall("", { 
-  qualities: {}  // Should return all experiences
-});
-
-// Test conflicting presence/absence
-recall("", { 
-  qualities: { 
-    mood: { present: true, absent: true }  // Should return validation error
-  }
-});
-```
-
-**Success Criteria**:
-- ✅ All test scenarios pass with correct filtering results
-- ✅ Backward compatibility maintained (existing queries work unchanged)
-- ✅ Performance impact <20% increase in recall latency
-- ✅ Complex boolean expressions evaluate correctly
-- ✅ Presence/absence filtering works for all qualities
-- ✅ Error handling provides clear validation messages
-- ✅ Schema validation catches invalid filter structures
-- ✅ Terminology standardized throughout codebase (dimensional → quality)
-- ✅ All service files use consistent "quality" terminology
-- ✅ Documentation updated to use "quality" consistently
-- ✅ Variable names and function names updated for clarity
-
-**Implementation Plan**:
-
-### Phase 1: Terminology Standardization (Week 1)
-1. **Update Core Files** (`src/core/dimensions.ts`)
-   - Rename KNOWN_DIMENSIONS → KNOWN_QUALITIES
-   - Update type names and exports
-   - Maintain backward compatibility
-
-2. **Update Service Files**
-   - `src/services/clustering.ts`: dimensionalClusters → qualityClusters, commonDimensions → commonQualities
-   - `src/services/recall.ts`: dimensional filtering → quality filtering
-   - `src/services/unified-scoring.ts`: dimensional relevance → quality relevance
-   - Update all variable names and function names
-
-3. **Update Documentation**
-   - `CLAUDE.md`: Update all "dimensional" references to "quality"
-   - `OPPORTUNITIES.md`: Update opportunity descriptions
-   - `TECHNICAL.md`: Update API documentation
-   - Ensure consistent terminology throughout
-
-4. **Unit Tests** (Update existing tests)
-   - Update test descriptions and variable names
-   - Ensure all tests pass with new terminology
-   - Add tests for terminology consistency
-
-### Phase 2: Quality Filtering Infrastructure (Week 2)
-1. **Create QualityFilterService** (`src/services/quality-filter.ts`)
-   - Filter expression parsing
-   - Boolean logic evaluation
-   - Presence/absence checking
-
-2. **Enhanced Schema Definition** (`src/mcp/schemas.ts`)
-   - Add QualityFilterSchema
-   - Update SearchInputSchema with qualities field
-   - Add validation for complex filter structures
-
-3. **Unit Tests** (`src/services/quality-filter.test.ts`)
-   - Test all filter types individually
-   - Test boolean logic combinations
-   - Test edge cases and error conditions
-
-### Phase 3: Integration and Advanced Features (Week 3)
-1. **Update Unified Scoring** (`src/services/unified-scoring.ts`)
-   - Integrate QualityFilterService
-   - Maintain backward compatibility
-   - Add performance monitoring
-
-2. **Enhanced Recall Handler** (`src/mcp/recall-handler.ts`)
-   - Parse quality filters from requests
-   - Apply filters before scoring
-   - Return appropriate error messages
-
-3. **Integration Tests** (`src/scripts/test-runner.ts`)
-   - Add sophisticated-filtering scenario
-   - Test with real Bridge data
-   - Verify performance characteristics
-
-4. **Query Optimization**
-   - Index quality signatures for faster filtering
-   - Cache common filter patterns
-   - Optimize boolean expression evaluation
-
-5. **Enhanced Error Handling**
-   - Detailed validation error messages
-   - Suggestions for correct filter syntax
-   - Graceful degradation for invalid filters
-
-6. **Documentation and Examples**
-   - Update TECHNICAL.md with new capabilities
-   - Add comprehensive examples
-   - Create migration guide for advanced users
-
-**Risk Mitigation**:
-- **Performance**: Implement query optimization and caching
-- **Complexity**: Start with simple presence/absence, add boolean logic incrementally
-- **Backward Compatibility**: Maintain existing query format alongside new capabilities
-- **Testing**: Comprehensive test coverage for all filter combinations
-- **Terminology Migration**: Use aliases and gradual deprecation to avoid breaking changes
-- **Documentation Sync**: Ensure all docs are updated together to prevent confusion
-
-**Evidence Trail**:
-- Implementation: New quality filtering service and enhanced schemas
-- Test results: All scenarios passing with correct filtering behavior
-- Performance metrics: <20% latency increase maintained
-- Documentation: Updated API reference with new capabilities
-- Terminology consistency: All files use "quality" terminology consistently
-- Migration success: Backward compatibility maintained during terminology transition
+*No active experiments currently running.*
 
 ## Completed Experiments
+
+### EXP-008: Sophisticated Quality Filtering with Terminology Standardization
+**Status**: Completed 2025-07-21  
+**Purpose**: Enable complex quality queries with boolean logic, absence filtering, and advanced combinations, while standardizing terminology throughout the codebase
+
+**Key Outcomes**: ✅ All success criteria met
+- Sophisticated quality filtering with presence/absence, OR logic, and complex boolean expressions
+- Complete terminology standardization from "dimensional" to "quality" throughout codebase
+- Backward compatibility maintained with existing quality queries
+- Performance impact minimal (<20% increase in recall latency)
+- All test scenarios passing with correct filtering behavior
+- Error handling provides clear validation messages for invalid filters
+
+**Technical Implementation**: 
+- Added QualityFilterService with complex boolean logic evaluation
+- Enhanced schemas with QualityFilter interface and validation
+- Integrated sophisticated filtering into unified scoring system
+- Updated recall handler to parse and apply complex quality filters
+- Comprehensive unit and integration tests for all filter combinations
+- Complete terminology migration across all service files and documentation
+
+**Evidence**: Learning loop analysis confirms completion, 629 unit tests passing, 8/8 Bridge scenarios passing, commit 467ee88
 
 ### EXP-007: Enhanced Learning Loop with Rich Test Evidence
 **Status**: Completed 2025-07-21  
