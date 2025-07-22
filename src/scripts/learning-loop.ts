@@ -145,8 +145,10 @@ interface DocumentContext {
   docGaps: string[];
   docSummary: {
     totalDocs: number;
-    docStats: Array<{name: string; size: number; lastSection: string}>;
+    docStats: Array<{ name: string; size: number; lastSection: string; }>;
   };
+  getDocumentationGaps(): string[];
+  analyzeLearningLoopCycle(): string[];
 }
 
 interface AnalysisReport {
@@ -336,12 +338,49 @@ class GitContextManager {
 
   private detectCommitType(message: string): GitCommit['type'] {
     const lower = message.toLowerCase();
-    if (lower.startsWith('fix:') || lower.includes('fix')) return 'fix';
-    if (lower.startsWith('feat:') || lower.includes('feature')) return 'feat';
-    if (lower.startsWith('docs:') || lower.includes('documentation')) return 'docs';
-    if (lower.startsWith('refactor:')) return 'refactor';
-    if (lower.startsWith('test:') || lower.includes('test')) return 'test';
-    if (lower.startsWith('chore:')) return 'chore';
+    
+    // Check for conventional commit format first (most reliable)
+    const conventionalMatch = lower.match(/^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\(.+\))?:/);
+    if (conventionalMatch) {
+      return conventionalMatch[1] as GitCommit['type'];
+    }
+    
+    // Check for common prefixes without false positives
+    if (lower.startsWith('fix:') || lower.startsWith('fix(') || 
+        (lower.includes('fix ') && !lower.includes('prefix') && !lower.includes('suffix'))) {
+      return 'fix';
+    }
+    if (lower.startsWith('feat:') || lower.startsWith('feat(') || 
+        (lower.includes('feat ') && !lower.includes('defeat'))) {
+      return 'feat';
+    }
+    if (lower.startsWith('docs:') || lower.startsWith('docs(') || 
+        (lower.includes('docs ') && !lower.includes('documentation'))) {
+      return 'docs';
+    }
+    if (lower.startsWith('refactor:') || lower.startsWith('refactor(')) {
+      return 'refactor';
+    }
+    if (lower.startsWith('test:') || lower.startsWith('test(') || 
+        (lower.includes('test ') && !lower.includes('testing'))) {
+      return 'test';
+    }
+    if (lower.startsWith('chore:') || lower.startsWith('chore(')) {
+      return 'chore';
+    }
+    
+    // Check for specific keywords in context (avoid false positives)
+    const words = lower.split(/\s+/);
+    const hasFix = words.some(word => word === 'fix' || word === 'fixed' || word === 'fixes');
+    const hasFeat = words.some(word => word === 'feat' || word === 'feature' || word === 'add');
+    const hasDocs = words.some(word => word === 'docs' || word === 'doc' || word === 'documentation');
+    const hasTest = words.some(word => word === 'test' || word === 'testing' || word === 'spec');
+    
+    if (hasFix) return 'fix';
+    if (hasFeat) return 'feat';
+    if (hasDocs) return 'docs';
+    if (hasTest) return 'test';
+    
     return 'unknown';
   }
 
@@ -1039,6 +1078,154 @@ class DocumentManager {
 
     return gaps;
   }
+
+  /**
+   * Analyze the complete learning loop cycle: VISION → OPPORTUNITIES → EXPERIMENTS → LEARNINGS
+   */
+  analyzeLearningLoopCycle(): string[] {
+    const issues: string[] = [];
+    
+    const vision = this.documents.get('VISION.md');
+    const technical = this.documents.get('TECHNICAL.md');
+    const opportunities = this.documents.get('OPPORTUNITIES.md');
+    const experiments = this.documents.get('EXPERIMENTS.md');
+    const learnings = this.documents.get('LEARNINGS.md');
+    
+    // Check 1: VISION → TECHNICAL alignment
+    if (vision && technical) {
+      const visionFeatures = this.extractFeaturesFromVision(vision);
+      const technicalFeatures = this.extractFeaturesFromTechnical(technical);
+      
+      const missingInTechnical = visionFeatures.filter(f => !technicalFeatures.includes(f));
+      if (missingInTechnical.length > 0) {
+        issues.push(`VISION features not documented in TECHNICAL.md: ${missingInTechnical.join(', ')}`);
+      }
+    }
+    
+    // Check 2: Completed experiments → LEARNINGS.md
+    if (experiments && learnings) {
+      const completedExperiments = this.extractCompletedExperiments(experiments);
+      const documentedLearnings = this.extractLearningTopics(learnings);
+      
+      const missingLearnings = completedExperiments.filter(exp => 
+        !documentedLearnings.some(learning => 
+          learning.toLowerCase().includes(exp.toLowerCase()) ||
+          exp.toLowerCase().includes(learning.toLowerCase())
+        )
+      );
+      
+      if (missingLearnings.length > 0) {
+        issues.push(`Completed experiments without documented learnings: ${missingLearnings.join(', ')}`);
+      }
+    }
+    
+    // Check 3: LEARNINGS → OPPORTUNITIES generation
+    if (learnings && opportunities) {
+      const learningTopics = this.extractLearningTopics(learnings);
+      const opportunityTopics = this.extractOpportunityTopics(opportunities);
+      
+      // Check if learnings have generated new opportunities
+      const learningKeywords = learningTopics.flatMap(topic => 
+        topic.toLowerCase().split(/\s+/).filter(word => word.length > 3)
+      );
+      
+      const hasNewOpportunities = opportunityTopics.some(opp => 
+        learningKeywords.some(keyword => opp.toLowerCase().includes(keyword))
+      );
+      
+      if (!hasNewOpportunities && learningTopics.length > 0) {
+        issues.push('Learnings have not generated new opportunities in OPPORTUNITIES.md');
+      }
+    }
+    
+    return issues;
+  }
+  
+  private extractFeaturesFromVision(visionContent: string): string[] {
+    const features: string[] = [];
+    const lines = visionContent.split('\n');
+    
+    for (const line of lines) {
+      if (line.includes('-') && (line.includes('pattern') || line.includes('experience') || line.includes('recall'))) {
+        const feature = line.replace(/^[\s-]+/, '').split('.')[0];
+        if (feature.length > 10) {
+          features.push(feature);
+        }
+      }
+    }
+    
+    return features;
+  }
+  
+  private extractFeaturesFromTechnical(technicalContent: string): string[] {
+    const features: string[] = [];
+    const lines = technicalContent.split('\n');
+    
+    for (const line of lines) {
+      if (line.includes('##') && (line.includes('experience') || line.includes('recall') || line.includes('reconsider'))) {
+        const feature = line.replace(/^#+\s*/, '');
+        features.push(feature);
+      }
+    }
+    
+    return features;
+  }
+  
+  private extractCompletedExperiments(experimentsContent: string): string[] {
+    const completed: string[] = [];
+    const lines = experimentsContent.split('\n');
+    let inCompletedSection = false;
+    
+    for (const line of lines) {
+      if (line.includes('## Completed Experiments')) {
+        inCompletedSection = true;
+        continue;
+      }
+      if (inCompletedSection && line.startsWith('##')) {
+        break;
+      }
+      if (inCompletedSection && line.match(/^###\s+EXP-\d+/)) {
+        const expMatch = line.match(/EXP-\d+/);
+        if (expMatch) {
+          completed.push(expMatch[0]);
+        }
+      }
+    }
+    
+    return completed;
+  }
+  
+  private extractLearningTopics(learningsContent: string): string[] {
+    const topics: string[] = [];
+    const lines = learningsContent.split('\n');
+    
+    for (const line of lines) {
+      if (line.startsWith('###') && line.includes('-')) {
+        const topic = line.replace(/^###\s*/, '').split('-')[0].trim();
+        if (topic.length > 5) {
+          topics.push(topic);
+        }
+      }
+    }
+    
+    return topics;
+  }
+  
+  private extractOpportunityTopics(opportunitiesContent: string): string[] {
+    const topics: string[] = [];
+    const lines = opportunitiesContent.split('\n');
+    
+    for (const line of lines) {
+      if (line.startsWith('###') && line.includes('HMW')) {
+        const topic = line.replace(/^###\s*/, '').split('HMW')[0].trim();
+        if (topic.length > 5) {
+          topics.push(topic);
+        }
+      }
+    }
+    
+    return topics;
+  }
 }
 
 // ============================================================================
@@ -1190,7 +1377,9 @@ async function runAnalysis(options: { days?: number } = {}): Promise<AnalysisRep
     documents,
     activeExperiments,
     docGaps,
-    docSummary
+    docSummary,
+    getDocumentationGaps: docManager.getDocumentationGaps.bind(docManager),
+    analyzeLearningLoopCycle: docManager.analyzeLearningLoopCycle.bind(docManager)
   });
   console.log(`  ✓ Generated ${recommendations.length} recommendations\n`);
 
@@ -1212,7 +1401,9 @@ async function runAnalysis(options: { days?: number } = {}): Promise<AnalysisRep
       documents,
       activeExperiments,
       docGaps,
-      docSummary
+      docSummary,
+      getDocumentationGaps: docManager.getDocumentationGaps.bind(docManager),
+      analyzeLearningLoopCycle: docManager.analyzeLearningLoopCycle.bind(docManager)
     },
     recommendations,
     metadata: {
@@ -1663,27 +1854,76 @@ function generateRecommendations(
       // PRIORITY 2: IMPLEMENTATION EVIDENCE (Medium Weight)
       // Dynamically check for implementation files based on experiment keywords
       const implementationChecks = [
-        { keyword: 'clustering', file: 'src/services/clustering.ts' },
-        { keyword: 'learning', file: 'src/scripts/learning-loop.ts' },
-        { keyword: 'scoring', file: 'src/services/unified-scoring.ts' },
-        { keyword: 'embedding', file: 'src/services/embeddings.ts' },
-        { keyword: 'recall', file: 'src/services/recall.ts' },
-        { keyword: 'experience', file: 'src/services/experience.ts' }
+        // Core services
+        { keyword: 'clustering', patterns: ['cluster', 'group', 'similar'], files: ['src/services/clustering.ts'] },
+        { keyword: 'learning', patterns: ['learning', 'loop', 'recommendation'], files: ['src/scripts/learning-loop.ts'] },
+        { keyword: 'scoring', patterns: ['score', 'unified', 'weight'], files: ['src/services/unified-scoring.ts'] },
+        { keyword: 'embedding', patterns: ['embed', 'vector', 'semantic'], files: ['src/services/embeddings.ts', 'src/services/embedding-search.ts'] },
+        { keyword: 'recall', patterns: ['recall', 'search', 'find'], files: ['src/services/recall.ts', 'src/services/recall-service.ts'] },
+        { keyword: 'experience', patterns: ['experience', 'capture', 'remember'], files: ['src/services/experience.ts'] },
+        { keyword: 'quality', patterns: ['quality', 'filter', 'dimension'], files: ['src/services/quality-filter.ts', 'src/core/dimensions.ts'] },
+        { keyword: 'reconsider', patterns: ['reconsider', 'update', 'evolve'], files: ['src/services/enrich.ts', 'src/mcp/reconsider-handler.ts'] },
+        { keyword: 'release', patterns: ['release', 'delete', 'remove'], files: ['src/services/release.ts', 'src/mcp/release-handler.ts'] },
+        { keyword: 'pattern', patterns: ['pattern', 'realization', 'reflect'], files: ['src/mcp/schemas.ts'] },
+        // MCP handlers
+        { keyword: 'handler', patterns: ['handler', 'mcp', 'tool'], files: ['src/mcp/*-handler.ts'] },
+        // Core infrastructure
+        { keyword: 'storage', patterns: ['storage', 'persist', 'save'], files: ['src/core/storage.ts'] },
+        { keyword: 'config', patterns: ['config', 'setting', 'option'], files: ['src/core/config.ts'] }
       ];
       
       implementationChecks.forEach(check => {
-        if (expKeywords.some(keyword => keyword.includes(check.keyword) || check.keyword.includes(keyword))) {
-          if (existsSync(join(process.cwd(), check.file))) {
-            evidence.push(`✅ ${check.keyword} implementation exists: ${check.file}`);
-            completionConfidence += 0.2;
-          }
+        // Check if experiment keywords match this implementation area
+        const keywordMatch = expKeywords.some(keyword => 
+          keyword.includes(check.keyword) || 
+          check.keyword.includes(keyword) ||
+          check.patterns.some(pattern => keyword.includes(pattern))
+        );
+        
+        if (keywordMatch) {
+          // Check for specific files
+          check.files.forEach(filePattern => {
+            if (filePattern.includes('*')) {
+              // Handle glob patterns
+              const dir = filePattern.split('/')[0];
+              const pattern = filePattern.split('/')[1];
+              const fullDir = join(process.cwd(), dir);
+              
+              if (existsSync(fullDir)) {
+                try {
+                  const files = readdirSync(fullDir);
+                  const matchingFiles = files.filter(f => 
+                    f.includes(pattern.replace('*', '')) && f.endsWith('.ts')
+                  );
+                  
+                  matchingFiles.forEach(file => {
+                    const fullPath = join(dir, file);
+                    evidence.push(`✅ ${check.keyword} implementation exists: ${fullPath}`);
+                    completionConfidence += 0.2;
+                  });
+                } catch {
+                  // Directory read failed
+                }
+              }
+            } else {
+              // Check specific file
+              if (existsSync(join(process.cwd(), filePattern))) {
+                evidence.push(`✅ ${check.keyword} implementation exists: ${filePattern}`);
+                completionConfidence += 0.2;
+              }
+            }
+          });
           
-          // Check for corresponding test file
-          const testFile = check.file.replace('.ts', '.test.ts');
-          if (existsSync(join(process.cwd(), testFile))) {
-            evidence.push(`✅ ${check.keyword} unit tests exist: ${testFile}`);
-            completionConfidence += 0.1;
-          }
+          // Check for corresponding test files
+          check.files.forEach(filePattern => {
+            if (!filePattern.includes('*')) {
+              const testFile = filePattern.replace('.ts', '.test.ts');
+              if (existsSync(join(process.cwd(), testFile))) {
+                evidence.push(`✅ ${check.keyword} unit tests exist: ${testFile}`);
+                completionConfidence += 0.1;
+              }
+            }
+          });
         }
       });
       
@@ -1703,16 +1943,31 @@ function generateRecommendations(
             const keywordMatches = expKeywords.filter(keyword => msg.includes(keyword)).length;
             if (keywordMatches >= 2) return true;
             
-            // Specific pattern matching
-            if (exp === 'EXP-002' && (msg.includes('quality') || msg.includes('recall') || msg.includes('filtering'))) {
-              return true;
-            }
-            if (exp === 'EXP-003' && msg.includes('learning loop')) {
-              return true;
-            }
-            if (exp === 'EXP-006' && (msg.includes('clustering') || msg.includes('cluster'))) {
-              return true;
-            }
+            // Dynamic semantic matching based on experiment content
+            const semanticMatches = [
+              // Quality filtering patterns
+              { keywords: ['quality', 'filter', 'recall', 'query'], patterns: ['quality', 'filter', 'recall', 'query'] },
+              // Learning loop patterns  
+              { keywords: ['learning', 'loop', 'recommendation', 'analysis'], patterns: ['learning', 'loop', 'recommendation', 'analysis'] },
+              // Clustering patterns
+              { keywords: ['cluster', 'group', 'similar', 'pattern'], patterns: ['cluster', 'group', 'similar', 'pattern'] },
+              // Pattern realization patterns
+              { keywords: ['pattern', 'realization', 'reflect', 'insight'], patterns: ['pattern', 'realization', 'reflect', 'insight'] },
+              // Experience capture patterns
+              { keywords: ['experience', 'capture', 'remember', 'store'], patterns: ['experience', 'capture', 'remember', 'store'] },
+              // Reconsider patterns
+              { keywords: ['reconsider', 'update', 'evolve', 'change'], patterns: ['reconsider', 'update', 'evolve', 'change'] },
+              // Release patterns
+              { keywords: ['release', 'delete', 'remove', 'cleanup'], patterns: ['release', 'delete', 'remove', 'cleanup'] }
+            ];
+            
+            // Check for semantic matches
+            const semanticMatch = semanticMatches.find(match => 
+              match.keywords.some(keyword => expKeywords.includes(keyword)) &&
+              match.patterns.some(pattern => msg.includes(pattern))
+            );
+            
+            if (semanticMatch) return true;
             
             return false;
           });
@@ -1799,55 +2054,33 @@ function generateRecommendations(
       recommendations.push({
         id: `REC-${idCounter++}`,
         type: 'process',
-        priority: 'low',
-        title: `Review active experiments: ${activeExps.join(', ')}`,
-        description: 'Active experiments should be reviewed for progress and completion.',
-        rationale: 'Regular experiment review ensures documentation stays current.',
+        priority: 'medium',
+        title: 'Active experiments need test scenarios',
+        description: `${activeExps.length} active experiments found but no matching test scenarios available.`,
+        rationale: 'Experiments should have corresponding test scenarios to validate completion.',
         evidence: [
-          `${activeExps.length} experiments in active state`,
-          `Available test scenarios: ${availableScenarios.join(', ')}`,
-          'Consider documenting progress or completion'
+          `Active experiments: ${activeExps.join(', ')}`,
+          `Available scenarios: ${availableScenarios.join(', ')}`,
+          'Consider adding test scenarios for active experiments'
         ],
-        confidenceLevel: 0.4
+        confidenceLevel: 0.7
       });
     }
   }
-  
-  // Pattern 10: New learnings from test patterns
-  if (testContext.bridgeTests.scenarios.length > 0 || testContext.unitTests.totalTests > 150) {
-    const failurePatterns: string[] = [];
-    
-    // Check for specific failure patterns in Bridge tests
-    testContext.bridgeTests.scenarios.forEach(s => {
-      if (!s.success && s.errors) {
-        if (s.errors.some(e => e.includes('overloaded'))) {
-          failurePatterns.push('API overload errors during testing');
-        }
-        if (s.errors.some(e => e.includes('timeout'))) {
-          failurePatterns.push('Test timeouts indicate performance issues');
-        }
-      }
-    });
-    
-    // Check for patterns in recent development
-    if (gitContext.recentCommits.filter(c => c.type === 'fix').length > 5) {
-      failurePatterns.push('High bug fix rate indicates stability challenges');
-    }
-    
-    if (failurePatterns.length > 0) {
+
+  // Pattern 11: Learning Loop Cycle Analysis (NEW)
+  if (docContext) {
+    const cycleIssues = docContext.analyzeLearningLoopCycle();
+    if (cycleIssues.length > 0) {
       recommendations.push({
         id: `REC-${idCounter++}`,
         type: 'documentation',
-        priority: 'medium',
-        title: 'Document new learnings from recent test patterns',
-        description: 'Recent test runs and development patterns reveal insights that should be captured in LEARNINGS.md.',
-        rationale: 'Documenting learnings helps the team avoid repeating mistakes and builds institutional knowledge.',
-        evidence: failurePatterns,
-        suggestedChanges: [{
-          file: 'LEARNINGS.md',
-          proposed: 'Add new section with test insights and development patterns'
-        }],
-        confidenceLevel: 0.75
+        priority: 'high',
+        title: 'Learning loop cycle gaps detected',
+        description: 'The VISION → OPPORTUNITIES → EXPERIMENTS → LEARNINGS cycle has gaps that need attention.',
+        rationale: 'Proper documentation of the learning loop cycle ensures insights are captured and inform future development.',
+        evidence: cycleIssues,
+        confidenceLevel: 0.9
       });
     }
   }
