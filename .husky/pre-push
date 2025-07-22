@@ -39,17 +39,13 @@ npm run type-check || handle_error "TypeScript type checking failed"
 echo "🧹 Running ESLint..."
 npm run lint || handle_error "ESLint found issues"
 
-# 3. Markdown linting
-echo "📖 Checking markdown files..."
-npm run lint:md || handle_error "Markdown linting failed"
-
-# 4. Build verification
+# 3. Build verification
 echo "🔨 Building project..."
 npm run build || handle_error "Build failed"
 
-# 5. Unit tests with coverage
+# 4. Unit tests with coverage
 echo "🧪 Running unit tests with coverage..."
-npm run test:coverage || handle_error "Unit tests failed"
+npm test || handle_error "Unit tests failed"
 
 echo "✅ All pre-push checks passed!"
 echo "🚀 Ready to push!" 

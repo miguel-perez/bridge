@@ -20,216 +20,159 @@ Each experiment follows this format for learning loop compatibility:
 
 ## Active Experiments
 
-### EXP-009: Continuous Quality Monitoring with DXT Release Automation
+### EXP-010: Advanced Recall Options with Intuitive Time-based Filtering
 
-**Status**: Active 2025-07-21  
-**Purpose**: Establish automated quality monitoring and DXT release pipeline to prevent quality drift and ensure reliable desktop extension distribution
+**Status**: Active 2025-07-22  
+**Purpose**: Enable full recall options with sorting, pagination, and natural language time filtering to scale with growing experiential databases
 
 **Problem Space Themes Addressed**:
 
-- **Quality Drift Prevention**: Manual discipline dependency is fragile and won't scale
-- **DXT Distribution Quality**: Users need reliable, tested releases with professional distribution
-- **MCP Protocol Compliance**: Must maintain compatibility with Claude Desktop and other MCP clients
-- **Cross-platform Reliability**: Ensure macOS, Windows, Linux compatibility
-- **Security Assurance**: Automated vulnerability scanning and dependency validation
+- **Database Scaling**: Growing experiential databases need efficient result control
+- **User Experience**: Current recall returns all matches without presentation options
+- **Temporal Reflection**: Natural language time expressions are fundamental to human reflection
+- **Performance**: Large result sets cause timeouts and poor performance
 
 **Implementation Phases**:
 
-**Phase 1: Core Quality Monitoring (Week 1) - 80% Impact, 20% Effort**
+**Phase 1: Core Recall Options (Week 1) - 80% Impact, 20% Effort**
 
-- ✅ Fix quality scoring algorithm (arithmetic errors, realistic thresholds)
-- ✅ Integrate quality monitoring with GitHub Actions workflows
-- ✅ Tune release criteria based on current Bridge quality metrics
-- ✅ Test end-to-end quality gate enforcement
-- **Goal**: Reliable quality assessment and automated enforcement
+- Add sorting options: `sort: "relevance" | "created" | "updated"`
+- Implement pagination: `limit: number, offset: number`
+- Add result metadata: total count, hasMore, etc.
+- Performance optimization at database level
+- **Goal**: Basic recall control and performance improvement
 
-**Phase 2: Validation & Refinement (Week 2) - 15% Impact, 30% Effort**
+**Phase 2: Natural Language Time Filtering (Week 2) - 15% Impact, 30% Effort**
 
-- Test quality gates with real PRs and releases
-- Validate DXT release automation with quality monitoring
-- Measure quality trends and adjust thresholds
-- Implement quality regression detection
-- **Goal**: Proven quality monitoring in real development workflow
+- Integrate date parsing library (date-fns or chrono-node)
+- Support natural expressions: "this month", "last week", "yesterday"
+- Maintain backward compatibility with explicit date ranges
+- **Goal**: Intuitive temporal queries for human reflection
 
-**Phase 3: Enhancement (Week 3) - 5% Impact, 50% Effort**
+**Phase 3: Advanced Features (Week 3) - 5% Impact, 50% Effort**
 
-- Cross-platform validation (if needed)
-- Quality dashboard development (if needed)
-- User experience measurement (if needed)
-- Advanced analytics and reporting
-- **Goal**: Polish and advanced features
+- Result formatting options
+- Advanced filtering combinations
+- Performance monitoring and optimization
+- **Goal**: Polish and advanced query capabilities
 
 **Test Scenarios**:
 
-1. **Quality Gate Enforcement**: Verify pre-commit and CI/CD quality gates prevent regressions
-2. **DXT Build Validation**: Test automated DXT packaging with comprehensive validation
-3. **Release Pipeline**: Validate GitHub release creation with quality-assured DXT packages
-4. **Quality Scoring**: Test 100-point DXT quality scoring system with objective metrics
-5. **Quality Metrics Reporting**: Test real-time quality metrics and basic reporting
-6. **Release Criteria Checking**: Test automated release readiness validation
-7. **Quality Regression Detection**: Test alerts for quality score drops
-8. **Cross-platform Testing**: Verify DXT compatibility across different operating systems (Phase 2)
-9. **Security Scanning**: Test automated vulnerability detection and dependency auditing (Phase 2)
-10. **Performance Monitoring**: Validate bundle size tracking and performance regression detection (Phase 2)
+1. **Sorting Options**: Test recall with different sort parameters
+2. **Pagination Control**: Test limit and offset functionality
+3. **Result Metadata**: Verify total count and hasMore indicators
+4. **Natural Time Queries**: Test "this month", "last week" expressions
+5. **Performance Scaling**: Test with large datasets
+6. **Backward Compatibility**: Ensure existing queries still work
+7. **Mixed Queries**: Test sorting with quality filters
+8. **Edge Cases**: Test empty results, single results, etc.
 
 **Measurable Outcomes**:
 
-- **Quality Score**: Achieve 80%+ quality score consistently (realistic for Bridge)
-- **Release Automation**: 100% automated DXT releases with quality gates
-- **Quality Gates**: 100% enforcement of quality checks before any release
-- **Release Criteria**: Clear go/no-go decisions based on quality thresholds
-- **Quality Regression**: Automated alerts for quality score drops >5%
-- **Performance**: Bundle size <2MB with <20% size increase per release (Phase 2)
-- **Compatibility**: 100% MCP protocol compliance across all platforms (Phase 2)
-- **Security**: Zero high/critical vulnerabilities in released DXT packages (Phase 2)
-- **User Experience**: <5 minute installation process from GitHub release (Phase 3)
-- **Quality Dashboard**: Real-time metrics visualization with historical tracking (Phase 3)
+- **Performance**: Recall latency <100ms for typical queries
+- **Scalability**: Handle 1000+ experiences without timeouts
+- **User Experience**: Intuitive time expressions work correctly
+- **Compatibility**: 100% backward compatibility maintained
+- **Sorting Accuracy**: Results properly sorted by specified criteria
+- **Pagination**: Correct result limiting and offset handling
 
 **Learning Questions**:
 
-- How does automated quality monitoring affect development velocity and bug rates?
-- What quality thresholds provide optimal balance between safety and development speed?
-- How does quality gate enforcement impact release confidence and user adoption?
-- Which quality metrics are most predictive of successful releases?
-- How does quality regression detection help prevent quality drift?
-- What is the optimal quality score threshold for Bridge releases? (Phase 1)
-- How does cross-platform validation impact release confidence? (Phase 2)
-- How does automated security scanning affect dependency management? (Phase 2)
-- Which quality metrics correlate most strongly with user experience? (Phase 3)
-- How does quality dashboard visualization impact development decisions? (Phase 3)
+- How do sorting options affect user query patterns?
+- Which time expressions are most commonly used?
+- How does pagination impact user engagement with results?
+- What performance optimizations are most effective?
+- How do natural language time filters improve adoption?
 
 **Technical Implementation**:
 
-- **Phase 1**: Quality scoring system, GitHub Actions integration, release criteria
-- **Phase 2**: Cross-platform validation, security scanning, performance monitoring
-- **Phase 3**: Quality dashboard, user experience measurement, advanced analytics
-- GitHub Actions workflows for DXT release automation
-- Comprehensive quality scoring system (100-point scale)
-- Automated DXT packaging with validation
-- Quality regression detection and alerting
-- Release criteria checking and enforcement
-- Security scanning and vulnerability detection (Phase 2)
-- Cross-platform compatibility testing (Phase 2)
-- Performance monitoring and regression detection (Phase 2)
-- Quality dashboard and reporting (Phase 3)
-- User experience measurement and feedback collection (Phase 3)
+- **Phase 1**: Enhanced recall handler, sorting logic, pagination
+- **Phase 2**: Date parsing integration, natural language support
+- **Phase 3**: Advanced features, performance monitoring
+- Updated schemas for new parameters
+- Performance optimization for large datasets
+- Comprehensive test coverage
 
 **Risk Mitigation**:
 
-- **Quality Gate Failures**: Implement gradual rollout with manual override options
-- **Release Pipeline Issues**: Maintain manual release capability as fallback
-- **False Positives**: Tune quality thresholds based on initial results
-- **Performance Impact**: Monitor CI/CD execution time and optimize as needed
-- **Quality Score Accuracy**: Validate scoring system against actual Bridge metrics
-- **Cross-platform Issues**: Implement platform-specific testing and validation (Phase 2)
-- **User Adoption**: Provide clear migration path from manual to automated releases (Phase 3)
+- **Performance Impact**: Implement efficient sorting and limiting
+- **Date Parsing Accuracy**: Use proven libraries with fallbacks
+- **Backward Compatibility**: Maintain existing API contracts
+- **Complexity**: Start with simple options, add complexity gradually
 
 **Evidence Trail**:
 
-- GitHub Actions workflow files: `.github/workflows/dxt-release.yml`, `.github/workflows/dxt-quality.yml`
-- Quality scoring implementation and validation
-- DXT release automation testing and validation
-- Quality regression detection and alerting system
-- Quality reports and metrics from monitoring script
-- Release criteria validation and enforcement
-- Cross-platform compatibility verification (Phase 2)
-- Security scanning results and vulnerability reports (Phase 2)
-- Performance metrics and bundle size tracking (Phase 2)
-- Quality dashboard implementation and metrics (Phase 3)
-- User experience measurement and satisfaction data (Phase 3)
+- Enhanced recall handler implementation
+- Date parsing library integration
+- Performance benchmarks and optimization
+- User testing with natural language queries
+- Backward compatibility verification
 
 **Success Criteria**:
 
-- ✅ Automated DXT release pipeline operational
-- ✅ 80%+ quality score achieved consistently (realistic for Bridge)
-- ✅ Zero quality regressions in releases
-- ✅ 100% MCP protocol compliance maintained
-- ✅ Quality regression detection and alerting active
-- ✅ Release criteria validation and enforcement working
-- ✅ Cross-platform compatibility verified (Phase 2)
-- ✅ Security vulnerabilities eliminated (Phase 2)
-- ✅ Performance metrics within acceptable ranges (Phase 2)
-- ✅ Quality dashboard operational with real-time metrics (Phase 3)
-- ✅ User experience measurement and feedback collection implemented (Phase 3)
+- ✅ Sorting options work correctly for all parameters
+- ✅ Pagination handles large result sets efficiently
+- ✅ Natural language time expressions parse accurately
+- ✅ Performance targets met for typical queries
+- ✅ 100% backward compatibility maintained
+- ✅ All test scenarios passing
 
 **Current Progress**:
 
-- ✅ GitHub Actions workflows created
-- ✅ Quality scoring system designed
-- ✅ DXT release automation implemented
-- ✅ Test scenarios added to test runner
-- ✅ Quality metrics service implemented
-- ✅ Quality monitoring script created and tested
-- ✅ Quality report generation working
-- 🔄 Quality scoring algorithm refinement (fixing score calculation) - **80/20 Priority**
-- 🔄 GitHub Actions integration with quality monitoring - **80/20 Priority**
-- 🔄 Release criteria tuning based on Bridge metrics - **80/20 Priority**
-- 🔄 Cross-platform validation setup (Phase 2)
-- 🔄 Security scanning implementation (Phase 2)
-- 🔄 Quality dashboard development (Phase 3)
-- 🔄 User experience measurement (Phase 3)
-
-**Quality Scoring System (100-point scale)**:
-
-- **Manifest validation** (20 points) - Required fields, structure, MCP compliance
-- **Build process** (20 points) - DXT packaging, integrity, cross-platform compatibility
-- **Code quality** (20 points) - Test coverage, linting, TypeScript compliance
-- **Security** (15 points) - Vulnerability scanning, dependency auditing
-- **Performance** (10 points) - Bundle size, execution time, memory usage
-- **Documentation** (10 points) - User guides, API docs, release notes
-- **User experience** (5 points) - Installation time, error handling, feedback
-
-**80/20 Approach Summary**:
-This experiment follows the 80/20 principle to maximize impact with minimal effort:
-
-**80% Impact, 20% Effort (Phase 1)**:
-
-- Fix quality scoring algorithm (1 hour)
-- Integrate with GitHub Actions (2 hours)
-- Tune release criteria (30 minutes)
-- Test end-to-end (30 minutes)
-- **Total**: 4 hours for 80% of quality monitoring value
-
-**15% Impact, 30% Effort (Phase 2)**:
-
-- Cross-platform validation
-- Security scanning
-- Performance monitoring
-- **Total**: 1-2 weeks for additional validation
-
-**5% Impact, 50% Effort (Phase 3)**:
-
-- Quality dashboard
-- User experience measurement
-- Advanced analytics
-- **Total**: 1-2 weeks for polish and advanced features
-
-**Immediate 80/20 Actions**:
-
-1. Fix scoring algorithm arithmetic errors
-2. Update GitHub Actions to use quality-monitor script
-3. Adjust release criteria thresholds for Bridge
-4. Test quality gates with real PRs
-
-**Expected 80/20 Outcomes**:
-
-- Reliable quality assessment (0-100 scale)
-- Automated quality enforcement
-- Clear release decisions
-- Quality trend tracking
-- 80% of quality monitoring value delivered in 4 hours
-
-**Critical Success Factors**:
-
-1. **Quality Scoring Algorithm Fix** - Must fix arithmetic errors and set realistic thresholds (80/20 Priority)
-2. **GitHub Actions Integration** - Must integrate quality monitoring with CI/CD pipeline (80/20 Priority)
-3. **Release Criteria Tuning** - Must set appropriate thresholds for Bridge quality (80/20 Priority)
-4. **Quality Regression Detection** - Must track historical quality trends and alert on drops
-5. **Cross-Platform Validation** - Need automated testing across macOS, Windows, Linux (Phase 2)
-6. **Security Scanning** - Need automated vulnerability detection and dependency auditing (Phase 2)
-7. **Learning Loop Integration** - Must provide clear evidence for automated completion detection (Phase 3)
+- 🔄 Phase 1: Core recall options implementation
+- 🔄 Enhanced recall handler with sorting and pagination
+- 🔄 Performance optimization for large datasets
+- 🔄 Natural language time filtering (Phase 2)
+- 🔄 Advanced features and polish (Phase 3)
 
 ## Completed Experiments
+
+### EXP-009: Continuous Quality Monitoring with DXT Release Automation
+
+**Status**: Completed 2025-07-22  
+**Purpose**: Establish automated quality monitoring and DXT release pipeline to prevent quality drift and ensure reliable desktop extension distribution
+
+**Key Outcomes**: ✅ Phase 1 completed successfully with 80/20 approach
+
+**Phase 1 Results (80% Impact, 20% Effort)**:
+
+- ✅ **Quality Scoring Algorithm Fixed**: 101.52 → 96.52/100 (realistic scoring)
+- ✅ **Security Scoring Fixed**: 25 → 15/15 (proper maximum enforcement)
+- ✅ **Code Quality Scoring Fixed**: 13.52 → 18.52/20 (ESLint config detection)
+- ✅ **GitHub Actions Integration**: Quality monitoring fully integrated with CI/CD
+- ✅ **Release Criteria**: 8/8 criteria met, Release Ready ✅
+- ✅ **Pre-commit Quality Gates**: lint-staged integration for efficient checks
+- ✅ **Quality Status**: Excellent (96.52/100)
+
+**Technical Implementation**:
+
+- Fixed arithmetic errors in quality scoring algorithm
+- Added ESLint config detection (.eslintrc file)
+- Integrated quality monitoring with GitHub Actions workflows
+- Added lint-staged for efficient pre-commit quality checks
+- Updated pre-commit and pre-push hooks
+- Quality metrics service operational with realistic thresholds
+
+**Quality Metrics Achieved**:
+
+- **Overall Score**: 96.52/100 (Excellent)
+- **Manifest**: 20/20 ✅
+- **Build**: 20/20 ✅
+- **Code Quality**: 18.52/20 ✅
+- **Security**: 15/15 ✅
+- **Performance**: 10/10 ✅
+- **Documentation**: 8/10 ✅
+- **User Experience**: 5/5 ✅
+
+**80/20 Approach Success**:
+
+- **Time Invested**: ~4 hours (as planned)
+- **Value Delivered**: 80% of quality monitoring capability
+- **Quality Score**: 96.52/100 (excellent)
+- **Automation**: Fully operational quality gates
+- **Integration**: GitHub Actions + pre-commit hooks working
+
+**Evidence**: Quality monitoring script operational, all quality gates passing, GitHub Actions integration complete, commit 8dcaf98
 
 ### EXP-008: Sophisticated Quality Filtering with Terminology Standardization
 
