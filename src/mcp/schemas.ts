@@ -21,6 +21,47 @@ Choose qualities that emerge prominently in this moment. Following the principle
 `);
 export const SortEnum = z.enum(['relevance', 'created']).describe('Sort order for results');
 
+// Quality Filter Schema for sophisticated filtering
+// Quality Filter Schema for sophisticated filtering
+export const QualityFilterSchema = z.object({
+  // Presence/Absence filtering
+  embodied: z.union([
+    z.object({ present: z.boolean() }).describe('Filter by presence/absence of embodied qualities'),
+    z.string().describe('Filter for specific embodied quality (e.g., "thinking", "sensing")'),
+    z.array(z.string()).describe('Filter for multiple embodied qualities (OR logic)')
+  ]).optional(),
+  focus: z.union([
+    z.object({ present: z.boolean() }).describe('Filter by presence/absence of focus qualities'),
+    z.string().describe('Filter for specific focus quality (e.g., "narrow", "broad")'),
+    z.array(z.string()).describe('Filter for multiple focus qualities (OR logic)')
+  ]).optional(),
+  mood: z.union([
+    z.object({ present: z.boolean() }).describe('Filter by presence/absence of mood qualities'),
+    z.string().describe('Filter for specific mood quality (e.g., "open", "closed")'),
+    z.array(z.string()).describe('Filter for multiple mood qualities (OR logic)')
+  ]).optional(),
+  purpose: z.union([
+    z.object({ present: z.boolean() }).describe('Filter by presence/absence of purpose qualities'),
+    z.string().describe('Filter for specific purpose quality (e.g., "goal", "wander")'),
+    z.array(z.string()).describe('Filter for multiple purpose qualities (OR logic)')
+  ]).optional(),
+  space: z.union([
+    z.object({ present: z.boolean() }).describe('Filter by presence/absence of space qualities'),
+    z.string().describe('Filter for specific space quality (e.g., "here", "there")'),
+    z.array(z.string()).describe('Filter for multiple space qualities (OR logic)')
+  ]).optional(),
+  time: z.union([
+    z.object({ present: z.boolean() }).describe('Filter by presence/absence of time qualities'),
+    z.string().describe('Filter for specific time quality (e.g., "past", "future")'),
+    z.array(z.string()).describe('Filter for multiple time qualities (OR logic)')
+  ]).optional(),
+  presence: z.union([
+    z.object({ present: z.boolean() }).describe('Filter by presence/absence of presence qualities'),
+    z.string().describe('Filter for specific presence quality (e.g., "individual", "collective")'),
+    z.array(z.string()).describe('Filter for multiple presence qualities (OR logic)')
+  ]).optional()
+}).describe('Sophisticated quality filtering with presence/absence filtering and OR logic within qualities');
+
 // Perspective field - avoid union to prevent anyOf with $ref issues
 export const PerspectiveField = z.string().min(1).describe('Perspective from which experience is experienceed (e.g., I, we, you, they, or custom perspectives)');
 
@@ -103,6 +144,7 @@ export const SearchInputSchema = z.object({
     z.string().describe('Search query for semantic matching'),
     z.array(z.string()).describe('Array of qualities or search terms')
   ]).describe('Search query - can be a string or array of qualities').optional(),
+  qualities: QualityFilterSchema.optional().describe('Sophisticated quality filtering with presence/absence filtering and OR logic within qualities'),
   limit: z.number().describe('Maximum number of results to return').optional(),
   offset: z.number().describe('Number of results to skip for pagination').optional(),
   experiencer: z.string().describe('Filter by experiencer').optional(),
