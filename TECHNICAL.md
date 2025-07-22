@@ -5,12 +5,28 @@ and planned features.
 
 ## Current Operations (Implemented)
 
-Bridge provides four core operations:
+Bridge provides four core operations that enable experiential memory and pattern recognition:
 
 1. **experience()** - Captures meaningful moments with quality signatures
+   - Every AI conversation starts from scratch, but Bridge maintains continuity
+   - **embodied** - How experience manifests through physical and mental states
+   - Captures the unified field of experience while maintaining visual specificity
+   - Preserves authentic voice and experiential wholeness
+
 2. **recall()** - Searches experiences with semantic, quality, and temporal scoring
+   - Pattern recognition in their own experience through sophisticated filtering
+   - Advanced recall options with sorting, pagination, and natural language time filtering
+   - Complete search schema coverage including content type filtering
+   - Clustering analysis to reveal patterns in different states
+
 3. **reconsider()** - Updates experiences as understanding deepens
+   - Enables evolution of insights as perspective changes
+   - Maintains experiential continuity while allowing growth
+
 4. **release()** - Removes experiences that no longer serve
+   - Selective cleanup to maintain relevance and focus
+
+**Bridge will evolve through use, guided by our learning loop methodology** - continuous improvement through experimentation and validated insights.
 
 ## Current recall() Functionality
 
@@ -18,7 +34,7 @@ The recall() operation provides sophisticated search capabilities:
 
 ### What's Working Now
 
-```javascript
+````javascript
 // Simple semantic search
 recall("breakthrough moments")
 
@@ -77,38 +93,38 @@ recall("anxiety", { as: "clusters" })
 // - Meaningful summaries
 // - Experience IDs in each cluster
 // - Cluster size and themes
-```
+````
 
 ## Planned Features (Not Yet Implemented)
 
 ### Future: Sequence Mode
 
-*Status: Planned (See OPPORTUNITIES.md - Score: 240)*
+_Status: Planned (See OPPORTUNITIES.md - Score: 240)_
 
 Will analyze temporal transitions to reveal natural rhythms.
 
 ### Pattern Realizations with reflects field
 
-*Status: Implemented (See EXP-005 in EXPERIMENTS.md)*
+_Status: Implemented (See EXP-005 in EXPERIMENTS.md)_
 
 Enables capturing "aha" moments that link multiple experiences through the `reflects` field.
 
 ```javascript
 // Create a pattern realization that reflects on multiple experiences
 experience({
-  source: "I notice I always feel anxious before things that end up going well",
-  experience: ["mood.closed", "embodied.sensing"],
-  reflects: ["exp-123", "exp-456"]  // Links to specific experiences
-})
+  source: 'I notice I always feel anxious before things that end up going well',
+  experience: ['mood.closed', 'embodied.sensing'],
+  reflects: ['exp-123', 'exp-456'], // Links to specific experiences
+});
 
 // Find all pattern realizations
-recall("", { filter: { reflects: "only" } })
+recall('', { filter: { reflects: 'only' } });
 
 // Find experiences reflected by a specific insight
-recall("", { filter: { reflected_by: "exp-789" } })
+recall('', { filter: { reflected_by: 'exp-789' } });
 
 // Find insights that reflect on specific experiences
-recall("", { filter: { reflects: ["exp-123"] } })
+recall('', { filter: { reflects: ['exp-123'] } });
 ```
 
 ## Current Search Capabilities
@@ -119,7 +135,7 @@ Bridge uses transformer-based embeddings (all-MiniLM-L6-v2) for semantic similar
 
 ```javascript
 // Find experiences similar in meaning
-recall("feeling anxious about presentation")
+recall('feeling anxious about presentation');
 // Finds semantically related experiences even without exact word matches
 ```
 
@@ -129,75 +145,83 @@ Query by specific quality dimensions:
 
 ```javascript
 // Single dimension - finds all mood.closed experiences
-recall("mood.closed")
+recall('mood.closed');
 
 // Multiple dimensions - must have ALL specified dimensions
-recall(["embodied.sensing", "mood.closed"])
+recall(['embodied.sensing', 'mood.closed']);
 
 // Base dimension matches subtypes
-recall("embodied")  // Matches embodied.thinking AND embodied.sensing
+recall('embodied'); // Matches embodied.thinking AND embodied.sensing
 ```
 
 ## Current Filtering Options
 
 ### Filter by Experiencer
+
 ```javascript
-recall("purpose", {
-  experiencer: "Human"
-})
+recall('purpose', {
+  experiencer: 'Human',
+});
 ```
 
 ### Filter by Perspective
+
 ```javascript
-recall("", {
-  perspective: "we"  // Find collective experiences
-})
+recall('', {
+  perspective: 'we', // Find collective experiences
+});
 ```
 
 ### Filter by Processing Time
+
 ```javascript
-recall("insight", {
-  processing: "long-after"  // Find retrospective insights
-})
+recall('insight', {
+  processing: 'long-after', // Find retrospective insights
+});
 ```
 
 ### Special Queries
+
 ```javascript
 // Get recent experiences
-recall("recent")  // or recall("last")
+recall('recent'); // or recall("last")
 
 // Get all experiences (with optional filters)
-recall("", { experiencer: "Claude" })
+recall('', { experiencer: 'Claude' });
 ```
 
 ## Real-World Examples (Current Implementation)
 
 ### Finding Experiences by Mood
+
 ```javascript
-const anxiousStates = await recall("mood.closed", {
-  experiencer: "Human",
-  limit: 10
+const anxiousStates = await recall('mood.closed', {
+  experiencer: 'Human',
+  limit: 10,
 });
 // Returns experiences where mood.closed was prominent
 ```
 
 ### Semantic Search for Themes
+
 ```javascript
-const breakthroughs = await recall("breakthrough moment finally solved", {
-  sort: "relevance"
+const breakthroughs = await recall('breakthrough moment finally solved', {
+  sort: 'relevance',
 });
 // Uses semantic embeddings to find conceptually similar experiences
 ```
 
 ### Multi-quality Query
+
 ```javascript
-const focusedAnxiety = await recall(["focus.narrow", "mood.closed"]);
+const focusedAnxiety = await recall(['focus.narrow', 'mood.closed']);
 // Finds experiences that have BOTH dimensions
 ```
 
 ### Clustering Analysis
+
 ```javascript
-const anxietyClusters = await recall("anxiety", { as: "clusters" });
+const anxietyClusters = await recall('anxiety', { as: 'clusters' });
 // Returns experiences grouped into clusters like:
 // - "2 experiences about anxious" (embodied.sensing, mood.closed)
 // - "3 experiences about focused work" (focus.narrow, purpose.goal)
@@ -206,6 +230,7 @@ const anxietyClusters = await recall("anxiety", { as: "clusters" });
 ## Technical Foundation
 
 The current recall() implementation uses:
+
 - **Semantic embeddings** (@xenova/transformers, all-MiniLM-L6-v2 model)
 - **Unified scoring** combining semantic similarity, text matching, and quality relevance
 - **Quality filtering** for precise quality-based queries
