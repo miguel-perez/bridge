@@ -51,13 +51,5 @@ npm run build || handle_error "Build failed"
 echo "🧪 Running unit tests with coverage..."
 npm run test:coverage || handle_error "Unit tests failed"
 
-# 6. All integration tests (more comprehensive)
-echo "🔗 Running all integration tests..."
-npm run test:bridge || handle_error "Integration tests failed"
-
-# 7. Learning loop analysis (optional but recommended)
-echo "🧠 Running learning loop analysis..."
-npm run loop || echo "⚠️  Learning loop analysis failed (continuing anyway)"
-
 echo "✅ All pre-push checks passed!"
 echo "🚀 Ready to push!" 

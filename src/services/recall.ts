@@ -7,6 +7,7 @@ import {
   applyFiltersAndScore
 } from './unified-scoring.js';
 import { clusterExperiences } from './clustering.js';
+import { type QualityFilter } from './quality-filter.js';
 
 // Debug mode configuration
 const DEBUG_MODE = process.env.BRIDGE_RECALL_DEBUG === 'true' || process.env.BRIDGE_DEBUG === 'true';
@@ -64,6 +65,8 @@ export interface RecallInput {
   show_ids?: boolean;
   // Clustering option
   as?: 'clusters';
+  // Sophisticated quality filtering
+  qualities?: QualityFilter;
 }
 
 export interface RecallServiceResult {
@@ -338,11 +341,16 @@ export async function search(input: RecallInput): Promise<RecallServiceResponse>
       semanticScoresMap.set(id, score);
     }
 
-    // Apply unified scoring (filters already applied above)
+    // Apply unified scoring with enhanced quality filtering
     const scoredExperiences = applyFiltersAndScore(
       filteredRecords,
       input.query || input.semantic_query || '',
-      {}, // Filters already applied
+      {
+        experiencer: input.experiencer,
+        perspective: input.perspective,
+        processing: input.processing,
+        qualities: input.qualities // Pass sophisticated quality filters
+      },
       semanticScoresMap
     );
 

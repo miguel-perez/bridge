@@ -118,7 +118,9 @@ export class RecallHandler {
           created: recall.created,
           sort: isRecentQuery ? 'created' : recall.sort, // Force sort by created for recent
           // Handle clustering if requested
-          as: recall.as
+          as: recall.as,
+          // Pass sophisticated quality filters
+          qualities: recall.qualities
         }),
         DEFAULT_TIMEOUTS.EXPERIENCE,
         'Recall operation'

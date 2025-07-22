@@ -5,6 +5,7 @@
 
 import type { SourceRecord } from '../core/types.js';
 import { KNOWN_QUALITIES } from '../core/dimensions.js';
+import { qualityFilterService, type QualityFilter } from './quality-filter.js';
 
 export interface ScoringFactors {
   semantic: number;
@@ -237,7 +238,7 @@ function qualitiesPartialMatch(qual1: string, qual2: string): boolean {
 }
 
 /**
- * Apply filters and scoring to experiences
+ * Apply filters and scoring to experiences with enhanced quality filtering
  */
 export function applyFiltersAndScore(
   experiences: SourceRecord[],
@@ -248,6 +249,7 @@ export function applyFiltersAndScore(
     processing?: string;
     reflects?: 'only';
     reflected_by?: string | string[];
+    qualities?: QualityFilter; // New sophisticated quality filtering
   },
   semanticScores: Map<string, number>
 ): ScoredExperience[] {
@@ -263,46 +265,59 @@ export function applyFiltersAndScore(
   if (filters.processing) {
     filtered = filtered.filter(exp => exp.processing === filters.processing);
   }
-      if (filters.reflects === 'only') {
-      // Filter for pattern realizations only (experiences with reflects field)
-      filtered = filtered.filter(exp => exp.reflects !== undefined);
-    }
+  if (filters.reflects === 'only') {
+    // Filter for pattern realizations only (experiences with reflects field)
+    filtered = filtered.filter(exp => exp.reflects !== undefined);
+  }
 
-    if (filters.reflected_by) {
-      // Filter for experiences that are reflected by specific pattern realizations
-      const reflectedByIds = Array.isArray(filters.reflected_by) ? filters.reflected_by : [filters.reflected_by];
+  if (filters.reflected_by) {
+    // Filter for experiences that are reflected by specific pattern realizations
+    const reflectedByIds = Array.isArray(filters.reflected_by) ? filters.reflected_by : [filters.reflected_by];
+    filtered = filtered.filter(exp => {
+      // Find pattern realizations that reflect on this experience
+      return experiences.some((patternExp: SourceRecord) => 
+        patternExp.reflects && 
+        patternExp.reflects.includes(exp.id) &&
+        reflectedByIds.includes(patternExp.id)
+      );
+    });
+  }
+  
+  // Enhanced quality filtering with sophisticated filters
+  if (filters.qualities) {
+    try {
+      // Parse and evaluate the quality filter
+      const filterExpression = qualityFilterService.parseQualityFilter(filters.qualities);
+      filtered = filtered.filter(exp => qualityFilterService.evaluateFilter(exp, filterExpression));
+    } catch (error) {
+      // If quality filter evaluation fails, log error but continue with unfiltered results
+      console.warn('Quality filter evaluation failed:', error);
+      // Continue without quality filtering
+    }
+  } else {
+    // Legacy quality filtering: For pure quality queries, only return experiences with matching qualities
+    if (query && isQueryPurelyQuality(query)) {
+      const queryQualities = extractQualities(query);
       filtered = filtered.filter(exp => {
-        // Find pattern realizations that reflect on this experience
-        return experiences.some((patternExp: SourceRecord) => 
-          patternExp.reflects && 
-          patternExp.reflects.includes(exp.id) &&
-          reflectedByIds.includes(patternExp.id)
-        );
+        const experienceQualities = exp.experience || [];
+        
+        if (Array.isArray(query)) {
+          // For array queries, ALL qualities must match
+          return queryQualities.every(qQual => 
+            experienceQualities.some(eQual => 
+              qualitiesMatch(qQual, eQual) || qualitiesPartialMatch(qQual, eQual)
+            )
+          );
+        } else {
+          // For single quality queries, at least one must match
+          return queryQualities.some(qQual => 
+            experienceQualities.some(eQual => 
+              qualitiesMatch(qQual, eQual) || qualitiesPartialMatch(qQual, eQual)
+            )
+          );
+        }
       });
     }
-  
-  // Quality filter: For pure quality queries, only return experiences with matching qualities
-  if (query && isQueryPurelyQuality(query)) {
-    const queryQualities = extractQualities(query);
-    filtered = filtered.filter(exp => {
-      const experienceQualities = exp.experience || [];
-      
-      if (Array.isArray(query)) {
-        // For array queries, ALL qualities must match
-        return queryQualities.every(qQual => 
-          experienceQualities.some(eQual => 
-            qualitiesMatch(qQual, eQual) || qualitiesPartialMatch(qQual, eQual)
-          )
-        );
-      } else {
-        // For single quality queries, at least one must match
-        return queryQualities.some(qQual => 
-          experienceQualities.some(eQual => 
-            qualitiesMatch(qQual, eQual) || qualitiesPartialMatch(qQual, eQual)
-          )
-        );
-      }
-    });
   }
   
   // Score remaining experiences

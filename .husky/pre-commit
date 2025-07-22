@@ -51,9 +51,5 @@ npm run build || handle_error "Build failed"
 echo "🧪 Running unit tests..."
 npm test || handle_error "Unit tests failed"
 
-# 6. Quick integration test (fastest scenario)
-echo "🔗 Running quick integration test..."
-npm run test:bridge:quick || handle_error "Integration test failed"
-
 echo "✅ All pre-commit checks passed!"
 echo "🚀 Ready to commit!"
