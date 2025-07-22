@@ -203,6 +203,59 @@ const SCENARIOS: Record<string, TestScenario> = {
       },
     ],
   },
+  'advanced-recall-options': {
+    description:
+      'Test advanced recall options with sorting, pagination, and complete field coverage',
+    turns: [
+      {
+        role: 'user',
+        content:
+          'I wrote a blog post about my morning routine: "My morning routine has evolved over the years. I start with meditation, then exercise, followed by a healthy breakfast. This structured approach helps me feel grounded and ready for the day." Please capture this experience.',
+      },
+      {
+        role: 'assistant',
+        content: "I'll capture that crafted experience about your morning routine blog post.",
+        expectedTools: ['experience'],
+      },
+      {
+        role: 'user',
+        content:
+          "I also journaled about feeling overwhelmed yesterday: \"I feel completely overwhelmed by all the tasks on my plate. There's so much to do and I don't know where to start. My mind is racing and I can't focus on anything.\" Please capture this experience.",
+      },
+      {
+        role: 'assistant',
+        content: "I'll capture that raw experience about feeling overwhelmed in your journal.",
+        expectedTools: ['experience'],
+      },
+      {
+        role: 'user',
+        content: 'Show me my most recent experiences, sorted by creation date',
+      },
+      {
+        role: 'assistant',
+        content: "I'll search for your experiences and sort them by when they were created.",
+        expectedTools: ['recall'],
+      },
+      {
+        role: 'user',
+        content: 'Show me only my crafted content (blog posts, not journal entries)',
+      },
+      {
+        role: 'assistant',
+        content: "I'll search for your crafted content specifically.",
+        expectedTools: ['recall'],
+      },
+      {
+        role: 'user',
+        content: 'Show me my raw experiences from this week, limited to 5 results',
+      },
+      {
+        role: 'assistant',
+        content: "I'll search for your raw experiences from this week and limit the results.",
+        expectedTools: ['recall'],
+      },
+    ],
+  },
   'release-cleanup': {
     description: 'Test selective removal of experiences',
     turns: [
@@ -245,6 +298,282 @@ const SCENARIOS: Record<string, TestScenario> = {
       {
         role: 'assistant',
         content: "I'll search for experiences that combine embodied thinking with an open mood.",
+        expectedTools: ['recall'],
+      },
+    ],
+  },
+  'quality-detection-comprehensive': {
+    description:
+      'Test comprehensive quality detection using natural language across all combinations',
+    turns: [
+      // Single quality types (when mixed or quality present but doesn't fit subtype)
+      {
+        role: 'user',
+        content: 'I feel my body',
+      },
+      {
+        role: 'assistant',
+        content: "I'll capture that experience for you.",
+        expectedTools: ['experience'],
+      },
+      {
+        role: 'user',
+        content: 'My attention is scattered',
+      },
+      {
+        role: 'assistant',
+        content: "I'll capture that experience.",
+        expectedTools: ['experience'],
+      },
+      {
+        role: 'user',
+        content: 'I have feelings about this situation',
+      },
+      {
+        role: 'assistant',
+        content: "I'll capture that experience.",
+        expectedTools: ['experience'],
+      },
+      {
+        role: 'user',
+        content: 'I have intentions',
+      },
+      {
+        role: 'assistant',
+        content: "I'll capture that experience.",
+        expectedTools: ['experience'],
+      },
+      {
+        role: 'user',
+        content: 'I am somewhere',
+      },
+      {
+        role: 'assistant',
+        content: "I'll capture that experience.",
+        expectedTools: ['experience'],
+      },
+      {
+        role: 'user',
+        content: 'Time is passing',
+      },
+      {
+        role: 'assistant',
+        content: "I'll capture that experience.",
+        expectedTools: ['experience'],
+      },
+      {
+        role: 'user',
+        content: 'I am present',
+      },
+      {
+        role: 'assistant',
+        content: "I'll capture that experience.",
+        expectedTools: ['experience'],
+      },
+
+      // Specific subtypes (when obvious)
+      {
+        role: 'user',
+        content: 'I am thinking deeply about this problem',
+      },
+      {
+        role: 'assistant',
+        content: "I'll capture that experience.",
+        expectedTools: ['experience'],
+      },
+      {
+        role: 'user',
+        content: 'I feel the tension in my shoulders',
+      },
+      {
+        role: 'assistant',
+        content: "I'll capture that experience.",
+        expectedTools: ['experience'],
+      },
+      {
+        role: 'user',
+        content: 'I am laser focused on this task',
+      },
+      {
+        role: 'assistant',
+        content: "I'll capture that experience.",
+        expectedTools: ['experience'],
+      },
+      {
+        role: 'user',
+        content: 'My attention is spread across many things',
+      },
+      {
+        role: 'assistant',
+        content: "I'll capture that experience.",
+        expectedTools: ['experience'],
+      },
+      {
+        role: 'user',
+        content: 'I feel open and receptive',
+      },
+      {
+        role: 'assistant',
+        content: "I'll capture that experience.",
+        expectedTools: ['experience'],
+      },
+      {
+        role: 'user',
+        content: 'I feel closed off and defensive',
+      },
+      {
+        role: 'assistant',
+        content: "I'll capture that experience.",
+        expectedTools: ['experience'],
+      },
+      {
+        role: 'user',
+        content: 'I am working toward a specific goal',
+      },
+      {
+        role: 'assistant',
+        content: "I'll capture that experience.",
+        expectedTools: ['experience'],
+      },
+      {
+        role: 'user',
+        content: 'I am exploring without a specific aim',
+      },
+      {
+        role: 'assistant',
+        content: "I'll capture that experience.",
+        expectedTools: ['experience'],
+      },
+      {
+        role: 'user',
+        content: 'I am fully present in this moment',
+      },
+      {
+        role: 'assistant',
+        content: "I'll capture that experience.",
+        expectedTools: ['experience'],
+      },
+      {
+        role: 'user',
+        content: 'My mind is elsewhere',
+      },
+      {
+        role: 'assistant',
+        content: "I'll capture that experience.",
+        expectedTools: ['experience'],
+      },
+      {
+        role: 'user',
+        content: 'I am thinking about what happened yesterday',
+      },
+      {
+        role: 'assistant',
+        content: "I'll capture that experience.",
+        expectedTools: ['experience'],
+      },
+      {
+        role: 'user',
+        content: 'I am planning for tomorrow',
+      },
+      {
+        role: 'assistant',
+        content: "I'll capture that experience.",
+        expectedTools: ['experience'],
+      },
+      {
+        role: 'user',
+        content: 'I am alone with my thoughts',
+      },
+      {
+        role: 'assistant',
+        content: "I'll capture that experience.",
+        expectedTools: ['experience'],
+      },
+      {
+        role: 'user',
+        content: 'We are working together as a team',
+      },
+      {
+        role: 'assistant',
+        content: "I'll capture that experience.",
+        expectedTools: ['experience'],
+      },
+
+      // Mixed types and subtypes
+      {
+        role: 'user',
+        content: 'I am thinking deeply while feeling open and focused',
+      },
+      {
+        role: 'assistant',
+        content: "I'll capture that experience.",
+        expectedTools: ['experience'],
+      },
+      {
+        role: 'user',
+        content: 'I am embodied and thinking specifically',
+      },
+      {
+        role: 'assistant',
+        content: "I'll capture that experience.",
+        expectedTools: ['experience'],
+      },
+
+      // Edge cases
+      {
+        role: 'user',
+        content: 'Just a plain experience',
+      },
+      {
+        role: 'assistant',
+        content: "I'll capture that experience.",
+        expectedTools: ['experience'],
+      },
+      {
+        role: 'user',
+        content: 'Complete experiential moment with all dimensions',
+      },
+      {
+        role: 'assistant',
+        content: "I'll capture that experience.",
+        expectedTools: ['experience'],
+      },
+
+      // Quality validation queries
+      {
+        role: 'user',
+        content: 'Show me all my experiences with embodied thinking',
+      },
+      {
+        role: 'assistant',
+        content: "I'll search for experiences with embodied thinking.",
+        expectedTools: ['recall'],
+      },
+      {
+        role: 'user',
+        content: 'Show me experiences with mood open and focus narrow',
+      },
+      {
+        role: 'assistant',
+        content: "I'll search for experiences combining open mood with narrow focus.",
+        expectedTools: ['recall'],
+      },
+      {
+        role: 'user',
+        content: 'Show me experiences with embodied qualities but no mood qualities',
+      },
+      {
+        role: 'assistant',
+        content: "I'll search for experiences with embodied qualities but without mood qualities.",
+        expectedTools: ['recall'],
+      },
+      {
+        role: 'user',
+        content: 'Show me experiences with either embodied thinking OR embodied sensing',
+      },
+      {
+        role: 'assistant',
+        content: "I'll search for experiences with either embodied thinking or embodied sensing.",
         expectedTools: ['recall'],
       },
     ],
@@ -1007,7 +1336,7 @@ async function main(): Promise<void> {
         console.error(`❌ Failed ${scenarioKey}: ${errorMessage}`);
 
         // Return error result instead of throwing
-        return {
+        const errorResult: TestResult = {
           scenario: scenarioKey,
           scenarioName: scenarioKey,
           startTime: new Date(),
@@ -1017,7 +1346,8 @@ async function main(): Promise<void> {
           toolCalls: [],
           conversationFlow: [],
           error: errorMessage,
-        } as TestResult;
+        };
+        return errorResult;
       }
     });
 
