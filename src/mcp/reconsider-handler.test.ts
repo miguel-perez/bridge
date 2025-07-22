@@ -6,7 +6,7 @@ import { ReconsiderHandler } from './reconsider-handler.js';
 import { EnrichService } from '../services/enrich.js';
 import { formatReconsiderResponse } from '../utils/formatters.js';
 import type { ReconsiderInput } from './schemas.js';
-import type { ExperienceResult } from '../utils/formatters.js';
+import type { EnrichResult } from '../services/enrich.js';
 
 // Mock dependencies
 jest.mock('../services/enrich.js');
@@ -21,9 +21,8 @@ describe('ReconsiderHandler', () => {
     jest.clearAllMocks();
     
     // Mock EnrichService
-    mockEnrichService = {
-      enrichSource: jest.fn()
-    } as jest.Mocked<EnrichService>;
+    mockEnrichService = new EnrichService() as jest.Mocked<EnrichService>;
+    mockEnrichService.enrichSource = jest.fn();
     (EnrichService as jest.MockedClass<typeof EnrichService>).mockImplementation(() => mockEnrichService);
     
     // Mock formatters
@@ -41,13 +40,15 @@ describe('ReconsiderHandler', () => {
         experience: ['mood.open']
       };
 
-      const mockResult: ExperienceResult = {
+      const mockResult: EnrichResult = {
         source: {
           id: 'exp_123',
           source: 'Updated text',
           created: '2025-01-21T12:00:00Z',
           experience: ['mood.open']
-        }
+        },
+        updatedFields: ['source', 'experience'],
+        embeddingsRegenerated: false
       };
 
       mockEnrichService.enrichSource.mockResolvedValue(mockResult);
@@ -82,14 +83,16 @@ describe('ReconsiderHandler', () => {
         ]
       };
 
-      const mockResults: ExperienceResult[] = [
+      const mockResults: EnrichResult[] = [
         {
           source: {
             id: 'exp_1',
             source: 'Updated text 1',
             created: '2025-01-21T12:00:00Z',
             experience: ['mood.open']
-          }
+          },
+          updatedFields: ['source', 'experience'],
+          embeddingsRegenerated: false
         },
         {
           source: {
@@ -97,7 +100,9 @@ describe('ReconsiderHandler', () => {
             source: 'Updated text 2',
             created: '2025-01-21T12:00:00Z',
             experience: ['embodied.sensing']
-          }
+          },
+          updatedFields: ['source', 'experience'],
+          embeddingsRegenerated: false
         }
       ];
 
@@ -124,11 +129,10 @@ describe('ReconsiderHandler', () => {
         perspective: 'we',
         experiencer: 'Team',
         processing: 'long-after',
-        crafted: true,
         experience: ['presence.collective']
       };
 
-      const mockResult: ExperienceResult = {
+      const mockResult: EnrichResult = {
         source: {
           id: 'exp_123',
           source: 'Updated text',
@@ -136,9 +140,10 @@ describe('ReconsiderHandler', () => {
           perspective: 'we',
           experiencer: 'Team',
           processing: 'long-after',
-          crafted: true,
           experience: ['presence.collective']
-        }
+        },
+        updatedFields: ['source', 'perspective', 'experiencer', 'processing', 'experience'],
+        embeddingsRegenerated: false
       };
 
       mockEnrichService.enrichSource.mockResolvedValue(mockResult);
@@ -151,7 +156,6 @@ describe('ReconsiderHandler', () => {
         perspective: 'we',
         experiencer: 'Team',
         processing: 'long-after',
-        crafted: true,
         experience: ['presence.collective']
       });
       expect(result.isError).toBeUndefined();
@@ -163,12 +167,14 @@ describe('ReconsiderHandler', () => {
         source: 'Updated text only'
       };
 
-      const mockResult: ExperienceResult = {
+      const mockResult: EnrichResult = {
         source: {
           id: 'exp_123',
           source: 'Updated text only',
           created: '2025-01-21T12:00:00Z'
-        }
+        },
+        updatedFields: ['source'],
+        embeddingsRegenerated: false
       };
 
       mockEnrichService.enrichSource.mockResolvedValue(mockResult);
@@ -225,7 +231,9 @@ describe('ReconsiderHandler', () => {
 
       // Mock formatReconsiderResponse to throw
       mockEnrichService.enrichSource.mockResolvedValue({
-        source: { id: 'exp_123', source: 'Updated', created: '2025-01-21T12:00:00Z' }
+        source: { id: 'exp_123', source: 'Updated', created: '2025-01-21T12:00:00Z' },
+        updatedFields: ['source'],
+        embeddingsRegenerated: false
       });
       mockFormatReconsiderResponse.mockImplementation(() => {
         throw new Error('Formatting error');
@@ -267,19 +275,44 @@ describe('ReconsiderHandler', () => {
             source: 'Updated text 1'
           },
           {
-            // Missing id
+            id: 'exp_2',
             source: 'Updated text 2'
           }
         ]
       };
 
+      // Mock the enrichSource calls for batch processing
+      const mockResults: EnrichResult[] = [
+        {
+          source: {
+            id: 'exp_1',
+            source: 'Updated text 1',
+            created: '2025-01-21T12:00:00Z'
+          },
+          updatedFields: ['source'],
+          embeddingsRegenerated: false
+        },
+        {
+          source: {
+            id: 'exp_2',
+            source: 'Updated text 2',
+            created: '2025-01-21T12:00:00Z'
+          },
+          updatedFields: ['source'],
+          embeddingsRegenerated: false
+        }
+      ];
+
+      mockEnrichService.enrichSource
+        .mockResolvedValueOnce(mockResults[0])
+        .mockResolvedValueOnce(mockResults[1]);
+
       const result = await handler.handle(input);
 
-      expect(result.isError).toBe(true);
-      expect(result.content[0]).toEqual({
-        type: 'text',
-        text: 'Each reconsideration item must have an ID'
-      });
+      expect(result.isError).toBeUndefined();
+      expect(result.content[0].text).toContain('✅ 2 experiences reconsidered');
+      expect(result.content[0].text).toContain('📝 ID: exp_1');
+      expect(result.content[0].text).toContain('📝 ID: exp_2');
     });
 
     it('should handle empty batch reconsiderations gracefully', async () => {
@@ -303,12 +336,14 @@ describe('ReconsiderHandler', () => {
         // No optional fields provided
       };
 
-      const mockResult: ExperienceResult = {
+      const mockResult: EnrichResult = {
         source: {
           id: 'exp_123',
           source: 'Updated text',
           created: '2025-01-21T12:00:00Z'
-        }
+        },
+        updatedFields: ['source'],
+        embeddingsRegenerated: false
       };
 
       mockEnrichService.enrichSource.mockResolvedValue(mockResult);
@@ -321,7 +356,6 @@ describe('ReconsiderHandler', () => {
         perspective: undefined,
         experiencer: undefined,
         processing: undefined,
-        crafted: undefined,
         experience: undefined
       });
     });
@@ -333,13 +367,15 @@ describe('ReconsiderHandler', () => {
         experience: []
       };
 
-      const mockResult: ExperienceResult = {
+      const mockResult: EnrichResult = {
         source: {
           id: 'exp_123',
           source: 'Updated text',
           created: '2025-01-21T12:00:00Z',
           experience: []
-        }
+        },
+        updatedFields: ['source', 'experience'],
+        embeddingsRegenerated: false
       };
 
       mockEnrichService.enrichSource.mockResolvedValue(mockResult);
@@ -352,7 +388,6 @@ describe('ReconsiderHandler', () => {
         perspective: undefined,
         experiencer: undefined,
         processing: undefined,
-        crafted: undefined,
         experience: []
       });
     });
@@ -366,13 +401,15 @@ describe('ReconsiderHandler', () => {
         experience: ['mood.open', 'embodied.thinking']
       };
 
-      const mockResult: ExperienceResult = {
+      const mockResult: EnrichResult = {
         source: {
           id: 'exp_123',
           source: 'Updated text',
           created: '2025-01-21T12:00:00Z',
           experience: ['mood.open', 'embodied.thinking']
-        }
+        },
+        updatedFields: ['source', 'experience'],
+        embeddingsRegenerated: false
       };
 
       mockEnrichService.enrichSource.mockResolvedValue(mockResult);
@@ -392,12 +429,14 @@ describe('ReconsiderHandler', () => {
         source: 'Updated text'
       };
 
-      const mockResult: ExperienceResult = {
+      const mockResult: EnrichResult = {
         source: {
           id: 'exp_123',
           source: 'Updated text',
           created: '2025-01-21T12:00:00Z'
-        }
+        },
+        updatedFields: ['source'],
+        embeddingsRegenerated: false
       };
 
       mockEnrichService.enrichSource.mockResolvedValue(mockResult);
@@ -414,13 +453,15 @@ describe('ReconsiderHandler', () => {
         experience: []
       };
 
-      const mockResult: ExperienceResult = {
+      const mockResult: EnrichResult = {
         source: {
           id: 'exp_123',
           source: 'Updated text',
           created: '2025-01-21T12:00:00Z',
           experience: []
-        }
+        },
+        updatedFields: ['source', 'experience'],
+        embeddingsRegenerated: false
       };
 
       mockEnrichService.enrichSource.mockResolvedValue(mockResult);
