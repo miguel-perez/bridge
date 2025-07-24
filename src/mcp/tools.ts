@@ -98,7 +98,13 @@ QUALITY SIGNATURES:
 • time - past (memory) or future (anticipation)
 • presence - individual (alone) or collective (together)
 
-Only include qualities that genuinely stand out in the experience.`,
+Only include qualities that genuinely stand out in the experience.
+
+FLOW TRACKING:
+• Add stillThinking: true to signal you're continuing to explore
+• Omit or use stillThinking: false when done with the current thread
+• Each tool call increments callsSoFar to track progress
+• Inspired by sequential thinking's minimal pattern`,
       inputSchema: ExperienceInputJsonSchema,
       readOnlyHint: false,
       destructiveHint: false,
@@ -256,6 +262,36 @@ Only include qualities that genuinely stand out in the experience.`,
             ],
           },
         },
+        {
+          id: 'still-thinking-exploration',
+          description: 'Using stillThinking to signal ongoing exploration',
+          input: {
+            experiences: [
+              {
+                source: 'This bug is really confusing me',
+                experiencer: 'Human',
+                perspective: 'I',
+                processing: 'during',
+                experience: ['mood.closed', 'embodied.thinking', 'purpose.goal'],
+              },
+            ],
+            stillThinking: true,
+          },
+          output: {
+            content: [
+              {
+                type: 'text',
+                text: 'Experienced (mood.closed, embodied.thinking, purpose.goal)\n\nFrom: Human\nAs: I\nWhen: during conversation\nCaptured: just now',
+              },
+              {
+                type: 'text',
+                text: "🤔 Still thinking... (1 step so far)\nContinue exploring - I'm tracking your progress.\nPermission granted for more tool calls.",
+              },
+            ],
+            stillThinking: true,
+            callsSoFar: 1,
+          },
+        },
       ],
     },
     {
@@ -284,7 +320,13 @@ SPECIAL SEARCHES:
 • Filter by reflects: "only" - find pattern realizations (experiences that reflect on other experiences)
 • Natural language patterns: "show me all pattern realizations" → use reflects: "only"
 • Natural language patterns: "find insights about connections" → use reflects: "only"
-• Combine filters for precise results`,
+• Combine filters for precise results
+
+FLOW TRACKING:
+• Add stillThinking: true to signal you're continuing to explore
+• Omit or use stillThinking: false when done with the current thread
+• Each tool call increments callsSoFar to track progress
+• Useful for multi-step investigations`,
       inputSchema: SearchInputJsonSchema,
       readOnlyHint: true,
       destructiveHint: false,
@@ -466,6 +508,33 @@ SPECIAL SEARCHES:
             ],
           },
         },
+        {
+          id: 'still-thinking-investigation',
+          description: 'Using stillThinking during multi-step investigation',
+          input: {
+            searches: [
+              {
+                query: 'similar authentication logout errors',
+                limit: 5,
+              },
+            ],
+            stillThinking: true,
+          },
+          output: {
+            content: [
+              {
+                type: 'text',
+                text: '🔍 Found 2 relevant experiences:\n\n1. "Random logouts happening in prod" (2 days ago)\n   🐛 embodied.thinking, mood.closed, purpose.goal\n\n2. "Session timeout was set to 5 minutes instead of 5 hours" (1 week ago)\n   💡 embodied.thinking, mood.open, purpose.goal',
+              },
+              {
+                type: 'text',
+                text: "🤔 Still thinking... (2 steps so far)\nContinue exploring - I'm tracking your progress.\nPermission granted for more tool calls.",
+              },
+            ],
+            stillThinking: true,
+            callsSoFar: 2,
+          },
+        },
       ],
     },
     {
@@ -489,7 +558,12 @@ COMMON UPDATES:
 • Adding missed qualities that were actually prominent
 • Switching from subtype to base when mixed (embodied.thinking → embodied)
 • Correcting perspective after realizing it was shared
-• Updating experiencer name if initially unclear`,
+• Updating experiencer name if initially unclear
+
+FLOW TRACKING:
+• Add stillThinking: true if you're reconsidering as part of a larger process
+• Omit or use stillThinking: false when the update is complete
+• Each tool call increments callsSoFar to track progress`,
       inputSchema: makeDraft202012Schema(ReconsiderInputJsonSchema),
       readOnlyHint: false,
       destructiveHint: false,
@@ -622,7 +696,12 @@ NATURAL WORKFLOW:
 3. Release with optional reason
 
 PHILOSOPHY:
-Not everything needs permanent retention. Sometimes releasing creates space for new growth. Experiences are released with gratitude for their temporary service to the relationship.`,
+Not everything needs permanent retention. Sometimes releasing creates space for new growth. Experiences are released with gratitude for their temporary service to the relationship.
+
+FLOW TRACKING:
+• Add stillThinking: true if releasing as part of a cleanup process
+• Omit or use stillThinking: false when done releasing
+• Each tool call increments callsSoFar to track progress`,
       inputSchema: makeDraft202012Schema(ReleaseInputJsonSchema),
       readOnlyHint: false,
       destructiveHint: true,

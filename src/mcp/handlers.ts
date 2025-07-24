@@ -45,22 +45,34 @@ export class MCPToolHandlers {
    * Routes tool requests to appropriate handlers
    * @remarks
    * Main entry point for all MCP tool operations. Routes requests based on tool name
-   * to the appropriate handler for processing.
+   * to the appropriate handler for processing. Now supports stillThinking parameter.
    * @param toolName - Name of the tool to execute
    * @param args - Arguments for the tool operation
    * @returns Tool result from the appropriate handler
    * @throws Error When tool name is not recognized
    */
   async handle(toolName: string, args: Record<string, unknown>): Promise<Record<string, unknown>> {
+    // Handle null or undefined args
+    if (!args) {
+      args = {};
+    }
+
+    // Extract stillThinking parameter if present
+    const stillThinking = typeof args.stillThinking === 'boolean' ? args.stillThinking : false;
+
+    // Remove stillThinking from args before passing to handlers
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { stillThinking: _, ...cleanArgs } = args;
+
     switch (toolName) {
       case 'experience':
-        return this.experienceHandler.handle(args as any);
+        return this.experienceHandler.handle(cleanArgs as any, stillThinking);
       case 'recall':
-        return this.recallHandler.handle(args as any);
+        return this.recallHandler.handle(cleanArgs as any, stillThinking);
       case 'reconsider':
-        return this.reconsiderHandler.handle(args as any);
+        return this.reconsiderHandler.handle(cleanArgs as any, stillThinking);
       case 'release':
-        return this.releaseHandler.handle(args as any);
+        return this.releaseHandler.handle(cleanArgs as any, stillThinking);
 
       default:
         throw new Error(`Unknown tool: ${toolName}`);

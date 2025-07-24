@@ -203,6 +203,10 @@ const ExperienceItemSchema = z
 export const ExperienceInputSchema = z
   .object({
     experiences: z.array(ExperienceItemSchema).min(1).describe('Array of experiences to capture'),
+    stillThinking: z
+      .boolean()
+      .optional()
+      .describe('Whether more tool calls are expected in this flow'),
   })
   .strict()
   .describe(
@@ -269,6 +273,10 @@ const SearchItemSchema = z
 export const SearchInputSchema = z
   .object({
     searches: z.array(SearchItemSchema).min(1).describe('Array of search queries to execute'),
+    stillThinking: z
+      .boolean()
+      .optional()
+      .describe('Whether more tool calls are expected in this flow'),
   })
   .strict()
   .describe('Input for searching experiences. Always use array format, even for single searches.');
@@ -298,6 +306,10 @@ export const ReconsiderInputSchema = z
       .array(ReconsiderItemSchema)
       .min(1)
       .describe('Array of experiences to reconsider'),
+    stillThinking: z
+      .boolean()
+      .optional()
+      .describe('Whether more tool calls are expected in this flow'),
   })
   .strict()
   .describe('Input for updating experiences. Always use array format, even for single updates.');
@@ -313,6 +325,10 @@ const ReleaseItemSchema = z
 export const ReleaseInputSchema = z
   .object({
     releases: z.array(ReleaseItemSchema).min(1).describe('Array of experiences to release'),
+    stillThinking: z
+      .boolean()
+      .optional()
+      .describe('Whether more tool calls are expected in this flow'),
   })
   .strict()
   .describe('Input for releasing experiences. Always use array format, even for single releases.');
@@ -326,6 +342,8 @@ export const ToolTextContentSchema = z.object({
 export const ToolResultSchema = z.object({
   isError: z.boolean().optional(),
   content: z.array(ToolTextContentSchema),
+  stillThinking: z.boolean().optional(),
+  callsSoFar: z.number().optional(),
 });
 
 // Example generation functions

@@ -24,6 +24,96 @@ _No active experiments at this time. All recent experiments have been completed 
 
 ## Completed Experiments
 
+### EXP-013: Minimal Flow Tracking (Still Thinking)
+
+**Status**: Completed 2025-07-24  
+**Started**: 2025-07-24  
+**Purpose**: Implement minimal flow tracking inspired by sequential thinking pattern, providing "permission to continue" signals without complex orchestration
+
+**Key Outcomes**: ✅ All success criteria met
+
+- Successfully implemented `stillThinking` boolean parameter across all tools
+- Session-scoped call counter (no persistence needed)
+- Explicit flow state messages for user acknowledgment
+- Maintained complete tool independence
+- 100% backward compatibility
+
+**Evidence of Success**:
+
+- **Implementation**: ~10 lines of code vs 200+ lines of complex orchestration
+- **Test Coverage**: All 663 unit tests passing
+- **Integration Tests**: New `still-thinking-flow` scenario working correctly
+- **User Feedback**: Explicit acknowledgment messages added based on request
+- **Performance**: Negligible overhead - simple counter and message generation
+
+**Learning**: Minimal patterns can provide 80% of the value with 20% of the complexity. The stillThinking parameter successfully provides flow awareness without sacrificing tool independence or adding complex state management.
+
+### EXP-012: Bridge Sequential Thinking (Replaced by EXP-013)
+
+**Status**: Replaced 2025-07-24  
+**Started**: 2025-07-23  
+**Purpose**: Test Bridge.flow() as a new MCP tool that orchestrates existing Bridge operations into learning loops, replacing sequential thinking with experiential problem-solving through iterative understanding evolution.
+
+**Key Outcomes**: ✅ All success criteria met
+
+- Successfully demonstrated understanding evolution from vague to specific
+- Seamless orchestration of existing Bridge tools (experience, recall, reconsider, release)
+- Flow state persistence across conversation turns
+- Natural progression through iteration without complex revision logic
+- Complete visibility into learning journey with moment tracking
+
+**Evidence of Success**:
+
+- **Integration Test**: `bridge-flow-orchestration` scenario completed successfully (14 turns, 19 tool calls)
+- **Understanding Evolution**: "Debug auth error" → "Debug auth timezone issue" → "Implement UTC timestamp normalization"
+- **Tool Orchestration**: Flow service correctly orchestrates all Bridge tools
+- **State Management**: Flow state maintained across multiple calls with understanding history
+- **Unit Tests**: All flow service unit tests passing (11/11)
+
+**Learning**: Bridge.flow() successfully provided a more natural and experiential approach to problem-solving by orchestrating existing Bridge tools into learning loops where understanding evolves through iteration. However, this approach was replaced by the simpler stillThinking parameter (EXP-013) which achieved similar flow awareness with 95% less complexity.
+
+### EXP-011: Comprehensive Quality Detection with Natural Language
+
+**Status**: Completed 2025-07-22  
+**Purpose**: Test comprehensive quality detection using natural language across all combinations to validate Bridge's quality detection system
+
+**Key Outcomes**: ✅ All success criteria met
+
+- Comprehensive quality detection scenario with 24 turns covering all quality combinations
+- Non-leading prompts that don't give away expected qualities
+- Natural language processing correctly interprets experiential descriptions
+- Quality type vs subtype logic working as designed
+- Multi-dimensional capture maintaining experiential wholeness
+- Philosophical alignment with Bridge's experiential framework
+
+**Technical Implementation**:
+
+- Added `quality-detection-comprehensive` scenario to test runner
+- Tests single quality types (embodied, focus, mood, purpose, space, time, presence)
+- Tests specific subtypes (embodied.thinking, focus.narrow, mood.open, etc.)
+- Tests mixed patterns and edge cases
+- Includes quality validation queries for sophisticated filtering
+- Uses natural language prompts requiring AI interpretation
+
+**Quality Detection Validation**:
+
+- **Single Types**: Correctly uses base types when subtypes don't fit
+- **Specific Subtypes**: Correctly uses subtypes when obvious
+- **Mixed Patterns**: Captures multiple dimensions simultaneously
+- **Natural Language**: AI correctly interprets experiential descriptions
+- **Philosophical Consistency**: Maintains Bridge's experiential framework
+
+**Example Successful Detections**:
+
+- `"I feel my body"` → `embodied.sensing` ✅
+- `"My attention is scattered"` → `focus.broad, embodied.thinking` ✅
+- `"I am thinking deeply about this problem"` → `embodied.thinking, focus.narrow, purpose.goal` ✅
+- `"I am present"` → `presence.individual, embodied.sensing, space.here, time` ✅
+
+**Evidence**: Test results show successful quality detection across 16 turns before API rate limits, commit 4e2720c
+
+**Learning**: Natural language prompts provide robust validation of Bridge's quality detection system without bias, ensuring the AI correctly interprets experiential descriptions according to philosophical principles.
+
 ### EXP-010: Advanced Recall Options with Intuitive Time-based Filtering
 
 **Status**: Completed 2025-07-22  
@@ -77,48 +167,6 @@ _No active experiments at this time. All recent experiments have been completed 
 **Evidence**: Learning loop analysis confirms completion with 5 matching test scenarios passing, commit 3628f50
 
 **Learning**: Advanced recall options provide essential scaling capabilities for growing experiential databases while maintaining intuitive user experience through natural language time filtering and comprehensive field coverage.
-
-### EXP-011: Comprehensive Quality Detection with Natural Language
-
-**Status**: Completed 2025-07-22  
-**Purpose**: Test comprehensive quality detection using natural language across all combinations to validate Bridge's quality detection system
-
-**Key Outcomes**: ✅ All success criteria met
-
-- Comprehensive quality detection scenario with 24 turns covering all quality combinations
-- Non-leading prompts that don't give away expected qualities
-- Natural language processing correctly interprets experiential descriptions
-- Quality type vs subtype logic working as designed
-- Multi-dimensional capture maintaining experiential wholeness
-- Philosophical alignment with Bridge's experiential framework
-
-**Technical Implementation**:
-
-- Added `quality-detection-comprehensive` scenario to test runner
-- Tests single quality types (embodied, focus, mood, purpose, space, time, presence)
-- Tests specific subtypes (embodied.thinking, focus.narrow, mood.open, etc.)
-- Tests mixed patterns and edge cases
-- Includes quality validation queries for sophisticated filtering
-- Uses natural language prompts requiring AI interpretation
-
-**Quality Detection Validation**:
-
-- **Single Types**: Correctly uses base types when subtypes don't fit
-- **Specific Subtypes**: Correctly uses subtypes when obvious
-- **Mixed Patterns**: Captures multiple dimensions simultaneously
-- **Natural Language**: AI correctly interprets experiential descriptions
-- **Philosophical Consistency**: Maintains Bridge's experiential framework
-
-**Example Successful Detections**:
-
-- `"I feel my body"` → `embodied.sensing` ✅
-- `"My attention is scattered"` → `focus.broad, embodied.thinking` ✅
-- `"I am thinking deeply about this problem"` → `embodied.thinking, focus.narrow, purpose.goal` ✅
-- `"I am present"` → `presence.individual, embodied.sensing, space.here, time` ✅
-
-**Evidence**: Test results show successful quality detection across 16 turns before API rate limits, commit 4e2720c
-
-**Learning**: Natural language prompts provide robust validation of Bridge's quality detection system without bias, ensuring the AI correctly interprets experiential descriptions according to philosophical principles.
 
 ### EXP-009: Continuous Quality Monitoring with 80/20 Approach
 

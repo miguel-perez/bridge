@@ -9,6 +9,74 @@ This document captures validated insights from Bridge experiments with clear evi
 
 ## Core Behavioral Insights
 
+### 2025-07-24 - Minimal Flow Tracking with stillThinking Parameter
+
+**Key Achievement**: Successfully implemented lightweight flow tracking inspired by sequential thinking's minimal pattern, providing "permission to continue" signals without complex orchestration. This replaced the more complex Bridge.flow() orchestration (EXP-012) with a simpler, more effective approach.
+
+**Technical Implementation**:
+
+- Added `stillThinking` boolean parameter to all Bridge tools (experience, recall, reconsider, release)
+- Implemented session-scoped call counter (resets between sessions, not persisted)
+- Added flow state messages for explicit acknowledgment when stillThinking is used
+- Maintained tool independence - each tool remains fully autonomous
+- Zero impact on existing functionality - completely backward compatible
+
+**Impact Metrics**:
+
+- **Simplicity**: Just 3 functions (~10 lines) for call counting vs 200+ lines of complex flow orchestration
+- **User Experience**: Explicit "permission to continue" messages improve flow clarity
+- **Performance**: Negligible overhead - simple counter increment and message generation
+- **Test Coverage**: All 663 unit tests passing, 100% backward compatibility maintained
+- **Integration**: Works seamlessly with all existing Bridge tools and scenarios
+
+**Key Design Decisions**:
+
+- **No Flow IDs**: Avoided complex state management by using simple session counter
+- **No Orchestration**: Tools remain independent, stillThinking is just a signal
+- **Explicit Acknowledgment**: Added flow state messages based on user feedback
+- **Sequential Thinking Inspired**: Borrowed minimal pattern from MCP sequential thinking tool
+
+**Example Usage**:
+
+```typescript
+// Start investigation (stillThinking: true)
+await experience({
+  experiences: [{ source: 'Bug: users report slow loads', experience: ['embodied.thinking'] }],
+  stillThinking: true,
+});
+// Returns: "🤔 Still thinking... (1 step so far)\nContinue exploring..."
+
+// Continue searching (stillThinking: true)
+await recall({
+  searches: [{ query: 'performance database peak hours' }],
+  stillThinking: true,
+});
+// Returns: "🤔 Still thinking... (2 steps so far)\nPermission granted for more tool calls."
+
+// Complete investigation (stillThinking: false)
+await experience({
+  experiences: [{ source: 'Fixed! Connection pool was too small', experience: ['mood.open'] }],
+  stillThinking: false,
+});
+// Returns: "✅ Flow complete! (3 total steps)\nInvestigation concluded."
+```
+
+**Technical Patterns Discovered**:
+
+- Minimal patterns can provide 80% of the value with 20% of the complexity
+- Session-scoped counters eliminate need for persistent state management
+- Explicit acknowledgment messages improve user understanding of flow state
+- Boolean parameters are more intuitive than complex flow objects
+- Tool independence is maintained while still providing flow awareness
+
+**Evidence Trail**:
+
+- Implementation: `src/mcp/call-counter.ts`, `src/mcp/flow-messages.ts`, handler updates
+- Test results: All 663 unit tests passing, integration tests successful
+- User feedback: Request for explicit acknowledgment led to flow state messages
+- Commits: feat: implement minimal flow tracking, rename stillCooking to stillThinking
+- Learning loop: Confirmed all tests passing after implementation
+
 ### 2025-07-22 - Advanced Recall Options with Intuitive Time-based Filtering (EXP-010)
 
 **Key Achievement**: Successfully implemented advanced recall options with sorting, pagination, and natural language time filtering to scale with growing experiential databases
@@ -266,7 +334,7 @@ recall('', {
 
 🔧 **Tool Calls for "clustering-analysis":**
    **1.** experience(source: "I feel anxious about the presentation tomorrow", ...)
-      → Experienceed (embodied.sensing, mood.closed, time.future)
+      → Experienced (embodied.sensing, mood.closed, time.future)
    **2.** recall(query: "anxiety nervousness meeting presentation", ...)
       → Found 6 experiences
 ```
@@ -310,12 +378,12 @@ Found 5 clusters of similar experiences:
 
 1. **2 experiences about anxious**
    Size: 2 experiences
-   Common dimensions: embodied.sensing, mood.closed
+   Common qualities: embodied.sensing, mood.closed
    Summary: Experiences of anticipatory anxiety and nervousness
 
 2. **3 experiences about focused work**
    Size: 3 experiences
-   Common dimensions: focus.narrow, purpose.goal
+   Common qualities: focus.narrow, purpose.goal
    Summary: Productive work sessions with clear objectives
 ```
 
@@ -404,7 +472,7 @@ Found 5 clusters of similar experiences:
 
 ### 2025-07-21 - Quality Filtering Fix
 
-**Key Achievement**: Fixed critical bug where partial dimension matching caused false positives (e.g., "mood.closed"
+**Key Achievement**: Fixed critical bug where partial quality matching caused false positives (e.g., "mood.closed"
 matching "mood.open")
 
 **Technical Implementation**:
@@ -512,7 +580,7 @@ relevant results.
 
 ## Gap Analysis
 
-### 2025-07-21 - Vision vs Implementation
+### 2025-07-24 - Vision vs Implementation
 
 **Currently Implemented**:
 
@@ -525,22 +593,26 @@ relevant results.
 - **Pattern Realizations with reflects field** ✓ (EXP-005 completed)
 - **Clustering Analysis** ✓ (EXP-006 completed)
 - **Enhanced Learning Loop with Rich Test Evidence** ✓ (EXP-007 completed)
+- **Sophisticated Quality Filtering** ✓ (EXP-008 completed - presence/absence, OR logic, boolean expressions)
+- **Continuous Quality Monitoring** ✓ (EXP-009 completed - 80/20 approach)
+- **Advanced Recall Options** ✓ (EXP-010 completed - sorting, pagination, time filtering)
+- **Comprehensive Quality Detection** ✓ (EXP-011 completed - natural language validation)
+- **Minimal Flow Tracking (stillThinking)** ✓ (EXP-013 completed - replaced Bridge.flow())
 
 **Vision Features Not Yet Implemented**:
 
-1. **Dimension Filtering** (OPPORTUNITIES.md Score: 280)
-   - Cannot filter by dimension presence/absence
-   - No support for complex dimension queries like `{ embodied: { present: true }, time: { present: false } }`
-   - Missing sophisticated query patterns
-
-2. **Sequence Analysis** (OPPORTUNITIES.md Score: 240)
+1. **Sequence Analysis** (OPPORTUNITIES.md Score: 240)
    - No `{ as: "sequence" }` option in recall
    - Cannot detect temporal patterns or transitions
    - Missing OODA loop and flow state detection
 
-3. **Advanced Filtering** (OPPORTUNITIES.md Score: 280)
-   - Cannot filter by dimension presence/absence
-   - No support for complex dimension queries
+2. **Natural Language Quality Parsing** (OPPORTUNITIES.md Score: 189)
+   - Cannot parse "feeling anxious and focused" into qualities automatically
+   - Requires explicit quality specification
+
+3. **Extensible Recall** (OPPORTUNITIES.md Score: 270)
+   - Cannot add custom recall strategies
+   - Limited to built-in clustering and search
 
 4. **Natural Language Time Filters** (OPPORTUNITIES.md Score: 216)
    - No parsing of "last week", "yesterday", etc.
@@ -552,7 +624,7 @@ relevant results.
 - Test results directory management needs improvement
 - Embedding service limited to 35% coverage due to mocking constraints
 
-**Next Priority**: Based on scoring, dimension filtering (Score: 280) should be implemented next as it would enable sophisticated queries by dimension presence/absence, building on the clustering analysis foundation
+**Next Priority**: Based on OPPORTUNITIES.md scoring, Extensible Recall (Score: 270) should be implemented next as it would provide a technical foundation for future features like custom recall strategies
 
 ### 2025-07-21 - Development Velocity and Quality Patterns (Learning Loop Analysis)
 

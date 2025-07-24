@@ -9,6 +9,8 @@
 import { EnrichService } from '../services/enrich.js';
 import { ReconsiderInput, type ToolResult } from './schemas.js';
 import { formatReconsiderResponse, type ExperienceResult } from '../utils/formatters.js';
+import { incrementCallCount, getCallCount } from './call-counter.js';
+import { getFlowStateMessage } from './flow-messages.js';
 
 /**
  * Handles reconsider requests from MCP clients
@@ -32,16 +34,38 @@ export class ReconsiderHandler {
    * Handles reconsider requests
    *
    * @param args - The reconsider arguments containing updates to existing experiences
+   * @param stillThinking - Optional boolean indicating if more tool calls are expected
    * @returns Formatted reconsider result
    */
-  async handle(args: ReconsiderInput): Promise<ToolResult> {
+  async handle(args: ReconsiderInput, stillThinking = false): Promise<ToolResult> {
     try {
+      incrementCallCount();
       const result = await this.handleRegularReconsider(args);
-      return result;
+
+      // Add flow state message if stillThinking was explicitly passed
+      const callsSoFar = getCallCount();
+      if (args.stillThinking !== undefined) {
+        const flowMessage = getFlowStateMessage(stillThinking, callsSoFar);
+        result.content.push({
+          type: 'text',
+          text: flowMessage,
+        });
+      }
+
+      // Add stillThinking and callsSoFar to the result
+      const enhancedResult = {
+        ...result,
+        stillThinking,
+        callsSoFar,
+      };
+
+      return enhancedResult;
     } catch (err) {
       return {
         isError: true,
         content: [{ type: 'text', text: 'Internal error: Output validation failed.' }],
+        stillThinking: false,
+        callsSoFar: getCallCount(),
       };
     }
   }

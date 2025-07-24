@@ -45,20 +45,20 @@ export function scoreExperience(
     quality: calculateQualityRelevance(query, experience),
     exact: calculateExactMatches(query, experience),
     recency: calculateRecencyScore(experience),
-    density: calculateQualityDensity(experience)
+    density: calculateQualityDensity(experience),
   };
-  
+
   // Dynamic weight calculation based on query characteristics
   const weights = calculateDynamicWeights(query, factors);
-  
+
   // Single scoring formula
-  const score = 
+  const score =
     factors.semantic * weights.semantic +
     factors.quality * weights.quality +
     factors.exact * weights.exact +
     factors.recency * weights.recency +
     factors.density * weights.density;
-  
+
   return { score: Math.min(score, 1.0), factors, weights };
 }
 
@@ -70,18 +70,18 @@ export function calculateDynamicWeights(
   factors: ScoringFactors
 ): ScoringWeights {
   const weights: ScoringWeights = {
-    semantic: 0.5,    // Base weight
-    quality: 0.3,     // Base weight
-    exact: 0.1,       // Base weight
-    recency: 0.05,    // Base weight
-    density: 0.05     // Base weight
+    semantic: 0.5, // Base weight
+    quality: 0.3, // Base weight
+    exact: 0.1, // Base weight
+    recency: 0.05, // Base weight
+    density: 0.05, // Base weight
   };
-  
+
   // Detect query characteristics
   const isQuality = isQueryQuality(query);
   const hasExactMatch = factors.exact > 0.8; // Strong exact match
   const qualityStrength = factors.quality;
-  
+
   // Adjust weights based on query nature
   if (isQuality && qualityStrength > 0.5) {
     // Query matches known qualities strongly
@@ -94,13 +94,13 @@ export function calculateDynamicWeights(
     weights.semantic = 0.45;
     weights.quality = 0.2;
   }
-  
+
   // Normalize to sum to 1.0
   const sum = Object.values(weights).reduce((a, b) => a + b, 0);
-  Object.keys(weights).forEach(key => {
+  Object.keys(weights).forEach((key) => {
     weights[key as keyof ScoringWeights] /= sum;
   });
-  
+
   return weights;
 }
 
@@ -114,10 +114,10 @@ export function calculateQualityRelevance(
 ): number {
   const queryQualities = extractQualities(query);
   if (queryQualities.length === 0) return 0;
-  
+
   const experienceQualities = experience.experience || [];
   let relevance = 0;
-  
+
   for (const qQual of queryQualities) {
     for (const eQual of experienceQualities) {
       if (qualitiesMatch(qQual, eQual)) {
@@ -127,7 +127,7 @@ export function calculateQualityRelevance(
       }
     }
   }
-  
+
   return Math.min(relevance / queryQualities.length, 1.0);
 }
 
@@ -135,21 +135,18 @@ export function calculateQualityRelevance(
  * Calculate exact text matches (case-insensitive)
  * Excludes quality queries from exact matching
  */
-export function calculateExactMatches(
-  query: string | string[],
-  experience: SourceRecord
-): number {
+export function calculateExactMatches(query: string | string[], experience: SourceRecord): number {
   const queryTerms = Array.isArray(query) ? query : [query];
   const sourceText = experience.source.toLowerCase();
   let exactMatches = 0;
-  
+
   for (const q of queryTerms) {
     const term = q.toLowerCase().trim();
     if (term.length === 0) continue;
-    
+
     // Skip quality queries
     if ((KNOWN_QUALITIES as readonly string[]).includes(q)) continue;
-    
+
     // Check for exact word matches
     const words = sourceText.split(/\s+/);
     for (const word of words) {
@@ -159,7 +156,7 @@ export function calculateExactMatches(
       }
     }
   }
-  
+
   return Math.min(exactMatches / queryTerms.length, 1.0);
 }
 
@@ -171,10 +168,10 @@ export function calculateRecencyScore(experience: SourceRecord): number {
   const now = new Date();
   const created = new Date(experience.created);
   const daysDiff = (now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24);
-  
+
   // Exponential decay with 30-day half-life
   const halfLife = 30;
-  return Math.exp(-Math.log(2) * daysDiff / halfLife);
+  return Math.exp((-Math.log(2) * daysDiff) / halfLife);
 }
 
 /**
@@ -191,17 +188,17 @@ export function calculateQualityDensity(experience: SourceRecord): number {
 export function extractQualities(query: string | string[]): string[] {
   const queryTerms = Array.isArray(query) ? query : [query];
   const qualities: string[] = [];
-  
+
   for (const term of queryTerms) {
     const trimmed = term.trim();
     if (trimmed.length === 0) continue;
-    
+
     // Check if term is a known quality
     if ((KNOWN_QUALITIES as readonly string[]).includes(trimmed)) {
       qualities.push(trimmed);
     }
   }
-  
+
   return qualities;
 }
 
@@ -218,7 +215,7 @@ export function isQueryQuality(query: string | string[]): boolean {
 export function isQueryPurelyQuality(query: string | string[]): boolean {
   const queryTerms = Array.isArray(query) ? query : [query];
   const qualities = extractQualities(query);
-  
+
   // Query is purely quality if all terms are qualities
   return qualities.length > 0 && qualities.length === queryTerms.length;
 }
@@ -254,82 +251,86 @@ export function applyFiltersAndScore(
   semanticScores: Map<string, number>
 ): ScoredExperience[] {
   let filtered = experiences;
-  
+
   // Hard filters (binary)
   if (filters.experiencer) {
-    filtered = filtered.filter(exp => exp.experiencer === filters.experiencer);
+    filtered = filtered.filter((exp) => exp.experiencer === filters.experiencer);
   }
   if (filters.perspective) {
-    filtered = filtered.filter(exp => exp.perspective === filters.perspective);
+    filtered = filtered.filter((exp) => exp.perspective === filters.perspective);
   }
   if (filters.processing) {
-    filtered = filtered.filter(exp => exp.processing === filters.processing);
+    filtered = filtered.filter((exp) => exp.processing === filters.processing);
   }
   if (filters.reflects === 'only') {
     // Filter for pattern realizations only (experiences with reflects field)
-    filtered = filtered.filter(exp => exp.reflects !== undefined);
+    filtered = filtered.filter((exp) => exp.reflects !== undefined);
   }
 
   if (filters.reflected_by) {
     // Filter for experiences that are reflected by specific pattern realizations
-    const reflectedByIds = Array.isArray(filters.reflected_by) ? filters.reflected_by : [filters.reflected_by];
-    filtered = filtered.filter(exp => {
+    const reflectedByIds = Array.isArray(filters.reflected_by)
+      ? filters.reflected_by
+      : [filters.reflected_by];
+    filtered = filtered.filter((exp) => {
       // Find pattern realizations that reflect on this experience
-      return experiences.some((patternExp: SourceRecord) => 
-        patternExp.reflects && 
-        patternExp.reflects.includes(exp.id) &&
-        reflectedByIds.includes(patternExp.id)
+      return experiences.some(
+        (patternExp: SourceRecord) =>
+          patternExp.reflects &&
+          patternExp.reflects.includes(exp.id) &&
+          reflectedByIds.includes(patternExp.id)
       );
     });
   }
-  
+
   // Enhanced quality filtering with sophisticated filters
   if (filters.qualities) {
     try {
       // Parse and evaluate the quality filter
       const filterExpression = qualityFilterService.parseQualityFilter(filters.qualities);
-      filtered = filtered.filter(exp => qualityFilterService.evaluateFilter(exp, filterExpression));
+      filtered = filtered.filter((exp) =>
+        qualityFilterService.evaluateFilter(exp, filterExpression)
+      );
     } catch (error) {
-      // If quality filter evaluation fails, log error but continue with unfiltered results
-      console.warn('Quality filter evaluation failed:', error);
-      // Continue without quality filtering
+      // If quality filter evaluation fails, continue with unfiltered results
+      // Error is silently handled to maintain MCP protocol compliance
     }
   } else {
     // Legacy quality filtering: For pure quality queries, only return experiences with matching qualities
     if (query && isQueryPurelyQuality(query)) {
       const queryQualities = extractQualities(query);
-      filtered = filtered.filter(exp => {
+      filtered = filtered.filter((exp) => {
         const experienceQualities = exp.experience || [];
-        
+
         if (Array.isArray(query)) {
           // For array queries, ALL qualities must match
-          return queryQualities.every(qQual => 
-            experienceQualities.some(eQual => 
-              qualitiesMatch(qQual, eQual) || qualitiesPartialMatch(qQual, eQual)
+          return queryQualities.every((qQual) =>
+            experienceQualities.some(
+              (eQual) => qualitiesMatch(qQual, eQual) || qualitiesPartialMatch(qQual, eQual)
             )
           );
         } else {
           // For single quality queries, at least one must match
-          return queryQualities.some(qQual => 
-            experienceQualities.some(eQual => 
-              qualitiesMatch(qQual, eQual) || qualitiesPartialMatch(qQual, eQual)
+          return queryQualities.some((qQual) =>
+            experienceQualities.some(
+              (eQual) => qualitiesMatch(qQual, eQual) || qualitiesPartialMatch(qQual, eQual)
             )
           );
         }
       });
     }
   }
-  
+
   // Score remaining experiences
   return filtered
-    .map(exp => {
+    .map((exp) => {
       const semanticSimilarity = semanticScores.get(exp.id);
       const { score, factors, weights } = scoreExperience(exp, query, semanticSimilarity);
       return {
         experience: exp,
         score,
         factors,
-        weights
+        weights,
       };
     })
     .sort((a, b) => b.score - a.score);

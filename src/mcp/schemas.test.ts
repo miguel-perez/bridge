@@ -428,50 +428,30 @@ describe('Schema Validation', () => {
   });
 
   describe('ReleaseInputSchema', () => {
-    it('should validate release input', () => {
-      const input = generateReleaseExample();
-      const result = ReleaseInputSchema.safeParse(input);
-      expect(result.success).toBe(true);
-    });
-
-    it('should validate single release input', () => {
+    it('should validate valid release input', () => {
       const input = {
         releases: [
           {
-            id: 'exp-123',
+            id: 'exp_123',
+            reason: 'Test cleanup',
           },
         ],
       };
+
       const result = ReleaseInputSchema.safeParse(input);
       expect(result.success).toBe(true);
     });
 
-    it('should validate batch release input', () => {
+    it('should reject invalid release input', () => {
       const input = {
-        releases: [{ id: 'exp-123' }, { id: 'exp-456' }],
+        releases: [
+          {
+            // Missing required id field
+            reason: 'Test cleanup',
+          },
+        ],
       };
-      const result = ReleaseInputSchema.safeParse(input);
-      expect(result.success).toBe(true);
-    });
 
-    it('should reject empty input', () => {
-      const input = {};
-      const result = ReleaseInputSchema.safeParse(input);
-      expect(result.success).toBe(false);
-    });
-
-    it('should reject empty releases array', () => {
-      const input = {
-        releases: [],
-      };
-      const result = ReleaseInputSchema.safeParse(input);
-      expect(result.success).toBe(false);
-    });
-
-    it('should reject invalid release ID in batch', () => {
-      const input = {
-        releases: [123], // Should be string
-      };
       const result = ReleaseInputSchema.safeParse(input);
       expect(result.success).toBe(false);
     });

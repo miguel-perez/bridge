@@ -9,6 +9,8 @@ import {
 } from '../utils/formatters.js';
 import { Messages, formatMessage } from '../utils/messages.js';
 import { SEMANTIC_CONFIG } from '../core/config.js';
+import { incrementCallCount, getCallCount } from './call-counter.js';
+import { getFlowStateMessage } from './flow-messages.js';
 
 /**
  * Response structure for experience capture operations
@@ -83,21 +85,43 @@ export class ExperienceHandler {
    * @remarks
    * Main entry point for MCP experience tool. Validates input, processes the request,
    * and ensures output conforms to MCP protocol requirements. Handles both single
-   * and batch experience capture modes.
+   * and batch experience capture modes. Now supports stillThinking parameter for flow tracking.
    * @param args - Experience input data from MCP client
+   * @param stillThinking - Optional boolean indicating if more tool calls are expected
    * @returns Formatted tool result compliant with MCP protocol
    * @throws ValidationError When required fields are missing
    * @throws ServiceError When experience processing fails
    */
-  async handle(args: ExperienceInput): Promise<ToolResult> {
+  async handle(args: ExperienceInput, stillThinking = false): Promise<ToolResult> {
     try {
+      incrementCallCount();
       const result = await this.handleRegularExperience(args);
-      ToolResultSchema.parse(result);
-      return result;
+
+      // Add flow state message if stillThinking was explicitly passed
+      const callsSoFar = getCallCount();
+      if (args.stillThinking !== undefined) {
+        const flowMessage = getFlowStateMessage(stillThinking, callsSoFar);
+        result.content.push({
+          type: 'text',
+          text: flowMessage,
+        });
+      }
+
+      // Add stillThinking and callsSoFar to the result
+      const enhancedResult = {
+        ...result,
+        stillThinking,
+        callsSoFar,
+      };
+
+      ToolResultSchema.parse(enhancedResult);
+      return enhancedResult;
     } catch (err) {
       return {
         isError: true,
         content: [{ type: 'text', text: 'Internal error: Output validation failed.' }],
+        stillThinking: false,
+        callsSoFar: getCallCount(),
       };
     }
   }
@@ -123,7 +147,7 @@ export class ExperienceHandler {
 
       // Validate each item in the array
       for (const item of experience.experiences) {
-        if (!item.source) {
+        if (!item.source || typeof item.source !== 'string' || item.source.trim() === '') {
           throw new Error('Each experience item must have source content');
         }
       }

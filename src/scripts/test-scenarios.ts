@@ -82,6 +82,44 @@ export const SCENARIOS: Record<string, TestScenario> = {
     ],
   },
 
+  // Still thinking flow test - demonstrates the minimal flow tracking pattern
+  'still-thinking-flow': {
+    description: 'Test stillThinking parameter for multi-step exploration',
+    turns: [
+      {
+        role: 'user',
+        content:
+          "I'm debugging a tricky authentication issue. Users are getting logged out randomly.",
+      },
+      {
+        role: 'assistant',
+        content:
+          'Let me capture this initial observation and start exploring with stillThinking=true to track our investigation.',
+        expectedTools: ['experience'],
+      },
+      {
+        role: 'user',
+        content: "Good idea. Let's search for similar issues we've encountered before.",
+      },
+      {
+        role: 'assistant',
+        content:
+          "I'll search for related authentication and logout experiences with stillThinking=true to continue our investigation.",
+        expectedTools: ['recall'],
+      },
+      {
+        role: 'user',
+        content: 'I just realized - it might be related to timezone differences in session expiry!',
+      },
+      {
+        role: 'assistant',
+        content:
+          "That's a great insight! Let me capture this realization with stillThinking=false to mark our investigation as complete.",
+        expectedTools: ['experience'],
+      },
+    ],
+  },
+
   // Quality detection test - covers main quality types efficiently
   'quality-detection': {
     description: 'Test quality detection across all dimensions',
@@ -158,7 +196,7 @@ export const SCENARIO_GROUPS = {
   minimal: ['core-operations'],
 
   // Standard test suite - good coverage without redundancy
-  standard: ['core-operations', 'quality-detection', 'advanced-recall'],
+  standard: ['core-operations', 'quality-detection', 'advanced-recall', 'still-thinking-flow'],
 
   // Comprehensive test suite - all scenarios
   comprehensive: Object.keys(SCENARIOS),
@@ -171,6 +209,9 @@ export const SCENARIO_GROUPS = {
 
   // Evolution-focused tests
   evolution: ['experience-evolution', 'content-types'],
+
+  // Flow tracking tests
+  flow: ['still-thinking-flow'],
 };
 
 // ============================================================================
@@ -203,6 +244,21 @@ export const MINIMAL_SCENARIOS: Record<string, TestScenario> = {
     turns: [
       ...experienceTurn('Feeling confused'),
       ...reconsiderTurn('Actually, I was just learning something new'),
+    ],
+  },
+
+  'still-thinking-minimal': {
+    description: 'Test minimal stillThinking flow',
+    turns: [
+      {
+        role: 'user',
+        content: "I'm investigating a bug. Let me start tracking this.",
+      },
+      {
+        role: 'assistant',
+        content: "I'll help you track this investigation using stillThinking.",
+        expectedTools: ['experience'],
+      },
     ],
   },
 };

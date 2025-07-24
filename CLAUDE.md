@@ -238,15 +238,23 @@ TEST_TURN_DELAY=2000          # Between turns (default: 2s)
 ```typescript
 // Human experience
 experience({
-  source: 'Finally got the tests passing!',
-  experience: ['embodied.thinking', 'mood.open', 'purpose.goal'],
+  experiences: [
+    {
+      source: 'Finally got the tests passing!',
+      experience: ['embodied.thinking', 'mood.open', 'purpose.goal'],
+    },
+  ],
 });
 
 // Claude's experience
 experience({
-  source: 'I notice we keep circling back to this pattern',
-  experience: ['embodied.thinking', 'presence.collective'],
-  experiencer: 'Claude',
+  experiences: [
+    {
+      source: 'I notice we keep circling back to this pattern',
+      experience: ['embodied.thinking', 'presence.collective'],
+      experiencer: 'Claude',
+    },
+  ],
 });
 ```
 
@@ -254,21 +262,31 @@ experience({
 
 ```typescript
 // Semantic search
-recall({ query: 'frustration debugging' });
+recall({
+  searches: [{ query: 'frustration debugging' }],
+});
 
 // Quality filtering
 recall({
-  qualities: {
-    mood: 'closed',
-    purpose: ['goal', 'wander'], // OR logic
-  },
+  searches: [
+    {
+      qualities: {
+        mood: 'closed',
+        purpose: ['goal', 'wander'], // OR logic
+      },
+    },
+  ],
 });
 
 // Pattern realizations only
-recall({ reflects: 'only' });
+recall({
+  searches: [{ reflects: 'only' }],
+});
 
 // Clustering mode
-recall({ query: 'learning', as: 'clusters' });
+recall({
+  searches: [{ query: 'learning', as: 'clusters' }],
+});
 ```
 
 ### Reconsider
@@ -276,14 +294,22 @@ recall({ query: 'learning', as: 'clusters' });
 ```typescript
 // Update qualities
 reconsider({
-  id: 'exp_123',
-  experience: ['embodied.sensing', 'mood.open'],
+  reconsiderations: [
+    {
+      id: 'exp_123',
+      experience: ['embodied.sensing', 'mood.open'],
+    },
+  ],
 });
 
 // Add pattern realization
 reconsider({
-  id: 'exp_456',
-  reflects: ['exp_123', 'exp_234'],
+  reconsiderations: [
+    {
+      id: 'exp_456',
+      reflects: ['exp_123', 'exp_234'],
+    },
+  ],
 });
 ```
 
@@ -291,9 +317,53 @@ reconsider({
 
 ```typescript
 release({
-  id: 'exp_789',
-  reason: 'Test data during development',
+  releases: [
+    {
+      id: 'exp_789',
+      reason: 'Test data during development',
+    },
+  ],
 });
+```
+
+### Flow Tracking (Still Thinking)
+
+```typescript
+// Start investigating with stillThinking: true
+const result1 = await experience({
+  experiences: [
+    {
+      source: 'Users report slow page loads during peak hours',
+      experience: ['embodied.thinking', 'focus.narrow'],
+    },
+  ],
+  stillThinking: true,
+});
+// Returns flow acknowledgment: "🤔 Still thinking... (1 step so far)"
+
+// Continue searching for patterns
+const result2 = await recall({
+  searches: [
+    {
+      query: 'performance peak hours database',
+      qualities: { embodied: 'thinking' },
+    },
+  ],
+  stillThinking: true,
+});
+// Returns: "🤔 Still thinking... (2 steps so far)"
+
+// Capture the solution
+const result3 = await experience({
+  experiences: [
+    {
+      source: 'Found it! Database connection pool was too small',
+      experience: ['mood.open', 'purpose.goal'],
+    },
+  ],
+  stillThinking: false, // Investigation complete
+});
+// Returns: "✅ Flow complete! (3 total steps)"
 ```
 
 ## Current Implementation Status
@@ -306,6 +376,7 @@ release({
 - Four core operations: experience(), recall(), reconsider(), release()
 - Pattern realizations with `reflects` field
 - Clustering analysis
+- Minimal flow tracking with `stillThinking` parameter
 
 **Next Priorities (from OPPORTUNITIES.md):**
 

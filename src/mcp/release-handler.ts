@@ -8,6 +8,8 @@
 import { deleteSource } from '../core/storage.js';
 
 import { ReleaseInput, ToolResultSchema, type ToolResult } from './schemas.js';
+import { incrementCallCount, getCallCount } from './call-counter.js';
+import { getFlowStateMessage } from './flow-messages.js';
 
 /**
  * Handles release requests from MCP clients
@@ -32,10 +34,12 @@ export class ReleaseHandler {
    * with optional reasons for each release.
    *
    * @param args - The release arguments containing the IDs and reasons
+   * @param stillThinking - Optional boolean indicating if more tool calls are expected
    * @returns Formatted release confirmation
    */
-  async handle(args: ReleaseInput): Promise<ToolResult> {
+  async handle(args: ReleaseInput, stillThinking = false): Promise<ToolResult> {
     try {
+      incrementCallCount();
       // Validate required fields - only accept array format
       if (!args.releases || args.releases.length === 0) {
         throw new Error('Releases array is required');
@@ -84,7 +88,21 @@ export class ReleaseHandler {
         });
       }
 
-      const result = { content };
+      // Add flow state message if stillThinking was explicitly passed
+      const callsSoFar = getCallCount();
+      if (args.stillThinking !== undefined) {
+        const flowMessage = getFlowStateMessage(stillThinking, callsSoFar);
+        content.push({
+          type: 'text' as const,
+          text: flowMessage,
+        });
+      }
+
+      const result = {
+        content,
+        stillThinking,
+        callsSoFar,
+      };
 
       ToolResultSchema.parse(result);
       return result;
@@ -97,6 +115,8 @@ export class ReleaseHandler {
             text: error instanceof Error ? error.message : 'Unknown error',
           },
         ],
+        stillThinking: false,
+        callsSoFar: getCallCount(),
       };
     }
   }

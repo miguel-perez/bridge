@@ -22,6 +22,16 @@ jest.mock('../core/config.js', () => ({
   },
 }));
 
+// Mock call-counter module
+let mockCallCount = 0;
+jest.mock('./call-counter.js', () => ({
+  incrementCallCount: jest.fn(() => ++mockCallCount),
+  getCallCount: jest.fn(() => mockCallCount),
+  resetCallCount: jest.fn(() => {
+    mockCallCount = 0;
+  }),
+}));
+
 // Mock the ToolResultSchema to avoid validation issues in tests
 jest.mock('./schemas.js', () => ({
   ...jest.requireActual('./schemas.js'),
@@ -182,6 +192,8 @@ describe('ExperienceHandler', () => {
             text: 'Batch experienced',
           },
         ],
+        stillThinking: false,
+        callsSoFar: 2,
       });
 
       expect(mockExperienceService.rememberExperience).toHaveBeenCalledTimes(2);
@@ -199,6 +211,8 @@ describe('ExperienceHandler', () => {
             text: 'Experiences array is required',
           },
         ],
+        stillThinking: false,
+        callsSoFar: 3,
       });
 
       expect(mockExperienceService.rememberExperience).not.toHaveBeenCalled();
@@ -220,6 +234,8 @@ describe('ExperienceHandler', () => {
             text: 'Each experience item must have source content',
           },
         ],
+        stillThinking: false,
+        callsSoFar: 4,
       });
     });
 
@@ -238,6 +254,8 @@ describe('ExperienceHandler', () => {
             text: 'Service error',
           },
         ],
+        stillThinking: false,
+        callsSoFar: 5,
       });
     });
 
@@ -272,6 +290,8 @@ describe('ExperienceHandler', () => {
             text: 'Internal error: Output validation failed.',
           },
         ],
+        stillThinking: false,
+        callsSoFar: 6,
       });
     });
   });
@@ -616,6 +636,8 @@ describe('ExperienceHandler', () => {
             text: 'Unknown error',
           },
         ],
+        stillThinking: false,
+        callsSoFar: expect.any(Number),
       });
     });
 
@@ -1501,6 +1523,115 @@ describe('ExperienceHandler', () => {
 
         expect(result).toBeDefined();
         expect(result.isError).toBeFalsy();
+      });
+    });
+
+    describe('stillThinking functionality', () => {
+      beforeEach(() => {
+        // Reset the call counter before each test
+        mockCallCount = 0;
+      });
+
+      it('should return stillThinking: false and callsSoFar: 1 by default', async () => {
+        const mockResult = {
+          source: {
+            id: 'exp_123',
+            source: 'Test experience',
+            created: '2025-01-21T12:00:00Z',
+          },
+          defaultsUsed: [],
+        };
+
+        mockExperienceService.rememberExperience.mockResolvedValue(mockResult);
+        mockRecallService.search.mockResolvedValue({ results: [] });
+
+        const result = await handler.handle({
+          experiences: [{ source: 'Test experience' }],
+        });
+
+        expect(result.stillThinking).toBe(false);
+        expect(result.callsSoFar).toBe(1);
+      });
+
+      it('should return stillThinking: true when parameter is passed', async () => {
+        const mockResult = {
+          source: {
+            id: 'exp_123',
+            source: 'Test experience',
+            created: '2025-01-21T12:00:00Z',
+          },
+          defaultsUsed: [],
+        };
+
+        mockExperienceService.rememberExperience.mockResolvedValue(mockResult);
+        mockRecallService.search.mockResolvedValue({ results: [] });
+
+        const result = await handler.handle(
+          {
+            experiences: [{ source: 'Test experience' }],
+          },
+          true // stillThinking = true
+        );
+
+        expect(result.stillThinking).toBe(true);
+        expect(result.callsSoFar).toBe(1);
+      });
+
+      it('should increment callsSoFar with multiple calls', async () => {
+        const mockResult = {
+          source: {
+            id: 'exp_123',
+            source: 'Test experience',
+            created: '2025-01-21T12:00:00Z',
+          },
+          defaultsUsed: [],
+        };
+
+        mockExperienceService.rememberExperience.mockResolvedValue(mockResult);
+        mockRecallService.search.mockResolvedValue({ results: [] });
+
+        // First call
+        const result1 = await handler.handle(
+          {
+            experiences: [{ source: 'First experience' }],
+          },
+          true
+        );
+
+        expect(result1.stillThinking).toBe(true);
+        expect(result1.callsSoFar).toBe(1);
+
+        // Second call
+        const result2 = await handler.handle(
+          {
+            experiences: [{ source: 'Second experience' }],
+          },
+          true
+        );
+
+        expect(result2.stillThinking).toBe(true);
+        expect(result2.callsSoFar).toBe(2);
+
+        // Third call with stillThinking false
+        const result3 = await handler.handle(
+          {
+            experiences: [{ source: 'Final experience' }],
+          },
+          false
+        );
+
+        expect(result3.stillThinking).toBe(false);
+        expect(result3.callsSoFar).toBe(3);
+      });
+
+      it('should include stillThinking and callsSoFar in error responses', async () => {
+        const result = await handler.handle({
+          experiences: [], // Invalid - empty array
+        });
+
+        expect(result.isError).toBe(true);
+        expect(result.stillThinking).toBe(false);
+        expect(result.callsSoFar).toBeDefined();
       });
     });
   });

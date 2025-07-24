@@ -1,12 +1,18 @@
 /**
  * MCP Server Implementation for Bridge
- * 
+ *
  * This module implements the Model Context Protocol (MCP) server for Bridge,
  * providing tools for experiencing, recalling, and enriching experiential data.
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { CallToolRequestSchema, ListToolsRequestSchema, ErrorCode, McpError, InitializeRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+  ErrorCode,
+  McpError,
+  InitializeRequestSchema,
+} from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { validateConfiguration, getDataFilePath } from '../core/config.js';
 import { setStorageConfig } from '../core/storage.js';
@@ -35,7 +41,7 @@ function mcpLog(level: 'info' | 'warn' | 'error', message: string, serverInstanc
   if (serverInstance && typeof serverInstance.notification === 'function') {
     serverInstance.notification({
       method: 'log/message',
-      params: { level, data: message }
+      params: { level, data: message },
     });
   }
 }
@@ -46,10 +52,10 @@ function mcpLog(level: 'info' | 'warn' | 'error', message: string, serverInstanc
 
 /**
  * Recursively parses stringified JSON in arguments
- * 
+ *
  * This is a workaround for MCP transport layer stringification of complex objects.
  * The MCP transport may stringify nested objects, so we need to parse them back.
- * 
+ *
  * @param obj - The object to parse
  * @returns The parsed object with any stringified JSON converted back to objects
  */
@@ -57,8 +63,10 @@ function parseStringifiedJson(obj: unknown): unknown {
   if (typeof obj === 'string') {
     // Check if string looks like JSON (starts with { or [)
     const trimmed = obj.trim();
-    if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || 
-        (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+    if (
+      (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+      (trimmed.startsWith('[') && trimmed.endsWith(']'))
+    ) {
       try {
         const parsed = JSON.parse(trimmed);
         // Recursively parse the parsed object
@@ -83,55 +91,62 @@ function parseStringifiedJson(obj: unknown): unknown {
 
 /**
  * Initializes Bridge configuration and validates on startup
- * 
+ *
  * This function:
  * 1. Validates the configuration
  * 2. Creates necessary directories
  * 3. Sets up storage configuration
  * 4. Initializes the vector store
- * 
+ *
  * @throws Error If configuration fails
  */
 async function initializeConfiguration(serverInstance?: Server): Promise<void> {
   try {
     // Validate configuration
     validateConfiguration();
-    
+
     // Get data file path from config
     const dataFilePath = getDataFilePath();
-    
+
     // Ensure main data directory exists
     const dataDir = dirname(dataFilePath);
     mkdirSync(dataDir, { recursive: true });
-    
+
     // Ensure vector store data directory exists (vectors.json will be in the same directory)
     const vectorStoreDir = dirname(join(dataDir, 'vectors.json'));
     mkdirSync(vectorStoreDir, { recursive: true });
-    
+
     // Set storage configuration
     setStorageConfig({ dataFile: dataFilePath });
-    
+
     // Initialize embedding service first (needed by vector store)
     try {
       await embeddingService.initialize();
       mcpLog('info', 'Embedding service initialized successfully', serverInstance);
     } catch (embeddingError) {
       // Embedding service initialization failed - experiences will have zero embeddings
-      mcpLog('warn', `Embedding service initialization failed: ${embeddingError instanceof Error ? embeddingError.message : embeddingError}`, serverInstance);
+      mcpLog(
+        'warn',
+        `Embedding service initialization failed: ${embeddingError instanceof Error ? embeddingError.message : embeddingError}`,
+        serverInstance
+      );
     }
-    
+
     // Initialize core services
     try {
       // Initialize vector store for similarity search
       // VectorStore removed - embeddings now in main storage
-      
-      
+
       mcpLog('info', 'Vector store initialized successfully', serverInstance);
     } catch (vectorError) {
       // Vector search won't work but basic functionality will
-      mcpLog('warn', `Vector store initialization failed: ${vectorError instanceof Error ? vectorError.message : vectorError}`, serverInstance);
+      mcpLog(
+        'warn',
+        `Vector store initialization failed: ${vectorError instanceof Error ? vectorError.message : vectorError}`,
+        serverInstance
+      );
     }
-    
+
     // Bridge DXT initialized successfully
     mcpLog('info', 'Bridge configuration initialized successfully', serverInstance);
   } catch (error) {
@@ -156,13 +171,13 @@ const server = new Server(
   {
     capabilities: {
       tools: {
-        listChanged: false  // We don't dynamically change tools
+        listChanged: false, // We don't dynamically change tools
       },
       resources: {
-        listChanged: false  // We don't dynamically change resources
+        listChanged: false, // We don't dynamically change resources
       },
       prompts: {
-        listChanged: false  // We don't dynamically change prompts
+        listChanged: false, // We don't dynamically change prompts
       },
     },
   }
@@ -189,27 +204,31 @@ export async function initializeBridgeConfiguration(): Promise<void> {
  */
 server.setRequestHandler(InitializeRequestSchema, async (request) => {
   const { clientInfo } = request.params;
-  
+
   // Log the initialization request
-  mcpLog('info', `Initializing MCP server for client: ${clientInfo?.name || 'unknown'} (${clientInfo?.version || 'unknown'})`, server);
-  
+  mcpLog(
+    'info',
+    `Initializing MCP server for client: ${clientInfo?.name || 'unknown'} (${clientInfo?.version || 'unknown'})`,
+    server
+  );
+
   return {
-    protocolVersion: "2024-11-05",
+    protocolVersion: '2024-11-05',
     capabilities: {
       tools: {
-        listChanged: false
+        listChanged: false,
       },
       resources: {
-        listChanged: false
+        listChanged: false,
       },
       prompts: {
-        listChanged: false
-      }
+        listChanged: false,
+      },
     },
     serverInfo: {
       name: SERVER_NAME,
-      version: SERVER_VERSION
-    }
+      version: SERVER_VERSION,
+    },
   };
 });
 
@@ -223,7 +242,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 
 /**
  * Handles tool execution requests
- * 
+ *
  * This handler:
  * 1. Parses stringified JSON in arguments
  * 2. Routes to appropriate tool handler
@@ -249,46 +268,47 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'reconsider':
         return await toolHandlers.handle('reconsider', parsedArgs);
 
-
-
       default:
-        throw new McpError(
-          ErrorCode.InvalidParams,
-          `Unknown tool: ${name}`
-        );
+        throw new McpError(ErrorCode.InvalidParams, `Unknown tool: ${name}`);
     }
   } catch (err) {
     // Log the error via MCP for debugging
-    mcpLog('error', `Tool execution error in ${name}: ${err instanceof Error ? err.message : err}`, server);
-    
+    mcpLog(
+      'error',
+      `Tool execution error in ${name}: ${err instanceof Error ? err.message : err}`,
+      server
+    );
+
     // Improved error reporting for user clarity - return proper MCP tool result format
     let errorMessage = 'An unexpected error occurred';
-    
+
     if (err instanceof McpError) {
       errorMessage = err.message;
     } else if (err instanceof z.ZodError) {
       // Convert Zod validation errors to user-friendly messages
-      const details = err.errors.map(e => {
-        const field = e.path.join('.');
-        const message = e.message;
-        // Provide specific guidance for common validation errors
-        if (field === 'perspective') {
-          return `Invalid perspective`;
-        }
-        if (field === 'processing') {
-          return `Invalid processing level. Must be one of: during, right-after, long-after, crafted`;
-        }
-        if (field === 'content') {
-          return `Required: Content is required and cannot be empty.`;
-        }
-        if (field === 'experiencer') {
-          return `Required: Experiencer is required. Specify who experienced this.`;
-        }
-        if (message.toLowerCase().includes('required')) {
-          return `Required: ${message}`;
-        }
-        return `Invalid ${field}: ${message}`;
-      }).join('; ');
+      const details = err.errors
+        .map((e) => {
+          const field = e.path.join('.');
+          const message = e.message;
+          // Provide specific guidance for common validation errors
+          if (field === 'perspective') {
+            return `Invalid perspective`;
+          }
+          if (field === 'processing') {
+            return `Invalid processing level. Must be one of: during, right-after, long-after, crafted`;
+          }
+          if (field === 'content') {
+            return `Required: Content is required and cannot be empty.`;
+          }
+          if (field === 'experiencer') {
+            return `Required: Experiencer is required. Specify who experienced this.`;
+          }
+          if (message.toLowerCase().includes('required')) {
+            return `Required: ${message}`;
+          }
+          return `Invalid ${field}: ${message}`;
+        })
+        .join('; ');
       errorMessage = details;
     } else if (err instanceof Error) {
       // Special case: match the test expectation for missing content/narrative
@@ -299,7 +319,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         try {
           const arr = JSON.parse(err.message);
           if (Array.isArray(arr)) {
-            errorMessage = arr.map((e: Record<string, unknown>) => (e.message as string) || JSON.stringify(e)).join('; ');
+            errorMessage = arr
+              .map((e: Record<string, unknown>) => (e.message as string) || JSON.stringify(e))
+              .join('; ');
           } else {
             errorMessage = err.message;
           }
@@ -311,20 +333,23 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
     }
     // Strip 'Error capturing experience:' prefix if present
-    if (typeof errorMessage === 'string' && errorMessage.startsWith('Error capturing experience:')) {
+    if (
+      typeof errorMessage === 'string' &&
+      errorMessage.startsWith('Error capturing experience:')
+    ) {
       errorMessage = errorMessage.replace(/^Error capturing experience:\s*/, '');
     }
-    
+
     return {
       isError: true,
       content: [
         {
           type: 'text',
-          text: errorMessage
-        }
-      ]
+          text: errorMessage,
+        },
+      ],
     };
   }
 });
 
-export { server }; 
+export { server };

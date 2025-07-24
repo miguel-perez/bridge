@@ -9,6 +9,8 @@ import { withTimeout, DEFAULT_TIMEOUTS } from '../utils/timeout.js';
 import { SearchInput, ToolResultSchema, type ToolResult } from './schemas.js';
 import { formatRecallResponse, type RecallResult } from '../utils/formatters.js';
 import { SEMANTIC_CONFIG } from '../core/config.js';
+import { incrementCallCount, getCallCount } from './call-counter.js';
+import { getFlowStateMessage } from './flow-messages.js';
 
 export interface RecallResponse {
   success: boolean;
@@ -54,17 +56,39 @@ export class RecallHandler {
    * Handles recall requests
    *
    * @param args - The recall arguments containing queries and filters
+   * @param stillThinking - Optional boolean indicating if more tool calls are expected
    * @returns Formatted recall results
    */
-  async handle(args: SearchInput): Promise<ToolResult> {
+  async handle(args: SearchInput, stillThinking = false): Promise<ToolResult> {
     try {
+      incrementCallCount();
       const result = await this.handleRegularRecall(args);
-      ToolResultSchema.parse(result);
-      return result;
+
+      // Add flow state message if stillThinking was explicitly passed
+      const callsSoFar = getCallCount();
+      if (args.stillThinking !== undefined) {
+        const flowMessage = getFlowStateMessage(stillThinking, callsSoFar);
+        result.content.push({
+          type: 'text',
+          text: flowMessage,
+        });
+      }
+
+      // Add stillThinking and callsSoFar to the result
+      const enhancedResult = {
+        ...result,
+        stillThinking,
+        callsSoFar,
+      };
+
+      ToolResultSchema.parse(enhancedResult);
+      return enhancedResult;
     } catch (err) {
       return {
         isError: true,
         content: [{ type: 'text', text: 'Internal error: Output validation failed.' }],
+        stillThinking: false,
+        callsSoFar: getCallCount(),
       };
     }
   }

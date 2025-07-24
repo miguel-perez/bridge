@@ -46,8 +46,13 @@ See [DXT-README.md](./DXT-README.md) for Claude Desktop integration.
 Capture meaningful moments with quality signatures:
 
 ```javascript
-experience('Just had a breakthrough with the algorithm', {
-  experience: ['embodied.thinking', 'mood.open', 'purpose.goal'],
+experience({
+  experiences: [
+    {
+      source: 'Just had a breakthrough with the algorithm',
+      experience: ['embodied.thinking', 'mood.open', 'purpose.goal'],
+    },
+  ],
 });
 ```
 
@@ -57,16 +62,24 @@ Search experiences with semantic, quality, and temporal scoring:
 
 ```javascript
 // Semantic search
-recall('breakthrough moments');
+recall({
+  searches: [{ query: 'breakthrough moments' }],
+});
 
 // Quality filtering
-recall('mood.closed'); // Exact matches only
+recall({
+  searches: [{ query: '', qualities: { mood: 'closed' } }],
+});
 
 // Clustering analysis
-recall('anxiety', { as: 'clusters' }); // Group similar experiences
+recall({
+  searches: [{ query: 'anxiety', as: 'clusters' }],
+});
 
 // Recent experiences
-recall('recent');
+recall({
+  searches: [{ query: 'recent' }],
+});
 ```
 
 ### 3. Reconsider
@@ -74,8 +87,13 @@ recall('recent');
 Update experiences as understanding deepens:
 
 ```javascript
-reconsider(experienceId, {
-  experience: ['embodied.thinking', 'mood.open', 'focus.narrow'],
+reconsider({
+  reconsiderations: [
+    {
+      id: experienceId,
+      experience: ['embodied.thinking', 'mood.open', 'focus.narrow'],
+    },
+  ],
 });
 ```
 
@@ -84,8 +102,86 @@ reconsider(experienceId, {
 Remove experiences that no longer serve:
 
 ```javascript
-release(experienceId, 'Test data cleanup');
+release({
+  releases: [
+    {
+      id: experienceId,
+      reason: 'Test data cleanup',
+    },
+  ],
+});
 ```
+
+### 5. Flow Tracking (Still Thinking)
+
+Lightweight flow tracking inspired by sequential thinking's minimal pattern:
+
+```javascript
+// Start exploring (stillThinking: true)
+const result1 = await experience({
+  experiences: [
+    {
+      source: 'This bug is confusing - users report random logouts',
+      experience: ['mood.closed', 'embodied.thinking'],
+    },
+  ],
+  stillThinking: true, // Signal we're still working on this
+});
+// Returns: {
+//   content: [
+//     { type: 'text', text: 'Experienced (mood.closed, embodied.thinking)' },
+//     { type: 'text', text: '🤔 Still thinking... (1 step so far)\nContinue exploring - I\'m tracking your progress.\nPermission granted for more tool calls.' }
+//   ],
+//   stillThinking: true,
+//   callsSoFar: 1
+// }
+
+// Search for similar issues (stillThinking: true)
+const result2 = await recall({
+  searches: [
+    {
+      query: 'logout authentication session timeout',
+    },
+  ],
+  stillThinking: true, // Still investigating
+});
+// Returns: {
+//   content: [
+//     { type: 'text', text: 'Found 3 similar experiences...' },
+//     { type: 'text', text: '🤔 Still thinking... (2 steps so far)\nContinue exploring - I\'m tracking your progress.\nPermission granted for more tool calls.' }
+//   ],
+//   stillThinking: true,
+//   callsSoFar: 2
+// }
+
+// Found the solution! (stillThinking: false)
+const result3 = await experience({
+  experiences: [
+    {
+      source: 'Fixed! It was a timezone mismatch in session expiry',
+      experience: ['mood.open', 'embodied.thinking', 'purpose.goal'],
+    },
+  ],
+  stillThinking: false, // Done with this flow
+});
+// Returns: {
+//   content: [
+//     { type: 'text', text: 'Experienced (mood.open, embodied.thinking, purpose.goal)' },
+//     { type: 'text', text: '✅ Flow complete! (3 total steps)\nInvestigation concluded.\nGreat exploration!' }
+//   ],
+//   stillThinking: false,
+//   callsSoFar: 3
+// }
+```
+
+**Key Features:**
+
+- **Minimal Pattern**: Just a boolean `stillThinking` and a `callsSoFar` counter
+- **Flow State Messages**: Explicit acknowledgment when `stillThinking` is used
+- **No IDs or State**: No flow IDs to manage, no orchestration
+- **Tool Independence**: Each tool remains fully autonomous
+- **Session-Scoped**: Counter resets between sessions (not persisted)
+- **Sequential Thinking Inspired**: Permission to continue, not control
 
 ## Quality Dimensions
 
@@ -151,10 +247,9 @@ Bridge uses a vision-driven development cycle. See [LOOP.md](./LOOP.md) for our 
 ## Current Status
 
 - ✅ Core operations (experience, recall, reconsider, release)
+- ✅ Minimal flow tracking with stillThinking parameter
 - ✅ Semantic search with embeddings
-- ✅ Quality filtering
-- ✅ Unified scoring system
+- ✅ Quality filtering and unified scoring
+- ✅ Pattern recognition with clustering analysis
 - ✅ Learning loop with recommendations
-- 🚧 Pattern recognition (see OPPORTUNITIES.md)
-- 🚧 Clustering analysis
-- 🚧 Sequence analysis
+- 🚧 Sequence analysis (see OPPORTUNITIES.md)

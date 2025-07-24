@@ -114,11 +114,15 @@ const getScenarios = (): Record<string, TestScenario> => {
 // ============================================================================
 
 async function setupMCPClient(): Promise<MCPClient | null> {
-  const serverPath = join(process.cwd(), 'dist', 'index.js');
+  // Try bundle first, then fallback to index.js
+  let serverPath = join(process.cwd(), 'dist', 'bundle.js');
 
   if (!existsSync(serverPath)) {
-    console.error('❌ MCP server not found. Run "npm run build" first.');
-    return null;
+    serverPath = join(process.cwd(), 'dist', 'index.js');
+    if (!existsSync(serverPath)) {
+      console.error('❌ MCP server not found. Run "npm run build" or "npm run bundle" first.');
+      return null;
+    }
   }
 
   const client = new MCPClient({
@@ -137,15 +141,22 @@ async function setupMCPClient(): Promise<MCPClient | null> {
     env,
   });
 
-  await client.connect(transport);
+  try {
+    await client.connect(transport);
+    console.log('✅ MCP client connected');
+    console.log(`📁 Test data: ${env.BRIDGE_FILE_PATH}`);
 
-  console.log('✅ MCP client connected');
-  console.log(`📁 Test data: ${env.BRIDGE_FILE_PATH}`);
+    const tools = await client.listTools();
+    console.log(`🔧 Available tools: ${tools.tools.map((t) => t.name).join(', ')}`);
 
-  const tools = await client.listTools();
-  console.log(`🔧 Available tools: ${tools.tools.map((t) => t.name).join(', ')}`);
-
-  return client;
+    return client;
+  } catch (error) {
+    console.error(
+      '❌ Failed to connect to MCP server:',
+      error instanceof Error ? error.message : String(error)
+    );
+    return null;
+  }
 }
 
 // ============================================================================
