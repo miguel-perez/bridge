@@ -20,7 +20,133 @@ Each experiment follows this format for learning loop compatibility:
 
 ## Active Experiments
 
-_No active experiments at this time. All recent experiments have been completed successfully._
+### EXP-014: Progressive Vector Enhancement Architecture
+
+**Status**: Active  
+**Started**: 2025-07-24  
+**Purpose**: Implement a progressive enhancement architecture for embeddings and vector storage, solving Claude Desktop compatibility while enabling user choice across the privacy/convenience spectrum
+
+**Background**:
+
+- @xenova/transformers fails in Claude Desktop's restricted environment
+- Current in-memory search won't scale beyond ~1000 experiences
+- Different users have different needs (privacy vs quality vs ease vs scale)
+- Qdrant offers advanced vector search capabilities
+
+**Hypothesis**: A two-layer progressive architecture will:
+
+1. Solve the Claude Desktop compatibility issue
+2. Enable scaling to millions of experiences
+3. Allow users to choose their comfort level
+4. Maintain full offline capability
+5. Provide seamless upgrades as needs grow
+
+**Architecture**:
+
+```
+Layer 1: Embedding Providers (how we create vectors)
+  → Voyage AI (best quality, cloud)
+  → OpenAI (good quality, cloud)
+  → TensorFlow.js (local, 25MB)
+  → None (quality-only search)
+
+Layer 2: Vector Stores (how we search vectors)
+  → Qdrant (advanced search, local/cloud)
+  → In-Memory/JSON (current, simple)
+```
+
+**Test Scenarios**:
+
+1. **Progressive Enhancement Tests**
+   - No config → Quality-only + JSON (baseline)
+   - Add Voyage → Semantic search + JSON
+   - Add Qdrant → Semantic search + Advanced features
+   - Remove Voyage → Existing embeddings still searchable
+2. **Claude Desktop Compatibility**
+   - Test each provider in Claude Desktop
+   - Verify Qdrant REST API works in restricted environment
+   - Measure performance differences
+
+3. **Scaling Tests**
+   - Load 10K+ experiences into Qdrant
+   - Compare search performance vs in-memory
+   - Test filtering performance
+   - Memory usage comparison
+
+4. **Offline Scenarios**
+   - Full offline: TensorFlow.js + Local Qdrant
+   - Read-only offline: No embeddings + Local Qdrant with pre-computed vectors
+   - Airplane mode: Everything local
+
+5. **Migration Tests**
+   - JSON → Qdrant migration script
+   - Preserve all existing data
+   - Rollback capabilities
+
+**Measurable Outcomes**:
+
+- ✅ Embeddings work in Claude Desktop (via API or local)
+- ✅ Search scales to 100K+ experiences
+- ✅ Each layer works independently
+- ✅ Zero-config still works
+- ✅ Performance metrics: <100ms search at 100K experiences
+
+**Implementation Plan**:
+
+1. **Phase 1: Provider Abstraction** (Day 1-2)
+
+   ```typescript
+   interface EmbeddingProvider {
+     initialize(): Promise<void>;
+     generateEmbedding(text: string): Promise<number[]>;
+     getDimensions(): number;
+   }
+
+   interface VectorStore {
+     initialize(): Promise<void>;
+     upsert(id: string, vector: number[], metadata: any): Promise<void>;
+     search(vector: number[], filter?: any, limit?: number): Promise<SearchResult[]>;
+   }
+   ```
+
+2. **Phase 2: Voyage + JSON** (Day 3-4)
+   - Simplest cloud improvement
+   - Proves provider abstraction
+   - Immediate Claude Desktop fix
+
+3. **Phase 3: Qdrant Integration** (Week 2)
+   - Add QdrantVectorStore
+   - Migration tools
+   - Performance benchmarks
+
+4. **Phase 4: Additional Providers** (Week 3)
+   - OpenAI, TensorFlow.js providers
+   - Provider selection UI/docs
+
+**Learning Questions**:
+
+1. What's the minimum viable Qdrant setup?
+2. How do users want to configure this? (ENV vs config file vs UI)
+3. What's the performance threshold where Qdrant becomes necessary?
+4. Should we support multiple vector stores simultaneously?
+5. How do we handle embedding dimension mismatches?
+
+**Success Criteria**:
+
+- No breaking changes - JSON storage remains default
+- Each enhancement layer is optional
+- Clear upgrade path as needs grow
+- Performance improves with each layer
+- Works offline with right configuration
+
+**Evidence Trail**:
+
+- Diagnostic script showing zero embeddings in Claude Desktop
+- Opus research on embedding alternatives
+- Qdrant documentation and benchmarks
+- Community feedback on scaling issues
+
+---
 
 ## Completed Experiments
 

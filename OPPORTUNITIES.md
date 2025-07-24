@@ -65,6 +65,69 @@ Bridge uses a barbell strategy to balance stability with growth potential:
 
 Bridge prioritizes using a barbell strategy for antifragility - balancing high-certainty wins with high-impact experiments while avoiding fragile middle ground.
 
+## High-Priority Opportunities
+
+### Progressive Vector Enhancement Architecture
+
+**Score: 432** (Impact: 9, Certainty: 6, Urgency: 8)
+
+**Description**: Implement a two-layer progressive enhancement architecture for embeddings and vector storage, solving Claude Desktop compatibility while enabling users to choose their position on the privacy/convenience/scale spectrum.
+
+**Core Concept**: Progressive enhancement allows Bridge to scale from basic quality-only search to advanced vector operations:
+
+```
+Layer 1: Embedding Providers (how we create vectors)
+  → None (quality-only search - default)
+  → TensorFlow.js (local, 25MB)
+  → OpenAI (cloud, good quality)
+  → Voyage AI (cloud, best quality)
+
+Layer 2: Vector Stores (how we search vectors)
+  → In-Memory/JSON (current, simple)
+  → Qdrant (advanced search, local/cloud)
+  → Future: Pinecone, Weaviate, etc.
+```
+
+**Key Features**:
+
+- **Zero-config baseline**: Works out of the box with quality-only search
+- **Progressive enhancement**: Add capabilities as needed without breaking changes
+- **Provider flexibility**: Switch embedding providers based on environment/needs
+- **Storage scalability**: Upgrade from JSON to Qdrant when scale demands
+- **Full offline support**: TensorFlow.js + Local Qdrant for complete privacy
+
+**Benefits**:
+
+- **Solves Claude Desktop issue**: API-based or local embeddings work in restricted environment
+- **User choice**: Privacy-first to convenience-first options
+- **Scale ready**: From 100 to 1M+ experiences
+- **No breaking changes**: Existing JSON storage remains default
+- **Future-proof**: Easy to add new providers/stores
+
+**Implementation Notes**:
+
+```typescript
+interface EmbeddingProvider {
+  initialize(): Promise<void>;
+  generateEmbedding(text: string): Promise<number[]>;
+  getDimensions(): number;
+}
+
+interface VectorStore {
+  initialize(): Promise<void>;
+  upsert(id: string, vector: number[], metadata: any): Promise<void>;
+  search(vector: number[], filter?: any, limit?: number): Promise<SearchResult[]>;
+}
+```
+
+**MCP Compatibility**: Fully compatible - abstraction layers hide implementation details from MCP interface.
+
+**Priority Rationale**: High impact (solves critical Claude Desktop issue + enables scaling), medium certainty (clear architecture with some integration unknowns), high urgency (embeddings currently broken for Claude Desktop users).
+
+**Related Experiment**: EXP-014 in EXPERIMENTS.md tests this architecture.
+
+---
+
 **Score: 378** (Impact: 9, Certainty: 6, Urgency: 7) - **COMPLETED 2025-07-24**
 
 **Description**: Implement Bridge.flow() as a new MCP tool that orchestrates existing Bridge operations into learning loops, replacing sequential thinking with experiential problem-solving through iterative understanding evolution.
@@ -146,6 +209,169 @@ interface FlowResponse {
 - **recall** handles branching exploration (no need for branching state)
 - **experience** captures insights (no need for complex thought tracking)
 - **release** handles cleanup (no need for complex state management)
+
+## Medium-Priority Opportunities
+
+### Extensible Recall
+
+**Score: 270** (Impact: 9, Certainty: 5, Urgency: 6)
+
+**Description**: Create a plugin architecture for custom recall strategies, enabling developers to add domain-specific search capabilities without modifying Bridge core.
+
+**Core Concept**: Extensible recall allows custom strategies beyond built-in clustering and semantic search:
+
+```typescript
+interface RecallStrategy {
+  name: string;
+  description: string;
+  search(params: any, experiences: Experience[]): Promise<RecallResult>;
+}
+
+// Example custom strategies:
+- TemporalPatterns: Find OODA loops, rhythms, sequences
+- EmotionalJourneys: Track mood transitions over time
+- ConceptualLinks: Find experiences with shared concepts
+- GeographicClusters: Group by location metadata
+```
+
+**Benefits**:
+
+- Technical foundation for future features
+- Community-driven innovation
+- Domain-specific search capabilities
+- Maintains core simplicity
+
+**MCP Compatibility**: Fully compatible - strategies registered at startup.
+
+---
+
+### Natural Language Time Filters
+
+**Score: 216** (Impact: 8, Certainty: 9, Urgency: 3)
+
+**Description**: Enable natural language time expressions in recall queries like "last week", "yesterday", "past month".
+
+**Examples**:
+
+```javascript
+recall({ created: 'last week' });
+recall({ created: 'yesterday' });
+recall({ created: 'past 3 days' });
+```
+
+**Technical Notes**:
+
+- Use existing date parsing libraries
+- Clear fallback for ambiguous expressions
+- Timezone awareness from user context
+
+**MCP Compatibility**: Simple parameter enhancement, fully compatible.
+
+---
+
+### Natural Language Quality Parsing
+
+**Score: 189** (Impact: 7, Certainty: 9, Urgency: 3)
+
+**Description**: Parse natural language into quality signatures automatically, making Bridge more intuitive.
+
+**Examples**:
+
+```javascript
+// Instead of:
+experience({
+  source: 'feeling anxious and focused',
+  experience: ['embodied.sensing', 'mood.closed', 'focus.narrow'],
+});
+
+// Allow:
+experience({
+  source: 'feeling anxious and focused',
+  // Qualities auto-detected from content
+});
+```
+
+**Technical Notes**:
+
+- NLP for quality detection
+- Confidence thresholds
+- User correction mechanism
+- Progressive learning
+
+**MCP Compatibility**: Enhancement to existing tools, backward compatible.
+
+---
+
+### Batch Operations
+
+**Score: 162** (Impact: 6, Certainty: 9, Urgency: 3)
+
+**Description**: Support batch operations for bulk import/export and efficient processing.
+
+**API Examples**:
+
+```javascript
+// Batch experience
+experience({
+  experiences: [
+    { source: 'Morning meditation', experience: ['embodied.sensing'] },
+    { source: 'Coffee thoughts', experience: ['embodied.thinking'] },
+    { source: 'Team standup energy', experience: ['presence.collective'] },
+  ],
+});
+
+// Batch reconsider
+reconsider({
+  updates: [
+    { id: 'exp_123', experience: ['mood.open'] },
+    { id: 'exp_456', experience: ['purpose.goal'] },
+  ],
+});
+```
+
+**Benefits**:
+
+- Performance optimization for large operations
+- Import/export workflows
+- Bulk corrections
+- Migration support
+
+**MCP Compatibility**: Array format already supported, just needs handler optimization.
+
+---
+
+### Sequence Analysis
+
+**Score: 140** (Impact: 7, Certainty: 4, Urgency: 5)
+
+**Description**: Detect temporal patterns, transitions, and rhythms in experiential data.
+
+**Core Features**:
+
+```javascript
+recall({ as: 'sequence' });
+// Returns: Temporal patterns, OODA loops, recurring rhythms
+
+// Example output:
+{
+  sequences: [
+    {
+      pattern: 'anxiety → exploration → insight → integration',
+      frequency: 'weekly',
+      instances: 3,
+    },
+  ];
+}
+```
+
+**Technical Challenges**:
+
+- Temporal pattern detection algorithms
+- Statistical significance testing
+- Visualization of sequences
+- Performance at scale
+
+**MCP Compatibility**: New recall option, fully compatible.
 
 ### Completed Features
 
