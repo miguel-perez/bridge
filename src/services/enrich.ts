@@ -4,7 +4,13 @@
  */
 
 import { z } from 'zod';
-import { getSource, saveSource, deleteSource, saveEmbedding, deleteEmbedding } from '../core/storage.js';
+import {
+  getSource,
+  saveSource,
+  deleteSource,
+  saveEmbedding,
+  deleteEmbedding,
+} from '../core/storage.js';
 import { Source, Experience, ProcessingLevel, EmbeddingRecord } from '../core/types.js';
 import { embeddingService } from './embeddings.js';
 
@@ -34,7 +40,11 @@ export const enrichSchema = z.object({
   experiencer: z.string().optional().describe('Updated experiencer'),
   processing: z.string().optional().describe('Updated processing level'),
   crafted: z.boolean().optional().describe('Updated crafted flag'),
-  experience: z.array(z.string()).optional().describe('Updated experience analysis')
+  experience: z.array(z.string()).optional().describe('Updated experience analysis'),
+  reflects: z
+    .array(z.string())
+    .optional()
+    .describe('Array of experience IDs that this experience reflects on'),
 });
 
 /**
@@ -48,6 +58,7 @@ export interface EnrichInput {
   processing?: ProcessingLevel;
   crafted?: boolean;
   experience?: string[];
+  reflects?: string[];
 }
 
 /**
@@ -89,11 +100,10 @@ export class EnrichService {
     }
 
     // Determine if we need to regenerate embeddings
-    const shouldRegenerateEmbeddings = 
+    const shouldRegenerateEmbeddings =
       (input.source && input.source !== existingSource.source) ||
-      (input.experience && 
-       JSON.stringify(input.experience) !== 
-       JSON.stringify(existingSource.experience));
+      (input.experience &&
+        JSON.stringify(input.experience) !== JSON.stringify(existingSource.experience));
 
     // Generate new embedding if needed
     let embedding: number[] | undefined;
@@ -101,14 +111,12 @@ export class EnrichService {
       // Create the new embedding text format: "[source]" [prominent_qualities]
       const experience = processedExperience || existingSource.experience;
       const source = input.source || existingSource.source;
-      
+
       if (experience) {
-        const qualitiesText = experience.length > 0 
-          ? `[${experience.join(', ')}]`
-          : '[]';
-        
+        const qualitiesText = experience.length > 0 ? `[${experience.join(', ')}]` : '[]';
+
         const embeddingText = `"${source}" ${qualitiesText}`;
-        
+
         try {
           embedding = await embeddingService.generateEmbedding(embeddingText);
         } catch (error) {
@@ -125,7 +133,8 @@ export class EnrichService {
       experiencer: input.experiencer ?? existingSource.experiencer,
       processing: input.processing ?? existingSource.processing,
       crafted: input.crafted ?? existingSource.crafted,
-      experience: input.experience ?? existingSource.experience
+      experience: input.experience ?? existingSource.experience,
+      reflects: input.reflects ?? existingSource.reflects,
     };
 
     // Delete the old record and save the new one
@@ -137,12 +146,12 @@ export class EnrichService {
       try {
         // Delete old embedding
         await deleteEmbedding(input.id);
-        
+
         // Save new embedding
         const embeddingRecord: EmbeddingRecord = {
           sourceId: source.id,
           vector: embedding,
-          generated: new Date().toISOString()
+          generated: new Date().toISOString(),
         };
         await saveEmbedding(embeddingRecord);
       } catch (error) {
@@ -152,9 +161,9 @@ export class EnrichService {
 
     // Track what was updated
     const updatedFields = this.getUpdatedFields(existingSource, source);
-    
-    return { 
-      source, 
+
+    return {
+      source,
       updatedFields,
       embeddingsRegenerated: shouldRegenerateEmbeddings || false,
     };
@@ -173,10 +182,12 @@ export class EnrichService {
     if (original.experiencer !== updated.experiencer) fields.push('experiencer');
     if (original.processing !== updated.processing) fields.push('processing');
     if (original.crafted !== updated.crafted) fields.push('crafted');
-    if (JSON.stringify(original.experience) !== 
-        JSON.stringify(updated.experience)) {
+    if (JSON.stringify(original.experience) !== JSON.stringify(updated.experience)) {
       fields.push('experience');
+    }
+    if (JSON.stringify(original.reflects) !== JSON.stringify(updated.reflects)) {
+      fields.push('reflects');
     }
     return fields;
   }
-} 
+}

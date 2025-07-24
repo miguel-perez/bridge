@@ -63,8 +63,15 @@ MCP Client (Claude) → MCP Server → Tool Handlers → Services → Storage
 ### Data Flow Example
 
 ```typescript
-// 1. Claude calls experience tool
-experience({ source: 'I feel anxious', experience: ['embodied.sensing', 'mood.closed'] });
+// 1. Claude calls experience tool (array format required)
+experience({
+  experiences: [
+    {
+      source: 'I feel anxious',
+      experience: ['embodied.sensing', 'mood.closed'],
+    },
+  ],
+});
 
 // 2. MCP server routes to ExperienceHandler
 // 3. Handler validates and calls ExperienceService
@@ -72,6 +79,32 @@ experience({ source: 'I feel anxious', experience: ['embodied.sensing', 'mood.cl
 // 5. Storage saves to JSON, returns result
 // 6. Handler formats user-friendly response
 // 7. Claude receives: "Experienced (embodied.sensing, mood.closed)"
+```
+
+### API Format
+
+**IMPORTANT**: All Bridge tools now require array inputs, even for single operations:
+
+```typescript
+// Experience (always use experiences array)
+experience({
+  experiences: [{ source: 'text', experience: ['mood.open'] }],
+});
+
+// Recall (always use searches array)
+recall({
+  searches: [{ query: 'keyword', limit: 5 }],
+});
+
+// Reconsider (always use reconsiderations array)
+reconsider({
+  reconsiderations: [{ id: 'exp_123', source: 'updated text' }],
+});
+
+// Release (always use releases array)
+release({
+  releases: [{ id: 'exp_123', reason: 'no longer needed' }],
+});
 ```
 
 ## Quality Dimensions

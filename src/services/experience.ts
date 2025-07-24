@@ -37,9 +37,12 @@ export const experienceSchema = z.object({
   experiencer: z.string().optional(),
   processing: z.enum(['during', 'right-after', 'long-after']).optional(),
   crafted: z.boolean().optional(),
-  
+
   // Experience analysis - simplified to just prominent qualities array
-  experience: z.array(z.string()).optional()
+  experience: z.array(z.string()).optional(),
+
+  // Pattern realizations - experiences that reflect on other experiences
+  reflects: z.array(z.string()).optional(),
 });
 
 /**
@@ -52,6 +55,7 @@ export interface ExperienceInput {
   processing?: string;
   crafted?: boolean;
   experience?: string[];
+  reflects?: string[];
 }
 
 /**
@@ -90,16 +94,16 @@ export class ExperienceService {
   async rememberExperience(input: ExperienceInput): Promise<ExperienceResult> {
     // Validate input
     const validatedInput = experienceSchema.parse(input);
-    
+
     // Generate unique ID
     const id = await generateId();
-    
+
     // Auto-generate created timestamp
     const created = new Date().toISOString();
-    
+
     // Use source or default
     const source = validatedInput.source || 'Experience experienceed';
-    
+
     // Create experience with prominent qualities
     let experience: Experience | undefined;
     if (validatedInput.experience) {
@@ -107,7 +111,7 @@ export class ExperienceService {
         experience = validatedInput.experience;
       }
     }
-    
+
     // Create source record
     const sourceRecord: Source = {
       id,
@@ -117,34 +121,36 @@ export class ExperienceService {
       experiencer: validatedInput.experiencer || 'self',
       processing: validatedInput.processing || 'during',
       crafted: validatedInput.crafted || false,
-      experience
+      experience,
+      reflects: validatedInput.reflects,
     };
-    
+
     // Save the source record
     const savedSource = await saveSource(sourceRecord);
-    
+
     // Generate and save embedding
     try {
       const embeddingService = new EmbeddingService();
       await embeddingService.initialize();
-      
+
       // Create simple embedding text with prominent qualities
-      const qualitiesText = savedSource.experience && savedSource.experience.length > 0 
-        ? `[${savedSource.experience.join(', ')}]`
-        : '[]';
-      
+      const qualitiesText =
+        savedSource.experience && savedSource.experience.length > 0
+          ? `[${savedSource.experience.join(', ')}]`
+          : '[]';
+
       const embeddingText = `"${savedSource.source}" ${qualitiesText}`;
       const embedding = await embeddingService.generateEmbedding(embeddingText);
-      
+
       // Save embedding to storage
       const embeddingRecord: EmbeddingRecord = {
         sourceId: savedSource.id,
         vector: embedding,
-        generated: new Date().toISOString()
+        generated: new Date().toISOString(),
       };
-      
+
       await saveEmbedding(embeddingRecord);
-      
+
       const defaultsUsed = this.getDefaultsUsed(input);
       return { source: savedSource, defaultsUsed };
     } catch (error) {
@@ -168,4 +174,4 @@ export class ExperienceService {
     if (!originalInput.source) defaultsUsed.push('source="Experience experienceed"');
     return defaultsUsed;
   }
-} 
+}

@@ -36,6 +36,7 @@ export interface RecallResponse {
  * @remarks
  * Provides semantic search capabilities for retrieving stored experiences.
  * Supports text queries, quality filtering, and recent experience retrieval.
+ * Only accepts array format for search queries.
  */
 export class RecallHandler {
   private recallService: RecallService;
@@ -72,133 +73,180 @@ export class RecallHandler {
    * Processes recall requests with semantic search capabilities
    * @remarks
    * Handles text queries, quality filtering, and recent experience retrieval.
-   * Supports both semantic and quality search modes.
+   * Supports both semantic and quality search modes using array format only.
    * @param recall - Search input containing query and filter parameters
    * @returns Formatted recall results with relevance scores
    */
   private async handleRegularRecall(recall: SearchInput): Promise<ToolResult> {
     try {
-      const query = recall.query || '';
-      const limit = recall.limit || 10;
+      // Validate required fields - only accept array format
+      if (!recall.searches || recall.searches.length === 0) {
+        throw new Error('Searches array is required');
+      }
 
-      // Special handling for "recent" queries (only for string queries)
-      const isRecentQuery =
-        typeof query === 'string' &&
-        (query.toLowerCase() === 'recent' ||
-          query.toLowerCase() === 'last' ||
-          query.toLowerCase() === 'latest');
+      // Process each search in the batch
+      const allResults: Array<{
+        search: (typeof recall.searches)[0];
+        results: RecallResult[];
+        clusters?: any[];
+        stats?: any;
+      }> = [];
 
-      // Import needed function for checking quality queries
-      const { isQueryPurelyQuality } = await import('../services/unified-scoring.js');
+      for (const search of recall.searches) {
+        const query = search.query || '';
+        const limit = search.limit || 10;
 
-      // Check if this is a pure quality query
-      const isPureQuality = query && isQueryPurelyQuality(query);
+        // Special handling for "recent" queries (only for string queries)
+        const isRecentQuery =
+          typeof query === 'string' &&
+          (query.toLowerCase() === 'recent' ||
+            query.toLowerCase() === 'last' ||
+            query.toLowerCase() === 'latest');
 
-      // Perform recall
-      const { results, clusters, stats } = await withTimeout(
-        this.recallService.search({
-          query: isRecentQuery ? '' : query || undefined, // Empty query for recent to get all
-          limit: isRecentQuery ? Math.min(limit, 5) : limit, // Show fewer for recent
-          // Set semantic query based on query type
-          semantic_query: isRecentQuery
-            ? ''
-            : !query
-              ? undefined
-              : isPureQuality && typeof query === 'string'
-                ? ''
-                : typeof query === 'string'
-                  ? query
-                  : Array.isArray(query)
-                    ? query.join(' ')
-                    : '',
-          semantic_threshold: SEMANTIC_CONFIG.DEFAULT_THRESHOLD,
-          // Pass through all filters from the input
-          experiencer: recall.experiencer,
-          perspective: recall.perspective,
-          processing: recall.processing,
-          crafted: recall.crafted,
-          created: recall.created,
-          sort: isRecentQuery ? 'created' : recall.sort, // Force sort by created for recent
-          // Handle clustering if requested
-          as: recall.as,
-          // Pass sophisticated quality filters
-          qualities: recall.qualities,
-        }),
-        DEFAULT_TIMEOUTS.EXPERIENCE,
-        'Recall operation'
-      );
+        // Import needed function for checking quality queries
+        const { isQueryPurelyQuality } = await import('../services/unified-scoring.js');
 
-      // Convert results to RecallResult format for formatter
-      const recallResults: RecallResult[] = results.map((result) => ({
-        id: result.id,
-        type: result.type,
-        content: result.content,
-        snippet: result.snippet,
-        metadata: result.metadata
-          ? {
-              created:
-                typeof result.metadata.created === 'string'
-                  ? result.metadata.created
-                  : new Date().toISOString(),
-              perspective:
-                typeof result.metadata.perspective === 'string'
-                  ? result.metadata.perspective
+        // Check if this is a pure quality query
+        const isPureQuality = query && isQueryPurelyQuality(query);
+
+        // Perform recall
+        const { results, clusters, stats } = await withTimeout(
+          this.recallService.search({
+            query: isRecentQuery ? '' : query || undefined, // Empty query for recent to get all
+            limit: isRecentQuery ? Math.min(limit, 5) : limit, // Show fewer for recent
+            // Set semantic query based on query type
+            semantic_query: isRecentQuery
+              ? ''
+              : !query
+                ? undefined
+                : isPureQuality && typeof query === 'string'
+                  ? ''
+                  : typeof query === 'string'
+                    ? query
+                    : Array.isArray(query)
+                      ? query.join(' ')
+                      : '',
+            semantic_threshold: SEMANTIC_CONFIG.DEFAULT_THRESHOLD,
+            // Pass through all filters from the search
+            experiencer: search.experiencer,
+            perspective: search.perspective,
+            processing: search.processing,
+            crafted: search.crafted,
+            created: search.created,
+            sort: isRecentQuery ? 'created' : search.sort, // Force sort by created for recent
+            // Handle clustering if requested
+            as: search.as,
+            // Pass sophisticated quality filters
+            qualities: search.qualities,
+            // Pattern realization filters
+            reflects: search.reflects,
+            reflected_by: search.reflected_by,
+          }),
+          DEFAULT_TIMEOUTS.EXPERIENCE,
+          'Recall operation'
+        );
+
+        // Convert results to RecallResult format for formatter
+        const recallResults: RecallResult[] = results.map((result) => ({
+          id: result.id,
+          type: result.type,
+          content: result.content,
+          snippet: result.snippet,
+          metadata: result.metadata
+            ? {
+                created:
+                  typeof result.metadata.created === 'string'
+                    ? result.metadata.created
+                    : new Date().toISOString(),
+                perspective:
+                  typeof result.metadata.perspective === 'string'
+                    ? result.metadata.perspective
+                    : undefined,
+                experiencer:
+                  typeof result.metadata.experiencer === 'string'
+                    ? result.metadata.experiencer
+                    : undefined,
+                processing:
+                  typeof result.metadata.processing === 'string'
+                    ? result.metadata.processing
+                    : undefined,
+                experience: Array.isArray(result.metadata.experience)
+                  ? result.metadata.experience
                   : undefined,
-              experiencer:
-                typeof result.metadata.experiencer === 'string'
-                  ? result.metadata.experiencer
-                  : undefined,
-              processing:
-                typeof result.metadata.processing === 'string'
-                  ? result.metadata.processing
-                  : undefined,
-              experience: Array.isArray(result.metadata.experience)
-                ? result.metadata.experience
-                : undefined,
-            }
-          : undefined,
-        relevance_score: result.relevance_score,
-      }));
+              }
+            : undefined,
+          relevance_score: result.relevance_score,
+        }));
+
+        allResults.push({
+          search,
+          results: recallResults,
+          clusters,
+          stats,
+        });
+      }
 
       // Build multi-content response
       const content: Array<{ type: 'text'; text: string }> = [];
 
-      // Handle clustering response if clusters are available
-      if (clusters && clusters.length > 0) {
-        const clusterResponse = this.formatClusterResponse(clusters);
-        content.push({
-          type: 'text',
-          text: clusterResponse,
-        });
-      } else {
-        // Calculate metadata for pagination using service response
-        const total = (stats?.total as number) || results.length;
-        const hasMore = recall.limit ? total > recall.limit : false;
+      // Format response based on number of searches
+      if (allResults.length === 1) {
+        // Single search - format as before
+        const { search, results: recallResults, clusters, stats } = allResults[0];
+        const query = search.query || '';
 
-        // Format results using conversational formatter for regular recall with metadata
-        const response = formatRecallResponse(
-          recallResults,
-          true,
-          total,
-          hasMore,
-          recall.limit,
-          recall.offset
+        // Handle clustering response if clusters are available
+        if (clusters && clusters.length > 0) {
+          const clusterResponse = this.formatClusterResponse(clusters);
+          content.push({
+            type: 'text',
+            text: clusterResponse,
+          });
+        } else {
+          // Calculate metadata for pagination using service response
+          const total = (stats?.total as number) || recallResults.length;
+          const hasMore = search.limit ? total > search.limit : false;
+
+          // Format results using conversational formatter for regular recall with metadata
+          const response = formatRecallResponse(
+            recallResults,
+            true,
+            total,
+            hasMore,
+            search.limit,
+            search.offset
+          );
+          content.push({
+            type: 'text',
+            text: response,
+          });
+        }
+
+        // Add contextual guidance
+        const guidance = this.selectRecallGuidance(
+          typeof query === 'string' ? query : query.join(' '),
+          recallResults
         );
+        if (guidance) {
+          content.push({
+            type: 'text',
+            text: guidance,
+          });
+        }
+      } else {
+        // Multiple searches - format as batch
+        let response = `✅ Completed ${allResults.length} searches:\n\n`;
+
+        for (let i = 0; i < allResults.length; i++) {
+          const { search, results: recallResults } = allResults[i];
+          const query = search.query || 'all experiences';
+
+          response += `Search ${i + 1}: Found ${recallResults.length} results for "${query}"\n`;
+        }
+
         content.push({
           type: 'text',
           text: response,
-        });
-      }
-
-      // Add contextual guidance
-      const guidance = this.selectRecallGuidance(
-        typeof query === 'string' ? query : query.join(' '),
-        recallResults
-      );
-      if (guidance) {
-        content.push({
-          type: 'text',
-          text: guidance,
         });
       }
 

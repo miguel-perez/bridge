@@ -110,11 +110,15 @@ describe('ExperienceHandler', () => {
       });
 
       const result = await handler.handle({
-        source: 'I feel happy',
-        experiencer: 'Human',
-        perspective: 'I',
-        processing: 'during',
-        experience: ['mood.open'],
+        experiences: [
+          {
+            source: 'I feel happy',
+            experiencer: 'Human',
+            perspective: 'I',
+            processing: 'during',
+            experience: ['mood.open'],
+          },
+        ],
       });
 
       expect(result.content).toHaveLength(2);
@@ -134,6 +138,7 @@ describe('ExperienceHandler', () => {
         processing: 'during',
         crafted: undefined,
         experience: ['mood.open'],
+        reflects: undefined,
       });
     });
 
@@ -191,7 +196,7 @@ describe('ExperienceHandler', () => {
         content: [
           {
             type: 'text',
-            text: 'Source content is required',
+            text: 'Experiences array is required',
           },
         ],
       });
@@ -222,7 +227,7 @@ describe('ExperienceHandler', () => {
       mockExperienceService.rememberExperience.mockRejectedValue(new Error('Service error'));
 
       const result = await handler.handle({
-        source: 'Test experience',
+        experiences: [{ source: 'Test experience' }],
       });
 
       expect(result).toEqual({
@@ -256,7 +261,7 @@ describe('ExperienceHandler', () => {
       mockExperienceService.rememberExperience.mockResolvedValue(mockResult);
 
       const result = await handler.handle({
-        source: 'Test experience',
+        experiences: [{ source: 'Test experience' }],
       });
 
       expect(result).toEqual({
@@ -299,7 +304,7 @@ describe('ExperienceHandler', () => {
       });
 
       const result = await handler.handle({
-        source: 'I feel anxious',
+        experiences: [{ source: 'I feel anxious' }],
       });
 
       expect(result.content[0].text).toContain('Experienced: test');
@@ -345,7 +350,7 @@ describe('ExperienceHandler', () => {
       });
 
       const result = await handler.handle({
-        source: 'I feel happy',
+        experiences: [{ source: 'I feel happy' }],
       });
 
       expect(result.content[0].text).toContain('Experienced: test');
@@ -371,7 +376,7 @@ describe('ExperienceHandler', () => {
       });
 
       const result = await handler.handle({
-        source: 'Unique experience',
+        experiences: [{ source: 'Unique experience' }],
       });
 
       expect(result.content[0].text).toContain('Experienced: test');
@@ -400,7 +405,7 @@ describe('ExperienceHandler', () => {
       });
 
       const result = await handler.handle({
-        source: 'My first experience',
+        experiences: [{ source: 'My first experience' }],
       });
 
       expect(result.content).toHaveLength(2);
@@ -453,7 +458,7 @@ describe('ExperienceHandler', () => {
       });
 
       const result = await handler.handle({
-        source: 'Another anxious moment',
+        experiences: [{ source: 'Another anxious moment' }],
       });
 
       expect(result.content).toContainEqual({
@@ -484,8 +489,12 @@ describe('ExperienceHandler', () => {
       });
 
       const result = await handler.handle({
-        source: 'Feeling contemplative',
-        experience: ['mood.open', 'embodied.thinking'],
+        experiences: [
+          {
+            source: 'Feeling contemplative',
+            experience: ['mood.open', 'embodied.thinking'],
+          },
+        ],
       });
 
       expect(result.content).toContainEqual({
@@ -517,8 +526,12 @@ describe('ExperienceHandler', () => {
       });
 
       const result = await handler.handle({
-        source: 'Regular update',
-        experience: ['purpose.goal'],
+        experiences: [
+          {
+            source: 'Regular update',
+            experience: ['purpose.goal'],
+          },
+        ],
       });
 
       // Should only have the main response, no guidance
@@ -543,7 +556,7 @@ describe('ExperienceHandler', () => {
       });
 
       const result = await handler.handle({
-        source: 'Test',
+        experiences: [{ source: 'Test' }],
       });
 
       // Should still succeed without guidance
@@ -569,8 +582,12 @@ describe('ExperienceHandler', () => {
       });
 
       await handler.handle({
-        source: 'Test',
-        experience: [],
+        experiences: [
+          {
+            source: 'Test',
+            experience: [],
+          },
+        ],
       });
 
       expect(mockExperienceService.rememberExperience).toHaveBeenCalledWith({
@@ -580,6 +597,7 @@ describe('ExperienceHandler', () => {
         processing: undefined,
         crafted: undefined,
         experience: [],
+        reflects: undefined,
       });
     });
 
@@ -587,7 +605,7 @@ describe('ExperienceHandler', () => {
       mockExperienceService.rememberExperience.mockRejectedValue('String error');
 
       const result = await handler.handle({
-        source: 'Test',
+        experiences: [{ source: 'Test' }],
       });
 
       expect(result).toEqual({
@@ -618,8 +636,12 @@ describe('ExperienceHandler', () => {
       });
 
       await handler.handle({
-        source: 'Crafted content',
-        crafted: true,
+        experiences: [
+          {
+            source: 'Crafted content',
+            crafted: true,
+          },
+        ],
       });
 
       expect(mockExperienceService.rememberExperience).toHaveBeenCalledWith(
@@ -653,7 +675,9 @@ describe('ExperienceHandler', () => {
         results: [],
       });
 
-      await handler.handle(fullInput);
+      await handler.handle({
+        experiences: [fullInput],
+      });
 
       expect(mockExperienceService.rememberExperience).toHaveBeenCalledWith({
         source: 'Full experience',
@@ -662,6 +686,7 @@ describe('ExperienceHandler', () => {
         processing: 'long-after',
         crafted: false,
         experience: ['mood.open', 'presence.collective'],
+        reflects: undefined,
       });
     });
   });
@@ -1166,11 +1191,15 @@ describe('ExperienceHandler', () => {
         mockExperienceService.rememberExperience.mockResolvedValue(mockResult);
 
         const result = await handler.handle({
-          source,
-          experiencer: 'Human',
-          perspective: 'I',
-          processing: 'during',
-          experience,
+          experiences: [
+            {
+              source,
+              experiencer: 'Human',
+              perspective: 'I',
+              processing: 'during',
+              experience,
+            },
+          ],
         });
 
         // Verify the service was called with correct experience data
@@ -1225,11 +1254,15 @@ describe('ExperienceHandler', () => {
         mockExperienceService.rememberExperience.mockResolvedValue(mockResult);
 
         const result = await handler.handle({
-          source: 'Plain experience',
-          experiencer: 'Human',
-          perspective: 'I',
-          processing: 'during',
-          // No experience field
+          experiences: [
+            {
+              source: 'Plain experience',
+              experiencer: 'Human',
+              perspective: 'I',
+              processing: 'during',
+              // No experience field
+            },
+          ],
         });
 
         expect(mockExperienceService.rememberExperience).toHaveBeenCalledWith(
@@ -1290,11 +1323,15 @@ describe('ExperienceHandler', () => {
         mockExperienceService.rememberExperience.mockResolvedValue(mockResult);
 
         const result = await handler.handle({
-          source: 'Complete experiential moment',
-          experiencer: 'Human',
-          perspective: 'I',
-          processing: 'during',
-          experience: allQualities,
+          experiences: [
+            {
+              source: 'Complete experiential moment',
+              experiencer: 'Human',
+              perspective: 'I',
+              processing: 'during',
+              experience: allQualities,
+            },
+          ],
         });
 
         expect(mockExperienceService.rememberExperience).toHaveBeenCalledWith(
@@ -1339,11 +1376,15 @@ describe('ExperienceHandler', () => {
         mockExperienceService.rememberExperience.mockResolvedValue(mockResult);
 
         const result = await handler.handle({
-          source: 'Mixed type and subtype experience',
-          experiencer: 'Human',
-          perspective: 'I',
-          processing: 'during',
-          experience: mixedQualities,
+          experiences: [
+            {
+              source: 'Mixed type and subtype experience',
+              experiencer: 'Human',
+              perspective: 'I',
+              processing: 'during',
+              experience: mixedQualities,
+            },
+          ],
         });
 
         expect(mockExperienceService.rememberExperience).toHaveBeenCalledWith(
@@ -1390,11 +1431,15 @@ describe('ExperienceHandler', () => {
         mockExperienceService.rememberExperience.mockResolvedValue(mockResult);
 
         const result = await handler.handle({
-          source: 'Type-only experience',
-          experiencer: 'Human',
-          perspective: 'I',
-          processing: 'during',
-          experience: typeOnlyQualities,
+          experiences: [
+            {
+              source: 'Type-only experience',
+              experiencer: 'Human',
+              perspective: 'I',
+              processing: 'during',
+              experience: typeOnlyQualities,
+            },
+          ],
         });
 
         expect(mockExperienceService.rememberExperience).toHaveBeenCalledWith(
@@ -1437,11 +1482,15 @@ describe('ExperienceHandler', () => {
         mockExperienceService.rememberExperience.mockResolvedValue(mockResult);
 
         const result = await handler.handle({
-          source: 'Subtype-specific experience',
-          experiencer: 'Human',
-          perspective: 'I',
-          processing: 'during',
-          experience: subtypeQualities,
+          experiences: [
+            {
+              source: 'Subtype-specific experience',
+              experiencer: 'Human',
+              perspective: 'I',
+              processing: 'during',
+              experience: subtypeQualities,
+            },
+          ],
         });
 
         expect(mockExperienceService.rememberExperience).toHaveBeenCalledWith(

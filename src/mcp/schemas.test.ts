@@ -1,6 +1,6 @@
 /**
  * Schema validation tests
- * 
+ *
  * Tests for Zod schema validation, example generation, and type inference.
  */
 
@@ -23,18 +23,14 @@ import {
   isToolResult,
   isToolTextContent,
   isExperienceObject,
-  isSingleExperienceInput,
-  isBatchExperienceInput,
-  isSingleSearchInput,
-  isBatchSearchInput,
-  isSingleReconsiderInput,
-  isBatchReconsiderInput,
-  isSingleReleaseInput,
-  isBatchReleaseInput,
+  hasExperienceArray,
+  hasSearchArray,
+  hasReconsiderArray,
+  hasReleaseArray,
   type ExperienceInput,
   type SearchInput,
   type ReconsiderInput,
-  type ReleaseInput
+  type ReleaseInput,
 } from './schemas.js';
 
 describe('Schema Validation', () => {
@@ -51,114 +47,10 @@ describe('Schema Validation', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should reject input with neither source nor experiences', () => {
+    it('should reject input without experiences array', () => {
       const input = {
         perspective: 'I',
-        experiencer: 'Alex'
-      };
-      const result = ExperienceInputSchema.safeParse(input);
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].message).toBe("Either 'source' or 'experiences' must be provided");
-      }
-    });
-
-    it('should validate with only source', () => {
-      const input = {
-        source: 'Test experience',
-        perspective: 'I'
-      };
-      const result = ExperienceInputSchema.safeParse(input);
-      expect(result.success).toBe(true);
-    });
-
-    it('should validate with only experiences', () => {
-      const input = {
-        experiences: [{
-          source: 'Test experience',
-          perspective: 'I',
-          experience: ['mood.open']
-        }]
-      };
-      const result = ExperienceInputSchema.safeParse(input);
-      expect(result.success).toBe(true);
-    });
-
-    it('should validate with reflects field', () => {
-      const input = {
-        source: 'Pattern realization',
-        perspective: 'I',
-        experience: ['mood.open'],
-        reflects: ['exp-123', 'exp-456']
-      };
-      const result = ExperienceInputSchema.safeParse(input);
-      expect(result.success).toBe(true);
-    });
-
-    it('should validate with empty reflects array', () => {
-      const input = {
-        source: 'Experience with empty reflects',
-        perspective: 'I',
-        experience: ['mood.open'],
-        reflects: []
-      };
-      const result = ExperienceInputSchema.safeParse(input);
-      expect(result.success).toBe(true);
-    });
-
-    it('should validate with all optional fields', () => {
-      const input = {
-        source: 'Complete experience',
-        perspective: 'I',
-        experiencer: 'test',
-        processing: 'during',
-        crafted: false,
-        experience: ['mood.open', 'embodied.sensing'],
-        reflects: ['exp-123']
-      };
-      const result = ExperienceInputSchema.safeParse(input);
-      expect(result.success).toBe(true);
-    });
-
-    it('should accept any non-empty perspective string', () => {
-      const input = {
-        source: 'Test experience',
-        perspective: 'custom-perspective'
-      };
-      const result = ExperienceInputSchema.safeParse(input);
-      expect(result.success).toBe(true);
-    });
-
-    it('should reject invalid processing', () => {
-      const input = {
-        source: 'Test experience',
-        processing: 'invalid'
-      };
-      const result = ExperienceInputSchema.safeParse(input);
-      expect(result.success).toBe(false);
-    });
-
-    it('should reject invalid experience array', () => {
-      const input = {
-        source: 'Test experience',
-        experience: 'not-an-array'
-      };
-      const result = ExperienceInputSchema.safeParse(input);
-      expect(result.success).toBe(false);
-    });
-
-    it('should reject invalid reflects field', () => {
-      const input = {
-        source: 'Test experience',
-        reflects: 'not-an-array'
-      };
-      const result = ExperienceInputSchema.safeParse(input);
-      expect(result.success).toBe(false);
-    });
-
-    it('should reject empty source string', () => {
-      const input = {
-        source: ''
+        experiencer: 'Alex',
       };
       const result = ExperienceInputSchema.safeParse(input);
       expect(result.success).toBe(false);
@@ -166,7 +58,145 @@ describe('Schema Validation', () => {
 
     it('should reject empty experiences array', () => {
       const input = {
-        experiences: []
+        experiences: [],
+      };
+      const result = ExperienceInputSchema.safeParse(input);
+      expect(result.success).toBe(false);
+    });
+
+    it('should validate with only experiences', () => {
+      const input = {
+        experiences: [
+          {
+            source: 'Test experience',
+            perspective: 'I',
+            experience: ['mood.open'],
+          },
+        ],
+      };
+      const result = ExperienceInputSchema.safeParse(input);
+      expect(result.success).toBe(true);
+    });
+
+    it('should validate with reflects field', () => {
+      const input = {
+        experiences: [
+          {
+            source: 'Pattern realization',
+            perspective: 'I',
+            experience: ['mood.open'],
+            reflects: ['exp-123', 'exp-456'],
+          },
+        ],
+      };
+      const result = ExperienceInputSchema.safeParse(input);
+      expect(result.success).toBe(true);
+    });
+
+    it('should validate with empty reflects array', () => {
+      const input = {
+        experiences: [
+          {
+            source: 'Experience with empty reflects',
+            perspective: 'I',
+            experience: ['mood.open'],
+            reflects: [],
+          },
+        ],
+      };
+      const result = ExperienceInputSchema.safeParse(input);
+      expect(result.success).toBe(true);
+    });
+
+    it('should validate with all optional fields', () => {
+      const input = {
+        experiences: [
+          {
+            source: 'Complete experience',
+            perspective: 'I',
+            experiencer: 'test',
+            processing: 'during',
+            crafted: false,
+            experience: ['mood.open', 'embodied.sensing'],
+            reflects: ['exp-123'],
+          },
+        ],
+      };
+      const result = ExperienceInputSchema.safeParse(input);
+      expect(result.success).toBe(true);
+    });
+
+    it('should accept any non-empty perspective string', () => {
+      const input = {
+        experiences: [
+          {
+            source: 'Test experience',
+            perspective: 'custom-perspective',
+            experience: ['mood.open'],
+          },
+        ],
+      };
+      const result = ExperienceInputSchema.safeParse(input);
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject invalid processing', () => {
+      const input = {
+        experiences: [
+          {
+            source: 'Test experience',
+            processing: 'invalid',
+            experience: ['mood.open'],
+          },
+        ],
+      };
+      const result = ExperienceInputSchema.safeParse(input);
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject invalid experience array', () => {
+      const input = {
+        experiences: [
+          {
+            source: 'Test experience',
+            experience: 'not-an-array',
+          },
+        ],
+      };
+      const result = ExperienceInputSchema.safeParse(input);
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject invalid reflects field', () => {
+      const input = {
+        experiences: [
+          {
+            source: 'Test experience',
+            experience: ['mood.open'],
+            reflects: 'not-an-array' as any,
+          },
+        ],
+      };
+      const result = ExperienceInputSchema.safeParse(input);
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject empty source string', () => {
+      const input = {
+        experiences: [
+          {
+            source: '',
+            experience: ['mood.open'],
+          },
+        ],
+      };
+      const result = ExperienceInputSchema.safeParse(input);
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject empty experiences array', () => {
+      const input = {
+        experiences: [],
       };
       const result = ExperienceInputSchema.safeParse(input);
       expect(result.success).toBe(false);
@@ -174,10 +204,12 @@ describe('Schema Validation', () => {
 
     it('should reject invalid experience in batch', () => {
       const input = {
-        experiences: [{
-          source: 'Test experience',
-          experience: 'invalid'
-        }]
+        experiences: [
+          {
+            source: 'Test experience',
+            experience: 'invalid',
+          },
+        ],
       };
       const result = ExperienceInputSchema.safeParse(input);
       expect(result.success).toBe(false);
@@ -199,7 +231,11 @@ describe('Schema Validation', () => {
 
     it('should validate with only query', () => {
       const input = {
-        query: 'test query'
+        searches: [
+          {
+            query: 'test query',
+          },
+        ],
       };
       const result = SearchInputSchema.safeParse(input);
       expect(result.success).toBe(true);
@@ -207,8 +243,12 @@ describe('Schema Validation', () => {
 
     it('should validate with only filters', () => {
       const input = {
-        experiencer: 'Alex',
-        perspective: 'I'
+        searches: [
+          {
+            experiencer: 'Alex',
+            perspective: 'I',
+          },
+        ],
       };
       const result = SearchInputSchema.safeParse(input);
       expect(result.success).toBe(true);
@@ -216,12 +256,16 @@ describe('Schema Validation', () => {
 
     it('should validate with all search options', () => {
       const input = {
-        query: 'test query',
-        experiencer: 'Alex',
-        perspective: 'I',
-        limit: 10,
-        offset: 5,
-        sort: 'relevance'
+        searches: [
+          {
+            query: 'test query',
+            experiencer: 'Alex',
+            perspective: 'I',
+            limit: 10,
+            offset: 5,
+            sort: 'relevance',
+          },
+        ],
       };
       const result = SearchInputSchema.safeParse(input);
       expect(result.success).toBe(true);
@@ -229,8 +273,12 @@ describe('Schema Validation', () => {
 
     it('should validate with reflects filter', () => {
       const input = {
-        query: 'test query',
-        reflects: 'only'
+        searches: [
+          {
+            query: 'test query',
+            reflects: 'only',
+          },
+        ],
       };
       const result = SearchInputSchema.safeParse(input);
       expect(result.success).toBe(true);
@@ -238,8 +286,12 @@ describe('Schema Validation', () => {
 
     it('should validate with reflected_by filter', () => {
       const input = {
-        query: 'test query',
-        reflected_by: 'exp-123'
+        searches: [
+          {
+            query: 'test query',
+            reflected_by: 'exp-123',
+          },
+        ],
       };
       const result = SearchInputSchema.safeParse(input);
       expect(result.success).toBe(true);
@@ -247,8 +299,12 @@ describe('Schema Validation', () => {
 
     it('should validate with reflected_by array filter', () => {
       const input = {
-        query: 'test query',
-        reflected_by: ['exp-123', 'exp-456']
+        searches: [
+          {
+            query: 'test query',
+            reflected_by: ['exp-123', 'exp-456'],
+          },
+        ],
       };
       const result = SearchInputSchema.safeParse(input);
       expect(result.success).toBe(true);
@@ -256,8 +312,12 @@ describe('Schema Validation', () => {
 
     it('should reject invalid sort option', () => {
       const input = {
-        query: 'test query',
-        sort: 'invalid'
+        searches: [
+          {
+            query: 'test query',
+            sort: 'invalid' as any,
+          },
+        ],
       };
       const result = SearchInputSchema.safeParse(input);
       expect(result.success).toBe(false);
@@ -265,8 +325,12 @@ describe('Schema Validation', () => {
 
     it('should accept negative limit (no validation)', () => {
       const input = {
-        query: 'test query',
-        limit: -1
+        searches: [
+          {
+            query: 'test query',
+            limit: -1,
+          },
+        ],
       };
       const result = SearchInputSchema.safeParse(input);
       expect(result.success).toBe(true);
@@ -274,17 +338,25 @@ describe('Schema Validation', () => {
 
     it('should accept negative offset (no validation)', () => {
       const input = {
-        query: 'test query',
-        offset: -1
+        searches: [
+          {
+            query: 'test query',
+            offset: -1,
+          },
+        ],
       };
       const result = SearchInputSchema.safeParse(input);
       expect(result.success).toBe(true);
     });
 
-    it('should reject invalid filter structure', () => {
+    it('should reject searches with invalid fields', () => {
       const input = {
-        query: 'test query',
-        filter: 'not-an-object'
+        searches: [
+          {
+            query: 'test query',
+            invalidField: 'not-allowed',
+          },
+        ] as any,
       };
       const result = SearchInputSchema.safeParse(input);
       expect(result.success).toBe(false);
@@ -300,8 +372,12 @@ describe('Schema Validation', () => {
 
     it('should validate single reconsider input', () => {
       const input = {
-        id: 'exp-123',
-        source: 'Updated experience'
+        reconsiderations: [
+          {
+            id: 'exp-123',
+            source: 'Updated experience',
+          },
+        ],
       };
       const result = ReconsiderInputSchema.safeParse(input);
       expect(result.success).toBe(true);
@@ -311,24 +387,32 @@ describe('Schema Validation', () => {
       const input = {
         reconsiderations: [
           { id: 'exp-123', source: 'Updated 1' },
-          { id: 'exp-456', source: 'Updated 2' }
-        ]
+          { id: 'exp-456', source: 'Updated 2' },
+        ],
       };
       const result = ReconsiderInputSchema.safeParse(input);
       expect(result.success).toBe(true);
     });
 
-    it('should accept input with only source (no validation)', () => {
+    it('should reject empty reconsiderations array', () => {
       const input = {
-        source: 'Test experience'
+        reconsiderations: [],
       };
       const result = ReconsiderInputSchema.safeParse(input);
-      expect(result.success).toBe(true);
+      expect(result.success).toBe(false);
     });
 
-    it('should accept empty reconsiderations array (no validation)', () => {
+    it('should validate reconsideration with all fields', () => {
       const input = {
-        reconsiderations: []
+        reconsiderations: [
+          {
+            id: 'exp-123',
+            source: 'Updated',
+            experience: ['mood.open'],
+            perspective: 'we',
+            processing: 'long-after',
+          },
+        ],
       };
       const result = ReconsiderInputSchema.safeParse(input);
       expect(result.success).toBe(true);
@@ -336,9 +420,7 @@ describe('Schema Validation', () => {
 
     it('should reject invalid reconsideration in batch', () => {
       const input = {
-        reconsiderations: [
-          { source: 'Missing ID' }
-        ]
+        reconsiderations: [{ source: 'Missing ID' }],
       };
       const result = ReconsiderInputSchema.safeParse(input);
       expect(result.success).toBe(false);
@@ -354,7 +436,11 @@ describe('Schema Validation', () => {
 
     it('should validate single release input', () => {
       const input = {
-        id: 'exp-123'
+        releases: [
+          {
+            id: 'exp-123',
+          },
+        ],
       };
       const result = ReleaseInputSchema.safeParse(input);
       expect(result.success).toBe(true);
@@ -362,29 +448,29 @@ describe('Schema Validation', () => {
 
     it('should validate batch release input', () => {
       const input = {
-        releases: [{ id: 'exp-123' }, { id: 'exp-456' }]
+        releases: [{ id: 'exp-123' }, { id: 'exp-456' }],
       };
       const result = ReleaseInputSchema.safeParse(input);
       expect(result.success).toBe(true);
     });
 
-    it('should accept empty input (no validation)', () => {
+    it('should reject empty input', () => {
       const input = {};
       const result = ReleaseInputSchema.safeParse(input);
-      expect(result.success).toBe(true);
+      expect(result.success).toBe(false);
     });
 
-    it('should accept empty releases array (no validation)', () => {
+    it('should reject empty releases array', () => {
       const input = {
-        releases: []
+        releases: [],
       };
       const result = ReleaseInputSchema.safeParse(input);
-      expect(result.success).toBe(true);
+      expect(result.success).toBe(false);
     });
 
     it('should reject invalid release ID in batch', () => {
       const input = {
-        releases: [123] // Should be string
+        releases: [123], // Should be string
       };
       const result = ReleaseInputSchema.safeParse(input);
       expect(result.success).toBe(false);
@@ -450,10 +536,12 @@ describe('Type Guards', () => {
   describe('isToolResult', () => {
     it('should return true for valid tool result', () => {
       const result = {
-        content: [{
-          type: 'text',
-          text: 'Test result'
-        }]
+        content: [
+          {
+            type: 'text',
+            text: 'Test result',
+          },
+        ],
       };
       expect(isToolResult(result)).toBe(true);
     });
@@ -470,7 +558,7 @@ describe('Type Guards', () => {
     it('should return true for valid text content', () => {
       const content = {
         type: 'text',
-        text: 'Test content'
+        text: 'Test content',
       };
       expect(isToolTextContent(content)).toBe(true);
     });
@@ -498,100 +586,72 @@ describe('Type Guards', () => {
     });
   });
 
-  describe('Input Type Guards', () => {
-    describe('isSingleExperienceInput', () => {
-      it('should return true for single experience input', () => {
-        const input = { source: 'test' };
-        expect(isSingleExperienceInput(input)).toBe(true);
-      });
-
-      it('should return false for batch experience input', () => {
+  describe('Array Type Guards', () => {
+    describe('hasExperienceArray', () => {
+      it('should return true for valid experience array', () => {
         const input = { experiences: [{ source: 'test', experience: ['mood.open'] }] };
-        expect(isSingleExperienceInput(input)).toBe(false);
-      });
-    });
-
-    describe('isBatchExperienceInput', () => {
-      it('should return true for batch experience input', () => {
-        const input = { experiences: [{ source: 'test', experience: ['mood.open'] }] };
-        expect(isBatchExperienceInput(input)).toBe(true);
+        expect(hasExperienceArray(input)).toBe(true);
       });
 
-      it('should return false for single experience input', () => {
+      it('should return false for empty experience array', () => {
+        const input = { experiences: [] };
+        expect(hasExperienceArray(input)).toBe(false);
+      });
+
+      it('should return false for missing experiences', () => {
         const input = { source: 'test' };
-        expect(isBatchExperienceInput(input)).toBe(false);
+        expect(hasExperienceArray(input as any)).toBe(false);
       });
     });
 
-    describe('isSingleSearchInput', () => {
-      it('should return true for single search input', () => {
-        const input = { query: 'test' };
-        expect(isSingleSearchInput(input)).toBe(true);
-      });
-
-      it('should return false for batch search input', () => {
+    describe('hasSearchArray', () => {
+      it('should return true for valid search array', () => {
         const input = { searches: [{ query: 'test' }] };
-        expect(isSingleSearchInput(input)).toBe(false);
-      });
-    });
-
-    describe('isBatchSearchInput', () => {
-      it('should return true for batch search input', () => {
-        const input = { searches: [{ query: 'test' }] };
-        expect(isBatchSearchInput(input)).toBe(true);
+        expect(hasSearchArray(input)).toBe(true);
       });
 
-      it('should return false for single search input', () => {
+      it('should return false for empty search array', () => {
+        const input = { searches: [] };
+        expect(hasSearchArray(input)).toBe(false);
+      });
+
+      it('should return false for missing searches', () => {
         const input = { query: 'test' };
-        expect(isBatchSearchInput(input)).toBe(false);
+        expect(hasSearchArray(input as any)).toBe(false);
       });
     });
 
-    describe('isSingleReconsiderInput', () => {
-      it('should return true for single reconsider input', () => {
-        const input = { id: 'exp-123' };
-        expect(isSingleReconsiderInput(input)).toBe(true);
-      });
-
-      it('should return false for batch reconsider input', () => {
+    describe('hasReconsiderArray', () => {
+      it('should return true for valid reconsider array', () => {
         const input = { reconsiderations: [{ id: 'exp-123' }] };
-        expect(isSingleReconsiderInput(input)).toBe(false);
+        expect(hasReconsiderArray(input)).toBe(true);
+      });
+
+      it('should return false for empty reconsider array', () => {
+        const input = { reconsiderations: [] };
+        expect(hasReconsiderArray(input)).toBe(false);
+      });
+
+      it('should return false for missing reconsiderations', () => {
+        const input = { id: 'exp-123' };
+        expect(hasReconsiderArray(input as any)).toBe(false);
       });
     });
 
-    describe('isBatchReconsiderInput', () => {
-      it('should return true for batch reconsider input', () => {
-        const input = { reconsiderations: [{ id: 'exp-123' }] };
-        expect(isBatchReconsiderInput(input)).toBe(true);
-      });
-
-      it('should return false for single reconsider input', () => {
-        const input = { id: 'exp-123' };
-        expect(isBatchReconsiderInput(input)).toBe(false);
-      });
-    });
-
-    describe('isSingleReleaseInput', () => {
-      it('should return true for single release input', () => {
-        const input = { id: 'exp-123' };
-        expect(isSingleReleaseInput(input)).toBe(true);
-      });
-
-      it('should return false for batch release input', () => {
+    describe('hasReleaseArray', () => {
+      it('should return true for valid release array', () => {
         const input = { releases: [{ id: 'exp-123' }] };
-        expect(isSingleReleaseInput(input)).toBe(false);
-      });
-    });
-
-    describe('isBatchReleaseInput', () => {
-      it('should return true for batch release input', () => {
-        const input = { releases: [{ id: 'exp-123' }] };
-        expect(isBatchReleaseInput(input)).toBe(true);
+        expect(hasReleaseArray(input)).toBe(true);
       });
 
-      it('should return false for single release input', () => {
+      it('should return false for empty release array', () => {
+        const input = { releases: [] };
+        expect(hasReleaseArray(input)).toBe(false);
+      });
+
+      it('should return false for missing releases', () => {
         const input = { id: 'exp-123' };
-        expect(isBatchReleaseInput(input)).toBe(false);
+        expect(hasReleaseArray(input as any)).toBe(false);
       });
     });
   });
@@ -600,26 +660,33 @@ describe('Type Guards', () => {
 describe('Example Generation', () => {
   it('should generate valid experience examples', () => {
     const example = generateExperienceExample();
-    expect(example).toHaveProperty('source');
-    expect(example).toHaveProperty('perspective');
-    expect(example).toHaveProperty('experience');
-    expect(Array.isArray(example.experience)).toBe(true);
+    expect(example).toHaveProperty('experiences');
+    expect(Array.isArray(example.experiences)).toBe(true);
+    expect(example.experiences![0]).toHaveProperty('source');
+    expect(example.experiences![0]).toHaveProperty('perspective');
+    expect(example.experiences![0]).toHaveProperty('experience');
   });
 
   it('should generate valid search examples', () => {
     const example = generateSearchExample();
-    expect(example).toHaveProperty('query');
+    expect(example).toHaveProperty('searches');
+    expect(Array.isArray(example.searches)).toBe(true);
+    expect(example.searches![0]).toHaveProperty('query');
   });
 
   it('should generate valid reconsider examples', () => {
     const example = generateReconsiderExample();
-    expect(example).toHaveProperty('id');
-    expect(example).toHaveProperty('source');
+    expect(example).toHaveProperty('reconsiderations');
+    expect(Array.isArray(example.reconsiderations)).toBe(true);
+    expect(example.reconsiderations![0]).toHaveProperty('id');
+    expect(example.reconsiderations![0]).toHaveProperty('source');
   });
 
   it('should generate valid release examples', () => {
     const example = generateReleaseExample();
-    expect(example).toHaveProperty('id');
+    expect(example).toHaveProperty('releases');
+    expect(Array.isArray(example.releases)).toBe(true);
+    expect(example.releases![0]).toHaveProperty('id');
   });
 
   it('should generate valid batch experience examples', () => {
@@ -635,4 +702,4 @@ describe('Example Generation', () => {
     expect(Array.isArray(example.searches)).toBe(true);
     expect(example.searches?.length).toBeGreaterThan(0);
   });
-}); 
+});

@@ -167,16 +167,15 @@ export const ExperienceObjectOptional = z
   )
   .optional();
 
-// EXPERIENCE tool input
-export const ExperienceInputSchema = z
+// EXPERIENCE tool input - Array Only
+const ExperienceItemSchema = z
   .object({
     source: z
       .string()
       .min(1)
       .describe(
         'Raw, exact words from the experiencer - their actual text/voice as written or spoken OR your own experiential observations. Do not summarize, interpret, or modify.'
-      )
-      .optional(),
+      ),
     perspective: PerspectiveField.optional(),
     experiencer: z
       .string()
@@ -191,54 +190,27 @@ export const ExperienceInputSchema = z
         'Whether this is crafted content (blog/refined for an audience) vs raw experience (journal/immediate)'
       )
       .optional(),
-    experience: ExperienceObject.optional(),
+    experience: ExperienceObject,
     reflects: z
       .array(z.string())
       .describe(
         'Array of experience IDs that this experience reflects on/connects to (for pattern realizations)'
       )
       .optional(),
-    experiences: z
-      .array(
-        z.object({
-          source: z
-            .string()
-            .min(1)
-            .describe(
-              'Raw, exact words from the experiencer - their actual text/voice as written or spoken. Do not summarize, interpret, or modify.'
-            ),
-          perspective: PerspectiveField.optional(),
-          experiencer: z
-            .string()
-            .describe('Who experienced this moment (person, group, or entity)')
-            .optional(),
-          processing: ProcessingEnum.optional(),
-          crafted: z
-            .boolean()
-            .describe(
-              'Whether this is crafted content (blog/refined for an audience) vs raw experience (journal/immediate)'
-            )
-            .optional(),
-          experience: ExperienceObject,
-          reflects: z
-            .array(z.string())
-            .describe(
-              'Array of experience IDs that this experience reflects on/connects to (for pattern realizations)'
-            )
-            .optional(),
-        })
-      )
-      .describe('Array of experiences to experience (for batch operations)')
-      .optional(),
+  })
+  .strict();
+
+export const ExperienceInputSchema = z
+  .object({
+    experiences: z.array(ExperienceItemSchema).min(1).describe('Array of experiences to capture'),
   })
   .strict()
-  .refine((data) => data.source || (data.experiences && data.experiences.length > 0), {
-    message: "Either 'source' or 'experiences' must be provided",
-    path: ['source'],
-  });
+  .describe(
+    'Input for capturing one or more experiences. Always use array format, even for single experiences.'
+  );
 
-// SEARCH tool input
-export const SearchInputSchema = z
+// RECALL tool input - Array Only
+const SearchItemSchema = z
   .object({
     query: z
       .union([
@@ -291,73 +263,20 @@ export const SearchInputSchema = z
       .enum(['clusters'])
       .describe('Return results as clusters of similar experiences instead of individual results')
       .optional(),
-    show_ids: z
-      .boolean()
-      .describe('Deprecated - IDs are always shown. This parameter is ignored.')
-      .optional(),
-    searches: z
-      .array(
-        z.object({
-          query: z.string().describe('Search query for semantic matching').optional(),
-          limit: z.number().describe('Maximum number of results to return').optional(),
-          offset: z.number().describe('Number of results to skip for pagination').optional(),
-          experiencer: z.string().describe('Filter by experiencer').optional(),
-          perspective: PerspectiveField.optional(),
-          processing: ProcessingEnum.optional(),
-          crafted: z
-            .boolean()
-            .describe(
-              'Filter by crafted status (true for blog/refined content, false for raw experience)'
-            )
-            .optional(),
-          reflects: z
-            .enum(['only'])
-            .describe('Filter for pattern realizations only (experiences with reflects field)')
-            .optional(),
-          reflected_by: z
-            .union([
-              z
-                .string()
-                .describe('Find experiences that are reflected by this specific experience ID'),
-              z
-                .array(z.string())
-                .describe('Find experiences that are reflected by any of these experience IDs'),
-            ])
-            .describe('Filter for experiences that are reflected by specific pattern realizations')
-            .optional(),
-          created: z
-            .union([
-              z.string().describe('Filter by specific date (YYYY-MM-DD format)'),
-              z
-                .object({
-                  start: z.string().describe('Start date (YYYY-MM-DD format)'),
-                  end: z.string().describe('End date (YYYY-MM-DD format)'),
-                })
-                .describe('Date range'),
-            ])
-            .describe('Filter by creation date')
-            .optional(),
-          sort: SortEnum.optional(),
-          as: z
-            .enum(['clusters'])
-            .describe(
-              'Return results as clusters of similar experiences instead of individual results'
-            )
-            .optional(),
-        })
-      )
-      .describe('Array of search queries to execute (for batch operations)')
-      .optional(),
   })
   .strict();
 
-// REconsider tool input
-export const ReconsiderInputSchema = z
+export const SearchInputSchema = z
   .object({
-    id: z
-      .string()
-      .describe('ID of the experience to reconsider (for single reconsiderations)')
-      .optional(),
+    searches: z.array(SearchItemSchema).min(1).describe('Array of search queries to execute'),
+  })
+  .strict()
+  .describe('Input for searching experiences. Always use array format, even for single searches.');
+
+// RECONSIDER tool input - Array Only
+const ReconsiderItemSchema = z
+  .object({
+    id: z.string().describe('ID of the experience to reconsider'),
     source: z.string().min(1).describe('Updated source (optional)').optional(),
     perspective: PerspectiveField.optional(),
     experiencer: z.string().describe('Updated experiencer (optional)').optional(),
@@ -370,45 +289,33 @@ export const ReconsiderInputSchema = z
         'Updated array of experience IDs that this experience reflects on/connects to (for pattern realizations)'
       )
       .optional(),
-    reconsiderations: z
-      .array(
-        z.object({
-          id: z.string().describe('ID of the experience to reconsider'),
-          source: z.string().min(1).describe('Updated source (optional)').optional(),
-          perspective: PerspectiveField.optional(),
-          experiencer: z.string().describe('Updated experiencer (optional)').optional(),
-          processing: ProcessingEnum.optional(),
-          crafted: z.boolean().describe('Updated crafted status (optional)').optional(),
-          experience: ExperienceObjectOptional.optional(),
-          reflects: z
-            .array(z.string())
-            .describe(
-              'Updated array of experience IDs that this experience reflects on/connects to (for pattern realizations)'
-            )
-            .optional(),
-        })
-      )
-      .describe('Array of experiences to reconsider (for batch operations)')
-      .optional(),
   })
   .strict();
 
-// RELEASE tool input
-export const ReleaseInputSchema = z
+export const ReconsiderInputSchema = z
   .object({
-    id: z.string().describe('ID of the experience to release (for single releases)').optional(),
-    reason: z.string().describe('Reason for releasing the experience (optional)').optional(),
-    releases: z
-      .array(
-        z.object({
-          id: z.string().describe('ID of the experience to release'),
-          reason: z.string().describe('Reason for releasing this experience (optional)').optional(),
-        })
-      )
-      .describe('Array of experiences to release (for batch operations)')
-      .optional(),
+    reconsiderations: z
+      .array(ReconsiderItemSchema)
+      .min(1)
+      .describe('Array of experiences to reconsider'),
+  })
+  .strict()
+  .describe('Input for updating experiences. Always use array format, even for single updates.');
+
+// RELEASE tool input - Array Only
+const ReleaseItemSchema = z
+  .object({
+    id: z.string().describe('ID of the experience to release'),
+    reason: z.string().describe('Reason for releasing this experience (optional)').optional(),
   })
   .strict();
+
+export const ReleaseInputSchema = z
+  .object({
+    releases: z.array(ReleaseItemSchema).min(1).describe('Array of experiences to release'),
+  })
+  .strict()
+  .describe('Input for releasing experiences. Always use array format, even for single releases.');
 
 // MCP Tool output schemas
 export const ToolTextContentSchema = z.object({
@@ -430,13 +337,17 @@ export const ToolResultSchema = z.object({
  */
 export function generateExperienceExample(): ExperienceInput {
   return {
-    source:
-      "I'm sitting at my desk, the afternoon light streaming through the window. My fingers hover over the keyboard, that familiar mix of excitement and uncertainty bubbling up. This project feels like it could be something special, but I'm not quite sure how to start.",
-    perspective: 'I',
-    experiencer: 'Alex',
-    processing: 'during',
-    crafted: false,
-    experience: ['embodied.sensing', 'mood.open', 'purpose.goal'],
+    experiences: [
+      {
+        source:
+          "I'm sitting at my desk, the afternoon light streaming through the window. My fingers hover over the keyboard, that familiar mix of excitement and uncertainty bubbling up. This project feels like it could be something special, but I'm not quite sure how to start.",
+        perspective: 'I',
+        experiencer: 'Alex',
+        processing: 'during',
+        crafted: false,
+        experience: ['embodied.sensing', 'mood.open', 'purpose.goal'],
+      },
+    ],
   };
 }
 
@@ -448,12 +359,16 @@ export function generateExperienceExample(): ExperienceInput {
  */
 export function generateSearchExample(): SearchInput {
   return {
-    query: 'creative breakthrough moments',
-    limit: 5,
-    experiencer: 'Alex',
-    perspective: 'I',
-    processing: 'during',
-    sort: 'relevance',
+    searches: [
+      {
+        query: 'creative breakthrough moments',
+        limit: 5,
+        experiencer: 'Alex',
+        perspective: 'I',
+        processing: 'during',
+        sort: 'relevance',
+      },
+    ],
   };
 }
 
@@ -465,9 +380,13 @@ export function generateSearchExample(): SearchInput {
  */
 export function generateReconsiderExample(): ReconsiderInput {
   return {
-    id: 'exp_1234567890',
-    source: 'Updated source text with more detail about the creative process',
-    experience: ['focus'],
+    reconsiderations: [
+      {
+        id: 'exp_1234567890',
+        source: 'Updated source text with more detail about the creative process',
+        experience: ['focus'],
+      },
+    ],
   };
 }
 
@@ -479,8 +398,12 @@ export function generateReconsiderExample(): ReconsiderInput {
  */
 export function generateReleaseExample(): ReleaseInput {
   return {
-    id: 'exp_1234567890',
-    reason: 'No longer relevant to current work',
+    releases: [
+      {
+        id: 'exp_1234567890',
+        reason: 'No longer relevant to current work',
+      },
+    ],
   };
 }
 
@@ -615,82 +538,37 @@ export function isExperienceObject(value: unknown): value is z.infer<typeof Expe
   return ExperienceObject.safeParse(value).success;
 }
 
-// Utility type guards
+// Utility type guards - All inputs are now arrays only
 /**
- * Type guard to check if ExperienceInput is a single experience
+ * Type guard to check if ExperienceInput has experiences array
  * @remarks
- * Distinguishes between single and batch experience inputs for proper handling.
- * @param value - ExperienceInput to check
- * @returns True if input contains single source field
- */
-export function isSingleExperienceInput(
-  value: ExperienceInput
-): value is ExperienceInput & { source: string } {
-  return 'source' in value && typeof value.source === 'string';
-}
-
-/**
- * Type guard to check if ExperienceInput is a batch experience
- * @remarks
- * Distinguishes between single and batch experience inputs for proper handling.
+ * All experience inputs now use array format.
  * @param value - ExperienceInput to check
  * @returns True if input contains experiences array
  */
-export function isBatchExperienceInput(
-  value: ExperienceInput
-): value is ExperienceInput & { experiences: NonNullable<ExperienceInput['experiences']> } {
+export function hasExperienceArray(value: ExperienceInput): value is ExperienceInput {
   return 'experiences' in value && Array.isArray(value.experiences) && value.experiences.length > 0;
 }
 
 /**
- * Type guard to check if SearchInput is a single search
+ * Type guard to check if SearchInput has searches array
  * @remarks
- * Distinguishes between single and batch search inputs for proper handling.
- * @param value - SearchInput to check
- * @returns True if input contains single query field
- */
-export function isSingleSearchInput(value: SearchInput): value is SearchInput & { query?: string } {
-  return !('searches' in value) || !value.searches;
-}
-
-/**
- * Type guard to check if SearchInput is a batch search
- * @remarks
- * Distinguishes between single and batch search inputs for proper handling.
+ * All search inputs now use array format.
  * @param value - SearchInput to check
  * @returns True if input contains searches array
  */
-export function isBatchSearchInput(
-  value: SearchInput
-): value is SearchInput & { searches: NonNullable<SearchInput['searches']> } {
+export function hasSearchArray(value: SearchInput): value is SearchInput {
   return 'searches' in value && Array.isArray(value.searches) && value.searches.length > 0;
 }
 
 /**
- * Type guard to check if ReconsiderInput is a single reconsideration
+ * Type guard to check if ReconsiderInput has reconsiderations array
  * @remarks
- * Distinguishes between single and batch reconsideration inputs for proper handling.
- * @param value - ReconsiderInput to check
- * @returns True if input contains single id field
- */
-export function isSingleReconsiderInput(
-  value: ReconsiderInput
-): value is ReconsiderInput & { id?: string } {
-  return !('reconsiderations' in value) || !value.reconsiderations;
-}
-
-/**
- * Type guard to check if ReconsiderInput is a batch reconsideration
- * @remarks
- * Distinguishes between single and batch reconsideration inputs for proper handling.
+ * All reconsider inputs now use array format.
  * @param value - ReconsiderInput to check
  * @returns True if input contains reconsiderations array
  */
-export function isBatchReconsiderInput(
-  value: ReconsiderInput
-): value is ReconsiderInput & {
-  reconsiderations: NonNullable<ReconsiderInput['reconsiderations']>;
-} {
+export function hasReconsiderArray(value: ReconsiderInput): value is ReconsiderInput {
   return (
     'reconsiderations' in value &&
     Array.isArray(value.reconsiderations) &&
@@ -699,26 +577,13 @@ export function isBatchReconsiderInput(
 }
 
 /**
- * Type guard to check if ReleaseInput is a single release
+ * Type guard to check if ReleaseInput has releases array
  * @remarks
- * Distinguishes between single and batch release inputs for proper handling.
- * @param value - ReleaseInput to check
- * @returns True if input contains single id field
- */
-export function isSingleReleaseInput(value: ReleaseInput): value is ReleaseInput & { id?: string } {
-  return !('releases' in value) || !value.releases;
-}
-
-/**
- * Type guard to check if ReleaseInput is a batch release
- * @remarks
- * Distinguishes between single and batch release inputs for proper handling.
+ * All release inputs now use array format.
  * @param value - ReleaseInput to check
  * @returns True if input contains releases array
  */
-export function isBatchReleaseInput(
-  value: ReleaseInput
-): value is ReleaseInput & { releases: NonNullable<ReleaseInput['releases']> } {
+export function hasReleaseArray(value: ReleaseInput): value is ReleaseInput {
   return 'releases' in value && Array.isArray(value.releases) && value.releases.length > 0;
 }
 

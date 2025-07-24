@@ -73,6 +73,9 @@ export interface RecallInput {
   as?: 'clusters';
   // Sophisticated quality filtering
   qualities?: QualityFilter;
+  // Pattern realization filters
+  reflects?: 'only';
+  reflected_by?: string | string[];
 }
 
 export interface RecallServiceResult {
@@ -558,9 +561,7 @@ export class RecallService {
    * @param input - Recall input parameters
    * @returns Search results with statistics
    */
-  async search(
-    input: RecallInput
-  ): Promise<{
+  async search(input: RecallInput): Promise<{
     results: RecallServiceResult[];
     clusters?: Array<{
       id: string;

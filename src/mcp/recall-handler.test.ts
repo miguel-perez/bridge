@@ -86,7 +86,11 @@ describe('RecallHandler', () => {
       });
 
       const result = await handler.handle({
-        query: 'test',
+        searches: [
+          {
+            query: 'test',
+          },
+        ],
       });
 
       expect(result.content[0]).toEqual({
@@ -104,6 +108,11 @@ describe('RecallHandler', () => {
         processing: undefined,
         created: undefined,
         sort: undefined,
+        crafted: undefined,
+        as: undefined,
+        qualities: undefined,
+        reflects: undefined,
+        reflected_by: undefined,
       });
     });
 
@@ -114,7 +123,11 @@ describe('RecallHandler', () => {
       });
 
       await handler.handle({
-        query: 'recent',
+        searches: [
+          {
+            query: 'recent',
+          },
+        ],
       });
 
       expect(mockRecallService.search).toHaveBeenCalledWith({
@@ -127,6 +140,11 @@ describe('RecallHandler', () => {
         processing: undefined,
         created: undefined,
         sort: 'created', // Force sort by created
+        crafted: undefined,
+        as: undefined,
+        qualities: undefined,
+        reflects: undefined,
+        reflected_by: undefined,
       });
     });
 
@@ -137,7 +155,11 @@ describe('RecallHandler', () => {
       });
 
       await handler.handle({
-        query: 'last',
+        searches: [
+          {
+            query: 'last',
+          },
+        ],
       });
 
       expect(mockRecallService.search).toHaveBeenCalledWith(
@@ -157,7 +179,11 @@ describe('RecallHandler', () => {
       });
 
       await handler.handle({
-        query: 'mood.open',
+        searches: [
+          {
+            query: 'mood.open',
+          },
+        ],
       });
 
       expect(mockRecallService.search).toHaveBeenCalledWith(
@@ -175,7 +201,11 @@ describe('RecallHandler', () => {
       });
 
       await handler.handle({
-        query: ['mood.open', 'embodied.thinking'],
+        searches: [
+          {
+            query: ['mood.open', 'embodied.thinking'],
+          },
+        ],
       });
 
       expect(mockRecallService.search).toHaveBeenCalledWith({
@@ -188,6 +218,11 @@ describe('RecallHandler', () => {
         processing: undefined,
         created: undefined,
         sort: undefined,
+        crafted: undefined,
+        as: undefined,
+        qualities: undefined,
+        reflects: undefined,
+        reflected_by: undefined,
       });
     });
 
@@ -198,12 +233,16 @@ describe('RecallHandler', () => {
       });
 
       await handler.handle({
-        query: 'test',
-        experiencer: 'Human',
-        perspective: 'First',
-        processing: 'during',
-        created: '2025-01-21',
-        sort: 'created',
+        searches: [
+          {
+            query: 'test',
+            experiencer: 'Human',
+            perspective: 'First',
+            processing: 'during',
+            created: '2025-01-21',
+            sort: 'created',
+          },
+        ],
       });
 
       expect(mockRecallService.search).toHaveBeenCalledWith({
@@ -216,6 +255,11 @@ describe('RecallHandler', () => {
         processing: 'during',
         created: '2025-01-21',
         sort: 'created',
+        crafted: undefined,
+        as: undefined,
+        qualities: undefined,
+        reflects: undefined,
+        reflected_by: undefined,
       });
     });
 
@@ -225,7 +269,7 @@ describe('RecallHandler', () => {
         stats: { total: 0 },
       });
 
-      await handler.handle({});
+      await handler.handle({ searches: [{}] });
 
       expect(mockRecallService.search).toHaveBeenCalledWith({
         query: undefined,
@@ -237,6 +281,11 @@ describe('RecallHandler', () => {
         processing: undefined,
         created: undefined,
         sort: undefined,
+        crafted: undefined,
+        as: undefined,
+        qualities: undefined,
+        reflects: undefined,
+        reflected_by: undefined,
       });
     });
 
@@ -244,7 +293,11 @@ describe('RecallHandler', () => {
       mockRecallService.search.mockRejectedValue(new Error('Service error'));
 
       const result = await handler.handle({
-        query: 'test',
+        searches: [
+          {
+            query: 'test',
+          },
+        ],
       });
 
       expect(result.content[0]).toEqual({
@@ -255,8 +308,12 @@ describe('RecallHandler', () => {
 
     it('should handle validation errors', async () => {
       const result = await handler.handle({
-        query: 'test',
-        limit: -1, // Invalid limit
+        searches: [
+          {
+            query: 'test',
+            limit: -1, // Invalid limit
+          },
+        ],
       });
 
       expect(result.content[0]).toEqual({
@@ -269,7 +326,11 @@ describe('RecallHandler', () => {
       mockRecallService.search.mockRejectedValue('String error');
 
       const result = await handler.handle({
-        query: 'test',
+        searches: [
+          {
+            query: 'test',
+          },
+        ],
       });
 
       expect(result.content[0]).toEqual({
@@ -287,7 +348,11 @@ describe('RecallHandler', () => {
       });
 
       const result = await handler.handle({
-        query: 'this is a very long query that is unlikely to match anything exactly',
+        searches: [
+          {
+            query: 'this is a very long query that is unlikely to match anything exactly',
+          },
+        ],
       });
 
       expect(result.content).toContainEqual({
@@ -303,7 +368,11 @@ describe('RecallHandler', () => {
       });
 
       const result = await handler.handle({
-        query: 'ab',
+        searches: [
+          {
+            query: 'ab',
+          },
+        ],
       });
 
       expect(result.content).toContainEqual({
@@ -319,7 +388,11 @@ describe('RecallHandler', () => {
       });
 
       const result = await handler.handle({
-        query: 'normal query',
+        searches: [
+          {
+            query: 'normal query',
+          },
+        ],
       });
 
       expect(result.content).toContainEqual({
@@ -343,7 +416,11 @@ describe('RecallHandler', () => {
       });
 
       const result = await handler.handle({
-        query: 'test',
+        searches: [
+          {
+            query: 'test',
+          },
+        ],
       });
 
       expect(result.content).toContainEqual({
@@ -374,7 +451,11 @@ describe('RecallHandler', () => {
       });
 
       const result = await handler.handle({
-        query: 'recent',
+        searches: [
+          {
+            query: 'recent',
+          },
+        ],
       });
 
       expect(result.content).toContainEqual({
@@ -412,7 +493,11 @@ describe('RecallHandler', () => {
       });
 
       const result = await handler.handle({
-        query: 'test',
+        searches: [
+          {
+            query: 'test',
+          },
+        ],
       });
 
       expect(result.content).toContainEqual({
@@ -439,7 +524,11 @@ describe('RecallHandler', () => {
       });
 
       const result = await handler.handle({
-        query: 'anxiety',
+        searches: [
+          {
+            query: 'anxiety',
+          },
+        ],
       });
 
       expect(result.content).toContainEqual({
@@ -470,7 +559,11 @@ describe('RecallHandler', () => {
       });
 
       const result = await handler.handle({
-        query: 'test',
+        searches: [
+          {
+            query: 'test',
+          },
+        ],
       });
 
       expect(result.content).toContainEqual({
@@ -502,7 +595,11 @@ describe('RecallHandler', () => {
       });
 
       const result = await handler.handle({
-        query: 'test',
+        searches: [
+          {
+            query: 'test',
+          },
+        ],
       });
 
       expect(mockFormatRecallResponse).toHaveBeenCalledWith(
@@ -543,7 +640,11 @@ describe('RecallHandler', () => {
       });
 
       await handler.handle({
-        query: 'test',
+        searches: [
+          {
+            query: 'test',
+          },
+        ],
       });
 
       expect(mockFormatRecallResponse).toHaveBeenCalledWith(
@@ -572,7 +673,11 @@ describe('RecallHandler', () => {
       });
 
       await handler.handle({
-        query: 'test',
+        searches: [
+          {
+            query: 'test',
+          },
+        ],
       });
 
       expect(mockFormatRecallResponse).toHaveBeenCalledWith(
@@ -605,7 +710,11 @@ describe('RecallHandler', () => {
       });
 
       await handler.handle({
-        query: 'test',
+        searches: [
+          {
+            query: 'test',
+          },
+        ],
       });
 
       expect(mockFormatRecallResponse).toHaveBeenCalledWith(
@@ -638,7 +747,11 @@ describe('RecallHandler', () => {
       });
 
       await handler.handle({
-        query: 'test',
+        searches: [
+          {
+            query: 'test',
+          },
+        ],
       });
 
       expect(mockWithTimeout).toHaveBeenCalledWith(expect.any(Promise), 30000, 'Recall operation');

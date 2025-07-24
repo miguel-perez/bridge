@@ -1,6 +1,6 @@
 /**
  * MCP Tool Handlers for Bridge
- * 
+ *
  * This module coordinates all MCP tool handlers for Bridge, delegating to
  * individual handler classes for better organization and maintainability.
  */
@@ -10,17 +10,16 @@ import { RecallHandler } from './recall-handler.js';
 import { ReconsiderHandler } from './reconsider-handler.js';
 import { ReleaseHandler } from './release-handler.js';
 
-import { 
-  // type RememberInput,
-  // type SearchInput,
-  // type ReconsiderInput,
-  // type ReleaseInput,
-  // type ToolResult
-} from './schemas.js';
+import {} from // type RememberInput,
+// type SearchInput,
+// type ReconsiderInput,
+// type ReleaseInput,
+// type ToolResult
+'./schemas.js';
 
 /**
  * MCP Tool Handlers class
- * 
+ *
  * Coordinates all MCP tool handlers by delegating to individual handler classes.
  * Each handler formats the response in a user-friendly way for MCP clients.
  */
@@ -55,13 +54,13 @@ export class MCPToolHandlers {
   async handle(toolName: string, args: Record<string, unknown>): Promise<Record<string, unknown>> {
     switch (toolName) {
       case 'experience':
-        return this.experienceHandler.handle(args);
+        return this.experienceHandler.handle(args as any);
       case 'recall':
-        return this.recallHandler.handle(args);
+        return this.recallHandler.handle(args as any);
       case 'reconsider':
-        return this.reconsiderHandler.handle(args);
+        return this.reconsiderHandler.handle(args as any);
       case 'release':
-        return this.releaseHandler.handle(args);
+        return this.releaseHandler.handle(args as any);
 
       default:
         throw new Error(`Unknown tool: ${toolName}`);
