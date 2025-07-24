@@ -122,6 +122,7 @@ const result1 = await experience({
   experiences: [
     {
       source: 'This bug is confusing - users report random logouts',
+      emoji: '🐛',
       experience: ['mood.closed', 'embodied.thinking'],
     },
   ],
@@ -129,8 +130,10 @@ const result1 = await experience({
 });
 // Returns: {
 //   content: [
-//     { type: 'text', text: 'Experienced (mood.closed, embodied.thinking)' },
-//     { type: 'text', text: '🤔 Still thinking... (1 step so far)\nContinue exploring - I\'m tracking your progress.\nPermission granted for more tool calls.' }
+//     { type: 'text', text: '🐛 Experienced (mood.closed, embodied.thinking)' },
+//     { type: 'text', text: '🤔 Still thinking... (1 step so far)' },
+//     { type: 'text', text: 'Continue exploring - I\'m tracking your progress.' },
+//     { type: 'text', text: 'Permission granted for more tool calls.' }
 //   ],
 //   stillThinking: true,
 //   callsSoFar: 1
@@ -148,7 +151,9 @@ const result2 = await recall({
 // Returns: {
 //   content: [
 //     { type: 'text', text: 'Found 3 similar experiences...' },
-//     { type: 'text', text: '🤔 Still thinking... (2 steps so far)\nContinue exploring - I\'m tracking your progress.\nPermission granted for more tool calls.' }
+//     { type: 'text', text: '🤔 Still thinking... (2 steps so far)' },
+//     { type: 'text', text: 'Continue exploring - I\'m tracking your progress.' },
+//     { type: 'text', text: 'Permission granted for more tool calls.' }
 //   ],
 //   stillThinking: true,
 //   callsSoFar: 2
@@ -159,6 +164,7 @@ const result3 = await experience({
   experiences: [
     {
       source: 'Fixed! It was a timezone mismatch in session expiry',
+      emoji: '✅',
       experience: ['mood.open', 'embodied.thinking', 'purpose.goal'],
     },
   ],
@@ -166,8 +172,10 @@ const result3 = await experience({
 });
 // Returns: {
 //   content: [
-//     { type: 'text', text: 'Experienced (mood.open, embodied.thinking, purpose.goal)' },
-//     { type: 'text', text: '✅ Flow complete! (3 total steps)\nInvestigation concluded.\nGreat exploration!' }
+//     { type: 'text', text: '✅ Experienced (mood.open, embodied.thinking, purpose.goal)' },
+//     { type: 'text', text: '✅ Flow complete! (3 total steps)' },
+//     { type: 'text', text: 'Investigation concluded.' },
+//     { type: 'text', text: 'Great exploration!' }
 //   ],
 //   stillThinking: false,
 //   callsSoFar: 3
@@ -177,6 +185,7 @@ const result3 = await experience({
 **Key Features:**
 
 - **Minimal Pattern**: Just a boolean `stillThinking` and a `callsSoFar` counter
+- **Three Separate Responses**: Tool response + status message + permission/conclusion message
 - **Flow State Messages**: Explicit acknowledgment when `stillThinking` is used
 - **No IDs or State**: No flow IDs to manage, no orchestration
 - **Tool Independence**: Each tool remains fully autonomous

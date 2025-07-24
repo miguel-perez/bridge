@@ -6,7 +6,7 @@ import { saveEmbedding } from '../core/storage.js';
 jest.mock('./embeddings.js');
 jest.mock('../core/storage.js', () => ({
   ...jest.requireActual('../core/storage.js'),
-  saveEmbedding: jest.fn()
+  saveEmbedding: jest.fn(),
 }));
 
 describe('ExperienceService', () => {
@@ -21,7 +21,8 @@ describe('ExperienceService', () => {
     it('should experience a basic experience successfully', async () => {
       const input = {
         source: 'Test experience',
-        experiencer: 'test_user'
+        emoji: '🧪',
+        experiencer: 'test_user',
       };
 
       const result = await experienceService.rememberExperience(input);
@@ -34,7 +35,9 @@ describe('ExperienceService', () => {
 
     it('should use defaults when optional fields are not provided', async () => {
       const experienceService = new ExperienceService();
-      const input = {};
+      const input = {
+        emoji: '💭',
+      };
 
       const result = await experienceService.rememberExperience(input);
 
@@ -48,7 +51,10 @@ describe('ExperienceService', () => {
     });
 
     it('should use default source when not provided', async () => {
-      const input = { experiencer: 'test_user' };
+      const input = {
+        emoji: '💭',
+        experiencer: 'test_user',
+      };
 
       const result = await experienceService.rememberExperience(input);
 
@@ -59,7 +65,8 @@ describe('ExperienceService', () => {
     it('should generate embeddings for experienceed experiences', async () => {
       const input = {
         source: 'Test experience for embedding',
-        experiencer: 'test_user'
+        emoji: '🔤',
+        experiencer: 'test_user',
       };
 
       const result = await experienceService.rememberExperience(input);
@@ -71,8 +78,9 @@ describe('ExperienceService', () => {
     it('should handle experience qualities when provided', async () => {
       const input = {
         source: 'Test experience',
+        emoji: '✨',
         experiencer: 'test_user',
-        experience: ['mood.open', 'embodied.sensing', 'purpose.goal']
+        experience: ['mood.open', 'embodied.sensing', 'purpose.goal'],
       };
 
       const result = await experienceService.rememberExperience(input);
@@ -83,8 +91,9 @@ describe('ExperienceService', () => {
     it('should handle empty experience array', async () => {
       const input = {
         source: 'Test experience',
+        emoji: '💭',
         experiencer: 'test_user',
-        experience: []
+        experience: [],
       };
 
       const result = await experienceService.rememberExperience(input);
@@ -96,13 +105,16 @@ describe('ExperienceService', () => {
       // Mock embedding service to throw an error
       const mockEmbeddingService = {
         initialize: jest.fn().mockResolvedValue(undefined),
-        generateEmbedding: jest.fn().mockRejectedValue(new Error('Embedding generation failed'))
+        generateEmbedding: jest.fn().mockRejectedValue(new Error('Embedding generation failed')),
       };
-      (EmbeddingService as jest.MockedClass<typeof EmbeddingService>).mockImplementation(() => mockEmbeddingService as unknown as EmbeddingService);
+      (EmbeddingService as jest.MockedClass<typeof EmbeddingService>).mockImplementation(
+        () => mockEmbeddingService as unknown as EmbeddingService
+      );
 
       const input = {
         source: 'Test experience with embedding failure',
-        experiencer: 'test_user'
+        emoji: '🆘',
+        experiencer: 'test_user',
       };
 
       // Should not throw error even if embedding fails
@@ -113,7 +125,7 @@ describe('ExperienceService', () => {
       expect(result.source.id).toBeDefined();
       expect(result.defaultsUsed).toContain('perspective="I"');
       expect(result.defaultsUsed).toContain('processing="during"');
-      
+
       // Verify embedding was attempted but saveEmbedding was not called
       expect(mockEmbeddingService.initialize).toHaveBeenCalled();
       expect(mockEmbeddingService.generateEmbedding).toHaveBeenCalled();
@@ -125,11 +137,12 @@ describe('ExperienceService', () => {
     it('should validate valid input', () => {
       const input = {
         source: 'Test experience',
+        emoji: '🧪',
         experiencer: 'test_user',
         perspective: 'I',
         processing: 'during',
         crafted: false,
-        experience: ['mood.open', 'embodied.thinking']
+        experience: ['mood.open', 'embodied.thinking'],
       };
 
       expect(() => experienceSchema.parse(input)).not.toThrow();
@@ -137,7 +150,8 @@ describe('ExperienceService', () => {
 
     it('should validate input with optional fields', () => {
       const input = {
-        source: 'Test experience'
+        source: 'Test experience',
+        emoji: '🧪',
       };
 
       expect(() => experienceSchema.parse(input)).not.toThrow();

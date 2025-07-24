@@ -176,6 +176,12 @@ const ExperienceItemSchema = z
       .describe(
         'Raw, exact words from the experiencer - their actual text/voice as written or spoken OR your own experiential observations. Do not summarize, interpret, or modify.'
       ),
+    emoji: z
+      .string()
+      .regex(/^\p{Emoji}$/u, 'Must be a single emoji')
+      .describe(
+        'Single emoji that serves as a visual/memory anchor for this experience. Choose one that captures the essence or feeling.'
+      ),
     perspective: PerspectiveField.optional(),
     experiencer: z
       .string()
@@ -359,6 +365,7 @@ export function generateExperienceExample(): ExperienceInput {
       {
         source:
           "I'm sitting at my desk, the afternoon light streaming through the window. My fingers hover over the keyboard, that familiar mix of excitement and uncertainty bubbling up. This project feels like it could be something special, but I'm not quite sure how to start.",
+        emoji: '✨',
         perspective: 'I',
         experiencer: 'Alex',
         processing: 'during',
@@ -436,6 +443,7 @@ export function generateBatchExperienceExample(): ExperienceInput {
     experiences: [
       {
         source: 'The first moment of clarity when the solution finally clicks into place.',
+        emoji: '💡',
         perspective: 'I',
         experiencer: 'Alex',
         processing: 'right-after',
@@ -445,6 +453,7 @@ export function generateBatchExperienceExample(): ExperienceInput {
       {
         source:
           'Walking through the park, the autumn leaves crunching underfoot, feeling grateful for this moment of peace.',
+        emoji: '🍂',
         perspective: 'I',
         experiencer: 'Alex',
         processing: 'during',

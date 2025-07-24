@@ -10,7 +10,7 @@ import {
 import { Messages, formatMessage } from '../utils/messages.js';
 import { SEMANTIC_CONFIG } from '../core/config.js';
 import { incrementCallCount, getCallCount } from './call-counter.js';
-import { getFlowStateMessage } from './flow-messages.js';
+import { getFlowStateMessages } from './flow-messages.js';
 
 /**
  * Response structure for experience capture operations
@@ -23,6 +23,7 @@ export interface ExperienceResponse {
   source?: {
     id: string;
     source: string;
+    emoji: string;
     created: string;
     perspective?: string;
     experiencer?: string;
@@ -54,8 +55,8 @@ export interface ExperienceResponse {
  * // Batch experience capture
  * const result = await experienceHandler.handle({
  *   experiences: [
- *     { source: "Feeling focused while coding", experience: ["embodied.thinking"] },
- *     { source: "Anxiety about meeting", experience: ["mood.closed"] }
+ *     { source: "Feeling focused while coding", emoji: "🔍", experience: ["embodied.thinking"] },
+ *     { source: "Anxiety about meeting", emoji: "😟", experience: ["mood.closed"] }
  *   ]
  * });
  * // Returns: "Experienced 2 moments..."
@@ -97,13 +98,16 @@ export class ExperienceHandler {
       incrementCallCount();
       const result = await this.handleRegularExperience(args);
 
-      // Add flow state message if stillThinking was explicitly passed
+      // Add flow state messages if stillThinking was explicitly passed
       const callsSoFar = getCallCount();
       if (args.stillThinking !== undefined) {
-        const flowMessage = getFlowStateMessage(stillThinking, callsSoFar);
-        result.content.push({
-          type: 'text',
-          text: flowMessage,
+        const flowMessages = getFlowStateMessages(stillThinking, callsSoFar);
+        // Add each message as a separate content item to ensure a third response
+        flowMessages.forEach((message) => {
+          result.content.push({
+            type: 'text',
+            text: message,
+          });
         });
       }
 
@@ -150,6 +154,9 @@ export class ExperienceHandler {
         if (!item.source || typeof item.source !== 'string' || item.source.trim() === '') {
           throw new Error('Each experience item must have source content');
         }
+        if (!item.emoji || typeof item.emoji !== 'string') {
+          throw new Error('Each experience item must have an emoji');
+        }
       }
 
       // Process experience items
@@ -157,6 +164,7 @@ export class ExperienceHandler {
       for (const item of experience.experiences) {
         const result = await this.experienceService.rememberExperience({
           source: item.source,
+          emoji: item.emoji,
           perspective: item.perspective,
           experiencer: item.experiencer,
           processing: item.processing,

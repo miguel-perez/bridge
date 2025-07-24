@@ -41,7 +41,9 @@ This document captures validated insights from Bridge experiments with clear evi
 ```typescript
 // Start investigation (stillThinking: true)
 await experience({
-  experiences: [{ source: 'Bug: users report slow loads', experience: ['embodied.thinking'] }],
+  experiences: [
+    { source: 'Bug: users report slow loads', emoji: '🐛', experience: ['embodied.thinking'] },
+  ],
   stillThinking: true,
 });
 // Returns: "🤔 Still thinking... (1 step so far)\nContinue exploring..."
@@ -55,7 +57,9 @@ await recall({
 
 // Complete investigation (stillThinking: false)
 await experience({
-  experiences: [{ source: 'Fixed! Connection pool was too small', experience: ['mood.open'] }],
+  experiences: [
+    { source: 'Fixed! Connection pool was too small', emoji: '✅', experience: ['mood.open'] },
+  ],
   stillThinking: false,
 });
 // Returns: "✅ Flow complete! (3 total steps)\nInvestigation concluded."

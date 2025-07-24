@@ -30,6 +30,29 @@ export function getFlowStateMessage(stillThinking: boolean, callsSoFar: number):
 }
 
 /**
+ * Generates flow state messages as separate items
+ * @param stillThinking - Whether more tool calls are expected
+ * @param callsSoFar - Number of calls made so far
+ * @returns Array of flow state messages
+ */
+export function getFlowStateMessages(stillThinking: boolean, callsSoFar: number): string[] {
+  if (stillThinking) {
+    return [
+      `🤔 Still thinking... (${callsSoFar} ${callsSoFar === 1 ? 'step' : 'steps'} so far)`,
+      `Continue exploring - I'm tracking your progress.`,
+      `Permission granted for more tool calls.`,
+    ];
+  } else {
+    const messages = [
+      `✅ Flow complete! (${callsSoFar} total ${callsSoFar === 1 ? 'step' : 'steps'})`,
+      `Investigation concluded.`,
+      callsSoFar > 1 ? `Great ${getFlowType(callsSoFar)}!` : `Task completed successfully.`,
+    ];
+    return messages;
+  }
+}
+
+/**
  * Gets a contextual description of the flow type based on steps
  * @param steps - Number of steps taken
  * @returns Description of the flow type

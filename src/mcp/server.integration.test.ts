@@ -252,6 +252,7 @@ describe('MCP Server Protocol Compliance', () => {
           experiences: [
             {
               source: 'Test content',
+              emoji: '🧪',
               experiencer: 'Test User',
               perspective: 'invalid_perspective', // This should fail Zod enum validation
               processing: 'during',

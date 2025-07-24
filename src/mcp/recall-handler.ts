@@ -10,7 +10,7 @@ import { SearchInput, ToolResultSchema, type ToolResult } from './schemas.js';
 import { formatRecallResponse, type RecallResult } from '../utils/formatters.js';
 import { SEMANTIC_CONFIG } from '../core/config.js';
 import { incrementCallCount, getCallCount } from './call-counter.js';
-import { getFlowStateMessage } from './flow-messages.js';
+import { getFlowStateMessages } from './flow-messages.js';
 
 export interface RecallResponse {
   success: boolean;
@@ -64,13 +64,16 @@ export class RecallHandler {
       incrementCallCount();
       const result = await this.handleRegularRecall(args);
 
-      // Add flow state message if stillThinking was explicitly passed
+      // Add flow state messages if stillThinking was explicitly passed
       const callsSoFar = getCallCount();
       if (args.stillThinking !== undefined) {
-        const flowMessage = getFlowStateMessage(stillThinking, callsSoFar);
-        result.content.push({
-          type: 'text',
-          text: flowMessage,
+        const flowMessages = getFlowStateMessages(stillThinking, callsSoFar);
+        // Add each message as a separate content item to ensure a third response
+        flowMessages.forEach((message) => {
+          result.content.push({
+            type: 'text',
+            text: message,
+          });
         });
       }
 

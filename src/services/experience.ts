@@ -33,6 +33,7 @@ export const EXPERIENCE_DEFAULTS = {
  */
 export const experienceSchema = z.object({
   source: z.string().optional(),
+  emoji: z.string().regex(/^\p{Emoji}$/u, 'Must be a single emoji'),
   perspective: z.enum(['I', 'we', 'you', 'they']).optional(),
   experiencer: z.string().optional(),
   processing: z.enum(['during', 'right-after', 'long-after']).optional(),
@@ -50,6 +51,7 @@ export const experienceSchema = z.object({
  */
 export interface ExperienceInput {
   source?: string;
+  emoji: string;
   perspective?: string;
   experiencer?: string;
   processing?: string;
@@ -116,6 +118,7 @@ export class ExperienceService {
     const sourceRecord: Source = {
       id,
       source,
+      emoji: validatedInput.emoji,
       created,
       perspective: validatedInput.perspective || 'I',
       experiencer: validatedInput.experiencer || 'self',

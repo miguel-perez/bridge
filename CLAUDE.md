@@ -88,7 +88,7 @@ experience({
 ```typescript
 // Experience (always use experiences array)
 experience({
-  experiences: [{ source: 'text', experience: ['mood.open'] }],
+  experiences: [{ source: 'text', emoji: '📤', experience: ['mood.open'] }],
 });
 
 // Recall (always use searches array)
@@ -241,6 +241,7 @@ experience({
   experiences: [
     {
       source: 'Finally got the tests passing!',
+      emoji: '✅',
       experience: ['embodied.thinking', 'mood.open', 'purpose.goal'],
     },
   ],
@@ -251,6 +252,7 @@ experience({
   experiences: [
     {
       source: 'I notice we keep circling back to this pattern',
+      emoji: '🔄',
       experience: ['embodied.thinking', 'presence.collective'],
       experiencer: 'Claude',
     },

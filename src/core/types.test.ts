@@ -7,7 +7,6 @@ import {
   PROCESSING_LEVELS,
   QUALITY_TYPES,
   DEFAULTS,
-
   type Experience,
   type Source,
   type StorageData,
@@ -23,7 +22,7 @@ import {
   StorageDataSchema,
   validateSource,
   validateExperience,
-  validateStorageData
+  validateStorageData,
 } from './types.js';
 
 describe('Constants', () => {
@@ -37,7 +36,13 @@ describe('Constants', () => {
 
   it('should have valid quality types', () => {
     expect(QUALITY_TYPES).toEqual([
-      'embodied', 'focus', 'mood', 'purpose', 'space', 'time', 'presence'
+      'embodied',
+      'focus',
+      'mood',
+      'purpose',
+      'space',
+      'time',
+      'presence',
     ]);
   });
 
@@ -65,7 +70,7 @@ describe('Type Validation Functions', () => {
       expect(isValidQualityType('mood.open')).toBe(true);
       expect(isValidQualityType('purpose.goal')).toBe(true);
     });
-    
+
     it('should return false for invalid quality types', () => {
       expect(isValidQualityType('EMBODIED')).toBe(false);
       expect(isValidQualityType('foo')).toBe(false);
@@ -109,12 +114,13 @@ describe('Type Validation Functions', () => {
       const validSource: Source = {
         id: 'test-123',
         source: 'Test source',
+        emoji: '🧪',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'I',
         experiencer: 'test',
         processing: 'during',
         crafted: false,
-        experience: ['mood.open', 'embodied.thinking']
+        experience: ['mood.open', 'embodied.thinking'],
       };
       expect(isValidSource(validSource)).toBe(true);
     });
@@ -123,13 +129,14 @@ describe('Type Validation Functions', () => {
       const validSourceWithReflects: Source = {
         id: 'test-123',
         source: 'I notice I always feel anxious before things that end up going well',
+        emoji: '💡',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'I',
         experiencer: 'test',
         processing: 'during',
         crafted: false,
         experience: ['embodied.sensing', 'mood.closed', 'time.future'],
-        reflects: ['exp-001', 'exp-002', 'exp-003']
+        reflects: ['exp-001', 'exp-002', 'exp-003'],
       };
       expect(isValidSource(validSourceWithReflects)).toBe(true);
     });
@@ -138,13 +145,14 @@ describe('Type Validation Functions', () => {
       const validSourceWithEmptyReflects: Source = {
         id: 'test-123',
         source: 'Test source',
+        emoji: '🧪',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'I',
         experiencer: 'test',
         processing: 'during',
         crafted: false,
         experience: ['mood.open', 'embodied.thinking'],
-        reflects: []
+        reflects: [],
       };
       expect(isValidSource(validSourceWithEmptyReflects)).toBe(true);
     });
@@ -154,20 +162,23 @@ describe('Type Validation Functions', () => {
       expect(isValidSource(undefined)).toBe(false);
       expect(isValidSource({})).toBe(false);
       expect(isValidSource({ id: 'test' })).toBe(false);
-      expect(isValidSource({ id: '', source: 'test', created: '2024-01-01' })).toBe(false);
+      expect(isValidSource({ id: '', source: 'test', emoji: '🧪', created: '2024-01-01' })).toBe(
+        false
+      );
     });
 
     it('should reject source objects with invalid reflects field', () => {
       const invalidSourceWithReflects = {
         id: 'test-123',
         source: 'Test source',
+        emoji: '🧪',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'I',
         experiencer: 'test',
         processing: 'during',
         crafted: false,
         experience: ['mood.open', 'embodied.thinking'],
-        reflects: 'not-an-array' // Should be array
+        reflects: 'not-an-array', // Should be array
       };
       expect(isValidSource(invalidSourceWithReflects)).toBe(false);
     });
@@ -177,9 +188,10 @@ describe('Type Validation Functions', () => {
 describe('Factory Functions', () => {
   describe('createSource', () => {
     it('should create a source with default values', () => {
-      const source = createSource('Test source');
-      
+      const source = createSource('Test source', '🧪');
+
       expect(source.source).toBe('Test source');
+      expect(source.emoji).toBe('🧪');
       expect(source.id).toMatch(/^src_\d+$/);
       expect(source.created).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
       expect(source.perspective).toBe('I');
@@ -189,15 +201,15 @@ describe('Factory Functions', () => {
     });
 
     it('should use provided ID', () => {
-      const source = createSource('Test source', 'custom-id');
+      const source = createSource('Test source', '🧪', 'custom-id');
       expect(source.id).toBe('custom-id');
     });
   });
 
   describe('createSourceRecord', () => {
     it('should create a source record with type field', () => {
-      const record = createSourceRecord('Test source');
-      
+      const record = createSourceRecord('Test source', '🧪');
+
       expect(record.source).toBe('Test source');
       expect(record.type).toBe('source');
       expect(record.id).toMatch(/^src_\d+$/);
@@ -209,14 +221,14 @@ describe('Zod Schema Validation', () => {
   describe('ExperienceSchema', () => {
     it('should validate valid experience', () => {
       const validExperience: Experience = ['mood.open', 'embodied.thinking', 'purpose.goal'];
-      
+
       const result = ExperienceSchema.safeParse(validExperience);
       expect(result.success).toBe(true);
     });
 
     it('should reject experience with invalid quality types', () => {
       const invalidExperience = ['invalid_quality', 'embodied'];
-      
+
       const result = ExperienceSchema.safeParse(invalidExperience);
       expect(result.success).toBe(false);
     });
@@ -227,14 +239,15 @@ describe('Zod Schema Validation', () => {
       const validSource: Source = {
         id: 'test-123',
         source: 'Test source content',
+        emoji: '🧪',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'I',
         experiencer: 'test',
         processing: 'during',
         crafted: false,
-        experience: ['mood.open', 'embodied.thinking']
+        experience: ['mood.open', 'embodied.thinking'],
       };
-      
+
       const result = SourceSchema.safeParse(validSource);
       expect(result.success).toBe(true);
     });
@@ -243,15 +256,16 @@ describe('Zod Schema Validation', () => {
       const validSourceWithReflects: Source = {
         id: 'test-123',
         source: 'I notice I always feel anxious before things that end up going well',
+        emoji: '💡',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'I',
         experiencer: 'test',
         processing: 'during',
         crafted: false,
         experience: ['embodied.sensing', 'mood.closed', 'time.future'],
-        reflects: ['exp-001', 'exp-002', 'exp-003']
+        reflects: ['exp-001', 'exp-002', 'exp-003'],
       };
-      
+
       const result = SourceSchema.safeParse(validSourceWithReflects);
       expect(result.success).toBe(true);
     });
@@ -260,15 +274,16 @@ describe('Zod Schema Validation', () => {
       const validSourceWithEmptyReflects: Source = {
         id: 'test-123',
         source: 'Test source content',
+        emoji: '🧪',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'I',
         experiencer: 'test',
         processing: 'during',
         crafted: false,
         experience: ['mood.open', 'embodied.thinking'],
-        reflects: []
+        reflects: [],
       };
-      
+
       const result = SourceSchema.safeParse(validSourceWithEmptyReflects);
       expect(result.success).toBe(true);
     });
@@ -283,9 +298,9 @@ describe('Zod Schema Validation', () => {
         processing: 'during',
         crafted: false,
         experience: ['mood.open', 'embodied.thinking'],
-        reflects: 'not-an-array' // Should be array
+        reflects: 'not-an-array', // Should be array
       };
-      
+
       const result = SourceSchema.safeParse(invalidSourceWithReflects);
       expect(result.success).toBe(false);
     });
@@ -300,9 +315,9 @@ describe('Zod Schema Validation', () => {
         processing: 'during',
         crafted: false,
         experience: ['mood.open', 'embodied.thinking'],
-        reflects: ['exp-001', 123, 'exp-002'] // Contains non-string element
+        reflects: ['exp-001', 123, 'exp-002'], // Contains non-string element
       };
-      
+
       const result = SourceSchema.safeParse(invalidSourceWithReflects);
       expect(result.success).toBe(false);
     });
@@ -311,14 +326,15 @@ describe('Zod Schema Validation', () => {
       const validSource: Source = {
         id: 'test-123',
         source: 'Test source content',
+        emoji: '🧪',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'custom-perspective',
         experiencer: 'test',
         processing: 'during',
         crafted: false,
-        experience: ['mood.open', 'embodied.thinking']
+        experience: ['mood.open', 'embodied.thinking'],
       };
-      
+
       const result = SourceSchema.safeParse(validSource);
       expect(result.success).toBe(true);
     });
@@ -327,9 +343,9 @@ describe('Zod Schema Validation', () => {
       const invalidSource = {
         id: 'test-123',
         // missing source
-        created: '2024-01-01T00:00:00.000Z'
+        created: '2024-01-01T00:00:00.000Z',
       };
-      
+
       const result = SourceSchema.safeParse(invalidSource);
       expect(result.success).toBe(false);
     });
@@ -342,23 +358,24 @@ describe('Zod Schema Validation', () => {
           {
             id: 'test-123',
             source: 'Test source content',
+            emoji: '🧪',
             created: '2024-01-01T00:00:00.000Z',
             perspective: 'I',
             experiencer: 'test',
             processing: 'during',
             crafted: false,
-            experience: ['mood.open', 'embodied.thinking']
-          }
+            experience: ['mood.open', 'embodied.thinking'],
+          },
         ],
         embeddings: [
           {
             sourceId: 'test-123',
             vector: [0.1, 0.2, 0.3],
-            generated: '2024-01-01T00:00:00.000Z'
-          }
-        ]
+            generated: '2024-01-01T00:00:00.000Z',
+          },
+        ],
       };
-      
+
       const result = StorageDataSchema.safeParse(validStorageData);
       expect(result.success).toBe(true);
     });
@@ -369,27 +386,29 @@ describe('Zod Schema Validation', () => {
           {
             id: 'test-123',
             source: 'Test source content',
+            emoji: '🧪',
             created: '2024-01-01T00:00:00.000Z',
             perspective: 'I',
             experiencer: 'test',
             processing: 'during',
             crafted: false,
-            experience: ['mood.open', 'embodied.thinking']
+            experience: ['mood.open', 'embodied.thinking'],
           },
           {
             id: 'pattern-001',
             source: 'I notice I always feel anxious before things that end up going well',
+            emoji: '💡',
             created: '2024-01-01T00:00:00.000Z',
             perspective: 'I',
             experiencer: 'test',
             processing: 'long-after',
             crafted: false,
             experience: ['embodied.sensing', 'mood.closed', 'time.future'],
-            reflects: ['test-123', 'test-456']
-          }
-        ]
+            reflects: ['test-123', 'test-456'],
+          },
+        ],
       };
-      
+
       const result = StorageDataSchema.safeParse(validStorageDataWithReflects);
       expect(result.success).toBe(true);
     });
@@ -397,9 +416,9 @@ describe('Zod Schema Validation', () => {
     it('should reject invalid storage data', () => {
       const invalidStorageData = {
         sources: 'not an array',
-        embeddings: 'not an array'
+        embeddings: 'not an array',
       };
-      
+
       const result = StorageDataSchema.safeParse(invalidStorageData);
       expect(result.success).toBe(false);
     });
@@ -412,14 +431,15 @@ describe('Zod-based Validation Functions', () => {
       const validSource: Source = {
         id: 'test-123',
         source: 'Test source content',
+        emoji: '🧪',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'I',
         experiencer: 'test',
         processing: 'during',
         crafted: false,
-        experience: ['mood.open', 'embodied.thinking']
+        experience: ['mood.open', 'embodied.thinking'],
       };
-      
+
       const result = validateSource(validSource);
       expect(result).toBeDefined();
     });
@@ -428,15 +448,16 @@ describe('Zod-based Validation Functions', () => {
       const validSourceWithReflects: Source = {
         id: 'pattern-001',
         source: 'I notice I always feel anxious before things that end up going well',
+        emoji: '💡',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'I',
         experiencer: 'test',
         processing: 'long-after',
         crafted: false,
         experience: ['embodied.sensing', 'mood.closed', 'time.future'],
-        reflects: ['exp-001', 'exp-002', 'exp-003']
+        reflects: ['exp-001', 'exp-002', 'exp-003'],
       };
-      
+
       const result = validateSource(validSourceWithReflects);
       expect(result).toBeDefined();
     });
@@ -444,9 +465,9 @@ describe('Zod-based Validation Functions', () => {
     it('should return error for invalid source', () => {
       const invalidSource = {
         id: '',
-        source: ''
+        source: '',
       };
-      
+
       expect(() => validateSource(invalidSource)).toThrow();
     });
 
@@ -460,9 +481,9 @@ describe('Zod-based Validation Functions', () => {
         processing: 'during',
         crafted: false,
         experience: ['mood.open', 'embodied.thinking'],
-        reflects: 'not-an-array' // Should be array
+        reflects: 'not-an-array', // Should be array
       };
-      
+
       expect(() => validateSource(invalidSourceWithReflects)).toThrow();
     });
   });
@@ -470,16 +491,16 @@ describe('Zod-based Validation Functions', () => {
   describe('validateExperience', () => {
     it('should return success for valid experience', () => {
       const validExperience: Experience = ['mood.open', 'embodied.thinking', 'purpose.goal'];
-      
+
       const result = validateExperience(validExperience);
       expect(result).toBeDefined();
     });
 
     it('should return error for invalid experience', () => {
       const invalidExperience = {
-        qualities: ['mood.open', 'embodied.thinking']
+        qualities: ['mood.open', 'embodied.thinking'],
       };
-      
+
       expect(() => validateExperience(invalidExperience)).toThrow();
     });
   });
@@ -491,16 +512,17 @@ describe('Zod-based Validation Functions', () => {
           {
             id: 'test-123',
             source: 'Test source content',
+            emoji: '🧪',
             created: '2024-01-01T00:00:00.000Z',
             perspective: 'I',
             experiencer: 'test',
             processing: 'during',
             crafted: false,
-            experience: ['mood.open', 'embodied.thinking']
-          }
-        ]
+            experience: ['mood.open', 'embodied.thinking'],
+          },
+        ],
       };
-      
+
       const result = validateStorageData(validStorageData);
       expect(result).toBeDefined();
     });
@@ -511,27 +533,29 @@ describe('Zod-based Validation Functions', () => {
           {
             id: 'test-123',
             source: 'Test source content',
+            emoji: '🧪',
             created: '2024-01-01T00:00:00.000Z',
             perspective: 'I',
             experiencer: 'test',
             processing: 'during',
             crafted: false,
-            experience: ['mood.open', 'embodied.thinking']
+            experience: ['mood.open', 'embodied.thinking'],
           },
           {
             id: 'pattern-001',
             source: 'I notice I always feel anxious before things that end up going well',
+            emoji: '💡',
             created: '2024-01-01T00:00:00.000Z',
             perspective: 'I',
             experiencer: 'test',
             processing: 'long-after',
             crafted: false,
             experience: ['embodied.sensing', 'mood.closed', 'time.future'],
-            reflects: ['test-123', 'test-456']
-          }
-        ]
+            reflects: ['test-123', 'test-456'],
+          },
+        ],
       };
-      
+
       const result = validateStorageData(validStorageDataWithReflects);
       expect(result).toBeDefined();
     });
@@ -539,10 +563,10 @@ describe('Zod-based Validation Functions', () => {
     it('should return error for invalid storage data', () => {
       const invalidStorageData = {
         sources: 'not an array',
-        embeddings: 'not an array'
+        embeddings: 'not an array',
       };
-      
+
       expect(() => validateStorageData(invalidStorageData)).toThrow();
     });
   });
-}); 
+});

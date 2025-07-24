@@ -21,8 +21,13 @@ export const CONTENT_TYPES = ['text', 'audio'] as const;
 
 /** Valid experiential quality types - simplified names from README */
 export const QUALITY_TYPES = [
-  'embodied', 'focus', 'mood', 'purpose',
-  'space', 'time', 'presence'
+  'embodied',
+  'focus',
+  'mood',
+  'purpose',
+  'space',
+  'time',
+  'presence',
 ] as const;
 
 /** Default values for experiential data */
@@ -39,13 +44,13 @@ export const DEFAULTS = {
 // ============================================================================
 
 /** Perspective from which experience is experienceed */
-export type Perspective = typeof PERSPECTIVES[number] | string;
+export type Perspective = (typeof PERSPECTIVES)[number] | string;
 
 /** When the processing occurred relative to the experience */
-export type ProcessingLevel = typeof PROCESSING_LEVELS[number];
+export type ProcessingLevel = (typeof PROCESSING_LEVELS)[number];
 
 /** Experiential quality types */
-export type QualityType = typeof QUALITY_TYPES[number];
+export type QualityType = (typeof QUALITY_TYPES)[number];
 
 /**
  * Complete experiential analysis of experienceed data.
@@ -59,9 +64,11 @@ export interface Source {
   id: string;
   /** The experienceed source (text, audio transcript, etc.) */
   source: string;
+  /** Single emoji that serves as a visual/memory anchor for this experience */
+  emoji: string;
   /** When the experience was experienceed (auto-generated) */
   created: string;
-  
+
   // Context fields
   /** Perspective from which experience is experienceed */
   perspective?: Perspective;
@@ -71,11 +78,11 @@ export interface Source {
   processing?: ProcessingLevel;
   /** Whether this is crafted content (blog) vs raw experience (journal) */
   crafted?: boolean;
-  
+
   // Analysis fields
   /** Experience analysis results (prominent qualities) */
   experience?: Experience;
-  
+
   // Pattern realization fields
   /** Array of experience IDs that this experience reflects on/connects to */
   reflects?: string[];
@@ -104,7 +111,7 @@ export interface StorageData {
 }
 
 /** Valid record types in the storage system */
-export type RecordType = "source";
+export type RecordType = 'source';
 
 /** Base interface for all storage records */
 export interface BaseRecord {
@@ -115,7 +122,7 @@ export interface BaseRecord {
 /** Storage record for experiential sources */
 export interface SourceRecord extends Source {
   // Note: type field removed from data model but kept in interface for compatibility
-  type?: "source";
+  type?: 'source';
 }
 
 /** Union type of all possible storage records */
@@ -126,35 +133,57 @@ export type StorageRecord = SourceRecord;
 // ============================================================================
 
 /** Zod schema for Experience */
-export const ExperienceSchema = z.array(z.string().refine(val => {
-  // Accept base quality types or dot notation variants
-  const baseQuality = val.split('.')[0];
-return QUALITY_TYPES.includes(baseQuality as QualityType);
-}, {
-  message: 'Invalid quality type'
-})).describe('Array of qualities that emerge prominently in this moment');
+export const ExperienceSchema = z
+  .array(
+    z.string().refine(
+      (val) => {
+        // Accept base quality types or dot notation variants
+        const baseQuality = val.split('.')[0];
+        return QUALITY_TYPES.includes(baseQuality as QualityType);
+      },
+      {
+        message: 'Invalid quality type',
+      }
+    )
+  )
+  .describe('Array of qualities that emerge prominently in this moment');
 
 /** Zod schema for Source */
 export const SourceSchema = z.object({
   id: z.string().min(1).describe('Unique identifier for this source'),
   source: z.string().min(1).describe('The experienceed source (text, audio transcript, etc.)'),
+  emoji: z
+    .string()
+    .regex(/^\p{Emoji}$/u, 'Must be a single emoji')
+    .describe('Visual/memory anchor for this experience'),
   created: z.string().describe('When the experience was experienceed (auto-generated)'),
   perspective: z.string().optional().describe('Perspective from which experience is experienceed'),
   experiencer: z.string().optional().describe('Who experienced this'),
-  processing: z.enum(PROCESSING_LEVELS).optional().describe('When processing occurred relative to experience'),
+  processing: z
+    .enum(PROCESSING_LEVELS)
+    .optional()
+    .describe('When processing occurred relative to experience'),
   crafted: z.boolean().optional().describe('Whether this is crafted content vs raw experience'),
   experience: ExperienceSchema.optional().describe('Experience analysis results'),
-  reflects: z.array(z.string()).optional().describe('Array of experience IDs that this experience reflects on/connects to')
+  reflects: z
+    .array(z.string())
+    .optional()
+    .describe('Array of experience IDs that this experience reflects on/connects to'),
 });
 
 /** Zod schema for StorageData */
 export const StorageDataSchema = z.object({
   sources: z.array(SourceSchema).describe('Array of experienceed experiential sources'),
-  embeddings: z.array(z.object({
-    sourceId: z.string().describe('Source ID this embedding belongs to'),
-    vector: z.array(z.number()).describe('Vector embedding for semantic search'),
-    generated: z.string().describe('When the embedding was generated')
-  })).optional().describe('Array of embedding records')
+  embeddings: z
+    .array(
+      z.object({
+        sourceId: z.string().describe('Source ID this embedding belongs to'),
+        vector: z.array(z.number()).describe('Vector embedding for semantic search'),
+        generated: z.string().describe('When the embedding was generated'),
+      })
+    )
+    .optional()
+    .describe('Array of embedding records'),
 });
 
 // ============================================================================
@@ -167,14 +196,17 @@ export const StorageDataSchema = z.object({
 export function isValidQualityType(value: string): boolean {
   // Accept base quality types or dot notation variants
   const baseQuality = value.split('.')[0];
-return QUALITY_TYPES.includes(baseQuality as QualityType);
+  return QUALITY_TYPES.includes(baseQuality as QualityType);
 }
 
 /**
  * Validates if a value is a valid perspective
  */
 export function isValidPerspective(value: string): value is Perspective {
-  return PERSPECTIVES.includes(value as typeof PERSPECTIVES[number]) || (typeof value === 'string' && value.length > 0);
+  return (
+    PERSPECTIVES.includes(value as (typeof PERSPECTIVES)[number]) ||
+    (typeof value === 'string' && value.length > 0)
+  );
 }
 
 /**
@@ -189,22 +221,27 @@ export function isValidProcessingLevel(value: string): value is ProcessingLevel 
  */
 export function isValidSource(source: unknown): source is Source {
   if (typeof source !== 'object' || source === null) return false;
-  
+
   const src = source as Record<string, unknown>;
-  
-  return typeof src.id === 'string' && src.id.length > 0 &&
-    typeof src.source === 'string' && src.source.length > 0 &&
+
+  return (
+    typeof src.id === 'string' &&
+    src.id.length > 0 &&
+    typeof src.source === 'string' &&
+    src.source.length > 0 &&
+    typeof src.emoji === 'string' &&
+    src.emoji.match(/^\p{Emoji}$/u) !== null &&
     typeof src.created === 'string' &&
-    (src.experience === undefined || (
-      Array.isArray(src.experience) && 
-      src.experience.length >= 0
-    )) &&
-    (src.perspective === undefined || (typeof src.perspective === 'string' && isValidPerspective(src.perspective))) &&
-    (src.processing === undefined || (typeof src.processing === 'string' && isValidProcessingLevel(src.processing))) &&
-    (src.reflects === undefined || (
-      Array.isArray(src.reflects) && 
-      src.reflects.every((item: unknown) => typeof item === 'string')
-    ));
+    (src.experience === undefined ||
+      (Array.isArray(src.experience) && src.experience.length >= 0)) &&
+    (src.perspective === undefined ||
+      (typeof src.perspective === 'string' && isValidPerspective(src.perspective))) &&
+    (src.processing === undefined ||
+      (typeof src.processing === 'string' && isValidProcessingLevel(src.processing))) &&
+    (src.reflects === undefined ||
+      (Array.isArray(src.reflects) &&
+        src.reflects.every((item: unknown) => typeof item === 'string')))
+  );
 }
 
 /**
@@ -235,24 +272,25 @@ export function validateStorageData(data: unknown): StorageData {
 /**
  * Creates a new Source with default values
  */
-export function createSource(source: string, id?: string): Source {
+export function createSource(source: string, emoji: string, id?: string): Source {
   return {
     id: id || `src_${Date.now()}`,
     source,
+    emoji,
     created: new Date().toISOString(),
     perspective: DEFAULTS.PERSPECTIVE,
     experiencer: DEFAULTS.EXPERIENCER,
     processing: DEFAULTS.PROCESSING,
-    crafted: DEFAULTS.CRAFTED
+    crafted: DEFAULTS.CRAFTED,
   };
 }
 
 /**
  * Creates a new SourceRecord with default values
  */
-export function createSourceRecord(source: string, id?: string): SourceRecord {
+export function createSourceRecord(source: string, emoji: string, id?: string): SourceRecord {
   return {
-    ...createSource(source, id),
-    type: 'source'
+    ...createSource(source, emoji, id),
+    type: 'source',
   };
-} 
+}

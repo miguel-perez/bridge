@@ -10,7 +10,7 @@ import { EnrichService } from '../services/enrich.js';
 import { ReconsiderInput, type ToolResult } from './schemas.js';
 import { formatReconsiderResponse, type ExperienceResult } from '../utils/formatters.js';
 import { incrementCallCount, getCallCount } from './call-counter.js';
-import { getFlowStateMessage } from './flow-messages.js';
+import { getFlowStateMessages } from './flow-messages.js';
 
 /**
  * Handles reconsider requests from MCP clients
@@ -42,13 +42,16 @@ export class ReconsiderHandler {
       incrementCallCount();
       const result = await this.handleRegularReconsider(args);
 
-      // Add flow state message if stillThinking was explicitly passed
+      // Add flow state messages if stillThinking was explicitly passed
       const callsSoFar = getCallCount();
       if (args.stillThinking !== undefined) {
-        const flowMessage = getFlowStateMessage(stillThinking, callsSoFar);
-        result.content.push({
-          type: 'text',
-          text: flowMessage,
+        const flowMessages = getFlowStateMessages(stillThinking, callsSoFar);
+        // Add each message as a separate content item to ensure a third response
+        flowMessages.forEach((message) => {
+          result.content.push({
+            type: 'text',
+            text: message,
+          });
         });
       }
 

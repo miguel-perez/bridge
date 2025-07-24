@@ -9,7 +9,7 @@ import { deleteSource } from '../core/storage.js';
 
 import { ReleaseInput, ToolResultSchema, type ToolResult } from './schemas.js';
 import { incrementCallCount, getCallCount } from './call-counter.js';
-import { getFlowStateMessage } from './flow-messages.js';
+import { getFlowStateMessages } from './flow-messages.js';
 
 /**
  * Handles release requests from MCP clients
@@ -88,13 +88,16 @@ export class ReleaseHandler {
         });
       }
 
-      // Add flow state message if stillThinking was explicitly passed
+      // Add flow state messages if stillThinking was explicitly passed
       const callsSoFar = getCallCount();
       if (args.stillThinking !== undefined) {
-        const flowMessage = getFlowStateMessage(stillThinking, callsSoFar);
-        content.push({
-          type: 'text' as const,
-          text: flowMessage,
+        const flowMessages = getFlowStateMessages(stillThinking, callsSoFar);
+        // Add each message as a separate content item to ensure a third response
+        flowMessages.forEach((message) => {
+          content.push({
+            type: 'text' as const,
+            text: message,
+          });
         });
       }
 

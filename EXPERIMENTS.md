@@ -48,6 +48,8 @@ _No active experiments at this time. All recent experiments have been completed 
 
 **Learning**: Minimal patterns can provide 80% of the value with 20% of the complexity. The stillThinking parameter successfully provides flow awareness without sacrificing tool independence or adding complex state management.
 
+**Enhancement (2025-07-24)**: Updated flow messages to return three separate responses for improved UX - main response + status message + permission/conclusion message.
+
 ### EXP-012: Bridge Sequential Thinking (Replaced by EXP-013)
 
 **Status**: Replaced 2025-07-24  

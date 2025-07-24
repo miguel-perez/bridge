@@ -146,6 +146,7 @@ export interface ExperienceResult {
   source: {
     id: string;
     source: string;
+    emoji: string;
     experiencer?: string;
     perspective?: string;
     processing?: string;
@@ -169,6 +170,7 @@ export interface RecallResult {
     experiencer?: string;
     processing?: string;
     experience?: string[];
+    emoji?: string;
   };
   relevance_score: number;
 }
@@ -188,15 +190,18 @@ export function formatExperienceResponse(
   showId: boolean = false
 ): string {
   const qualities = result.source.experience || [];
+  const emoji = result.source.emoji;
 
   // Simple response based on whether we have qualities
   let response: string;
   if (qualities.length > 0) {
-    response = formatMessage(Messages.experience.successWithQualities, {
-      qualities: formatQualityList(qualities),
-    });
+    response =
+      `${emoji} ` +
+      formatMessage(Messages.experience.successWithQualities, {
+        qualities: formatQualityList(qualities),
+      });
   } else {
-    response = Messages.experience.success;
+    response = `${emoji} ` + Messages.experience.success;
   }
 
   return [response, '', formatMetadata(result.source, showId)].join('\n');
@@ -223,14 +228,16 @@ export function formatBatchExperienceResponse(
 
     output.push(`--- ${i + 1} ---`);
 
+    const emoji = result.source.emoji;
     if (qualities.length > 0) {
       output.push(
-        formatMessage(Messages.experience.successWithQualities, {
-          qualities: formatQualityList(qualities),
-        })
+        `${emoji} ` +
+          formatMessage(Messages.experience.successWithQualities, {
+            qualities: formatQualityList(qualities),
+          })
       );
     } else {
-      output.push(Messages.experience.success);
+      output.push(`${emoji} ` + Messages.experience.success);
     }
 
     output.push('');
@@ -414,8 +421,11 @@ function formatRecallResults(results: RecallResult[], showIds: boolean = false):
     const content = result.snippet || result.content || '';
     const displayContent = content.length > 150 ? content.substring(0, 150) + '...' : content;
 
-    // Simple numbered format
-    const lines = [`${index + 1}. "${displayContent}"`];
+    // Simple numbered format with emoji if available
+    const emoji = (metadata as Record<string, unknown>).emoji as string | undefined;
+    const lines = emoji
+      ? [`${index + 1}. ${emoji} "${displayContent}"`]
+      : [`${index + 1}. "${displayContent}"`];
 
     // Add qualities if available
     if (experience.length > 0) {

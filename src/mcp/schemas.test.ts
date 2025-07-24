@@ -69,6 +69,7 @@ describe('Schema Validation', () => {
         experiences: [
           {
             source: 'Test experience',
+            emoji: '🧪',
             perspective: 'I',
             experience: ['mood.open'],
           },
@@ -83,6 +84,7 @@ describe('Schema Validation', () => {
         experiences: [
           {
             source: 'Pattern realization',
+            emoji: '💡',
             perspective: 'I',
             experience: ['mood.open'],
             reflects: ['exp-123', 'exp-456'],
@@ -98,6 +100,7 @@ describe('Schema Validation', () => {
         experiences: [
           {
             source: 'Experience with empty reflects',
+            emoji: '🧪',
             perspective: 'I',
             experience: ['mood.open'],
             reflects: [],
@@ -113,6 +116,7 @@ describe('Schema Validation', () => {
         experiences: [
           {
             source: 'Complete experience',
+            emoji: '✨',
             perspective: 'I',
             experiencer: 'test',
             processing: 'during',
@@ -131,6 +135,7 @@ describe('Schema Validation', () => {
         experiences: [
           {
             source: 'Test experience',
+            emoji: '🧪',
             perspective: 'custom-perspective',
             experience: ['mood.open'],
           },
@@ -186,6 +191,7 @@ describe('Schema Validation', () => {
         experiences: [
           {
             source: '',
+            emoji: '🧪',
             experience: ['mood.open'],
           },
         ],
@@ -569,7 +575,7 @@ describe('Type Guards', () => {
   describe('Array Type Guards', () => {
     describe('hasExperienceArray', () => {
       it('should return true for valid experience array', () => {
-        const input = { experiences: [{ source: 'test', experience: ['mood.open'] }] };
+        const input = { experiences: [{ source: 'test', emoji: '🧪', experience: ['mood.open'] }] };
         expect(hasExperienceArray(input)).toBe(true);
       });
 
