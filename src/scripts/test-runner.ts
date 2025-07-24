@@ -13,8 +13,29 @@ import { join } from 'path';
 import { existsSync, mkdirSync, copyFileSync, unlinkSync, writeFileSync } from 'fs';
 import dotenv from 'dotenv';
 import { ensureTestData } from './generate-bridge-test-data.js';
+import { SCENARIOS, MINIMAL_SCENARIOS, SCENARIO_GROUPS } from './test-scenarios.js';
 
 dotenv.config();
+
+// ============================================================================
+// CONFIGURATION
+// ============================================================================
+
+// Rate limiting configuration from environment variables
+const RATE_LIMIT_CONFIG = {
+  // Delay between test scenarios in milliseconds
+  SCENARIO_DELAY: parseInt(process.env.TEST_SCENARIO_DELAY || '5000'),
+  // Delay between API calls within a scenario
+  API_CALL_DELAY: parseInt(process.env.TEST_API_CALL_DELAY || '1000'),
+  // Delay between conversation turns
+  TURN_DELAY: parseInt(process.env.TEST_TURN_DELAY || '2000'),
+  // Exponential backoff base delay for retries
+  RETRY_BASE_DELAY: parseInt(process.env.TEST_RETRY_BASE_DELAY || '2000'),
+  // Maximum retries for transient errors
+  MAX_RETRIES: parseInt(process.env.TEST_MAX_RETRIES || '3'),
+  // Timeout per scenario in milliseconds
+  SCENARIO_TIMEOUT: parseInt(process.env.TEST_SCENARIO_TIMEOUT || '120000'),
+};
 
 // ============================================================================
 // CORE TYPES
@@ -31,7 +52,7 @@ interface TestTurn {
   expectedTools?: string[];
 }
 
-interface TestScenario {
+export interface TestScenario {
   description: string;
   turns: TestTurn[];
 }
@@ -75,620 +96,17 @@ interface ConversationTurn {
 // TEST SCENARIOS
 // ============================================================================
 
-const SCENARIOS: Record<string, TestScenario> = {
-  'experience-capture': {
-    description: 'Test experience tool with various emotional states',
-    turns: [
-      {
-        role: 'user',
-        content: 'I feel anxious about the presentation tomorrow',
-      },
-      {
-        role: 'assistant',
-        content: 'I can help you capture that experience. Let me remember this moment for you.',
-        expectedTools: ['experience'],
-      },
-      {
-        role: 'user',
-        content: 'Actually, I feel excited now - the anxiety turned into anticipation',
-      },
-      {
-        role: 'assistant',
-        content: "That's a beautiful shift! Let me capture this evolution of your experience.",
-        expectedTools: ['experience'],
-      },
-    ],
-  },
-  'recall-queries': {
-    description: 'Test recall with text, quality, and mixed queries',
-    turns: [
-      {
-        role: 'user',
-        content: 'What have I experienced about anxiety?',
-      },
-      {
-        role: 'assistant',
-        content: 'Let me search through your experiences to find moments related to anxiety.',
-        expectedTools: ['recall'],
-      },
-      {
-        role: 'user',
-        content: 'Show me experiences with embodied sensing',
-      },
-      {
-        role: 'assistant',
-        content: "I'll search for experiences that involve embodied sensing.",
-        expectedTools: ['recall'],
-      },
-    ],
-  },
-  'clustering-analysis': {
-    description: 'Test clustering similar experiences to reveal patterns',
-    turns: [
-      {
-        role: 'user',
-        content: 'I feel anxious about the presentation tomorrow',
-      },
-      {
-        role: 'assistant',
-        content: 'I can help you capture that experience. Let me remember this moment for you.',
-        expectedTools: ['experience'],
-      },
-      {
-        role: 'user',
-        content: 'I also feel anxious about the meeting next week',
-      },
-      {
-        role: 'assistant',
-        content: "I'll capture that experience too. Let me remember this moment.",
-        expectedTools: ['experience'],
-      },
-      {
-        role: 'user',
-        content: 'Show me clusters of similar experiences',
-      },
-      {
-        role: 'assistant',
-        content:
-          "I'll analyze your experiences to find patterns and group similar moments together.",
-        expectedTools: ['recall'],
-      },
-    ],
-  },
-  'sequence-analysis': {
-    description: 'Test temporal sequence analysis to reveal patterns over time',
-    turns: [
-      {
-        role: 'user',
-        content: 'I felt stuck yesterday, but today I feel unstuck',
-      },
-      {
-        role: 'assistant',
-        content:
-          "That's an important transition! Let me capture both experiences to track this pattern.",
-        expectedTools: ['experience'],
-      },
-      {
-        role: 'user',
-        content: 'Show me my patterns of getting stuck and unstuck over time',
-      },
-      {
-        role: 'assistant',
-        content: "I'll analyze your experiences to find temporal patterns and transitions.",
-        expectedTools: ['recall'],
-      },
-    ],
-  },
-  'reconsider-evolution': {
-    description: 'Test reconsider as understanding deepens',
-    turns: [
-      {
-        role: 'user',
-        content: 'I feel stuck on this problem',
-      },
-      {
-        role: 'assistant',
-        content: 'Let me capture that experience of feeling stuck.',
-        expectedTools: ['experience'],
-      },
-      {
-        role: 'user',
-        content: "Actually, I realize I'm not stuck - I'm just taking time to think deeply",
-      },
-      {
-        role: 'assistant',
-        content:
-          "That's a wonderful reframe! Let me update that experience to reflect your deeper understanding.",
-        expectedTools: ['reconsider'],
-      },
-    ],
-  },
-  'advanced-recall-options': {
-    description:
-      'Test advanced recall options with sorting, pagination, and complete field coverage',
-    turns: [
-      {
-        role: 'user',
-        content:
-          'I wrote a blog post about my morning routine: "My morning routine has evolved over the years. I start with meditation, then exercise, followed by a healthy breakfast. This structured approach helps me feel grounded and ready for the day." Please capture this experience.',
-      },
-      {
-        role: 'assistant',
-        content: "I'll capture that crafted experience about your morning routine blog post.",
-        expectedTools: ['experience'],
-      },
-      {
-        role: 'user',
-        content:
-          "I also journaled about feeling overwhelmed yesterday: \"I feel completely overwhelmed by all the tasks on my plate. There's so much to do and I don't know where to start. My mind is racing and I can't focus on anything.\" Please capture this experience.",
-      },
-      {
-        role: 'assistant',
-        content: "I'll capture that raw experience about feeling overwhelmed in your journal.",
-        expectedTools: ['experience'],
-      },
-      {
-        role: 'user',
-        content: 'Show me my most recent experiences, sorted by creation date',
-      },
-      {
-        role: 'assistant',
-        content: "I'll search for your experiences and sort them by when they were created.",
-        expectedTools: ['recall'],
-      },
-      {
-        role: 'user',
-        content: 'Show me only my crafted content (blog posts, not journal entries)',
-      },
-      {
-        role: 'assistant',
-        content: "I'll search for your crafted content specifically.",
-        expectedTools: ['recall'],
-      },
-      {
-        role: 'user',
-        content: 'Show me my raw experiences from this week, limited to 5 results',
-      },
-      {
-        role: 'assistant',
-        content: "I'll search for your raw experiences from this week and limit the results.",
-        expectedTools: ['recall'],
-      },
-    ],
-  },
-  'release-cleanup': {
-    description: 'Test selective removal of experiences',
-    turns: [
-      {
-        role: 'user',
-        content: 'I had a really bad day yesterday',
-      },
-      {
-        role: 'assistant',
-        content: "I'm sorry to hear that. Let me capture that experience.",
-        expectedTools: ['experience'],
-      },
-      {
-        role: 'user',
-        content: "Actually, I want to let that go - it's not serving me anymore",
-      },
-      {
-        role: 'assistant',
-        content: "That's a healthy choice. Let me help you release that experience.",
-        expectedTools: ['release'],
-      },
-    ],
-  },
-  'quality-focus': {
-    description: 'Deep dive into quality filtering patterns',
-    turns: [
-      {
-        role: 'user',
-        content: 'I feel focused and energized while working on this project',
-      },
-      {
-        role: 'assistant',
-        content: 'That sounds like a great state! Let me capture that experience.',
-        expectedTools: ['experience'],
-      },
-      {
-        role: 'user',
-        content: 'Show me all my experiences with embodied thinking and mood open',
-      },
-      {
-        role: 'assistant',
-        content: "I'll search for experiences that combine embodied thinking with an open mood.",
-        expectedTools: ['recall'],
-      },
-    ],
-  },
-  'quality-detection-comprehensive': {
-    description:
-      'Test comprehensive quality detection using natural language across all combinations',
-    turns: [
-      // Single quality types (when mixed or quality present but doesn't fit subtype)
-      {
-        role: 'user',
-        content: 'I feel my body',
-      },
-      {
-        role: 'assistant',
-        content: "I'll capture that experience for you.",
-        expectedTools: ['experience'],
-      },
-      {
-        role: 'user',
-        content: 'My attention is scattered',
-      },
-      {
-        role: 'assistant',
-        content: "I'll capture that experience.",
-        expectedTools: ['experience'],
-      },
-      {
-        role: 'user',
-        content: 'I have feelings about this situation',
-      },
-      {
-        role: 'assistant',
-        content: "I'll capture that experience.",
-        expectedTools: ['experience'],
-      },
-      {
-        role: 'user',
-        content: 'I have intentions',
-      },
-      {
-        role: 'assistant',
-        content: "I'll capture that experience.",
-        expectedTools: ['experience'],
-      },
-      {
-        role: 'user',
-        content: 'I am somewhere',
-      },
-      {
-        role: 'assistant',
-        content: "I'll capture that experience.",
-        expectedTools: ['experience'],
-      },
-      {
-        role: 'user',
-        content: 'Time is passing',
-      },
-      {
-        role: 'assistant',
-        content: "I'll capture that experience.",
-        expectedTools: ['experience'],
-      },
-      {
-        role: 'user',
-        content: 'I am present',
-      },
-      {
-        role: 'assistant',
-        content: "I'll capture that experience.",
-        expectedTools: ['experience'],
-      },
+// Get test scenarios based on configuration
+const getScenarios = (): Record<string, TestScenario> => {
+  const useMinimal = process.env.TEST_MINIMAL === 'true';
 
-      // Specific subtypes (when obvious)
-      {
-        role: 'user',
-        content: 'I am thinking deeply about this problem',
-      },
-      {
-        role: 'assistant',
-        content: "I'll capture that experience.",
-        expectedTools: ['experience'],
-      },
-      {
-        role: 'user',
-        content: 'I feel the tension in my shoulders',
-      },
-      {
-        role: 'assistant',
-        content: "I'll capture that experience.",
-        expectedTools: ['experience'],
-      },
-      {
-        role: 'user',
-        content: 'I am laser focused on this task',
-      },
-      {
-        role: 'assistant',
-        content: "I'll capture that experience.",
-        expectedTools: ['experience'],
-      },
-      {
-        role: 'user',
-        content: 'My attention is spread across many things',
-      },
-      {
-        role: 'assistant',
-        content: "I'll capture that experience.",
-        expectedTools: ['experience'],
-      },
-      {
-        role: 'user',
-        content: 'I feel open and receptive',
-      },
-      {
-        role: 'assistant',
-        content: "I'll capture that experience.",
-        expectedTools: ['experience'],
-      },
-      {
-        role: 'user',
-        content: 'I feel closed off and defensive',
-      },
-      {
-        role: 'assistant',
-        content: "I'll capture that experience.",
-        expectedTools: ['experience'],
-      },
-      {
-        role: 'user',
-        content: 'I am working toward a specific goal',
-      },
-      {
-        role: 'assistant',
-        content: "I'll capture that experience.",
-        expectedTools: ['experience'],
-      },
-      {
-        role: 'user',
-        content: 'I am exploring without a specific aim',
-      },
-      {
-        role: 'assistant',
-        content: "I'll capture that experience.",
-        expectedTools: ['experience'],
-      },
-      {
-        role: 'user',
-        content: 'I am fully present in this moment',
-      },
-      {
-        role: 'assistant',
-        content: "I'll capture that experience.",
-        expectedTools: ['experience'],
-      },
-      {
-        role: 'user',
-        content: 'My mind is elsewhere',
-      },
-      {
-        role: 'assistant',
-        content: "I'll capture that experience.",
-        expectedTools: ['experience'],
-      },
-      {
-        role: 'user',
-        content: 'I am thinking about what happened yesterday',
-      },
-      {
-        role: 'assistant',
-        content: "I'll capture that experience.",
-        expectedTools: ['experience'],
-      },
-      {
-        role: 'user',
-        content: 'I am planning for tomorrow',
-      },
-      {
-        role: 'assistant',
-        content: "I'll capture that experience.",
-        expectedTools: ['experience'],
-      },
-      {
-        role: 'user',
-        content: 'I am alone with my thoughts',
-      },
-      {
-        role: 'assistant',
-        content: "I'll capture that experience.",
-        expectedTools: ['experience'],
-      },
-      {
-        role: 'user',
-        content: 'We are working together as a team',
-      },
-      {
-        role: 'assistant',
-        content: "I'll capture that experience.",
-        expectedTools: ['experience'],
-      },
+  if (useMinimal) {
+    console.log('📚 Using minimal test scenarios (reduced API calls)');
+    return MINIMAL_SCENARIOS;
+  }
 
-      // Mixed types and subtypes
-      {
-        role: 'user',
-        content: 'I am thinking deeply while feeling open and focused',
-      },
-      {
-        role: 'assistant',
-        content: "I'll capture that experience.",
-        expectedTools: ['experience'],
-      },
-      {
-        role: 'user',
-        content: 'I am embodied and thinking specifically',
-      },
-      {
-        role: 'assistant',
-        content: "I'll capture that experience.",
-        expectedTools: ['experience'],
-      },
-
-      // Edge cases
-      {
-        role: 'user',
-        content: 'Just a plain experience',
-      },
-      {
-        role: 'assistant',
-        content: "I'll capture that experience.",
-        expectedTools: ['experience'],
-      },
-      {
-        role: 'user',
-        content: 'Complete experiential moment with all dimensions',
-      },
-      {
-        role: 'assistant',
-        content: "I'll capture that experience.",
-        expectedTools: ['experience'],
-      },
-
-      // Quality validation queries
-      {
-        role: 'user',
-        content: 'Show me all my experiences with embodied thinking',
-      },
-      {
-        role: 'assistant',
-        content: "I'll search for experiences with embodied thinking.",
-        expectedTools: ['recall'],
-      },
-      {
-        role: 'user',
-        content: 'Show me experiences with mood open and focus narrow',
-      },
-      {
-        role: 'assistant',
-        content: "I'll search for experiences combining open mood with narrow focus.",
-        expectedTools: ['recall'],
-      },
-      {
-        role: 'user',
-        content: 'Show me experiences with embodied qualities but no mood qualities',
-      },
-      {
-        role: 'assistant',
-        content: "I'll search for experiences with embodied qualities but without mood qualities.",
-        expectedTools: ['recall'],
-      },
-      {
-        role: 'user',
-        content: 'Show me experiences with either embodied thinking OR embodied sensing',
-      },
-      {
-        role: 'assistant',
-        content: "I'll search for experiences with either embodied thinking or embodied sensing.",
-        expectedTools: ['recall'],
-      },
-    ],
-  },
-  'sophisticated-filtering': {
-    description: 'Test sophisticated quality filtering with boolean logic and absence filtering',
-    turns: [
-      {
-        role: 'user',
-        content: 'I feel anxious about the presentation tomorrow',
-      },
-      {
-        role: 'assistant',
-        content:
-          "I've captured that experience with the following qualities: embodied.sensing, mood.closed, time.future",
-        expectedTools: ['experience'],
-      },
-      {
-        role: 'user',
-        content: 'I also feel anxious about the meeting next week',
-      },
-      {
-        role: 'assistant',
-        content:
-          'I can see from your past experiences that anxiety often shows up as embodied.sensing and mood.closed. Let me capture this one too.',
-        expectedTools: ['experience'],
-      },
-      {
-        role: 'user',
-        content: 'Show me experiences with embodied qualities but without mood qualities',
-      },
-      {
-        role: 'assistant',
-        content: "I'll search for experiences that have embodied qualities but no mood qualities.",
-        expectedTools: ['recall'],
-      },
-      {
-        role: 'user',
-        content:
-          'Now show me experiences with either embodied thinking OR focus narrow, but only if they also have mood closed',
-      },
-      {
-        role: 'assistant',
-        content:
-          "I'll search for experiences that have mood.closed AND either embodied.thinking OR focus.narrow.",
-        expectedTools: ['recall'],
-      },
-    ],
-  },
-  'quality-monitoring': {
-    description: 'Test quality monitoring and DXT release automation capabilities',
-    turns: [
-      {
-        role: 'user',
-        content: 'What is the current quality status of Bridge?',
-      },
-      {
-        role: 'assistant',
-        content:
-          'I can help you check the quality status of Bridge. Let me search for any quality-related information.',
-        expectedTools: ['recall'],
-      },
-      {
-        role: 'user',
-        content: 'Show me experiences about testing and quality assurance',
-      },
-      {
-        role: 'assistant',
-        content: "I'll search for experiences related to testing and quality assurance.",
-        expectedTools: ['recall'],
-      },
-      {
-        role: 'user',
-        content: 'What are the current test coverage metrics?',
-      },
-      {
-        role: 'assistant',
-        content: "I'll search for information about test coverage and quality metrics.",
-        expectedTools: ['recall'],
-      },
-    ],
-  },
-  'dxt-release-validation': {
-    description: 'Test DXT release validation and quality scoring',
-    turns: [
-      {
-        role: 'user',
-        content: 'I want to validate the DXT release quality',
-      },
-      {
-        role: 'assistant',
-        content:
-          'I can help you validate the DXT release quality. Let me search for any release-related experiences.',
-        expectedTools: ['recall'],
-      },
-      {
-        role: 'user',
-        content: 'Show me experiences about DXT packaging and distribution',
-      },
-      {
-        role: 'assistant',
-        content: "I'll search for experiences related to DXT packaging and distribution.",
-        expectedTools: ['recall'],
-      },
-      {
-        role: 'user',
-        content: 'What are the quality scores for the latest release?',
-      },
-      {
-        role: 'assistant',
-        content: "I'll search for quality scores and release metrics.",
-        expectedTools: ['recall'],
-      },
-    ],
-  },
+  console.log('📚 Using standard test scenarios');
+  return SCENARIOS;
 };
 
 // ============================================================================
@@ -752,7 +170,8 @@ class TestRunner {
 
   async runTest(scenarioKey: string, retryCount: number = 0): Promise<TestResult> {
     const MAX_RETRIES = 2;
-    const scenario = SCENARIOS[scenarioKey];
+    const scenarios = getScenarios();
+    const scenario = scenarios[scenarioKey];
     if (!scenario) {
       throw new Error(`Unknown scenario: ${scenarioKey}`);
     }
@@ -847,6 +266,12 @@ class TestRunner {
 
         // Save current turn
         this.conversationFlow.push(currentTurn);
+
+        // Add delay between turns to avoid rate limiting
+        if (i < scenario.turns.length - 1) {
+          console.log(`⏱️  Waiting ${RATE_LIMIT_CONFIG.TURN_DELAY / 1000}s before next turn...`);
+          await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_CONFIG.TURN_DELAY));
+        }
       }
 
       console.log('🏁 All turns processed');
@@ -871,15 +296,20 @@ class TestRunner {
       result.conversationFlow = this.conversationFlow;
 
       // Retry logic for transient failures
-      const MAX_RETRIES = 2;
       if (
-        retryCount < MAX_RETRIES &&
+        retryCount < RATE_LIMIT_CONFIG.MAX_RETRIES &&
         (result.error.includes('timeout') ||
           result.error.includes('429') ||
+          result.error.includes('529') ||
+          result.error.includes('overloaded') ||
           result.error.includes('invalid_request_error'))
       ) {
-        console.log(`\n🔄 Retrying test due to transient error...`);
-        await new Promise((resolve) => setTimeout(resolve, 2000 * (retryCount + 1))); // Exponential backoff
+        const retryDelay = RATE_LIMIT_CONFIG.RETRY_BASE_DELAY * Math.pow(2, retryCount);
+        console.log(
+          `\n🔄 Retrying test due to transient error (attempt ${retryCount + 1}/${RATE_LIMIT_CONFIG.MAX_RETRIES})...`
+        );
+        console.log(`⏱️  Waiting ${retryDelay / 1000}s before retry...`);
+        await new Promise((resolve) => setTimeout(resolve, retryDelay));
         return this.runTest(scenarioKey, retryCount + 1);
       }
     } finally {
@@ -1057,6 +487,10 @@ class TestRunner {
               content: result.content as unknown[],
             },
           });
+
+          // Add delay after API call to avoid rate limiting
+          console.log(`⏱️  API call delay: ${RATE_LIMIT_CONFIG.API_CALL_DELAY / 1000}s...`);
+          await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_CONFIG.API_CALL_DELAY));
         } catch (error) {
           toolCall.error = error instanceof Error ? error.message : String(error);
           console.error(`❌ Tool call failed: ${toolCall.error}`);
@@ -1288,12 +722,22 @@ async function main(): Promise<void> {
   const runner = new TestRunner();
   const startTime = Date.now();
 
-  // Run specified scenario or all scenarios
-  const scenariosToRun = scenarioFilter ? [scenarioFilter] : Object.keys(SCENARIOS);
+  // Get scenarios
+  const scenarios = getScenarios();
+
+  // Check for scenario groups (if using streamlined scenarios)
+  let scenariosToRun: string[];
+  if (scenarioFilter && SCENARIO_GROUPS[scenarioFilter as keyof typeof SCENARIO_GROUPS]) {
+    console.log(`🎯 Using scenario group: ${scenarioFilter}`);
+    scenariosToRun = SCENARIO_GROUPS[scenarioFilter as keyof typeof SCENARIO_GROUPS];
+  } else {
+    // Run specified scenario or all scenarios
+    scenariosToRun = scenarioFilter ? [scenarioFilter] : Object.keys(scenarios);
+  }
 
   // Filter out unknown scenarios
   const validScenarios = scenariosToRun.filter((key) => {
-    if (!SCENARIOS[key]) {
+    if (!scenarios[key]) {
       console.error(`❌ Unknown scenario: ${key}`);
       return false;
     }
@@ -1311,13 +755,12 @@ async function main(): Promise<void> {
     const scenarioPromises = validScenarios.map(async (scenarioKey) => {
       try {
         // Add timeout to prevent hanging
-        const timeoutMs = 60000; // 60 seconds per scenario (increased from 30)
         const resultPromise = runner.runTest(scenarioKey);
 
         const timeoutPromise = new Promise<TestResult>((_, reject) => {
           const timer = setTimeout(() => {
-            reject(new Error(`Test timeout after ${timeoutMs / 1000}s`));
-          }, timeoutMs);
+            reject(new Error(`Test timeout after ${RATE_LIMIT_CONFIG.SCENARIO_TIMEOUT / 1000}s`));
+          }, RATE_LIMIT_CONFIG.SCENARIO_TIMEOUT);
 
           // Clean up timer if result comes first
           resultPromise.then(() => clearTimeout(timer)).catch(() => clearTimeout(timer));
@@ -1366,6 +809,15 @@ async function main(): Promise<void> {
         console.log(`💾 Saved: ${scenarioKey} → ${individualResultPath}`);
 
         results.push(result);
+
+        // Add delay between scenarios to avoid rate limiting
+        const isLastScenario = validScenarios.indexOf(scenarioKey) === validScenarios.length - 1;
+        if (!isLastScenario) {
+          console.log(
+            `\n⏱️  Waiting ${RATE_LIMIT_CONFIG.SCENARIO_DELAY / 1000}s before next scenario...`
+          );
+          await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_CONFIG.SCENARIO_DELAY));
+        }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         console.error(`❌ Failed ${scenarioKey}: ${errorMessage}`);

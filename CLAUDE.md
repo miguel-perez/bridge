@@ -1,23 +1,28 @@
 # CLAUDE.md
 
-**Document Purpose**: This file provides guidance to Claude Code (claude.ai/code) when working with code in this
-repository. It contains practical commands, architecture overview, and development context needed for day-to-day coding
-tasks.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**For Developers**: Use this as your quick reference for commands, architecture, and testing approaches.
+## Quick Start
 
-## Development Process
+```bash
+# Install dependencies
+npm install
 
-Bridge follows a continuous learning loop: **VISION → OPPORTUNITIES → EXPERIMENTS → LEARNINGS → VISION**
+# Run in development mode
+npm run dev
 
-See **LOOP.md** for the complete development workflow, commands, and methodology.
+# Run tests
+npm test
+
+# Check quality
+npm run quality-check
+```
 
 ## Architecture
 
 ### Core Flow
 
-Bridge is an MCP (Model Context Protocol) server that enables shared experiential memory between humans and AI. The
-architecture follows a service-oriented pattern:
+Bridge is an MCP (Model Context Protocol) server that enables shared experiential memory between humans and AI. The architecture follows a service-oriented pattern:
 
 ```text
 MCP Client (Claude) → MCP Server → Tool Handlers → Services → Storage
@@ -40,6 +45,7 @@ MCP Client (Claude) → MCP Server → Tool Handlers → Services → Storage
    - `reconsider.ts` - Updates existing experiences
    - `release.ts` - Removes experiences
    - `embeddings.ts` - @xenova/transformers for semantic vectors
+   - `clustering.ts` - Groups similar experiences
    - Services handle business logic and return structured results
 
 3. **Storage** (`src/core/`)
@@ -68,7 +74,196 @@ experience({ source: 'I feel anxious', experience: ['embodied.sensing', 'mood.cl
 // 7. Claude receives: "Experienced (embodied.sensing, mood.closed)"
 ```
 
-### Current Implementation Status
+## Quality Dimensions
+
+Bridge uses seven quality pairs to capture experiential moments:
+
+- **embodied** - How consciousness textures through body/mind
+  - `.thinking` - Mental processing, analysis
+  - `.sensing` - Body awareness, emotions
+- **focus** - Attentional quality
+  - `.narrow` - Single-task concentration
+  - `.broad` - Multi-task awareness
+- **mood** - Emotional atmosphere
+  - `.open` - Expansive, curious
+  - `.closed` - Contracted, defensive
+- **purpose** - Directional momentum
+  - `.goal` - Clear direction
+  - `.wander` - Exploration
+- **space** - Spatial awareness
+  - `.here` - Present location
+  - `.there` - Elsewhere
+- **time** - Temporal orientation
+  - `.past` - Historical
+  - `.future` - Anticipatory
+- **presence** - Social quality
+  - `.individual` - Solitary
+  - `.collective` - Shared
+
+Use dot notation when quality clearly fits a subtype. Use base quality when mixed or unclear.
+
+## Key Commands
+
+### Development
+
+```bash
+npm run dev              # Watch mode with tsx
+npm run build            # TypeScript compilation
+npm run build:all        # Build + bundle
+npm start                # Run bundled server
+```
+
+### Testing
+
+```bash
+npm test                 # Run unit tests with coverage
+npm run test:bridge      # Run integration tests
+npm run test:all         # All tests + learning loop
+npm run loop             # Run learning loop analysis
+
+# Run a single test file
+npm test -- src/services/recall.test.ts
+```
+
+### Quality Checks
+
+```bash
+npm run lint             # ESLint check
+npm run lint:fix         # ESLint auto-fix
+npm run type-check       # TypeScript checking
+npm run quality-check    # Combined checks
+npm run quality-check:full # Full quality suite
+```
+
+### Build & Deploy
+
+```bash
+npm run bundle           # Create single bundle.js
+npm run quality-monitor  # Run quality monitoring
+```
+
+## Development Process
+
+Bridge follows a continuous learning loop: **VISION → OPPORTUNITIES → EXPERIMENTS → LEARNINGS → VISION**
+
+See **LOOP.md** for the complete development workflow and methodology.
+
+### Quality Standards
+
+- **Test Coverage**: Currently 85.27% line coverage
+- **Pre-commit**: Runs lint:fix and type-check
+- **Pre-push**: Runs full quality-check:full
+- **Emergency bypass**: `git push --no-verify` (use sparingly)
+
+### Learning Loop Analysis
+
+```bash
+npm run loop -- --concise    # Concise recommendations
+npm run loop -- --verbose    # Detailed analysis
+npm run loop -- --raw        # Include raw data
+```
+
+The learning loop:
+
+1. Runs three test scenarios in parallel
+2. Uses Opus 4 with sequential thinking
+3. Analyzes patterns across scenarios
+4. Provides actionable recommendations
+
+### Bridge Integration Tests
+
+The test runner now includes:
+
+- **Rate limiting**: Configurable delays to prevent API overload
+- **Streamlined scenarios**: DRY test sets that reduce redundancy
+- **Scenario groups**: Predefined test suites (minimal, standard, comprehensive)
+
+Configure test execution:
+
+```bash
+# Use standard scenarios (default)
+npm run test:bridge
+
+# Use minimal scenarios (fewer API calls)
+TEST_MINIMAL=true npm run test:bridge
+
+# Run specific scenario groups
+npm run test:bridge standard   # Core + quality + recall tests
+npm run test:bridge minimal    # Just basic tests
+npm run test:bridge smoke      # Quick smoke test
+
+# Configure rate limits (in .env)
+TEST_SCENARIO_DELAY=5000      # Between scenarios (default: 5s)
+TEST_API_CALL_DELAY=1000      # After API calls (default: 1s)
+TEST_TURN_DELAY=2000          # Between turns (default: 2s)
+```
+
+## API Usage Examples
+
+### Experience
+
+```typescript
+// Human experience
+experience({
+  source: 'Finally got the tests passing!',
+  experience: ['embodied.thinking', 'mood.open', 'purpose.goal'],
+});
+
+// Claude's experience
+experience({
+  source: 'I notice we keep circling back to this pattern',
+  experience: ['embodied.thinking', 'presence.collective'],
+  experiencer: 'Claude',
+});
+```
+
+### Recall
+
+```typescript
+// Semantic search
+recall({ query: 'frustration debugging' });
+
+// Quality filtering
+recall({
+  qualities: {
+    mood: 'closed',
+    purpose: ['goal', 'wander'], // OR logic
+  },
+});
+
+// Pattern realizations only
+recall({ reflects: 'only' });
+
+// Clustering mode
+recall({ query: 'learning', as: 'clusters' });
+```
+
+### Reconsider
+
+```typescript
+// Update qualities
+reconsider({
+  id: 'exp_123',
+  experience: ['embodied.sensing', 'mood.open'],
+});
+
+// Add pattern realization
+reconsider({
+  id: 'exp_456',
+  reflects: ['exp_123', 'exp_234'],
+});
+```
+
+### Release
+
+```typescript
+release({
+  id: 'exp_789',
+  reason: 'Test data during development',
+});
+```
+
+## Current Implementation Status
 
 **What Works Today:**
 
@@ -76,28 +271,20 @@ experience({ source: 'I feel anxious', experience: ['embodied.sensing', 'mood.cl
 - Quality filtering and queries
 - Unified scoring system
 - Four core operations: experience(), recall(), reconsider(), release()
+- Pattern realizations with `reflects` field
+- Clustering analysis
 
 **Next Priorities (from OPPORTUNITIES.md):**
 
-1. Clustering mode (Score: 378) - Core to revealing insights through automatic grouping
-2. Quality filtering (Score: 280) - Sophisticated queries by quality presence/absence
-3. Extensible recall (Score: 270) - Technical foundation for future features
-
-**Note**: Pattern Realizations (EXP-005) completed successfully, enabling collaborative wisdom building with `reflects` field.
-
-**Key Context:**
-
-- Experiences have "quality signatures" - sparse arrays of prominent qualities
-- Tests run in parallel with three scenarios
-- Sequential thinking works reliably with Opus 4
-- See README.md for current API reference
+1. Extensible recall (Score: 270) - Technical foundation for future features
+2. Natural language quality parsing (Score: 189) - Better UX
+3. Batch operations (Score: 162) - Performance optimization
 
 ## External Documentation
 
 ### Core References
 
-- **MCP TypeScript SDK**:
-  https://raw.githubusercontent.com/modelcontextprotocol/typescript-sdk/refs/heads/main/README.md
+- **MCP TypeScript SDK**: https://raw.githubusercontent.com/modelcontextprotocol/typescript-sdk/refs/heads/main/README.md
 - **MCP Introduction**: https://modelcontextprotocol.io/introduction
 - **Anthropic Cookbook**: https://github.com/anthropics/anthropic-cookbook
 
