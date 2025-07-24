@@ -8,8 +8,7 @@ import { clusterExperiences } from './clustering.js';
 import { type QualityFilter } from './quality-filter.js';
 
 // Debug mode configuration
-const DEBUG_MODE =
-  process.env.BRIDGE_RECALL_DEBUG === 'true' || process.env.BRIDGE_DEBUG === 'true';
+const DEBUG_MODE = process.env.BRIDGE_DEBUG === 'true';
 
 // Debug logging utility - silent in MCP context
 function debugLog(

@@ -18,7 +18,7 @@ export const STORAGE_DEFAULTS = {
   ENV: 'development',
   ID_PREFIX: 'exp',
   FILE_ENCODING: 'utf8' as const,
-  JSON_INDENT: 2
+  JSON_INDENT: 2,
 } as const;
 
 /** File patterns and extensions */
@@ -26,10 +26,8 @@ export const FILE_PATTERNS = {
   DANGEROUS_CHARS: /[^a-zA-Z0-9._-]/g,
   PARENT_DIR: /\.\./,
   ABSOLUTE_PATH: /^[a-zA-Z]:[\\/]/,
-  WINDOWS_ABSOLUTE: /^[a-zA-Z]:[\\/]/
+  WINDOWS_ABSOLUTE: /^[a-zA-Z]:[\\/]/,
 } as const;
-
-
 
 // ============================================================================
 // MODULE SETUP
@@ -38,7 +36,7 @@ export const FILE_PATTERNS = {
 // Get the directory of the current module
 
 // Storage configuration
-const ENV = process.env.NODE_ENV || process.env.MCP_ENV || STORAGE_DEFAULTS.ENV;
+const ENV = process.env.NODE_ENV || STORAGE_DEFAULTS.ENV;
 let customDataFile: string | null = null;
 let customStorageDir: string | null = null;
 
@@ -53,7 +51,13 @@ let customStorageDir: string | null = null;
  * @param dataFile - Custom data file path
  * @param storageDir - Custom storage directory
  */
-export function setStorageConfig({ dataFile, storageDir }: { dataFile?: string; storageDir?: string }): void {
+export function setStorageConfig({
+  dataFile,
+  storageDir,
+}: {
+  dataFile?: string;
+  storageDir?: string;
+}): void {
   if (dataFile) customDataFile = dataFile;
   if (storageDir) customStorageDir = storageDir;
 }
@@ -85,10 +89,10 @@ function getDataFile(): string {
   if (customDataFile) {
     return customDataFile;
   }
-  
+
   // Use configurable data file path, fallback to bridge.json in the script directory
   const configPath = process.env.BRIDGE_FILE_PATH || 'bridge.json';
-  
+
   let finalPath: string;
   if (configPath.startsWith('/') || configPath.match(FILE_PATTERNS.ABSOLUTE_PATH)) {
     finalPath = configPath; // Absolute path
@@ -96,7 +100,7 @@ function getDataFile(): string {
     // Relative path - resolve from project root
     finalPath = path.join(process.cwd(), configPath);
   }
-  
+
   return finalPath;
 }
 
@@ -112,7 +116,9 @@ async function ensureStorageDir(): Promise<void> {
   try {
     await fs.mkdir(getStorageDir(), { recursive: true });
   } catch (error) {
-    throw new Error(`Failed to create storage directory: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to create storage directory: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -131,24 +137,27 @@ function sanitize(filename: string): string {
  * @param allowedRoots - Optional list of allowed root directories
  * @returns True if the path is valid and safe
  */
-export async function validateFilePath(filePath: string, allowedRoots?: string[]): Promise<boolean> {
+export async function validateFilePath(
+  filePath: string,
+  allowedRoots?: string[]
+): Promise<boolean> {
   // Disallow parent directory traversal
   if (filePath.includes('..')) {
     return false;
   }
-  
+
   // Disallow absolute paths
   if (filePath.startsWith('/') || filePath.match(FILE_PATTERNS.ABSOLUTE_PATH)) {
     return false;
   }
-  
+
   // If allowedRoots is provided, ensure the resolved path is within one of them
   if (allowedRoots && allowedRoots.length > 0) {
     const resolved = resolve(filePath);
-    const isAllowed = allowedRoots.some(root => resolved.startsWith(resolve(root)));
+    const isAllowed = allowedRoots.some((root) => resolved.startsWith(resolve(root)));
     if (!isAllowed) return false;
   }
-  
+
   // For test purposes, allow safe paths even if file does not exist
   return true;
 }
@@ -160,7 +169,7 @@ export async function validateFilePath(filePath: string, allowedRoots?: string[]
  */
 function validateStorageData(data: unknown): data is StorageData {
   if (!data || typeof data !== 'object') return false;
-  
+
   const d = data as StorageData;
   return Array.isArray(d.sources);
 }
@@ -179,26 +188,31 @@ function validateStorageData(data: unknown): data is StorageData {
 export async function storeFile(sourcePath: string, sourceId: string): Promise<string | null> {
   try {
     // Validate file path
-    if (!await validateFilePath(sourcePath)) {
+    if (!(await validateFilePath(sourcePath))) {
       return null;
     }
-    
+
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const day = String(now.getDate()).padStart(2, '0');
-    
+
     const filesDir = join(getStorageDir(), 'files', year.toString(), month, day);
     await fs.mkdir(filesDir, { recursive: true });
-    
+
     const origName = sanitize(sourcePath.split(/[\\/]/).pop() || 'file');
     const destName = `${sourceId}_${origName}`;
     const destPath = join(filesDir, destName);
-    
+
     await fs.copyFile(sourcePath, destPath);
     return join('files', year.toString(), month, day, destName);
   } catch (err: unknown) {
-    if (typeof err === 'object' && err && 'code' in err && (err as { code?: string }).code === 'ENOENT') {
+    if (
+      typeof err === 'object' &&
+      err &&
+      'code' in err &&
+      (err as { code?: string }).code === 'ENOENT'
+    ) {
       return null;
     }
     throw new Error(`Failed to store file: ${err instanceof Error ? err.message : String(err)}`);
@@ -234,23 +248,23 @@ export async function generateId(prefix: string = STORAGE_DEFAULTS.ID_PREFIX): P
 async function readData(): Promise<StorageData> {
   // Don't ensure storage dir just for reading the data file
   // Only ensure it when we actually need to write to it
-  
+
   const dataFile = getDataFile();
   // Debug:('[DEBUG] readData: Attempting to read from:', dataFile);
-  
+
   try {
     const content = await fs.readFile(dataFile, STORAGE_DEFAULTS.FILE_ENCODING);
     // Debug:('[DEBUG] readData: File read successfully, content length:', content.length);
-    
+
     const data = JSON.parse(content);
     // Debug:('[DEBUG] readData: JSON parsed successfully, sources count:', data.sources?.length || 0);
-    
+
     // Validate data structure
     if (!validateStorageData(data)) {
       // Debug:('[DEBUG] readData: Invalid data structure, returning empty');
       return { sources: [], embeddings: [] };
     }
-    
+
     // Clean up any legacy type fields from records
     const sources: Source[] = data.sources.map((s) => {
       const newObj = { ...s } as Source;
@@ -258,10 +272,10 @@ async function readData(): Promise<StorageData> {
       delete (newObj as unknown as Record<string, unknown>).embedding; // Remove embedding field from sources
       return newObj;
     });
-    
+
     // Ensure embeddings array exists
     const embeddings: EmbeddingRecord[] = data.embeddings || [];
-    
+
     return { sources, embeddings };
   } catch (error) {
     // If file doesn't exist or is invalid, return empty structure
@@ -270,7 +284,7 @@ async function readData(): Promise<StorageData> {
       // Debug:('[DEBUG] readData: File does not exist, returning empty');
       return { sources: [], embeddings: [] };
     }
-    
+
     // Debug:('[DEBUG] readData: Other error, returning empty');
     return { sources: [], embeddings: [] };
   }
@@ -285,18 +299,22 @@ async function writeData(data: StorageData): Promise<void> {
   // Ensure the data file's directory exists (not the storage dir)
   const dataFilePath = getDataFile();
   const dataFileDir = path.dirname(dataFilePath);
-  
+
   try {
     await fs.mkdir(dataFileDir, { recursive: true });
   } catch (error) {
-    throw new Error(`Failed to create data file directory: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to create data file directory: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
-  
+
   try {
     const jsonString = JSON.stringify(data, null, STORAGE_DEFAULTS.JSON_INDENT);
     await fs.writeFile(dataFilePath, jsonString, STORAGE_DEFAULTS.FILE_ENCODING);
   } catch (error) {
-    throw new Error(`Failed to write storage data: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to write storage data: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -325,16 +343,16 @@ export async function saveSource(source: Source): Promise<Source> {
  */
 export async function updateSource(source: Source): Promise<Source> {
   const data = await readData();
-  const index = data.sources.findIndex(s => s.id === source.id);
-  
+  const index = data.sources.findIndex((s) => s.id === source.id);
+
   if (index === -1) {
     throw new Error(`Source not found: ${source.id}`);
   }
-  
+
   // Update the source record
   data.sources[index] = source;
   await writeData(data);
-  
+
   return data.sources[index];
 }
 
@@ -356,7 +374,7 @@ export async function getSources(): Promise<Source[]> {
  */
 export async function getSource(id: string): Promise<Source | null> {
   const sources = await getSources();
-  return sources.find(s => s.id === id) || null;
+  return sources.find((s) => s.id === id) || null;
 }
 
 /**
@@ -366,9 +384,9 @@ export async function getSource(id: string): Promise<Source | null> {
  */
 export async function deleteSource(id: string): Promise<void> {
   const data = await readData();
-  data.sources = data.sources.filter(s => s.id !== id);
+  data.sources = data.sources.filter((s) => s.id !== id);
   // Also remove any associated embeddings
-  data.embeddings = data.embeddings?.filter(e => e.sourceId !== id) || [];
+  data.embeddings = data.embeddings?.filter((e) => e.sourceId !== id) || [];
   await writeData(data);
 }
 
@@ -401,7 +419,7 @@ export async function getAllRecords(): Promise<Source[]> {
 export async function saveEmbedding(embedding: EmbeddingRecord): Promise<EmbeddingRecord> {
   const data = await readData();
   // Remove any existing embedding for this source
-  data.embeddings = data.embeddings?.filter(e => e.sourceId !== embedding.sourceId) || [];
+  data.embeddings = data.embeddings?.filter((e) => e.sourceId !== embedding.sourceId) || [];
   data.embeddings.push(embedding);
   await writeData(data);
   return embedding;
@@ -415,7 +433,7 @@ export async function saveEmbedding(embedding: EmbeddingRecord): Promise<Embeddi
  */
 export async function getEmbedding(sourceId: string): Promise<EmbeddingRecord | null> {
   const data = await readData();
-  return data.embeddings?.find(e => e.sourceId === sourceId) || null;
+  return data.embeddings?.find((e) => e.sourceId === sourceId) || null;
 }
 
 /**
@@ -435,7 +453,7 @@ export async function getAllEmbeddings(): Promise<EmbeddingRecord[]> {
  */
 export async function deleteEmbedding(sourceId: string): Promise<void> {
   const data = await readData();
-  data.embeddings = data.embeddings?.filter(e => e.sourceId !== sourceId) || [];
+  data.embeddings = data.embeddings?.filter((e) => e.sourceId !== sourceId) || [];
   await writeData(data);
 }
 
@@ -458,7 +476,11 @@ export function getSearchableText(record: Source): string {
  */
 export async function clearTestStorage(): Promise<void> {
   await ensureStorageDir();
-  await fs.writeFile(getDataFile(), JSON.stringify({ sources: [], embeddings: [] }, null, STORAGE_DEFAULTS.JSON_INDENT), STORAGE_DEFAULTS.FILE_ENCODING);
+  await fs.writeFile(
+    getDataFile(),
+    JSON.stringify({ sources: [], embeddings: [] }, null, STORAGE_DEFAULTS.JSON_INDENT),
+    STORAGE_DEFAULTS.FILE_ENCODING
+  );
 }
 
 /**
@@ -470,4 +492,4 @@ export function setupTestStorage(testName: string): void {
   const testId = testName.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 20);
   const testDataFile = join(getStorageDir(), `test_${testId}_bridge.json`);
   setStorageConfig({ dataFile: testDataFile });
-} 
+}

@@ -68,6 +68,19 @@ function releaseTurn(
 // ============================================================================
 
 export const SCENARIOS: Record<string, TestScenario> = {
+  // Semantic search test - validates embeddings are working
+  'semantic-search': {
+    description: 'Test semantic search with embeddings',
+    turns: [
+      ...experienceTurn('I am deeply analyzing this complex problem', "I'll capture that"),
+      ...experienceTurn(
+        'The solution involves careful thought and consideration',
+        "I'll record that"
+      ),
+      ...recallTurn('problem analysis deep thinking', "I'll search for experiences about"),
+    ],
+  },
+
   // Core operations test - covers all 4 tools in one scenario
   'core-operations': {
     description: 'Test all core Bridge operations in sequence',

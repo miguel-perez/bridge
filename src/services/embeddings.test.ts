@@ -13,8 +13,8 @@ jest.mock('../utils/security.js');
 jest.mock('../utils/timeout.js', () => ({
   withTimeout: jest.fn((promise) => promise),
   DEFAULT_TIMEOUTS: {
-    EMBEDDING: 30000
-  }
+    EMBEDDING: 30000,
+  },
 }));
 
 // Mock transformers module - simulate module not found
@@ -29,31 +29,34 @@ describe('EmbeddingService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     service = new EmbeddingService();
-    
+
     // Reset environment variables
-    delete process.env.BRIDGE_DISABLE_EMBEDDINGS;
+    delete process.env.TEST_DISABLE_EMBEDDINGS;
     delete process.env.BRIDGE_TEST_MODE;
-    
+
     // Mock rate limiter
     mockRateLimiterEnforce = jest.fn(async (fn) => fn());
-    (RateLimiter as jest.MockedClass<typeof RateLimiter>).mockImplementation(() => ({
-      enforce: mockRateLimiterEnforce
-    } as unknown as RateLimiter));
+    (RateLimiter as jest.MockedClass<typeof RateLimiter>).mockImplementation(
+      () =>
+        ({
+          enforce: mockRateLimiterEnforce,
+        }) as unknown as RateLimiter
+    );
   });
 
   afterEach(() => {
     // Clean up environment variables
-    delete process.env.BRIDGE_DISABLE_EMBEDDINGS;
+    delete process.env.TEST_DISABLE_EMBEDDINGS;
     delete process.env.BRIDGE_TEST_MODE;
   });
 
   describe('initialization', () => {
-    it('should disable embeddings when BRIDGE_DISABLE_EMBEDDINGS is true', async () => {
-      process.env.BRIDGE_DISABLE_EMBEDDINGS = 'true';
+    it('should disable embeddings when TEST_DISABLE_EMBEDDINGS is true', async () => {
+      process.env.TEST_DISABLE_EMBEDDINGS = 'true';
       const newService = new EmbeddingService();
-      
+
       await newService.initialize();
-      
+
       const embedding = await newService.generateEmbedding('test');
       expect(embedding).toEqual(new Array(384).fill(0));
     });
@@ -61,11 +64,11 @@ describe('EmbeddingService', () => {
     it('should handle import failure gracefully', async () => {
       // When transformers module fails to load (mocked to throw error)
       await service.initialize();
-      
+
       // Embeddings should return zeros after failed initialization
       const embedding = await service.generateEmbedding('test');
       expect(embedding).toEqual(new Array(384).fill(0));
-      
+
       // Note: bridgeLogger is a no-op, so we can't test logging
       // The important behavior is that it disables embeddings gracefully
     });
@@ -73,9 +76,9 @@ describe('EmbeddingService', () => {
     it('should not log warnings in test mode', async () => {
       process.env.BRIDGE_TEST_MODE = 'true';
       const testService = new EmbeddingService();
-      
+
       await testService.initialize();
-      
+
       expect(bridgeLogger.warn).not.toHaveBeenCalled();
     });
 
@@ -83,9 +86,9 @@ describe('EmbeddingService', () => {
       const promise1 = service.initialize();
       const promise2 = service.initialize();
       const promise3 = service.initialize();
-      
+
       await Promise.all([promise1, promise2, promise3]);
-      
+
       // Since module throws, we can't verify pipeline calls, but we can verify
       // that service is in disabled state
       const embedding = await service.generateEmbedding('test');
@@ -97,23 +100,23 @@ describe('EmbeddingService', () => {
     it('should return zero embedding when disabled', async () => {
       // Service is disabled because transformers module fails to load
       await service.initialize();
-      
+
       const text = 'Hello world';
       const embedding = await service.generateEmbedding(text);
-      
+
       expect(embedding.length).toBe(384);
-      expect(embedding.every(v => v === 0)).toBe(true);
+      expect(embedding.every((v) => v === 0)).toBe(true);
     });
 
     it('should return zero embedding immediately when embeddings are disabled', async () => {
-      process.env.BRIDGE_DISABLE_EMBEDDINGS = 'true';
+      process.env.TEST_DISABLE_EMBEDDINGS = 'true';
       const disabledService = new EmbeddingService();
-      
+
       // Should not need to initialize
       const embedding = await disabledService.generateEmbedding('test');
-      
+
       expect(embedding.length).toBe(384);
-      expect(embedding.every(v => v === 0)).toBe(true);
+      expect(embedding.every((v) => v === 0)).toBe(true);
     });
 
     it('should not apply rate limiting when service becomes disabled', async () => {
@@ -121,17 +124,17 @@ describe('EmbeddingService', () => {
       // it will call initialize() which fails and sets disabled=true
       // Then it checks disabled flag and returns early
       const embedding = await service.generateEmbedding('test');
-      
+
       // Should return zeros due to failed initialization
       expect(embedding).toEqual(new Array(384).fill(0));
-      
+
       // Rate limiter should NOT be called because service gets disabled during init
       expect(mockRateLimiterEnforce).not.toHaveBeenCalled();
     });
 
     it('should apply timeout', async () => {
       await service.generateEmbedding('test');
-      
+
       expect(withTimeout).toHaveBeenCalledWith(
         expect.any(Promise),
         DEFAULT_TIMEOUTS.EMBEDDING,
@@ -141,11 +144,11 @@ describe('EmbeddingService', () => {
 
     it('should not use cache when disabled', async () => {
       await service.initialize();
-      
+
       // Generate embedding twice
       await service.generateEmbedding('test');
       await service.generateEmbedding('test');
-      
+
       // Cache should remain empty for disabled service
       expect(service.getCacheSize()).toBe(0);
     });
@@ -154,31 +157,31 @@ describe('EmbeddingService', () => {
   describe('generateEmbeddings', () => {
     it('should generate multiple embeddings when disabled', async () => {
       await service.initialize();
-      
+
       const texts = ['text1', 'text2', 'text3'];
       const embeddings = await service.generateEmbeddings(texts);
-      
+
       expect(embeddings).toHaveLength(3);
-      embeddings.forEach(embedding => {
+      embeddings.forEach((embedding) => {
         expect(embedding.length).toBe(384);
-        expect(embedding.every(v => v === 0)).toBe(true);
+        expect(embedding.every((v) => v === 0)).toBe(true);
       });
     });
 
     it('should handle empty array', async () => {
       const embeddings = await service.generateEmbeddings([]);
-      
+
       expect(embeddings).toEqual([]);
     });
 
     it('should handle single text', async () => {
       await service.initialize();
-      
+
       const embeddings = await service.generateEmbeddings(['single']);
-      
+
       expect(embeddings).toHaveLength(1);
       expect(embeddings[0].length).toBe(384);
-      expect(embeddings[0].every(v => v === 0)).toBe(true);
+      expect(embeddings[0].every((v) => v === 0)).toBe(true);
     });
   });
 
@@ -191,13 +194,13 @@ describe('EmbeddingService', () => {
 
     it('should report cache size as zero when disabled', async () => {
       await service.initialize();
-      
+
       expect(service.getCacheSize()).toBe(0);
-      
+
       // Generate embeddings (which will be zeros due to disabled state)
       await service.generateEmbedding('text1');
       await service.generateEmbedding('text2');
-      
+
       // Cache should remain empty
       expect(service.getCacheSize()).toBe(0);
     });
@@ -212,7 +215,7 @@ describe('EmbeddingService', () => {
   describe('private method coverage', () => {
     it('should handle _generateEmbeddingInternal when disabled', async () => {
       await service.initialize();
-      
+
       // This tests the double-check in _generateEmbeddingInternal
       const embedding = await service.generateEmbedding('test');
       expect(embedding).toEqual(new Array(384).fill(0));
@@ -231,13 +234,13 @@ describe('EmbeddingService', () => {
       jest.doMock('@xenova/transformers', () => {
         throw 'String error';
       });
-      
+
       const errorService = new EmbeddingService();
       await errorService.initialize();
-      
+
       // Should still work with disabled embeddings
       const embedding = await errorService.generateEmbedding('test');
       expect(embedding).toEqual(new Array(384).fill(0));
     });
   });
-}); 
+});

@@ -22,6 +22,10 @@ cd bridge
 # Install dependencies
 npm install
 
+# Set up environment variables (optional)
+cp .env.example .env
+# Edit .env and add your ANTHROPIC_API_KEY if running tests
+
 # Build the project
 npm run build
 ```
@@ -230,6 +234,12 @@ npm run loop
 npm run lint
 npm run type-check
 ```
+
+## Troubleshooting
+
+### Embeddings in Claude Desktop
+
+Bridge's semantic search uses embeddings for finding similar experiences. In Claude Desktop, the embedding library (@xenova/transformers) may fail to initialize, resulting in zero-valued embeddings. When this happens, Bridge automatically falls back to quality-based search, which still works effectively for finding experiences by their quality signatures.
 
 ## Documentation
 

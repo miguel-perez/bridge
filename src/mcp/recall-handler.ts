@@ -277,7 +277,32 @@ export class RecallHandler {
         });
       }
 
-      return { content };
+      // Include raw results in test/debug mode
+      const result: ToolResult = { content };
+
+      // Add detailed results in test/debug mode as a separate content item
+      if (process.env.BRIDGE_DEBUG === 'true') {
+        const detailedResults = allResults.map(({ search, results, stats }) => ({
+          search,
+          results: results.map((r) => ({
+            id: r.id,
+            content: r.content,
+            relevance_score: r.relevance_score,
+            metadata: r.metadata,
+            // Include any additional fields that might be present
+            ...(r as any),
+          })),
+          total: stats?.total,
+        }));
+
+        // Add as a JSON content item
+        content.push({
+          type: 'text',
+          text: `[DEBUG] Raw results:\n${JSON.stringify(detailedResults, null, 2)}`,
+        });
+      }
+
+      return result;
     } catch (error) {
       return {
         isError: true,

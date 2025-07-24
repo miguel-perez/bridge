@@ -13,8 +13,7 @@ import { join } from 'node:path';
 export interface BridgeConfig {
   dataFilePath: string;
   debugMode: boolean;
-  testMode?: boolean;
-  vectorsPath?: string;
+  vectorsPath?: string; // Deprecated
 }
 
 /**
@@ -25,16 +24,16 @@ export const SEMANTIC_CONFIG = {
   // Lower values (0.3-0.5) = more inclusive, finds conceptually related matches
   // Higher values (0.7-0.9) = more strict, only very similar matches
   DEFAULT_THRESHOLD: 0.5,
-  
+
   // Threshold for finding similar experiences during capture
   SIMILARITY_DETECTION_THRESHOLD: 0.35,
-  
+
   // Scoring weights for recall operations
   SCORING_WEIGHTS: {
-    TEXT_MATCH: 0.5,      // 50% - Exact/partial text matching
-    SEMANTIC: 0.3,        // 30% - Semantic similarity via embeddings
-    FILTER: 0.2          // 20% - Metadata filters (experiencer, perspective, etc.)
-  }
+    TEXT_MATCH: 0.5, // 50% - Exact/partial text matching
+    SEMANTIC: 0.3, // 30% - Semantic similarity via embeddings
+    FILTER: 0.2, // 20% - Metadata filters (experiencer, perspective, etc.)
+  },
 } as const;
 
 /**
@@ -44,22 +43,22 @@ export const SEMANTIC_CONFIG = {
  */
 function expandPath(path: string): string {
   if (!path) return path;
-  
+
   // Replace ~ at the start of the path
   if (path.startsWith('~')) {
     path = path.replace(/^~/, homedir());
   }
-  
+
   // Replace ${HOME} anywhere in the path
   if (path.includes('${HOME}')) {
     path = path.replace(/\$\{HOME\}/g, homedir());
   }
-  
+
   // Replace $HOME anywhere in the path
   if (path.includes('$HOME')) {
     path = path.replace(/\$HOME/g, homedir());
   }
-  
+
   return path;
 }
 
@@ -89,8 +88,7 @@ function getDefaultConfig(): BridgeConfig {
   return {
     dataFilePath: getDefaultDataFilePath(),
     debugMode: process.env.BRIDGE_DEBUG === 'true' || process.env.BRIDGE_DEBUG === '1',
-    testMode: process.env.BRIDGE_TEST_MODE === 'true' || process.env.NODE_ENV === 'test',
-    vectorsPath: process.env.BRIDGE_VECTORS_PATH,
+    vectorsPath: undefined, // Deprecated - embeddings are now stored in bridge.json
   };
 }
 
@@ -152,7 +150,11 @@ export function isSearchDebugMode(): boolean {
  * Note: Debug logging is handled by MCP server, not console.log
  */
 export function validateConfiguration(): void {
-  if (!currentConfig.dataFilePath || typeof currentConfig.dataFilePath !== 'string' || currentConfig.dataFilePath.trim().length === 0) {
+  if (
+    !currentConfig.dataFilePath ||
+    typeof currentConfig.dataFilePath !== 'string' ||
+    currentConfig.dataFilePath.trim().length === 0
+  ) {
     throw new Error('Data file path is required and must be a non-empty string.');
   }
   // Configuration is valid - debug logging handled by MCP server
@@ -164,4 +166,4 @@ export function validateConfiguration(): void {
  */
 export const config = {
   bridgeFilePath: getDataFilePath(),
-}; 
+};

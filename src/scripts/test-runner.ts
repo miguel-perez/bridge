@@ -76,6 +76,7 @@ interface ToolCall {
   arguments: Record<string, unknown>;
   result?: unknown;
   resultText?: string[];
+  rawResults?: unknown; // For detailed recall results
   error?: string;
 }
 
@@ -133,6 +134,7 @@ async function setupMCPClient(): Promise<MCPClient | null> {
   const env = {
     ...process.env,
     BRIDGE_FILE_PATH: join(process.cwd(), 'data', 'test-bridge', 'bridge.json'),
+    BRIDGE_DEBUG: 'true', // Enable debug mode for detailed output
   };
 
   const transport = new StdioClientTransport({
@@ -474,6 +476,11 @@ class TestRunner {
 
           toolCall.result = result;
 
+          // Capture raw results if available (for recall)
+          if ((result as any).rawResults) {
+            toolCall.rawResults = (result as any).rawResults;
+          }
+
           // Display full tool response for visibility
           if (result.content && Array.isArray(result.content)) {
             console.log(`📝 Tool response:`);
@@ -482,7 +489,10 @@ class TestRunner {
               if (typeof item === 'object' && item !== null && 'type' in item && 'text' in item) {
                 const typedItem = item as { type: string; text: string };
                 if (typedItem.type === 'text') {
-                  console.log(`   ${index + 1}. ${typedItem.text}`);
+                  // Don't display DEBUG items in console, but capture them
+                  if (!typedItem.text.startsWith('[DEBUG]')) {
+                    console.log(`   ${index + 1}. ${typedItem.text}`);
+                  }
                   textResponses.push(typedItem.text);
                 }
               }
@@ -602,6 +612,11 @@ class TestRunner {
 
               toolCall.result = result;
 
+              // Capture raw results if available (for recall)
+              if ((result as any).rawResults) {
+                toolCall.rawResults = (result as any).rawResults;
+              }
+
               // Display tool response
               if (result.content && Array.isArray(result.content)) {
                 console.log(`📝 Tool response:`);
@@ -615,7 +630,10 @@ class TestRunner {
                   ) {
                     const typedItem = item as { type: string; text: string };
                     if (typedItem.type === 'text') {
-                      console.log(`   ${index + 1}. ${typedItem.text}`);
+                      // Don't display DEBUG items in console, but capture them
+                      if (!typedItem.text.startsWith('[DEBUG]')) {
+                        console.log(`   ${index + 1}. ${typedItem.text}`);
+                      }
                       textResponses.push(typedItem.text);
                     }
                   }

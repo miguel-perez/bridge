@@ -172,7 +172,7 @@ export interface RecallResult {
     experience?: string[];
     emoji?: string;
   };
-  relevance_score: number;
+  relevance_score?: number;
 }
 
 /**
@@ -435,6 +435,11 @@ function formatRecallResults(results: RecallResult[], showIds: boolean = false):
     // Add timing
     const timeAgo = formatTimeAgo(((metadata as Record<string, unknown>).created as string) || '');
     lines.push(`   ${timeAgo}`);
+
+    // Add relevance score in test mode
+    if (process.env.BRIDGE_DEBUG === 'true' && result.relevance_score !== undefined) {
+      lines.push(`   Score: ${result.relevance_score.toFixed(3)}`);
+    }
 
     if (showIds) {
       lines.push(`   ID: ${result.id}`);
