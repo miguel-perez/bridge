@@ -19,13 +19,13 @@ describe('QdrantVectorStore', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockFetch.mockReset();
-    
+
     // Default successful responses
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({ result: {} }),
     });
-    
+
     store = new QdrantVectorStore();
   });
 
@@ -55,29 +55,20 @@ describe('QdrantVectorStore', () => {
       );
     });
 
-    it('should create collection if not exists', async () => {
+    it('should defer collection creation until first use', async () => {
       // First call returns empty collections
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({ result: { collections: [] } }),
       });
-      
-      // Second call for collection creation
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ result: {} }),
-      });
 
       await store.initialize();
 
+      // Should only check for collections, not create
+      expect(mockFetch).toHaveBeenCalledTimes(1);
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:6333/collections/bridge_experiences',
-        expect.objectContaining({
-          method: 'PUT',
-          body: JSON.stringify({
-            vectors: { size: 384, distance: 'Cosine' },
-          }),
-        })
+        'http://localhost:6333/collections',
+        expect.objectContaining({ method: 'GET' })
       );
     });
 
@@ -129,7 +120,7 @@ describe('QdrantVectorStore', () => {
 
       await store.initialize();
       const callCount = mockFetch.mock.calls.length;
-      
+
       await store.initialize();
       await store.initialize();
 
@@ -168,22 +159,73 @@ describe('QdrantVectorStore', () => {
     });
 
     it('should upsert vector with metadata', async () => {
+      // Clear existing initialization mocks
+      mockFetch.mockReset();
+      store = new QdrantVectorStore();
+
+      // Mock initialization - empty collections
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ result: { collections: [] } }),
+      });
+
+      // Mock collection creation
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ result: {} }),
+      });
+
+      // Mock point upsert
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ result: {} }),
+      });
+
       await store.upsert('test-id', [1, 2, 3], { name: 'test' });
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:6333/collections/bridge_experiences/points',
+      // Check all calls
+      expect(mockFetch).toHaveBeenCalledTimes(3);
+
+      // First call should be initialization check
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        1,
+        'http://localhost:6333/collections',
+        expect.objectContaining({ method: 'GET' })
+      );
+
+      // Second call should be collection creation
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        2,
+        'http://localhost:6333/collections/bridge_experiences',
         expect.objectContaining({
           method: 'PUT',
-          body: expect.stringContaining('test-id'),
+          body: JSON.stringify({
+            vectors: { size: 3, distance: 'Cosine' },
+          }),
         })
       );
 
-      const call = mockFetch.mock.calls[mockFetch.mock.calls.length - 1];
-      const body = JSON.parse(call[1].body);
+      // Third call should be point upsert
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        3,
+        'http://localhost:6333/collections/bridge_experiences/points',
+        expect.objectContaining({
+          method: 'PUT',
+        })
+      );
+
+      const lastCall = mockFetch.mock.calls[2];
+      const body = JSON.parse(lastCall[1].body);
       expect(body.points[0]).toMatchObject({
-        id: 'test-id',
+        id: expect.stringMatching(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+        ), // UUID v4
         vector: [1, 2, 3],
-        payload: expect.objectContaining({ name: 'test' }),
+        payload: expect.objectContaining({
+          name: 'test',
+          bridgeId: 'test-id',
+          updated: expect.any(String),
+        }),
       });
     });
 
@@ -194,9 +236,7 @@ describe('QdrantVectorStore', () => {
     });
 
     it('should validate vector', async () => {
-      await expect(store.upsert('id', [], {})).rejects.toThrow(
-        'Vector cannot be empty'
-      );
+      await expect(store.upsert('id', [], {})).rejects.toThrow('Vector cannot be empty');
     });
   });
 
@@ -227,8 +267,8 @@ describe('QdrantVectorStore', () => {
         ok: true,
         json: async () => ({
           result: [
-            { id: '1', score: 0.9, payload: { name: 'test1' } },
-            { id: '2', score: 0.8, payload: { name: 'test2' } },
+            { id: 'uuid-1', score: 0.9, payload: { name: 'test1', bridgeId: 'id-1' } },
+            { id: 'uuid-2', score: 0.8, payload: { name: 'test2', bridgeId: 'id-2' } },
           ],
         }),
       });
@@ -249,9 +289,9 @@ describe('QdrantVectorStore', () => {
 
       expect(results).toHaveLength(2);
       expect(results[0]).toEqual({
-        id: '1',
+        id: 'id-1',
         score: 0.9,
-        metadata: { name: 'test1' },
+        metadata: { name: 'test1', bridgeId: 'id-1' },
       });
     });
 
@@ -268,7 +308,7 @@ describe('QdrantVectorStore', () => {
 
       const call = mockFetch.mock.calls[mockFetch.mock.calls.length - 1];
       const body = JSON.parse(call[1].body);
-      
+
       expect(body.filter).toEqual({
         must: [
           { key: 'category', match: { value: 'test' } },
@@ -281,13 +321,75 @@ describe('QdrantVectorStore', () => {
 
   describe('delete', () => {
     it('should delete point by ID', async () => {
+      // Clear existing initialization mocks
+      mockFetch.mockReset();
+      store = new QdrantVectorStore();
+
+      // Mock initialization - collection exists
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          result: {
+            collections: [{ name: 'bridge_experiences' }],
+          },
+        }),
+      });
+
+      // Mock get collection info
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          result: {
+            config: { params: { vectors: { size: 384 } } },
+          },
+        }),
+      });
+
+      // Mock scroll response to find the point
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          result: {
+            points: [{ id: 'uuid-123', payload: { bridgeId: 'test-id' } }],
+          },
+        }),
+      });
+
+      // Mock delete response
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ result: {} }),
+      });
+
       await store.delete('test-id');
 
-      expect(mockFetch).toHaveBeenCalledWith(
+      // Check the scroll call (3rd call after initialization)
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        3,
+        'http://localhost:6333/collections/bridge_experiences/points/scroll',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({
+            filter: {
+              must: [
+                {
+                  key: 'bridgeId',
+                  match: { value: 'test-id' },
+                },
+              ],
+            },
+            limit: 1,
+          }),
+        })
+      );
+
+      // Check the delete call (4th call)
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        4,
         'http://localhost:6333/collections/bridge_experiences/points/delete',
         expect.objectContaining({
           method: 'POST',
-          body: JSON.stringify({ points: ['test-id'] }),
+          body: JSON.stringify({ points: ['uuid-123'] }),
         })
       );
     });
@@ -341,7 +443,7 @@ describe('QdrantVectorStore', () => {
 
     it('should use API key when provided', async () => {
       const storeWithKey = new QdrantVectorStore({ apiKey: 'test-key' });
-      
+
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({ title: 'qdrant - vector search engine' }),

@@ -2,7 +2,7 @@
 
 /**
  * Reset Qdrant Collection
- * 
+ *
  * This script deletes and recreates the Qdrant collection
  * to ensure it has the correct dimensions.
  */
@@ -13,11 +13,11 @@ import { QdrantVectorStore } from '../services/vector-stores/index.js';
 // Load environment variables
 config();
 
-async function resetQdrant() {
+async function resetQdrant(): Promise<void> {
   console.log('🔄 Resetting Qdrant Collection\n');
 
   const qdrant = new QdrantVectorStore();
-  
+
   try {
     // Check if available
     const available = await qdrant.isAvailable();
@@ -45,7 +45,6 @@ async function resetQdrant() {
     console.log('\n✨ Qdrant collection reset complete!');
     console.log('   The collection will be created with the correct dimensions');
     console.log('   when the first vector is stored.');
-
   } catch (error) {
     console.error('\n❌ Reset failed:', error);
     process.exit(1);

@@ -8,11 +8,6 @@ interface QdrantPoint {
   payload: Record<string, any>;
 }
 
-interface PointIdMapping {
-  bridgeId: string;
-  qdrantId: string;
-}
-
 interface QdrantSearchResult {
   id: string | number;
   score: number;
@@ -32,21 +27,32 @@ export class QdrantVectorStore extends BaseVectorStore {
   private dimensions?: number;
   protected initialized = false;
 
-  constructor(config: {
-    url?: string;
-    apiKey?: string;
-    collectionName?: string;
-  } = {}) {
+  /**
+   *
+   */
+  constructor(
+    config: {
+      url?: string;
+      apiKey?: string;
+      collectionName?: string;
+    } = {}
+  ) {
     super();
     this.url = config.url || process.env.QDRANT_URL || 'http://localhost:6333';
     this.apiKey = config.apiKey || process.env.QDRANT_API_KEY;
     this.collectionName = config.collectionName || 'bridge_experiences';
   }
 
+  /**
+   *
+   */
   getName(): string {
     return `QdrantVectorStore-${this.collectionName}`;
   }
 
+  /**
+   *
+   */
   async initialize(): Promise<void> {
     if (this.initialized) return;
 
@@ -54,10 +60,8 @@ export class QdrantVectorStore extends BaseVectorStore {
       // Check if collection exists
       const collectionsResponse = await this.request('/collections');
       const collections = collectionsResponse.result?.collections || [];
-      
-      const collectionExists = collections.some(
-        (col: any) => col.name === this.collectionName
-      );
+
+      const collectionExists = collections.some((col: any) => col.name === this.collectionName);
 
       if (!collectionExists) {
         // Don't create collection yet - wait until we know the vector dimensions
@@ -80,7 +84,7 @@ export class QdrantVectorStore extends BaseVectorStore {
   private async createCollection(dimensions?: number): Promise<void> {
     // Use provided dimensions or default to 384 (for compatibility)
     const vectorSize = dimensions || this.dimensions || 384;
-    
+
     const config = {
       vectors: {
         size: vectorSize,
@@ -92,6 +96,9 @@ export class QdrantVectorStore extends BaseVectorStore {
     this.dimensions = vectorSize;
   }
 
+  /**
+   *
+   */
   async upsert(id: string, vector: number[], metadata: Record<string, any>): Promise<void> {
     this.validateId(id);
     this.validateVector(vector);
@@ -113,7 +120,7 @@ export class QdrantVectorStore extends BaseVectorStore {
       vector,
       payload: {
         ...metadata,
-        bridgeId: id,  // Store original Bridge ID
+        bridgeId: id, // Store original Bridge ID
         updated: new Date().toISOString(),
       },
     };
@@ -123,6 +130,9 @@ export class QdrantVectorStore extends BaseVectorStore {
     });
   }
 
+  /**
+   *
+   */
   async search(
     vector: number[],
     options?: { filter?: Record<string, any>; limit?: number }
@@ -156,12 +166,15 @@ export class QdrantVectorStore extends BaseVectorStore {
     );
 
     return (response.result || []).map((result: QdrantSearchResult) => ({
-      id: result.payload?.bridgeId || String(result.id),  // Return original Bridge ID
+      id: result.payload?.bridgeId || String(result.id), // Return original Bridge ID
       score: result.score,
       metadata: result.payload || {},
     }));
   }
 
+  /**
+   *
+   */
   async delete(id: string): Promise<void> {
     this.validateId(id);
 
@@ -178,11 +191,11 @@ export class QdrantVectorStore extends BaseVectorStore {
           must: [
             {
               key: 'bridgeId',
-              match: { value: id }
-            }
-          ]
+              match: { value: id },
+            },
+          ],
         },
-        limit: 1
+        limit: 1,
       }
     );
 
@@ -194,6 +207,9 @@ export class QdrantVectorStore extends BaseVectorStore {
     }
   }
 
+  /**
+   *
+   */
   async deleteCollection(): Promise<void> {
     if (!this.initialized) {
       await this.initialize();
@@ -227,11 +243,7 @@ export class QdrantVectorStore extends BaseVectorStore {
     return conditions.length > 0 ? { must: conditions } : undefined;
   }
 
-  private async request(
-    path: string,
-    method: string = 'GET',
-    body?: any
-  ): Promise<any> {
+  private async request(path: string, method: string = 'GET', body?: any): Promise<any> {
     const url = `${this.url}${path}`;
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -264,6 +276,9 @@ export class QdrantVectorStore extends BaseVectorStore {
     return data;
   }
 
+  /**
+   *
+   */
   async isAvailable(): Promise<boolean> {
     try {
       const response = await this.request('/');
@@ -277,9 +292,9 @@ export class QdrantVectorStore extends BaseVectorStore {
    * Generate a UUID v4 for Qdrant compatibility
    */
   private generateUUID(): string {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      const r = Math.random() * 16 | 0;
-      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+      const r = (Math.random() * 16) | 0;
+      const v = c === 'x' ? r : (r & 0x3) | 0x8;
       return v.toString(16);
     });
   }

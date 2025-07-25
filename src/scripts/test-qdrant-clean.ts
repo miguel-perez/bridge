@@ -2,7 +2,7 @@
 
 /**
  * Test Qdrant with a clean collection
- * 
+ *
  * This script tests Qdrant with a unique collection name
  * to ensure we start fresh.
  */
@@ -16,7 +16,7 @@ config();
 // Use a unique collection name for testing
 process.env.QDRANT_COLLECTION = `bridge_test_${Date.now()}`;
 
-async function testQdrantClean() {
+async function testQdrantClean(): Promise<void> {
   console.log('🧪 Testing Qdrant with Clean Collection\n');
   console.log(`📦 Collection: ${process.env.QDRANT_COLLECTION}\n`);
 
@@ -35,7 +35,7 @@ async function testQdrantClean() {
     const text1 = 'Testing Qdrant with Voyage embeddings';
     await embeddingService.storeVector('test-1', text1, {
       type: 'test',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
     console.log('   ✅ Stored successfully\n');
 
@@ -44,7 +44,7 @@ async function testQdrantClean() {
     const text2 = 'Bridge provides shared experiential memory';
     await embeddingService.storeVector('test-2', text2, {
       type: 'test',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
     console.log('   ✅ Stored successfully\n');
 
@@ -53,12 +53,11 @@ async function testQdrantClean() {
     const results = await embeddingService.search('voyage embeddings test', { limit: 5 });
     console.log(`   Found ${results.length} results:`);
     results.forEach((r, i) => {
-      console.log(`   ${i+1}. Score: ${r.score.toFixed(4)} - ID: ${r.id}`);
+      console.log(`   ${i + 1}. Score: ${r.score.toFixed(4)} - ID: ${r.id}`);
     });
 
     console.log('\n✅ All tests passed!');
     console.log('   Voyage AI + Qdrant Cloud integration working perfectly');
-
   } catch (error) {
     console.error('\n❌ Test failed:', error);
   }

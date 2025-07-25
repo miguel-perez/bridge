@@ -2,7 +2,7 @@
 
 /**
  * Test All Providers and Stores
- * 
+ *
  * This script tests each provider and store combination
  * to show what's available and working.
  */
@@ -14,21 +14,20 @@ import { QdrantVectorStore } from '../services/vector-stores/index.js';
 // Load environment variables
 config();
 
-async function testProviders() {
+async function testProviders(): Promise<void> {
   console.log('🧪 Testing All Providers and Stores\n');
 
-  // Test each provider
-  const providers = ['none', 'voyage', 'openai', 'tensorflow'];
-  
   console.log('📊 Provider Availability:');
   const availability = await ProviderFactory.checkAvailability();
-  
+
   for (const [provider, available] of Object.entries(availability)) {
     console.log(`   ${provider}: ${available ? '✅ Available' : '❌ Not available'}`);
-    
+
     if (available) {
       try {
-        const instance = await ProviderFactory.createProvider(provider as any);
+        const instance = await ProviderFactory.createProvider(
+          provider as keyof typeof availability
+        );
         await instance.initialize();
         console.log(`      Dimensions: ${instance.getDimensions()}`);
         console.log(`      Name: ${instance.getName()}`);
@@ -40,15 +39,15 @@ async function testProviders() {
 
   // Test Qdrant
   console.log('\n🗄️  Vector Store Availability:');
-  
+
   // JSON Store (always available)
   console.log('   JSONVectorStore: ✅ Always available');
-  
+
   // Qdrant Store
   const qdrant = new QdrantVectorStore();
   const qdrantAvailable = await qdrant.isAvailable();
   console.log(`   QdrantVectorStore: ${qdrantAvailable ? '✅ Available' : '❌ Not available'}`);
-  
+
   if (!qdrantAvailable && process.env.QDRANT_URL) {
     console.log(`      URL: ${process.env.QDRANT_URL}`);
     console.log('      💡 Start Qdrant with: docker run -p 6333:6333 qdrant/qdrant');
@@ -64,15 +63,17 @@ async function testProviders() {
   try {
     const provider = await ProviderFactory.createFromEnvironment();
     console.log(`   Active Provider: ${provider.getName()}`);
-    
+
     const testText = 'Testing embeddings with the current configuration';
     const embedding = await provider.generateEmbedding(testText);
     console.log(`   ✅ Generated ${embedding.length}-dimensional embedding`);
-    
+
     // Show sample values
-    const nonZero = embedding.filter(v => v !== 0).length;
-    console.log(`   📊 Non-zero values: ${nonZero}/${embedding.length} (${(nonZero/embedding.length*100).toFixed(1)}%)`);
-    
+    const nonZero = embedding.filter((v) => v !== 0).length;
+    console.log(
+      `   📊 Non-zero values: ${nonZero}/${embedding.length} (${((nonZero / embedding.length) * 100).toFixed(1)}%)`
+    );
+
     if (nonZero === 0) {
       console.log('   ⚠️  All zeros - using quality-only search (no semantic embeddings)');
     }

@@ -1,6 +1,6 @@
 /**
  * Quality Filter Service
- * 
+ *
  * Provides sophisticated quality filtering capabilities for Bridge experiences.
  * Supports boolean logic, presence/absence filtering, and complex expressions.
  */
@@ -18,7 +18,7 @@ export interface QualityFilter {
   space?: { present: boolean } | string | string[];
   time?: { present: boolean } | string | string[];
   presence?: { present: boolean } | string | string[];
-  
+
   // Complex boolean expressions
   $and?: QualityFilter[];
   $or?: QualityFilter[];
@@ -26,7 +26,7 @@ export interface QualityFilter {
 }
 
 // Internal filter expression types
-export type FilterExpression = 
+export type FilterExpression =
   | PresenceFilter
   | ValueFilter
   | AndExpression
@@ -65,13 +65,16 @@ export interface NotExpression {
 
 // Error types
 /**
- *
+ * Custom error class for quality filter operations
  */
 export class QualityFilterError extends Error {
   /**
-   *
+   * Creates a quality filter error with a specific code
    */
-  constructor(message: string, public code: string) {
+  constructor(
+    message: string,
+    public code: string
+  ) {
     super(message);
     this.name = 'QualityFilterError';
   }
@@ -93,36 +96,36 @@ export class QualityFilterService {
     if (filter.$and) {
       return {
         type: 'and',
-        filters: filter.$and.map(f => this.parseQualityFilter(f))
+        filters: filter.$and.map((f) => this.parseQualityFilter(f)),
       };
     }
 
     if (filter.$or) {
       return {
         type: 'or',
-        filters: filter.$or.map(f => this.parseQualityFilter(f))
+        filters: filter.$or.map((f) => this.parseQualityFilter(f)),
       };
     }
 
     if (filter.$not) {
       return {
         type: 'not',
-        filter: this.parseQualityFilter(filter.$not)
+        filter: this.parseQualityFilter(filter.$not),
       };
     }
 
     // Handle individual quality filters
     const qualityFilters: FilterExpression[] = [];
-    
+
     for (const [quality, value] of Object.entries(filter)) {
       if (quality.startsWith('$')) continue; // Skip boolean operators
-      
+
       if (typeof value === 'object' && value !== null && 'present' in value) {
         // Presence/absence filter
         qualityFilters.push({
           type: 'presence',
           quality,
-          present: value.present
+          present: value.present,
         });
       } else if (typeof value === 'string') {
         // Single value filter
@@ -130,7 +133,7 @@ export class QualityFilterService {
           type: 'value',
           quality,
           values: [value],
-          operator: 'exact'
+          operator: 'exact',
         });
       } else if (Array.isArray(value)) {
         // Multiple values (OR logic within quality)
@@ -138,7 +141,7 @@ export class QualityFilterService {
           type: 'value',
           quality,
           values: value,
-          operator: 'exact'
+          operator: 'exact',
         });
       } else {
         throw new QualityFilterError(
@@ -154,7 +157,7 @@ export class QualityFilterService {
     } else if (qualityFilters.length > 1) {
       return {
         type: 'and',
-        filters: qualityFilters
+        filters: qualityFilters,
       };
     }
 
@@ -181,27 +184,30 @@ export class QualityFilterService {
   /**
    * Evaluate a boolean expression against an experience
    */
-  private evaluateBooleanExpression(expression: FilterExpression, experience: SourceRecord): boolean {
+  private evaluateBooleanExpression(
+    expression: FilterExpression,
+    experience: SourceRecord
+  ): boolean {
     switch (expression.type) {
       case 'presence':
         return this.evaluatePresenceFilter(expression, experience);
-      
+
       case 'value':
         return this.evaluateValueFilter(expression, experience);
-      
+
       case 'and':
-        return expression.filters.every(filter => 
+        return expression.filters.every((filter) =>
           this.evaluateBooleanExpression(filter, experience)
         );
-      
+
       case 'or':
-        return expression.filters.some(filter => 
+        return expression.filters.some((filter) =>
           this.evaluateBooleanExpression(filter, experience)
         );
-      
+
       case 'not':
         return !this.evaluateBooleanExpression(expression.filter, experience);
-      
+
       default:
         throw new QualityFilterError(
           `Unknown expression type: ${(expression as FilterExpression).type}`,
@@ -216,7 +222,7 @@ export class QualityFilterService {
   private evaluatePresenceFilter(filter: PresenceFilter, experience: SourceRecord): boolean {
     const experienceQualities = experience.experience || [];
     const hasQuality = experienceQualities.some((q: string) => q.startsWith(filter.quality + '.'));
-    
+
     return filter.present ? hasQuality : !hasQuality;
   }
 
@@ -225,9 +231,9 @@ export class QualityFilterService {
    */
   private evaluateValueFilter(filter: ValueFilter, experience: SourceRecord): boolean {
     const experienceQualities = experience.experience || [];
-    
+
     // Check if any of the filter values match any of the experience qualities
-    return filter.values.some(filterValue => {
+    return filter.values.some((filterValue) => {
       const fullQuality = `${filter.quality}.${filterValue}`;
       return experienceQualities.includes(fullQuality);
     });
@@ -255,14 +261,18 @@ export class QualityFilterService {
 
     return {
       valid: errors.length === 0,
-      errors
+      errors,
     };
   }
 
   /**
    * Validate filter structure recursively
    */
-  private validateFilterStructure(filter: QualityFilter, errors: string[], path: string = ''): void {
+  private validateFilterStructure(
+    filter: QualityFilter,
+    errors: string[],
+    path: string = ''
+  ): void {
     for (const [key, value] of Object.entries(filter)) {
       const currentPath = path ? `${path}.${key}` : key;
 
@@ -285,7 +295,11 @@ export class QualityFilterService {
             }
             value.forEach((item, index) => {
               if (typeof item === 'object' && item !== null) {
-                this.validateFilterStructure(item as QualityFilter, errors, `${currentPath}[${index}]`);
+                this.validateFilterStructure(
+                  item as QualityFilter,
+                  errors,
+                  `${currentPath}[${index}]`
+                );
               } else {
                 errors.push(`${key}[${index}] must be a filter object at ${currentPath}`);
               }
@@ -294,11 +308,11 @@ export class QualityFilterService {
             errors.push(`${key} must be an array at ${currentPath}`);
           }
         }
-             } else {
-         // Quality filters
-         if (!KNOWN_QUALITIES.includes(key as KnownQuality)) {
-           errors.push(`Unknown quality: ${key} at ${currentPath}`);
-         }
+      } else {
+        // Quality filters
+        if (!KNOWN_QUALITIES.includes(key as KnownQuality)) {
+          errors.push(`Unknown quality: ${key} at ${currentPath}`);
+        }
 
         if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
           // Presence/absence filter
@@ -334,7 +348,12 @@ export class QualityFilterService {
   /**
    * Validate a quality value
    */
-  private validateQualityValue(quality: string, value: string, errors: string[], path: string): void {
+  private validateQualityValue(
+    quality: string,
+    value: string,
+    errors: string[],
+    path: string
+  ): void {
     // This is a simplified validation - in a real implementation,
     // you might want to validate against a more specific schema
     if (!value || typeof value !== 'string') {
@@ -361,23 +380,23 @@ export class QualityFilterService {
     switch (expression.type) {
       case 'presence':
         return `${expression.quality} ${expression.present ? 'present' : 'absent'}`;
-      
+
       case 'value':
         if (expression.values.length === 1) {
           return `${expression.quality}.${expression.values[0]}`;
         } else {
           return `${expression.quality} (${expression.values.join(' OR ')})`;
         }
-      
+
       case 'and':
-        return `(${expression.filters.map(f => this.describeExpression(f)).join(' AND ')})`;
-      
+        return `(${expression.filters.map((f) => this.describeExpression(f)).join(' AND ')})`;
+
       case 'or':
-        return `(${expression.filters.map(f => this.describeExpression(f)).join(' OR ')})`;
-      
+        return `(${expression.filters.map((f) => this.describeExpression(f)).join(' OR ')})`;
+
       case 'not':
         return `NOT (${this.describeExpression(expression.filter)})`;
-      
+
       default:
         return 'Unknown expression';
     }
@@ -385,4 +404,4 @@ export class QualityFilterService {
 }
 
 // Export a singleton instance
-export const qualityFilterService = new QualityFilterService(); 
+export const qualityFilterService = new QualityFilterService();

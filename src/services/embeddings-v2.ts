@@ -1,7 +1,7 @@
 import { bridgeLogger } from '../utils/bridge-logger.js';
 import { RateLimiter } from '../utils/security.js';
 import { withTimeout, DEFAULT_TIMEOUTS } from '../utils/timeout.js';
-import { ProviderFactory, EmbeddingProvider } from './embedding-providers/index.js';
+import { ProviderFactory, EmbeddingProvider, SearchResult } from './embedding-providers/index.js';
 import { JSONVectorStore, QdrantVectorStore, VectorStore } from './vector-stores/index.js';
 
 /**
@@ -95,24 +95,24 @@ export class EmbeddingServiceV2 {
 
     try {
       const embedding = await this.provider.generateEmbedding(text);
-      
+
       // Cache the result
       this.cache.set(text, embedding);
-      
+
       return embedding;
     } catch (error) {
       bridgeLogger.warn(
         'Failed to generate embedding:',
         error instanceof Error ? error.message : error
       );
-      
+
       // Try fallback to none provider
       const fallbackProvider = await ProviderFactory.createProvider('none');
       const embedding = await fallbackProvider.generateEmbedding(text);
-      
+
       // Cache even the fallback result
       this.cache.set(text, embedding);
-      
+
       return embedding;
     }
   }
@@ -126,10 +126,8 @@ export class EmbeddingServiceV2 {
    */
   async generateEmbeddings(texts: string[]): Promise<number[][]> {
     await this.initialize();
-    
-    const embeddings = await Promise.all(
-      texts.map((text) => this.generateEmbedding(text))
-    );
+
+    const embeddings = await Promise.all(texts.map((text) => this.generateEmbedding(text)));
     return embeddings;
   }
 
@@ -139,9 +137,9 @@ export class EmbeddingServiceV2 {
    * @param text - Original text (used to generate embedding)
    * @param metadata - Additional metadata to store
    */
-  async storeVector(id: string, text: string, metadata: Record<string, any>): Promise<void> {
+  async storeVector(id: string, text: string, metadata: Record<string, unknown>): Promise<void> {
     await this.initialize();
-    
+
     if (!this.vectorStore) {
       throw new Error('Vector store not initialized');
     }
@@ -158,10 +156,10 @@ export class EmbeddingServiceV2 {
    */
   async search(
     text: string,
-    options?: { filter?: Record<string, any>; limit?: number }
-  ) {
+    options?: { filter?: Record<string, unknown>; limit?: number }
+  ): Promise<SearchResult[]> {
     await this.initialize();
-    
+
     if (!this.vectorStore) {
       throw new Error('Vector store not initialized');
     }
@@ -222,7 +220,7 @@ export class EmbeddingServiceV2 {
   /**
    * Checks which providers are available
    */
-  async checkProviderAvailability() {
+  async checkProviderAvailability(): Promise<Record<string, boolean>> {
     return await ProviderFactory.checkAvailability();
   }
 
@@ -237,7 +235,7 @@ export class EmbeddingServiceV2 {
         apiKey: process.env.QDRANT_API_KEY,
         collectionName: process.env.QDRANT_COLLECTION,
       });
-      
+
       // Check if Qdrant is available
       const isAvailable = await qdrant.isAvailable();
       if (isAvailable) {
@@ -246,7 +244,7 @@ export class EmbeddingServiceV2 {
         bridgeLogger.warn('Qdrant configured but not available, falling back to JSON store');
       }
     }
-    
+
     // Default to JSON store
     return new JSONVectorStore();
   }
