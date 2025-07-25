@@ -320,6 +320,7 @@ SPECIAL SEARCHES:
 • Filter by reflects: "only" - find pattern realizations (experiences that reflect on other experiences)
 • Natural language patterns: "show me all pattern realizations" → use reflects: "only"
 • Natural language patterns: "find insights about connections" → use reflects: "only"
+• Group results by similarity, experiencer, date, qualities, or perspective using group_by
 • Combine filters for precise results
 
 FLOW TRACKING:
@@ -504,6 +505,69 @@ FLOW TRACKING:
               {
                 type: 'text',
                 text: '🔍 Found 2 experiences reflected by exp_123:\n\n1. "I\'m feeling anxious about tomorrow\'s presentation" (2 hours ago)\n   😰 embodied.sensing, mood.closed, time.future\n\n2. "I just nailed the presentation! It went really well" (1 hour ago)\n   🎉 mood.open, purpose.goal, embodied.sensing',
+              },
+            ],
+          },
+        },
+        {
+          id: 'group-by-similarity',
+          description: 'Group similar experiences together using clustering',
+          input: {
+            searches: [
+              {
+                query: 'anxiety nervousness stress',
+                group_by: 'similarity',
+                limit: 10,
+              },
+            ],
+          },
+          output: {
+            content: [
+              {
+                type: 'text',
+                text: '🔍 Found 3 similarity groups containing 8 experiences:\n\n1. **3 experiences about presentation anxiety**\n   Size: 3 experiences\n   Common qualities: embodied.sensing, mood.closed, time.future\n   Summary: Experiences of anticipatory anxiety before presentations\n\n2. **2 experiences about work stress**\n   Size: 2 experiences\n   Common qualities: embodied.thinking, mood.closed, purpose.goal\n   Summary: Stressful work situations requiring problem-solving\n\n3. **3 experiences about breakthrough moments**\n   Size: 3 experiences\n   Common qualities: mood.open, purpose.goal, embodied.thinking\n   Summary: Moments of clarity and successful problem resolution',
+              },
+            ],
+          },
+        },
+        {
+          id: 'group-by-experiencer',
+          description: 'Group experiences by who experienced them',
+          input: {
+            searches: [
+              {
+                query: 'learning insight breakthrough',
+                group_by: 'experiencer',
+                limit: 10,
+              },
+            ],
+          },
+          output: {
+            content: [
+              {
+                type: 'text',
+                text: "🔍 Found 2 experiencer groups containing 5 experiences:\n\n1. **Alice (3 experiences)**\n   Size: 3 experiences\n   Common qualities: embodied.thinking, mood.open\n   Summary: Alice's learning breakthroughs and insights\n\n2. **Bob (2 experiences)**\n   Size: 2 experiences\n   Common qualities: embodied.thinking, purpose.goal\n   Summary: Bob's focused problem-solving moments",
+              },
+            ],
+          },
+        },
+        {
+          id: 'group-by-date',
+          description: 'Group experiences by creation date',
+          input: {
+            searches: [
+              {
+                query: 'mood.open joy celebration',
+                group_by: 'date',
+                limit: 10,
+              },
+            ],
+          },
+          output: {
+            content: [
+              {
+                type: 'text',
+                text: '🔍 Found 3 date groups containing 6 experiences:\n\n1. **2025-01-15 (2 experiences)**\n   Size: 2 experiences\n   Common qualities: mood.open, purpose.goal\n   Summary: Successful project completion and team celebration\n\n2. **2025-01-14 (2 experiences)**\n   Size: 2 experiences\n   Common qualities: mood.open, embodied.sensing\n   Summary: Personal achievements and positive moments\n\n3. **2025-01-13 (2 experiences)**\n   Size: 2 experiences\n   Common qualities: mood.open, presence.collective\n   Summary: Collaborative successes and shared joy',
               },
             ],
           },

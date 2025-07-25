@@ -267,7 +267,7 @@ recall({
 ```javascript
 // ⚠️ DEPRECATED - will show warning
 recall({
-  searches: [{ search: 'anxiety', as: 'clusters' }],
+  searches: [{ search: 'anxiety', group_by: 'similarity' }],
 });
 
 // ✅ NEW - use group_by instead

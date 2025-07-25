@@ -289,7 +289,7 @@ recall({
 
 // Clustering mode
 recall({
-  searches: [{ query: 'learning', as: 'clusters' }],
+  searches: [{ query: 'learning', group_by: 'similarity' }],
 });
 ```
 
