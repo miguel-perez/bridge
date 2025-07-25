@@ -44,6 +44,9 @@ export const experienceSchema = z.object({
 
   // Pattern realizations - experiences that reflect on other experiences
   reflects: z.array(z.string()).optional(),
+
+  // Optional context for self-containment
+  context: z.string().optional(),
 });
 
 /**
@@ -58,6 +61,7 @@ export interface ExperienceInput {
   crafted?: boolean;
   experience?: string[];
   reflects?: string[];
+  context?: string;
 }
 
 /**
@@ -126,6 +130,7 @@ export class ExperienceService {
       crafted: validatedInput.crafted || false,
       experience,
       reflects: validatedInput.reflects,
+      context: validatedInput.context,
     };
 
     // Save the source record
@@ -135,13 +140,15 @@ export class ExperienceService {
     try {
       await embeddingServiceV2.initialize();
 
-      // Create simple embedding text with prominent qualities
+      // Create simple embedding text with prominent qualities and context
       const qualitiesText =
         savedSource.experience && savedSource.experience.length > 0
           ? `[${savedSource.experience.join(', ')}]`
           : '[]';
 
-      const embeddingText = `"${savedSource.source}" ${qualitiesText}`;
+      // Include context in embedding if present
+      const contextPrefix = savedSource.context ? `Context: ${savedSource.context}. ` : '';
+      const embeddingText = `${contextPrefix}"${savedSource.source}" ${qualitiesText}`;
       const embedding = await embeddingServiceV2.generateEmbedding(embeddingText);
 
       // Save embedding to storage

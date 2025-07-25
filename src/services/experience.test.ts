@@ -1,13 +1,19 @@
-import { ExperienceService, experienceSchema } from './experience.js';
+import { ExperienceService, experienceSchema, type ExperienceInput } from './experience.js';
 import { embeddingServiceV2 } from './embeddings-v2.js';
-import { saveEmbedding } from '../core/storage.js';
+import { saveEmbedding, saveSource } from '../core/storage.js';
 
 // Mock the embeddings service
 jest.mock('./embeddings-v2.js');
 jest.mock('../core/storage.js', () => ({
   ...jest.requireActual('../core/storage.js'),
   saveEmbedding: jest.fn(),
+  saveSource: jest.fn(),
 }));
+
+// Type the mocks
+const mockSaveSource = saveSource as jest.MockedFunction<typeof saveSource>;
+const mockSaveEmbedding = saveEmbedding as jest.MockedFunction<typeof saveEmbedding>;
+const mockEmbeddingServiceV2 = embeddingServiceV2 as jest.Mocked<typeof embeddingServiceV2>;
 
 describe('ExperienceService', () => {
   let experienceService: ExperienceService;
@@ -15,6 +21,12 @@ describe('ExperienceService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     experienceService = new ExperienceService();
+
+    // Setup default mock behavior
+    mockSaveSource.mockImplementation(async (source) => source);
+    mockSaveEmbedding.mockResolvedValue(undefined);
+    mockEmbeddingServiceV2.initialize.mockResolvedValue(undefined);
+    mockEmbeddingServiceV2.generateEmbedding.mockResolvedValue(new Array(384).fill(0));
   });
 
   describe('rememberExperience', () => {
@@ -103,9 +115,9 @@ describe('ExperienceService', () => {
 
     it('should handle embedding generation failure gracefully', async () => {
       // Mock embedding service to throw an error
-      const mockEmbeddingServiceV2 = embeddingServiceV2 as jest.Mocked<typeof embeddingServiceV2>;
-      mockEmbeddingServiceV2.initialize.mockResolvedValue(undefined);
-      mockEmbeddingServiceV2.generateEmbedding.mockRejectedValue(new Error('Embedding generation failed'));
+      mockEmbeddingServiceV2.generateEmbedding.mockRejectedValue(
+        new Error('Embedding generation failed')
+      );
 
       const input = {
         source: 'Test experience with embedding failure',
@@ -127,6 +139,24 @@ describe('ExperienceService', () => {
       expect(mockEmbeddingServiceV2.generateEmbedding).toHaveBeenCalled();
       expect(saveEmbedding).not.toHaveBeenCalled();
     });
+
+    it('should include context in source and embedding when provided', async () => {
+      // Use the already configured mocks
+
+      const input: ExperienceInput = {
+        source: 'I feel anxious',
+        emoji: '😰',
+        experience: ['mood.closed', 'embodied.sensing'],
+        context: 'Before an important presentation',
+      };
+
+      const result = await experienceService.rememberExperience(input);
+
+      expect(result.source.context).toBe('Before an important presentation');
+      expect(mockEmbeddingServiceV2.generateEmbedding).toHaveBeenCalledWith(
+        'Context: Before an important presentation. "I feel anxious" [mood.closed, embodied.sensing]'
+      );
+    });
   });
 
   describe('experienceSchema', () => {
@@ -139,6 +169,16 @@ describe('ExperienceService', () => {
         processing: 'during',
         crafted: false,
         experience: ['mood.open', 'embodied.thinking'],
+      };
+
+      expect(() => experienceSchema.parse(input)).not.toThrow();
+    });
+
+    it('should validate input with context field', () => {
+      const input = {
+        source: 'Test experience',
+        emoji: '🧪',
+        context: 'During a team meeting discussing project milestones',
       };
 
       expect(() => experienceSchema.parse(input)).not.toThrow();

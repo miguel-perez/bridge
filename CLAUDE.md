@@ -243,6 +243,7 @@ experience({
       source: 'Finally got the tests passing!',
       emoji: '✅',
       experience: ['embodied.thinking', 'mood.open', 'purpose.goal'],
+      context: 'After debugging the race condition for hours', // Optional context
     },
   ],
 });
@@ -255,6 +256,7 @@ experience({
       emoji: '🔄',
       experience: ['embodied.thinking', 'presence.collective'],
       experiencer: 'Claude',
+      context: 'Third time discussing similar architecture questions',
     },
   ],
 });

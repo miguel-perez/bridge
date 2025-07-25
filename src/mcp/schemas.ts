@@ -218,6 +218,12 @@ const ExperienceItemSchema = z
         'Array of experience IDs that this experience reflects on/connects to (for pattern realizations)'
       )
       .optional(),
+    context: z
+      .string()
+      .describe(
+        'Optional background context to make this experience self-contained and comprehensible. Use when the source alone might lack necessary situational understanding. Keep brief and factual.'
+      )
+      .optional(),
   })
   .strict();
 
@@ -324,6 +330,10 @@ const ReconsiderItemSchema = z
       .describe(
         'Updated array of experience IDs that this experience reflects on/connects to (for pattern realizations)'
       )
+      .optional(),
+    context: z
+      .string()
+      .describe('Updated context to make the experience self-contained (optional)')
       .optional(),
   })
   .strict();

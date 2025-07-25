@@ -171,6 +171,7 @@ export class ExperienceHandler {
           crafted: item.crafted,
           experience: item.experience || undefined,
           reflects: item.reflects,
+          context: item.context,
         });
         results.push(result);
       }

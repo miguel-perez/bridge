@@ -157,6 +157,22 @@ describe('Type Validation Functions', () => {
       expect(isValidSource(validSourceWithEmptyReflects)).toBe(true);
     });
 
+    it('should accept source objects with context', () => {
+      const validSourceWithContext: Source = {
+        id: 'test-123',
+        source: 'Test source',
+        emoji: '🧪',
+        created: '2024-01-01T00:00:00.000Z',
+        perspective: 'I',
+        experiencer: 'test',
+        processing: 'during',
+        crafted: false,
+        experience: ['mood.open'],
+        context: 'During a code review session',
+      };
+      expect(isValidSource(validSourceWithContext)).toBe(true);
+    });
+
     it('should reject invalid source objects', () => {
       expect(isValidSource(null)).toBe(false);
       expect(isValidSource(undefined)).toBe(false);
@@ -267,6 +283,24 @@ describe('Zod Schema Validation', () => {
       };
 
       const result = SourceSchema.safeParse(validSourceWithReflects);
+      expect(result.success).toBe(true);
+    });
+
+    it('should validate source with context field', () => {
+      const validSourceWithContext: Source = {
+        id: 'test-123',
+        source: 'I feel overwhelmed',
+        emoji: '😵',
+        created: '2024-01-01T00:00:00.000Z',
+        perspective: 'I',
+        experiencer: 'test',
+        processing: 'during',
+        crafted: false,
+        experience: ['mood.closed', 'focus.broad'],
+        context: 'End of quarter with multiple deadlines converging',
+      };
+
+      const result = SourceSchema.safeParse(validSourceWithContext);
       expect(result.success).toBe(true);
     });
 

@@ -13,6 +13,7 @@ Bridge creates a persistent memory layer for AI interactions, allowing both huma
 - Build collaborative understanding over time
 
 **New**: Configure embedding providers directly in Claude Desktop! Choose from:
+
 - Zero-config quality search (default)
 - Cloud embeddings (Voyage AI, OpenAI) for enhanced semantic search
 - Local embeddings (TensorFlow.js) for offline use
@@ -66,6 +67,7 @@ experience({
     {
       source: 'Just had a breakthrough with the algorithm',
       experience: ['embodied.thinking', 'mood.open', 'purpose.goal'],
+      context: 'Working on the sorting optimization for three days', // Optional context
     },
   ],
 });

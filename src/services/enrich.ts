@@ -45,6 +45,7 @@ export const enrichSchema = z.object({
     .array(z.string())
     .optional()
     .describe('Array of experience IDs that this experience reflects on'),
+  context: z.string().optional().describe('Updated context for self-containment'),
 });
 
 /**
@@ -59,6 +60,7 @@ export interface EnrichInput {
   crafted?: boolean;
   experience?: string[];
   reflects?: string[];
+  context?: string;
 }
 
 /**
@@ -103,7 +105,8 @@ export class EnrichService {
     const shouldRegenerateEmbeddings =
       (input.source && input.source !== existingSource.source) ||
       (input.experience &&
-        JSON.stringify(input.experience) !== JSON.stringify(existingSource.experience));
+        JSON.stringify(input.experience) !== JSON.stringify(existingSource.experience)) ||
+      (input.context !== undefined && input.context !== existingSource.context);
 
     // Generate new embedding if needed
     let embedding: number[] | undefined;
@@ -115,7 +118,10 @@ export class EnrichService {
       if (experience) {
         const qualitiesText = experience.length > 0 ? `[${experience.join(', ')}]` : '[]';
 
-        const embeddingText = `"${source}" ${qualitiesText}`;
+        // Include context in embedding if present
+        const context = input.context ?? existingSource.context;
+        const contextPrefix = context ? `Context: ${context}. ` : '';
+        const embeddingText = `${contextPrefix}"${source}" ${qualitiesText}`;
 
         try {
           embedding = await embeddingServiceV2.generateEmbedding(embeddingText);
@@ -135,6 +141,7 @@ export class EnrichService {
       crafted: input.crafted ?? existingSource.crafted,
       experience: input.experience ?? existingSource.experience,
       reflects: input.reflects ?? existingSource.reflects,
+      context: input.context ?? existingSource.context,
     };
 
     // Delete the old record and save the new one
