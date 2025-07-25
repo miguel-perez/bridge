@@ -1,9 +1,9 @@
 import { ExperienceService, experienceSchema } from './experience.js';
-import { EmbeddingService } from './embeddings.js';
+import { embeddingServiceV2 } from './embeddings-v2.js';
 import { saveEmbedding } from '../core/storage.js';
 
 // Mock the embeddings service
-jest.mock('./embeddings.js');
+jest.mock('./embeddings-v2.js');
 jest.mock('../core/storage.js', () => ({
   ...jest.requireActual('../core/storage.js'),
   saveEmbedding: jest.fn(),
@@ -103,13 +103,9 @@ describe('ExperienceService', () => {
 
     it('should handle embedding generation failure gracefully', async () => {
       // Mock embedding service to throw an error
-      const mockEmbeddingService = {
-        initialize: jest.fn().mockResolvedValue(undefined),
-        generateEmbedding: jest.fn().mockRejectedValue(new Error('Embedding generation failed')),
-      };
-      (EmbeddingService as jest.MockedClass<typeof EmbeddingService>).mockImplementation(
-        () => mockEmbeddingService as unknown as EmbeddingService
-      );
+      const mockEmbeddingServiceV2 = embeddingServiceV2 as jest.Mocked<typeof embeddingServiceV2>;
+      mockEmbeddingServiceV2.initialize.mockResolvedValue(undefined);
+      mockEmbeddingServiceV2.generateEmbedding.mockRejectedValue(new Error('Embedding generation failed'));
 
       const input = {
         source: 'Test experience with embedding failure',
@@ -127,8 +123,8 @@ describe('ExperienceService', () => {
       expect(result.defaultsUsed).toContain('processing="during"');
 
       // Verify embedding was attempted but saveEmbedding was not called
-      expect(mockEmbeddingService.initialize).toHaveBeenCalled();
-      expect(mockEmbeddingService.generateEmbedding).toHaveBeenCalled();
+      expect(mockEmbeddingServiceV2.initialize).toHaveBeenCalled();
+      expect(mockEmbeddingServiceV2.generateEmbedding).toHaveBeenCalled();
       expect(saveEmbedding).not.toHaveBeenCalled();
     });
   });

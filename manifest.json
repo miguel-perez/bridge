@@ -31,7 +31,15 @@
       "args": ["${__dirname}/index.js"],
       "env": {
         "BRIDGE_FILE_PATH": "${user_config.data_file_path}",
-        "BRIDGE_DEBUG": "${user_config.debug_mode}"
+        "BRIDGE_DEBUG": "${user_config.debug_mode}",
+        "BRIDGE_EMBEDDING_PROVIDER": "${user_config.embedding_provider}",
+        "VOYAGE_API_KEY": "${user_config.voyage_api_key}",
+        "VOYAGE_MODEL": "${user_config.voyage_model}",
+        "OPENAI_API_KEY": "${user_config.openai_api_key}",
+        "OPENAI_MODEL": "${user_config.openai_model}",
+        "QDRANT_URL": "${user_config.qdrant_url}",
+        "QDRANT_API_KEY": "${user_config.qdrant_api_key}",
+        "QDRANT_COLLECTION": "${user_config.qdrant_collection}"
       }
     }
   },
@@ -94,6 +102,68 @@
       "title": "Debug Mode",
       "description": "Enable debug logging for troubleshooting connection issues and understanding data processing",
       "default": false,
+      "required": false
+    },
+    "embedding_provider": {
+      "type": "string",
+      "title": "Embedding Provider",
+      "description": "Choose how Bridge generates semantic embeddings for search. 'none' (default) uses quality-only search with no external dependencies. 'voyage' and 'openai' provide cloud-based embeddings for better semantic search. 'tensorflow' uses local embeddings (25MB download, no API key needed).",
+      "enum": ["none", "voyage", "openai", "tensorflow"],
+      "default": "none",
+      "required": false
+    },
+    "voyage_api_key": {
+      "type": "string",
+      "title": "Voyage AI API Key",
+      "description": "API key for Voyage AI embeddings (required if embedding_provider is 'voyage'). Get your key at https://www.voyageai.com/",
+      "default": "",
+      "required": false,
+      "secret": true
+    },
+    "voyage_model": {
+      "type": "string",
+      "title": "Voyage AI Model",
+      "description": "Voyage AI model to use. voyage-3-large provides the best quality.",
+      "enum": ["voyage-3-large", "voyage-3.5", "voyage-3.5-lite"],
+      "default": "voyage-3-large",
+      "required": false
+    },
+    "openai_api_key": {
+      "type": "string",
+      "title": "OpenAI API Key",
+      "description": "API key for OpenAI embeddings (required if embedding_provider is 'openai'). Get your key at https://platform.openai.com/",
+      "default": "",
+      "required": false,
+      "secret": true
+    },
+    "openai_model": {
+      "type": "string",
+      "title": "OpenAI Model",
+      "description": "OpenAI embedding model to use. text-embedding-3-large provides the best quality.",
+      "enum": ["text-embedding-3-large", "text-embedding-3-small"],
+      "default": "text-embedding-3-large",
+      "required": false
+    },
+    "qdrant_url": {
+      "type": "string",
+      "title": "Qdrant URL",
+      "description": "URL for Qdrant vector database (optional, for advanced search at scale). Default is http://localhost:6333 for local deployment. For cloud deployment, use your Qdrant cloud URL.",
+      "default": "",
+      "required": false
+    },
+    "qdrant_api_key": {
+      "type": "string",
+      "title": "Qdrant API Key",
+      "description": "API key for Qdrant cloud deployments (optional). Not needed for local Qdrant instances.",
+      "default": "",
+      "required": false,
+      "secret": true
+    },
+    "qdrant_collection": {
+      "type": "string",
+      "title": "Qdrant Collection Name",
+      "description": "Name of the Qdrant collection to use for storing Bridge experiences.",
+      "default": "bridge_experiences",
       "required": false
     }
   }

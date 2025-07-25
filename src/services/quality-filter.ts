@@ -64,13 +64,22 @@ export interface NotExpression {
 }
 
 // Error types
+/**
+ *
+ */
 export class QualityFilterError extends Error {
+  /**
+   *
+   */
   constructor(message: string, public code: string) {
     super(message);
     this.name = 'QualityFilterError';
   }
 }
 
+/**
+ *
+ */
 export class QualityFilterService {
   /**
    * Parse a quality filter into an internal expression tree

@@ -1,6 +1,6 @@
 import { SourceRecord } from '../core/types.js';
 import { getAllRecords } from '../core/storage.js';
-import { embeddingService } from './embeddings.js';
+import { embeddingServiceV2 } from './embeddings-v2.js';
 import { findSimilarByEmbedding } from './embedding-search.js';
 import { SEMANTIC_CONFIG } from '../core/config.js';
 import { applyFiltersAndScore } from './unified-scoring.js';
@@ -301,7 +301,7 @@ export async function search(input: RecallInput): Promise<RecallServiceResponse>
 
       try {
         // Generate embedding for the semantic query
-        const queryEmbedding = await embeddingService.generateEmbedding(input.semantic_query);
+        const queryEmbedding = await embeddingServiceV2.generateEmbedding(input.semantic_query);
         debugInfo.query_embedding_dimension = queryEmbedding.length;
         addDebugLog(`Generated query embedding with dimension: ${queryEmbedding.length}`);
 

@@ -9,7 +9,7 @@ import { saveSource, saveEmbedding } from '../core/storage.js';
 import { generateId } from '../core/storage.js';
 import type { Source, EmbeddingRecord, Experience } from '../core/types.js';
 
-import { EmbeddingService } from './embeddings.js';
+import { embeddingServiceV2 } from './embeddings-v2.js';
 
 // ============================================================================
 // CONSTANTS
@@ -133,8 +133,7 @@ export class ExperienceService {
 
     // Generate and save embedding
     try {
-      const embeddingService = new EmbeddingService();
-      await embeddingService.initialize();
+      await embeddingServiceV2.initialize();
 
       // Create simple embedding text with prominent qualities
       const qualitiesText =
@@ -143,7 +142,7 @@ export class ExperienceService {
           : '[]';
 
       const embeddingText = `"${savedSource.source}" ${qualitiesText}`;
-      const embedding = await embeddingService.generateEmbedding(embeddingText);
+      const embedding = await embeddingServiceV2.generateEmbedding(embeddingText);
 
       // Save embedding to storage
       const embeddingRecord: EmbeddingRecord = {

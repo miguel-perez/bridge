@@ -95,6 +95,55 @@ export const SCENARIOS: Record<string, TestScenario> = {
     ],
   },
 
+  // Progressive vector enhancement tests - validates EXP-014 architecture
+  'vector-enhancement-basic': {
+    description: 'Test progressive vector enhancement with basic search',
+    turns: [
+      ...experienceTurn('Working on implementing a new search algorithm'),
+      ...experienceTurn('The algorithm uses vector embeddings for similarity'),
+      ...recallTurn('search algorithm vector', 'Let me find experiences about'),
+    ],
+  },
+
+  'embedding-provider-test': {
+    description: 'Test embedding provider functionality',
+    turns: [
+      ...experienceTurn('Testing the new embedding provider integration'),
+      ...experienceTurn('The provider generates high-quality semantic vectors'),
+      ...recallTurn('embedding provider quality', "I'll search for related experiences about"),
+    ],
+  },
+
+  'vector-store-scaling': {
+    description: 'Test vector store scaling capabilities',
+    turns: [
+      ...experienceTurn('Scaling the vector database to handle more experiences'),
+      ...experienceTurn('Performance remains fast even with thousands of entries'),
+      ...recallTurn('scaling performance database', "I'll look for experiences about"),
+    ],
+  },
+
+  'progressive-enhancement-flow': {
+    description: 'Test progressive enhancement from zero-config to advanced search',
+    turns: [
+      // First test quality-only search (zero-config)
+      ...experienceTurn('Starting with basic quality search without embeddings'),
+      ...recallTurn('Show experiences with mood.open', "I'll find experiences using quality filtering"),
+      // Then test with embeddings
+      ...experienceTurn('Now testing semantic search with embeddings enabled'),
+      ...recallTurn('happiness joy excitement', "I'll search semantically for"),
+    ],
+  },
+
+  'claude-desktop-compatibility': {
+    description: 'Test Claude Desktop compatibility with API-based embeddings',
+    turns: [
+      ...experienceTurn('Testing Bridge in Claude Desktop environment'),
+      ...experienceTurn('API-based embeddings should work in restricted environment'),
+      ...recallTurn('claude desktop restricted', "I'll search for experiences about"),
+    ],
+  },
+
   // Still thinking flow test - demonstrates the minimal flow tracking pattern
   'still-thinking-flow': {
     description: 'Test stillThinking parameter for multi-step exploration',
@@ -225,6 +274,21 @@ export const SCENARIO_GROUPS = {
 
   // Flow tracking tests
   flow: ['still-thinking-flow'],
+
+  // Evidence for experiments - quick but comprehensive
+  evidence: ['semantic-search', 'core-operations', 'vector-enhancement-basic'],
+  
+  // Evidence for EXP-014 - vector enhancement validation
+  'exp-014': ['vector-enhancement-basic', 'embedding-provider-test', 'progressive-enhancement-flow'],
+
+  // Vector enhancement tests (EXP-014)
+  vector: [
+    'vector-enhancement-basic',
+    'embedding-provider-test', 
+    'vector-store-scaling',
+    'progressive-enhancement-flow',
+    'claude-desktop-compatibility'
+  ],
 };
 
 // ============================================================================

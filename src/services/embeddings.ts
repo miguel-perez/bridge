@@ -1,88 +1,54 @@
-// Lazy loading approach for optional dependencies
-// Define the result type for feature extraction
-import type { FeatureExtractionPipeline } from '@xenova/transformers';
+/**
+ * Legacy embedding service wrapper
+ * @deprecated This file now wraps the new embeddings-v2 service for backward compatibility
+ * @remarks
+ * Migrated to progressive vector enhancement architecture.
+ * The new service supports multiple embedding providers and vector stores.
+ */
+
+import { embeddingServiceV2 } from './embeddings-v2.js';
+import { bridgeLogger } from '../utils/bridge-logger.js';
 
 // Internal flag for disabling embeddings in unit tests only
 // DO NOT set this in production - embeddings gracefully degrade when unavailable
 const EMBEDDINGS_DISABLED = process.env.TEST_DISABLE_EMBEDDINGS === 'true';
 
-import { bridgeLogger } from '../utils/bridge-logger.js';
-import { RateLimiter } from '../utils/security.js';
-import { withTimeout, DEFAULT_TIMEOUTS } from '../utils/timeout.js';
-
 /**
- * Service for generating semantic embeddings using transformer models
+ * Legacy EmbeddingService class
+ * @deprecated Use embeddingServiceV2 directly
  * @remarks
- * Provides text-to-vector conversion for semantic search capabilities.
- * Uses the all-MiniLM-L6-v2 model for fast, high-quality embeddings.
+ * This class now delegates all operations to the new embeddings-v2 service.
+ * Maintains backward compatibility for existing code.
  */
 export class EmbeddingService {
-  private pipeline: FeatureExtractionPipeline | null = null;
-  private modelName: string = 'Xenova/all-MiniLM-L6-v2';
-  private initPromise: Promise<void> | null = null;
-  private cache = new Map<string, number[]>();
   private disabled = false;
-  private rateLimiter = new RateLimiter(100); // 100ms between requests
+  private cache = new Map<string, number[]>();
 
   /**
    * Initializes the embedding service
    * @remarks
-   * Loads the transformer model and sets up the pipeline for embedding generation.
-   * Handles graceful degradation if embeddings are disabled or unavailable.
+   * Delegates to the new embeddings-v2 service.
    */
   async initialize(): Promise<void> {
     // Skip initialization if embeddings are disabled
     if (EMBEDDINGS_DISABLED) {
-      // Embeddings disabled by environment variable
       this.disabled = true;
       return;
     }
-
-    if (this.initPromise) {
-      return this.initPromise;
-    }
-
-    this.initPromise = this._doInitialize();
-    return this.initPromise;
-  }
-
-  private async _doInitialize(): Promise<void> {
-    if (this.pipeline) return;
-
-    try {
-      // Try to dynamically import transformers
-      const { pipeline } = await import('@xenova/transformers');
-
-      // Use a lightweight, fast embedding model optimized for semantic similarity
-      // This model should produce 384-dimensional embeddings
-      this.pipeline = await pipeline('feature-extraction', this.modelName, {
-        revision: 'main',
-        quantized: false,
-      });
-    } catch (error) {
-      // Failed to initialize embeddings service
-      if (!process.env.BRIDGE_TEST_MODE) {
-        bridgeLogger.warn(
-          'Failed to initialize embedding service:',
-          error instanceof Error ? error.message : error
-        );
-      }
-      this.disabled = true;
-      // Don't throw - just disable embeddings
-    }
+    
+    return embeddingServiceV2.initialize();
   }
 
   /**
    * Generates semantic embedding for given text
    * @remarks
-   * Converts text to vector representation for semantic similarity calculations.
-   * Includes caching and rate limiting for performance optimization.
+   * Delegates to the new embeddings-v2 service.
    * @param text - Text to convert to embedding
    * @returns Vector representation of the text
    */
   async generateEmbedding(text: string): Promise<number[]> {
     // Return empty embedding if disabled
-    if (this.disabled) {
+    if (this.disabled || EMBEDDINGS_DISABLED) {
       // Return a dummy 384-dimensional zero vector to maintain compatibility
       return new Array(384).fill(0);
     }
@@ -93,99 +59,32 @@ export class EmbeddingService {
       return cached;
     }
 
-    // Initialize if not already done
-    await this.initialize();
-
-    // Apply rate limiting and timeout
-    return await this.rateLimiter.enforce(async () => {
-      return await withTimeout(
-        this._generateEmbeddingInternal(text),
-        DEFAULT_TIMEOUTS.EMBEDDING,
-        'embedding generation'
-      );
-    });
-  }
-
-  private async _generateEmbeddingInternal(text: string): Promise<number[]> {
-    // Double-check after initialization
-    if (this.disabled || !this.pipeline) {
-      return new Array(384).fill(0);
-    }
-
     try {
-      const result = await this.pipeline(text, { pooling: 'mean', normalize: true });
-
-      // Extract the embedding from the result with improved format handling
-      let embedding: number[];
-
-      // Handle different result formats from transformers library
-      if (result && typeof result === 'object') {
-        if (result.data) {
-          // Handle tensor data - convert to regular array
-          const data = result.data;
-          if (data && typeof data === 'object' && 'length' in data) {
-            // Convert tensor-like object to array
-            embedding = Array.from(data);
-          } else {
-            throw new Error('Invalid tensor data format');
-          }
-        } else if (Array.isArray(result)) {
-          // Direct array result
-          embedding = result;
-        } else {
-          // Try to extract from any array-like property
-          const arrayProps = Object.values(result).filter((val) => Array.isArray(val));
-          if (arrayProps.length > 0) {
-            embedding = arrayProps[0] as number[];
-          } else {
-            throw new Error('Unexpected embedding result format');
-          }
+      const embedding = await embeddingServiceV2.generateEmbedding(text);
+      
+      // Handle dimension compatibility - old service expected 384 dimensions
+      const expectedDim = 384;
+      const actualDim = embedding.length;
+      
+      let result: number[];
+      if (actualDim === expectedDim) {
+        result = embedding;
+      } else if (actualDim < expectedDim) {
+        // Pad with zeros
+        const padded = new Array(expectedDim).fill(0);
+        for (let i = 0; i < actualDim; i++) {
+          padded[i] = embedding[i];
         }
-      } else if (Array.isArray(result)) {
-        // Direct array result
-        embedding = result;
+        result = padded;
       } else {
-        throw new Error('Unexpected embedding result format');
+        // Truncate
+        result = embedding.slice(0, expectedDim);
       }
-
-      // Validate embedding dimension and handle dimension mismatches
-      if (!embedding || embedding.length === 0) {
-        throw new Error('Generated embedding is empty');
-      }
-
-      // Handle different model output dimensions
-      if (embedding.length === 768) {
-        // Model returned 768 dimensions, take first 384 (common for BERT-based models)
-        embedding = embedding.slice(0, 384);
-      } else if (embedding.length !== 384) {
-        // For other dimensions, either truncate or pad
-        if (embedding.length > 384) {
-          embedding = embedding.slice(0, 384);
-        } else {
-          // Pad with zeros if too short
-          const padded = new Array(384).fill(0);
-          for (let i = 0; i < Math.min(embedding.length, 384); i++) {
-            padded[i] = embedding[i];
-          }
-          embedding = padded;
-        }
-      }
-
-      // Validate final embedding
-      if (embedding.length !== 384) {
-        throw new Error(`Failed to normalize embedding to 384 dimensions, got ${embedding.length}`);
-      }
-
-      // Ensure all values are numbers
-      embedding = embedding.map((val) => {
-        const num = Number(val);
-        return isNaN(num) ? 0 : num;
-      });
-
+      
       // Cache the result
-      this.cache.set(text, embedding);
-
-      return embedding;
+      this.cache.set(text, result);
+      
+      return result;
     } catch (error) {
       // Failed to generate embedding, returning dummy embedding
       if (!process.env.BRIDGE_TEST_MODE) {
@@ -202,45 +101,41 @@ export class EmbeddingService {
   /**
    * Generates embeddings for multiple texts
    * @remarks
-   * Processes multiple texts in parallel for efficiency.
+   * Delegates to the new embeddings-v2 service.
    * @param texts - Array of texts to convert to embeddings
    * @returns Array of vector representations
    */
   async generateEmbeddings(texts: string[]): Promise<number[][]> {
-    await this.initialize();
-
-    const embeddings = await Promise.all(texts.map((text) => this.generateEmbedding(text)));
-    return embeddings;
-  }
-
-  private hashText(text: string): string {
-    // Simple hash function for caching
-    let hash = 0;
-    for (let i = 0; i < text.length; i++) {
-      const char = text.charCodeAt(i);
-      hash = (hash << 5) - hash + char;
-      hash = hash & hash; // Convert to 32-bit integer
+    // Handle disabled state
+    if (this.disabled || EMBEDDINGS_DISABLED) {
+      return texts.map(() => new Array(384).fill(0));
     }
-    return hash.toString();
+    
+    return Promise.all(texts.map(text => this.generateEmbedding(text)));
   }
 
   /**
    * Clears the embedding cache
    * @remarks
-   * Removes all cached embeddings to free memory.
+   * Delegates to the new embeddings-v2 service.
    */
   clearCache(): void {
     this.cache.clear();
+    embeddingServiceV2.clearCache();
   }
 
   /**
    * Gets the current cache size
    * @remarks
-   * Returns the number of cached embeddings for monitoring.
+   * Delegates to the new embeddings-v2 service.
    * @returns Number of cached embeddings
    */
   getCacheSize(): number {
-    return this.cache.size;
+    // Return local cache size when disabled
+    if (this.disabled || EMBEDDINGS_DISABLED) {
+      return this.cache.size;
+    }
+    return embeddingServiceV2.getCacheSize();
   }
 
   /**
@@ -251,5 +146,5 @@ export class EmbeddingService {
   }
 }
 
-// Export a singleton instance
+// Export a singleton instance that wraps the new service
 export const embeddingService = new EmbeddingService();

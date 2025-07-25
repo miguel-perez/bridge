@@ -12,6 +12,12 @@ Bridge creates a persistent memory layer for AI interactions, allowing both huma
 - Discover patterns through clustering analysis
 - Build collaborative understanding over time
 
+**New**: Configure embedding providers directly in Claude Desktop! Choose from:
+- Zero-config quality search (default)
+- Cloud embeddings (Voyage AI, OpenAI) for enhanced semantic search
+- Local embeddings (TensorFlow.js) for offline use
+- Qdrant vector database for million+ scale deployments
+
 ## Installation
 
 ```bash
@@ -32,16 +38,21 @@ npm run build
 
 ## Quick Start
 
+### As Desktop Extension (Recommended)
+
+1. Install Bridge in Claude Desktop (see [DXT-README.md](./DXT-README.md))
+2. Configure your preferred embedding provider in Claude Desktop settings:
+   - **None**: Works out of the box, no configuration needed
+   - **Cloud**: Add your Voyage AI or OpenAI API key for better search
+   - **Local**: Choose TensorFlow for offline embeddings
+3. Start using Bridge commands in your conversations!
+
 ### As MCP Server
 
 ```bash
 # Start the MCP server
 npm start
 ```
-
-### As Desktop Extension
-
-See [DXT-README.md](./DXT-README.md) for Claude Desktop integration.
 
 ## Core Operations
 
@@ -239,7 +250,92 @@ npm run type-check
 
 ### Embeddings in Claude Desktop
 
-Bridge's semantic search uses embeddings for finding similar experiences. In Claude Desktop, the embedding library (@xenova/transformers) may fail to initialize, resulting in zero-valued embeddings. When this happens, Bridge automatically falls back to quality-based search, which still works effectively for finding experiences by their quality signatures.
+Bridge now supports multiple embedding providers that work seamlessly in Claude Desktop:
+
+- **Cloud Providers (Voyage AI, OpenAI)**: Work perfectly in Claude Desktop with just an API key
+- **Local Provider (TensorFlow.js)**: Downloads models locally, no API key needed
+- **Default (None)**: Quality-based search works without any configuration
+
+The previous issue with @xenova/transformers has been resolved through the progressive vector enhancement architecture. You can now choose the embedding provider that best fits your needs through the Claude Desktop settings.
+
+## Architecture
+
+Bridge follows a service-oriented architecture with progressive enhancement:
+
+```
+MCP Client (Claude) → MCP Server → Tool Handlers → Services → Storage
+                                                         ↓
+                                              Embedding Providers
+                                                         ↓
+                                                  Vector Stores
+```
+
+### Progressive Vector Enhancement
+
+Bridge supports multiple levels of vector search capabilities:
+
+1. **Level 0: Zero-Config (Default)**
+   - Quality-only search with no embeddings
+   - No API keys or external dependencies
+   - Works everywhere including Claude Desktop
+
+2. **Level 1: Cloud Embeddings**
+   - Voyage AI or OpenAI embeddings
+   - Better semantic search quality
+   - Requires API key
+
+3. **Level 2: Local Embeddings**
+   - TensorFlow.js local embeddings
+   - No API keys needed
+   - ~25MB model download
+   - Universal Sentence Encoder
+
+4. **Level 3: Advanced Vector Store**
+   - Qdrant for million+ scale search
+   - Advanced filtering and performance
+   - Local or cloud deployment
+   - REST API integration
+
+### Configuration
+
+#### Via Claude Desktop (Recommended)
+
+If using Bridge as a Desktop Extension, you can configure embedding providers directly in the Claude Desktop UI:
+
+1. Open Claude Desktop settings
+2. Navigate to MCP Servers → Bridge
+3. Configure your preferred embedding provider:
+   - **None (Default)**: Quality-only search, no API keys needed
+   - **Voyage AI**: Best quality embeddings (requires API key from voyageai.com)
+   - **OpenAI**: Good quality embeddings (requires API key from platform.openai.com)
+   - **TensorFlow**: Local embeddings, no API key needed (~25MB download)
+4. For Qdrant (advanced users):
+   - Set Qdrant URL (default: http://localhost:6333)
+   - Add API key if using Qdrant Cloud
+   - Customize collection name if needed
+
+#### Via Environment Variables
+
+Alternatively, configure embedding providers via environment variables:
+
+```bash
+# .env
+BRIDGE_EMBEDDING_PROVIDER=voyage  # or openai, tensorflow, none (default)
+VOYAGE_API_KEY=your-api-key
+VOYAGE_MODEL=voyage-3-large      # Optional: model selection
+VOYAGE_DIMENSIONS=1024           # Optional: output dimensions
+```
+
+See [.env.example](./.env.example) for all configuration options.
+
+### Core Components
+
+- **MCP Layer**: Handles Model Context Protocol communication
+- **Tool Handlers**: Process tool calls and format responses
+- **Services**: Core business logic (experience, recall, reconsider, release)
+- **Embedding Providers**: Pluggable text-to-vector conversion
+- **Vector Stores**: Pluggable vector storage and search
+- **Storage**: JSON persistence with optional embeddings
 
 ## Documentation
 
@@ -249,6 +345,8 @@ Bridge's semantic search uses embeddings for finding similar experiences. In Cla
 - [LEARNINGS.md](./LEARNINGS.md) - Validated insights from usage
 - [OPPORTUNITIES.md](./OPPORTUNITIES.md) - Prioritized feature roadmap
 - [CLAUDE.md](./CLAUDE.md) - Claude Code development guide
+- [docs/EXTERNAL-REFERENCES.md](./docs/EXTERNAL-REFERENCES.md) - External API documentation
+- [docs/MIGRATION-GUIDE.md](./docs/MIGRATION-GUIDE.md) - Migration guide for v0.2.0
 
 ## License
 
@@ -267,8 +365,12 @@ Bridge uses a vision-driven development cycle. See [LOOP.md](./LOOP.md) for our 
 
 - ✅ Core operations (experience, recall, reconsider, release)
 - ✅ Minimal flow tracking with stillThinking parameter
-- ✅ Semantic search with embeddings
+- ✅ Semantic search with multiple embedding providers
+- ✅ Claude Desktop UI configuration for all providers
 - ✅ Quality filtering and unified scoring
 - ✅ Pattern recognition with clustering analysis
 - ✅ Learning loop with recommendations
+- ✅ Progressive vector enhancement architecture
+- ✅ Local (TensorFlow.js) and cloud (Voyage, OpenAI) embeddings
+- ✅ Qdrant integration for million+ scale deployments
 - 🚧 Sequence analysis (see OPPORTUNITIES.md)

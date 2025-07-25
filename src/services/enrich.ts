@@ -12,7 +12,7 @@ import {
   deleteEmbedding,
 } from '../core/storage.js';
 import { Source, Experience, ProcessingLevel, EmbeddingRecord } from '../core/types.js';
-import { embeddingService } from './embeddings.js';
+import { embeddingServiceV2 } from './embeddings-v2.js';
 
 // ============================================================================
 // CONSTANTS
@@ -118,7 +118,7 @@ export class EnrichService {
         const embeddingText = `"${source}" ${qualitiesText}`;
 
         try {
-          embedding = await embeddingService.generateEmbedding(embeddingText);
+          embedding = await embeddingServiceV2.generateEmbedding(embeddingText);
         } catch (error) {
           // Silently handle embedding generation errors in MCP context
         }
