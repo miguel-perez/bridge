@@ -335,7 +335,7 @@ describe('ExperienceHandler', () => {
       });
 
       expect(result.content[0].text).toContain('Experienced: test');
-      expect(result.content[0].text).toContain('Similar experience found');
+      expect(result.content[0].text).toContain('Similar: experiences found');
     });
 
     it('should handle long similar experience content', async () => {
@@ -382,7 +382,7 @@ describe('ExperienceHandler', () => {
       });
 
       expect(result.content[0].text).toContain('Experienced: test');
-      expect(result.content[0].text).toContain('Similar experience found');
+      expect(result.content[0].text).toContain('Similar: experiences found');
     });
 
     it('should not include similar experiences when none found', async () => {

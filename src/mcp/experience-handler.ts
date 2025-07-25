@@ -7,7 +7,7 @@ import {
   formatExperienceResponse,
   type ExperienceResult,
 } from '../utils/formatters.js';
-import { Messages, formatMessage } from '../utils/messages.js';
+import { Messages } from '../utils/messages.js';
 import { SEMANTIC_CONFIG } from '../core/config.js';
 import { incrementCallCount, getCallCount } from './call-counter.js';
 import { getFlowStateMessages } from './flow-messages.js';
@@ -262,7 +262,9 @@ export class ExperienceHandler {
         });
 
         const similarCount = similarResults.results.filter(
-          (r) => r.id !== result.source.id && r.relevance_score > 0.35
+          (r) =>
+            r.id !== result.source.id &&
+            r.relevance_score > SEMANTIC_CONFIG.SIMILARITY_DETECTION_THRESHOLD
         ).length;
 
         if (similarCount > 2) {
@@ -293,29 +295,38 @@ export class ExperienceHandler {
   }
 
   /**
-   * Find a similar experience to show connection
+   * Find similar experiences to show connections
    */
   private async findSimilarExperience(content: string, excludeId: string): Promise<string | null> {
     try {
       // Use semantic search to find similar experiences
       const { results } = await this.recallService.search({
         semantic_query: content,
-        semantic_threshold: 0.35, // Lower threshold to find more matches (synthetic data has lower similarity scores)
-        limit: 2, // Get 2 in case the first is the same one we just experienceed
+        semantic_threshold: SEMANTIC_CONFIG.SIMILARITY_DETECTION_THRESHOLD,
+        limit: 6, // Get 6 in case the first is the same one we just experienced
       });
 
-      // Filter out the experience we just experienceed and get the most similar
-      const similar = results.find((r) => r.id !== excludeId);
+      // Filter out the experience we just experienced and get up to 5 similar ones
+      const similarExperiences = results
+        .filter(
+          (r) =>
+            r.id !== excludeId && r.relevance_score > SEMANTIC_CONFIG.SIMILARITY_DETECTION_THRESHOLD
+        )
+        .slice(0, 5);
 
-      if (similar && similar.relevance_score > 0.35) {
-        // Format the similar experience reference
-        const snippet = similar.snippet || similar.content || '';
-        const truncated = snippet.length > 100 ? snippet.substring(0, 100) + '...' : snippet;
-
-        return formatMessage(Messages.experience.similar, { content: truncated });
+      if (similarExperiences.length === 0) {
+        return null;
       }
 
-      return null;
+      // Format the similar experiences
+      const formattedSimilar = similarExperiences.map((similar, index) => {
+        const snippet = similar.snippet || similar.content || '';
+        const truncated = snippet.length > 80 ? snippet.substring(0, 80) + '...' : snippet;
+        const score = Math.round(similar.relevance_score * 100);
+        return `  ${index + 1}. ${truncated} (${score}% match)`;
+      });
+
+      return `${Messages.experience.similar.replace('{content}', 'experiences found')}:\n${formattedSimilar.join('\n')}`;
     } catch (error) {
       // Silently fail - similarity is nice to have but not critical
       return null;

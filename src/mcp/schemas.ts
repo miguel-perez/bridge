@@ -178,7 +178,22 @@ const ExperienceItemSchema = z
       ),
     emoji: z
       .string()
-      .regex(/^\p{Emoji}$/u, 'Must be a single emoji')
+      .refine(
+        (val) => {
+          // Check if it's a valid emoji sequence
+          // This includes single emojis, compound emojis with ZWJ, and emojis with modifiers
+          const emojiRegex = /^(\p{Extended_Pictographic}|\p{Emoji_Component})+$/u;
+
+          // Also check for specific patterns to avoid multiple separate emojis
+          // Count grapheme clusters (visual characters) to ensure it's a single emoji
+          const graphemeSegmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
+          const graphemes = Array.from(graphemeSegmenter.segment(val));
+
+          // A single emoji (even compound) should be 1 grapheme cluster
+          return emojiRegex.test(val) && graphemes.length === 1;
+        },
+        { message: 'Must be a single emoji (including compound emojis)' }
+      )
       .describe(
         'Single emoji that serves as a visual/memory anchor for this experience. Choose one that captures the essence or feeling.'
       ),

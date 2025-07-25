@@ -26,7 +26,7 @@ export const SEMANTIC_CONFIG = {
   DEFAULT_THRESHOLD: 0.5,
 
   // Threshold for finding similar experiences during capture
-  SIMILARITY_DETECTION_THRESHOLD: 0.35,
+  SIMILARITY_DETECTION_THRESHOLD: 0.25,
 
   // Scoring weights for recall operations
   SCORING_WEIGHTS: {

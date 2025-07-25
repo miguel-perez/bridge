@@ -220,6 +220,74 @@ describe('Schema Validation', () => {
       const result = ExperienceInputSchema.safeParse(input);
       expect(result.success).toBe(false);
     });
+
+    it('should accept compound emojis', () => {
+      const input = {
+        experiences: [
+          {
+            source: 'Test with compound emoji',
+            emoji: '🧑‍💻', // Person with laptop (compound)
+            experience: ['mood.open'],
+          },
+        ],
+      };
+      const result = ExperienceInputSchema.safeParse(input);
+      expect(result.success).toBe(true);
+    });
+
+    it('should accept various emoji types', () => {
+      const testCases = [
+        { emoji: '😀', description: 'basic emoji' },
+        { emoji: '🧑‍💻', description: 'compound emoji with ZWJ' },
+        { emoji: '👨‍👩‍👧‍👦', description: 'family emoji (multiple ZWJ)' },
+        { emoji: '🏳️‍🌈', description: 'rainbow flag (compound)' },
+        { emoji: '🤷‍♂️', description: 'man shrugging (gendered)' },
+        { emoji: '👋🏻', description: 'waving hand with skin tone' },
+        { emoji: '🛠️', description: 'hammer and wrench' },
+      ];
+
+      testCases.forEach(({ emoji, description }) => {
+        const input = {
+          experiences: [
+            {
+              source: `Test with ${description}`,
+              emoji,
+              experience: ['mood.open'],
+            },
+          ],
+        };
+        const result = ExperienceInputSchema.safeParse(input);
+        expect(result.success).toBe(true);
+      });
+    });
+
+    it('should reject multiple separate emojis', () => {
+      const input = {
+        experiences: [
+          {
+            source: 'Test with multiple emojis',
+            emoji: '😀😀', // Two separate emojis
+            experience: ['mood.open'],
+          },
+        ],
+      };
+      const result = ExperienceInputSchema.safeParse(input);
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject non-emoji characters', () => {
+      const input = {
+        experiences: [
+          {
+            source: 'Test with non-emoji',
+            emoji: 'A', // Regular letter
+            experience: ['mood.open'],
+          },
+        ],
+      };
+      const result = ExperienceInputSchema.safeParse(input);
+      expect(result.success).toBe(false);
+    });
   });
 
   describe('SearchInputSchema', () => {
