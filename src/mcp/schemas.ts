@@ -237,12 +237,19 @@ export const ExperienceInputSchema = z
 // RECALL tool input - Array Only
 const SearchItemSchema = z
   .object({
-    query: z
+    ids: z
       .union([
-        z.string().describe('Search query for semantic matching'),
-        z.array(z.string()).describe('Array of qualities or search terms'),
+        z.string().describe('Exact experience ID to fetch'),
+        z.array(z.string()).describe('Array of exact experience IDs to fetch'),
       ])
-      .describe('Search query - can be a string or array of qualities')
+      .describe('Exact ID lookup - returns only these specific experiences')
+      .optional(),
+    search: z
+      .union([
+        z.string().describe('Semantic search query for finding related experiences'),
+        z.array(z.string()).describe('Array of search terms for semantic matching'),
+      ])
+      .describe('Semantic search - finds experiences by meaning/content')
       .optional(),
     qualities: QualityFilterSchema.optional().describe(
       'Sophisticated quality filtering with presence/absence filtering and OR logic within qualities'
@@ -401,7 +408,7 @@ export function generateSearchExample(): SearchInput {
   return {
     searches: [
       {
-        query: 'creative breakthrough moments',
+        search: 'creative breakthrough moments',
         limit: 5,
         experiencer: 'Alex',
         perspective: 'I',
@@ -489,12 +496,12 @@ export function generateBatchSearchExample(): SearchInput {
   return {
     searches: [
       {
-        query: 'creative breakthrough',
+        search: 'creative breakthrough',
         limit: 3,
         sort: 'relevance',
       },
       {
-        query: 'peaceful moments',
+        search: 'peaceful moments',
         limit: 3,
         sort: 'created',
       },

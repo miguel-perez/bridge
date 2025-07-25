@@ -257,6 +257,7 @@ export function formatBatchExperienceResponse(
  * @param hasMore - Whether there are more results available
  * @param limit - Limit applied to results
  * @param offset - Offset applied to results
+ * @param searchDescription - Human-readable description of the search
  * @returns Natural language response string with metadata
  */
 export function formatRecallResponse(
@@ -265,13 +266,23 @@ export function formatRecallResponse(
   total?: number,
   hasMore?: boolean,
   limit?: number,
-  offset?: number
+  offset?: number,
+  searchDescription?: string
 ): string {
   if (results.length === 0) {
-    return Messages.recall.none;
+    const description = searchDescription || 'your search';
+    return `No experiences found for ${description}`;
   }
 
-  const lines = [formatMessage(Messages.recall.found, { count: results.length }), ''];
+  // Show both total and returned count when they differ
+  let countMessage: string;
+  if (total !== undefined && total > results.length) {
+    countMessage = `Found ${total} results for ${searchDescription || 'your search'} (showing ${results.length})`;
+  } else {
+    countMessage = `Found ${results.length} results for ${searchDescription || 'your search'}`;
+  }
+
+  const lines = [countMessage, ''];
 
   // Add metadata if available
   if (total !== undefined && total > results.length) {

@@ -88,7 +88,7 @@ describe('RecallHandler', () => {
       const result = await handler.handle({
         searches: [
           {
-            query: 'test',
+            search: 'test',
           },
         ],
       });
@@ -125,7 +125,7 @@ describe('RecallHandler', () => {
       await handler.handle({
         searches: [
           {
-            query: 'recent',
+            search: 'recent',
           },
         ],
       });
@@ -157,7 +157,7 @@ describe('RecallHandler', () => {
       await handler.handle({
         searches: [
           {
-            query: 'last',
+            search: 'last',
           },
         ],
       });
@@ -181,7 +181,7 @@ describe('RecallHandler', () => {
       await handler.handle({
         searches: [
           {
-            query: 'mood.open',
+            search: 'mood.open',
           },
         ],
       });
@@ -203,7 +203,7 @@ describe('RecallHandler', () => {
       await handler.handle({
         searches: [
           {
-            query: ['mood.open', 'embodied.thinking'],
+            search: ['mood.open', 'embodied.thinking'],
           },
         ],
       });
@@ -226,6 +226,119 @@ describe('RecallHandler', () => {
       });
     });
 
+    it('should handle ID-based lookup', async () => {
+      const mockResults = [
+        {
+          id: 'exp_ABC',
+          type: 'experience',
+          snippet: 'Test experience 1',
+          content: 'Test experience 1',
+          metadata: { created: '2025-01-01' },
+          relevance_score: 0.9,
+        },
+        {
+          id: 'exp_DEF',
+          type: 'experience',
+          snippet: 'Test experience 2',
+          content: 'Test experience 2',
+          metadata: { created: '2025-01-02' },
+          relevance_score: 0.8,
+        },
+        {
+          id: 'exp_XYZ',
+          type: 'experience',
+          snippet: 'Other experience',
+          content: 'Other experience',
+          metadata: { created: '2025-01-03' },
+          relevance_score: 0.7,
+        },
+      ];
+
+      mockRecallService.search.mockResolvedValue({
+        results: mockResults,
+        stats: { total: 3 },
+      });
+
+      const result = await handler.handle({
+        searches: [
+          {
+            ids: ['exp_ABC', 'exp_DEF'],
+          },
+        ],
+      });
+
+      expect(result.content[0]).toEqual({
+        type: 'text',
+        text: 'Formatted recall results',
+      });
+
+      // Check that formatRecallResponse was called with only the requested IDs
+      expect(mockFormatRecallResponse).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: 'exp_ABC',
+            relevance_score: 1.0,
+          }),
+          expect.objectContaining({
+            id: 'exp_DEF',
+            relevance_score: 1.0,
+          }),
+        ]),
+        true,
+        2,
+        false,
+        undefined,
+        undefined,
+        '2 specific experience IDs'
+      );
+
+      // Verify results are filtered to requested IDs
+      const formattedResults = mockFormatRecallResponse.mock.calls[0][0];
+      expect(formattedResults).toHaveLength(2);
+      expect(formattedResults.map((r: any) => r.id)).toEqual(['exp_ABC', 'exp_DEF']);
+    });
+
+    it('should handle single ID lookup', async () => {
+      const mockResults = [
+        {
+          id: 'exp_ABC',
+          type: 'experience',
+          snippet: 'Test experience',
+          content: 'Test experience',
+          metadata: { created: '2025-01-01' },
+          relevance_score: 0.9,
+        },
+      ];
+
+      mockRecallService.search.mockResolvedValue({
+        results: mockResults,
+        stats: { total: 1 },
+      });
+
+      await handler.handle({
+        searches: [
+          {
+            ids: 'exp_ABC',
+          },
+        ],
+      });
+
+      expect(mockFormatRecallResponse).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: 'exp_ABC',
+            relevance_score: 1.0,
+          }),
+        ]),
+        true,
+        1,
+        false,
+        undefined,
+        undefined,
+        'experience ID exp_ABC'
+      );
+    });
+
     it('should pass through all filter parameters', async () => {
       mockRecallService.search.mockResolvedValue({
         results: [],
@@ -235,7 +348,7 @@ describe('RecallHandler', () => {
       await handler.handle({
         searches: [
           {
-            query: 'test',
+            search: 'test',
             experiencer: 'Human',
             perspective: 'First',
             processing: 'during',
@@ -289,13 +402,92 @@ describe('RecallHandler', () => {
       });
     });
 
+    it('should provide descriptive search summaries', async () => {
+      const mockResults = [
+        {
+          id: 'exp_123',
+          type: 'experience',
+          snippet: 'Test',
+          content: 'Test',
+          metadata: { created: '2025-01-01' },
+          relevance_score: 0.8,
+        },
+      ];
+
+      mockRecallService.search.mockResolvedValue({
+        results: mockResults,
+        stats: { total: 1 },
+      });
+
+      // Test various filter combinations
+      await handler.handle({
+        searches: [
+          {
+            experiencer: 'Miguel',
+          },
+        ],
+      });
+
+      expect(mockFormatRecallResponse).toHaveBeenCalledWith(
+        expect.anything(),
+        true,
+        1,
+        false,
+        undefined,
+        undefined,
+        'all experiences by Miguel'
+      );
+
+      mockFormatRecallResponse.mockClear();
+
+      await handler.handle({
+        searches: [
+          {
+            perspective: 'we',
+          },
+        ],
+      });
+
+      expect(mockFormatRecallResponse).toHaveBeenCalledWith(
+        expect.anything(),
+        true,
+        1,
+        false,
+        undefined,
+        undefined,
+        "'we' perspective experiences"
+      );
+
+      mockFormatRecallResponse.mockClear();
+
+      await handler.handle({
+        searches: [
+          {
+            search: 'trauma',
+            experiencer: 'Human',
+            qualities: { mood: 'closed' },
+          },
+        ],
+      });
+
+      expect(mockFormatRecallResponse).toHaveBeenCalledWith(
+        expect.anything(),
+        true,
+        1,
+        false,
+        undefined,
+        undefined,
+        "'trauma' by Human with mood.closed"
+      );
+    });
+
     it('should handle service errors gracefully', async () => {
       mockRecallService.search.mockRejectedValue(new Error('Service error'));
 
       const result = await handler.handle({
         searches: [
           {
-            query: 'test',
+            search: 'test',
           },
         ],
       });
@@ -310,7 +502,7 @@ describe('RecallHandler', () => {
       const result = await handler.handle({
         searches: [
           {
-            query: 'test',
+            search: 'test',
             limit: -1, // Invalid limit
           },
         ],
@@ -328,7 +520,7 @@ describe('RecallHandler', () => {
       const result = await handler.handle({
         searches: [
           {
-            query: 'test',
+            search: 'test',
           },
         ],
       });
@@ -350,7 +542,7 @@ describe('RecallHandler', () => {
       const result = await handler.handle({
         searches: [
           {
-            query: 'this is a very long query that is unlikely to match anything exactly',
+            search: 'this is a very long query that is unlikely to match anything exactly',
           },
         ],
       });
@@ -370,7 +562,7 @@ describe('RecallHandler', () => {
       const result = await handler.handle({
         searches: [
           {
-            query: 'ab',
+            search: 'ab',
           },
         ],
       });
@@ -390,7 +582,7 @@ describe('RecallHandler', () => {
       const result = await handler.handle({
         searches: [
           {
-            query: 'normal query',
+            search: 'normal query',
           },
         ],
       });
@@ -418,7 +610,7 @@ describe('RecallHandler', () => {
       const result = await handler.handle({
         searches: [
           {
-            query: 'test',
+            search: 'test',
           },
         ],
       });
@@ -453,7 +645,7 @@ describe('RecallHandler', () => {
       const result = await handler.handle({
         searches: [
           {
-            query: 'recent',
+            search: 'recent',
           },
         ],
       });
@@ -495,7 +687,7 @@ describe('RecallHandler', () => {
       const result = await handler.handle({
         searches: [
           {
-            query: 'test',
+            search: 'test',
           },
         ],
       });
@@ -526,7 +718,7 @@ describe('RecallHandler', () => {
       const result = await handler.handle({
         searches: [
           {
-            query: 'anxiety',
+            search: 'anxiety',
           },
         ],
       });
@@ -561,7 +753,7 @@ describe('RecallHandler', () => {
       const result = await handler.handle({
         searches: [
           {
-            query: 'test',
+            search: 'test',
           },
         ],
       });
@@ -597,7 +789,7 @@ describe('RecallHandler', () => {
       const result = await handler.handle({
         searches: [
           {
-            query: 'test',
+            search: 'test',
           },
         ],
       });
@@ -619,7 +811,8 @@ describe('RecallHandler', () => {
         1,
         false,
         undefined,
-        undefined
+        undefined,
+        "'test'"
       );
     });
 
@@ -642,7 +835,7 @@ describe('RecallHandler', () => {
       await handler.handle({
         searches: [
           {
-            query: 'test',
+            search: 'test',
           },
         ],
       });
@@ -653,7 +846,8 @@ describe('RecallHandler', () => {
         1,
         false,
         undefined,
-        undefined
+        undefined,
+        "'test'"
       );
     });
 
@@ -675,7 +869,7 @@ describe('RecallHandler', () => {
       await handler.handle({
         searches: [
           {
-            query: 'test',
+            search: 'test',
           },
         ],
       });
@@ -686,7 +880,8 @@ describe('RecallHandler', () => {
         1,
         false,
         undefined,
-        undefined
+        undefined,
+        "'test'"
       );
     });
 
@@ -712,7 +907,7 @@ describe('RecallHandler', () => {
       await handler.handle({
         searches: [
           {
-            query: 'test',
+            search: 'test',
           },
         ],
       });
@@ -734,7 +929,8 @@ describe('RecallHandler', () => {
         1,
         false,
         undefined,
-        undefined
+        undefined,
+        "'test'"
       );
     });
   });
@@ -749,7 +945,7 @@ describe('RecallHandler', () => {
       await handler.handle({
         searches: [
           {
-            query: 'test',
+            search: 'test',
           },
         ],
       });

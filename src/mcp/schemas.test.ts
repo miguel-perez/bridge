@@ -303,11 +303,11 @@ describe('Schema Validation', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should validate with only query', () => {
+    it('should validate with only search', () => {
       const input = {
         searches: [
           {
-            query: 'test query',
+            search: 'test query',
           },
         ],
       };
@@ -332,7 +332,7 @@ describe('Schema Validation', () => {
       const input = {
         searches: [
           {
-            query: 'test query',
+            search: 'test query',
             experiencer: 'Alex',
             perspective: 'I',
             limit: 10,
@@ -349,7 +349,7 @@ describe('Schema Validation', () => {
       const input = {
         searches: [
           {
-            query: 'test query',
+            search: 'test query',
             reflects: 'only',
           },
         ],
@@ -362,7 +362,7 @@ describe('Schema Validation', () => {
       const input = {
         searches: [
           {
-            query: 'test query',
+            search: 'test query',
             reflected_by: 'exp-123',
           },
         ],
@@ -375,7 +375,7 @@ describe('Schema Validation', () => {
       const input = {
         searches: [
           {
-            query: 'test query',
+            search: 'test query',
             reflected_by: ['exp-123', 'exp-456'],
           },
         ],
@@ -388,7 +388,7 @@ describe('Schema Validation', () => {
       const input = {
         searches: [
           {
-            query: 'test query',
+            search: 'test query',
             sort: 'invalid' as any,
           },
         ],
@@ -401,7 +401,7 @@ describe('Schema Validation', () => {
       const input = {
         searches: [
           {
-            query: 'test query',
+            search: 'test query',
             limit: -1,
           },
         ],
@@ -414,7 +414,7 @@ describe('Schema Validation', () => {
       const input = {
         searches: [
           {
-            query: 'test query',
+            search: 'test query',
             offset: -1,
           },
         ],
@@ -427,7 +427,7 @@ describe('Schema Validation', () => {
       const input = {
         searches: [
           {
-            query: 'test query',
+            search: 'test query',
             invalidField: 'not-allowed',
           },
         ] as any,
@@ -660,7 +660,7 @@ describe('Type Guards', () => {
 
     describe('hasSearchArray', () => {
       it('should return true for valid search array', () => {
-        const input = { searches: [{ query: 'test' }] };
+        const input = { searches: [{ search: 'test' }] };
         expect(hasSearchArray(input)).toBe(true);
       });
 
@@ -670,7 +670,7 @@ describe('Type Guards', () => {
       });
 
       it('should return false for missing searches', () => {
-        const input = { query: 'test' };
+        const input = { search: 'test' };
         expect(hasSearchArray(input as any)).toBe(false);
       });
     });
@@ -725,7 +725,7 @@ describe('Example Generation', () => {
     const example = generateSearchExample();
     expect(example).toHaveProperty('searches');
     expect(Array.isArray(example.searches)).toBe(true);
-    expect(example.searches![0]).toHaveProperty('query');
+    expect(example.searches![0]).toHaveProperty('search');
   });
 
   it('should generate valid reconsider examples', () => {
