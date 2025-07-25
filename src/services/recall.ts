@@ -4,8 +4,148 @@ import { embeddingServiceV2 } from './embeddings-v2.js';
 import { findSimilarByEmbedding } from './embedding-search.js';
 import { SEMANTIC_CONFIG } from '../core/config.js';
 import { applyFiltersAndScore } from './unified-scoring.js';
-import { clusterExperiences } from './clustering.js';
+import { ExperienceCluster, clusterExperiences } from './clustering.js';
 import { type QualityFilter } from './quality-filter.js';
+
+// ============================================================================
+// GROUPING FUNCTIONS (Prompt 4)
+// ============================================================================
+
+/**
+ * Group experiences by specified criteria
+ *
+ * @param experiences - Array of source records to group
+ * @param groupBy - Grouping criteria
+ * @returns Array of experience clusters/groups
+ */
+async function groupExperiences(
+  experiences: SourceRecord[],
+  groupBy: 'experiencer' | 'date' | 'qualities' | 'perspective'
+): Promise<ExperienceCluster[]> {
+  switch (groupBy) {
+    case 'experiencer':
+      return groupByExperiencer(experiences);
+    case 'date':
+      return groupByDate(experiences);
+    case 'qualities':
+      return groupByQualities(experiences);
+    case 'perspective':
+      return groupByPerspective(experiences);
+    default:
+      return [];
+  }
+}
+
+/**
+ * Group by unique experiencer values
+ * Sort groups by experience count (descending)
+ */
+function groupByExperiencer(experiences: SourceRecord[]): ExperienceCluster[] {
+  const groups = new Map<string, string[]>();
+
+  experiences.forEach((exp) => {
+    const experiencer = exp.experiencer || 'Unknown';
+    if (!groups.has(experiencer)) {
+      groups.set(experiencer, []);
+    }
+    groups.get(experiencer)!.push(exp.id);
+  });
+
+  // Sort by experience count (descending)
+  const sortedGroups = Array.from(groups.entries()).sort((a, b) => b[1].length - a[1].length);
+
+  return sortedGroups.map(([experiencer, experienceIds]) => ({
+    id: `group-experiencer-${experiencer}`,
+    summary: `${experiencer} (${experienceIds.length} experience${experienceIds.length === 1 ? '' : 's'})`,
+    experienceIds,
+    commonQualities: [],
+    size: experienceIds.length,
+  }));
+}
+
+/**
+ * Group by calendar date (ignore time)
+ * Sort groups chronologically
+ */
+function groupByDate(experiences: SourceRecord[]): ExperienceCluster[] {
+  const groups = new Map<string, string[]>();
+
+  experiences.forEach((exp) => {
+    const date = new Date(exp.created).toISOString().split('T')[0]; // YYYY-MM-DD
+    if (!groups.has(date)) {
+      groups.set(date, []);
+    }
+    groups.get(date)!.push(exp.id);
+  });
+
+  // Sort chronologically
+  const sortedGroups = Array.from(groups.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+
+  return sortedGroups.map(([date, experienceIds]) => ({
+    id: `group-date-${date}`,
+    summary: `${date} (${experienceIds.length} experience${experienceIds.length === 1 ? '' : 's'})`,
+    experienceIds,
+    commonQualities: [],
+    size: experienceIds.length,
+  }));
+}
+
+/**
+ * Group by complete quality signature
+ * Experiences with identical quality arrays go together
+ */
+function groupByQualities(experiences: SourceRecord[]): ExperienceCluster[] {
+  const groups = new Map<string, string[]>();
+
+  experiences.forEach((exp) => {
+    const qualities = exp.experience || [];
+    const qualityKey = qualities.sort().join(', ');
+    const displayKey = qualityKey || 'No qualities';
+
+    if (!groups.has(displayKey)) {
+      groups.set(displayKey, []);
+    }
+    groups.get(displayKey)!.push(exp.id);
+  });
+
+  // Sort by experience count (descending)
+  const sortedGroups = Array.from(groups.entries()).sort((a, b) => b[1].length - a[1].length);
+
+  return sortedGroups.map(([qualityKey, experienceIds]) => ({
+    id: `group-qualities-${qualityKey.slice(0, 20)}`,
+    summary: `${qualityKey} (${experienceIds.length} experience${experienceIds.length === 1 ? '' : 's'})`,
+    experienceIds,
+    commonQualities: qualityKey === 'No qualities' ? [] : qualityKey.split(', '),
+    size: experienceIds.length,
+  }));
+}
+
+/**
+ * Group by perspective value (I, we, you, they, etc.)
+ * Sort by count or alphabetically
+ */
+function groupByPerspective(experiences: SourceRecord[]): ExperienceCluster[] {
+  const groups = new Map<string, string[]>();
+
+  experiences.forEach((exp) => {
+    const perspective = exp.perspective || 'Unknown';
+    if (!groups.has(perspective)) {
+      groups.set(perspective, []);
+    }
+    groups.get(perspective)!.push(exp.id);
+  });
+
+  // Sort by experience count (descending)
+  const sortedGroups = Array.from(groups.entries()).sort((a, b) => b[1].length - a[1].length);
+
+  return sortedGroups.map(([perspective, experienceIds]) => ({
+    id: `group-perspective-${perspective}`,
+    summary: `${perspective} perspective (${experienceIds.length} experience${experienceIds.length === 1 ? '' : 's'})`,
+    experienceIds,
+    commonQualities: [],
+    size: experienceIds.length,
+  }));
+}
 
 // Debug mode configuration
 const DEBUG_MODE = process.env.BRIDGE_DEBUG === 'true';
@@ -68,7 +208,9 @@ export interface RecallInput {
   id?: string;
   // Display options
   show_ids?: boolean;
-  // Clustering option
+  // Grouping options
+  group_by?: 'similarity' | 'experiencer' | 'date' | 'qualities' | 'perspective' | 'none';
+  // Clustering option (DEPRECATED - use group_by: 'similarity' instead)
   as?: 'clusters';
   // Sophisticated quality filtering
   qualities?: QualityFilter;
@@ -462,10 +604,31 @@ export async function search(input: RecallInput): Promise<RecallServiceResponse>
 
     // Handle clustering if requested
     let clusters;
-    if (input.as === 'clusters') {
+
+    // Handle migration from deprecated 'as' parameter to 'group_by'
+    let groupBy = input.group_by;
+    if (input.as && !groupBy) {
+      // Log deprecation warning for service layer
+      console.warn(
+        "RecallService: Parameter 'as' is deprecated. Use 'group_by: similarity' instead"
+      );
+
+      // Convert 'as: clusters' to 'group_by: similarity'
+      if (input.as === 'clusters') {
+        groupBy = 'similarity';
+      }
+    }
+
+    if (groupBy === 'similarity') {
       addDebugLog('Clustering requested, generating clusters from results');
       clusters = await clusterExperiences(finalRecords);
       addDebugLog(`Generated ${clusters.length} clusters from ${finalRecords.length} experiences`);
+    } else if (groupBy && groupBy !== 'none') {
+      addDebugLog(`Grouping by ${groupBy} requested`);
+      clusters = await groupExperiences(finalRecords, groupBy);
+      addDebugLog(
+        `Generated ${clusters.length} ${groupBy} groups from ${finalRecords.length} experiences`
+      );
     }
 
     return {

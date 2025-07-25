@@ -1,16 +1,57 @@
-import { ExperienceService } from '../services/experience.js';
 import { RecallService } from '../services/recall.js';
-import { ToolResult, ToolResultSchema } from './schemas.js';
-import type { ExperienceInput } from './schemas.js';
+import { ExperienceService } from '../services/experience.js';
+import { ExperienceInput, ToolResultSchema, type ToolResult } from './schemas.js';
 import {
-  formatBatchExperienceResponse,
   formatExperienceResponse,
+  formatBatchExperienceResponse,
   type ExperienceResult,
 } from '../utils/formatters.js';
-import { Messages } from '../utils/messages.js';
 import { SEMANTIC_CONFIG } from '../core/config.js';
 import { incrementCallCount, getCallCount } from './call-counter.js';
 import { getFlowStateMessages } from './flow-messages.js';
+
+/**
+ * Interface for similar experience data
+ */
+interface SimilarExperience {
+  id: string;
+  snippet?: string;
+  content?: string;
+  relevance_score: number;
+}
+
+/**
+ * Format similar experiences with improved readability
+ *
+ * @param similar - Array of similar experiences
+ * @returns Formatted string or empty string if no experiences
+ */
+function formatSimilarExperiences(similar: SimilarExperience[]): string {
+  if (similar.length === 0) return '';
+
+  let output = '\nSimilar experiences found:\n';
+
+  similar.forEach((exp, index) => {
+    const snippet = exp.snippet || exp.content || '';
+
+    // Use more generous truncation (100 chars instead of 80)
+    const truncated = snippet.length > 100 ? snippet.substring(0, 97) + '...' : snippet;
+
+    const score = Math.round(exp.relevance_score * 100);
+
+    // Format with clear separation and quotes around content
+    output += `  ${index + 1}. "${truncated}"\n`;
+    output += `     (${score}% match)`;
+
+    // Add connection info if available (placeholder for future enhancement)
+    // This could be enhanced to show actual connection counts
+    output += ` • Connects to similar moments`;
+
+    output += '\n';
+  });
+
+  return output;
+}
 
 /**
  * Response structure for experience capture operations
@@ -319,15 +360,7 @@ export class ExperienceHandler {
         return null;
       }
 
-      // Format the similar experiences
-      const formattedSimilar = similarExperiences.map((similar, index) => {
-        const snippet = similar.snippet || similar.content || '';
-        const truncated = snippet.length > 80 ? snippet.substring(0, 80) + '...' : snippet;
-        const score = Math.round(similar.relevance_score * 100);
-        return `  ${index + 1}. ${truncated} (${score}% match)`;
-      });
-
-      return `${Messages.experience.similar.replace('{content}', 'experiences found')}:\n${formattedSimilar.join('\n')}`;
+      return formatSimilarExperiences(similarExperiences);
     } catch (error) {
       // Silently fail - similarity is nice to have but not critical
       return null;

@@ -175,6 +175,249 @@ export interface RecallResult {
   relevance_score?: number;
 }
 
+// ============================================================================
+// NEW COMPREHENSIVE RESPONSE STRUCTURES (Prompt 2)
+// ============================================================================
+
+/**
+ * Interface for recall search parameters (matching schema)
+ */
+export interface RecallSearchParams {
+  // Exact ID lookup
+  ids?: string | string[];
+
+  // Semantic search (renamed from 'query')
+  search?: string;
+
+  // Grouping behavior (replacing 'as')
+  group_by?: 'similarity' | 'experiencer' | 'date' | 'qualities' | 'perspective' | 'none';
+
+  // Existing filters
+  experiencer?: string;
+  perspective?: string;
+  qualities?: any; // QualityFilters type
+  created?: string | { start: string; end: string };
+  reflects?: 'only';
+  reflected_by?: string | string[];
+  processing?: 'during' | 'right-after' | 'long-after';
+  crafted?: boolean;
+
+  // Display options
+  limit?: number;
+  offset?: number;
+  sort?: 'relevance' | 'created';
+}
+
+/**
+ * Response structure for flat (ungrouped) results
+ */
+export interface RecallResponse {
+  results: RecallResult[];
+  summary: {
+    // Core counts
+    totalMatches: number; // Total in database matching filters
+    returnedCount: number; // Number in this response
+
+    // Pagination info
+    range?: {
+      start: number; // 1-based index
+      end: number; // 1-based index
+    };
+
+    // Search metadata
+    searchType: 'ids' | 'semantic' | 'filters' | 'mixed';
+    searchDescription: string; // Human-readable with ALL parameters
+
+    // All active parameters
+    activeFilters: RecallSearchParams;
+  };
+}
+
+/**
+ * Response structure for grouped results
+ */
+export interface GroupedRecallResponse {
+  groups: Array<{
+    key: string | Date | string[]; // QualitySignature represented as string[]
+    label: string; // Human-readable group name
+    count: number; // Experiences in this group
+    experiences: RecallResult[];
+
+    // For similarity groups
+    commonQualities?: string[];
+    themeSummary?: string;
+  }>;
+  summary: {
+    // Grouping metadata
+    groupType: 'similarity' | 'experiencer' | 'date' | 'qualities' | 'perspective';
+    groupCount: number;
+    totalExperiences: number;
+
+    // Same as flat response
+    searchType: 'ids' | 'semantic' | 'filters' | 'mixed';
+    searchDescription: string;
+    activeFilters: RecallSearchParams;
+  };
+}
+
+/**
+ * Union type for all recall responses
+ */
+export type ComprehensiveRecallResponse = RecallResponse | GroupedRecallResponse;
+
+// ============================================================================
+// COMPREHENSIVE FEEDBACK STRING GENERATOR (Prompt 3)
+// ============================================================================
+
+/**
+ * Generate comprehensive search feedback from response summary
+ *
+ * @param summary - Response summary containing metadata and active filters
+ * @returns Human-readable feedback string describing the search and results
+ */
+export function generateSearchFeedback(
+  summary: RecallResponse['summary'] | GroupedRecallResponse['summary']
+): string {
+  let feedback = '';
+
+  // 1. Base result count
+  if ('groupType' in summary) {
+    // Grouped response
+    feedback = `Found ${summary.groupCount} ${summary.groupType} groups containing ${summary.totalExperiences} experiences`;
+  } else {
+    // Flat response
+    feedback = `Found ${summary.totalMatches} experiences`;
+  }
+
+  // 2. Add search/ID context
+  if (summary.activeFilters.ids) {
+    const idCount = Array.isArray(summary.activeFilters.ids) ? summary.activeFilters.ids.length : 1;
+    feedback +=
+      idCount === 1
+        ? ` for experience ID ${summary.activeFilters.ids}`
+        : ` for ${idCount} specific experience IDs`;
+  } else if (summary.activeFilters.search) {
+    feedback += ` for '${summary.activeFilters.search}'`;
+  } else if (hasNonSearchFilters(summary.activeFilters)) {
+    feedback += ' matching filters';
+  } else {
+    // No filters at all
+    feedback = feedback.replace('experiences', 'all experiences');
+  }
+
+  // 3. Add each active filter
+  if (summary.activeFilters.experiencer) {
+    feedback += ` by ${summary.activeFilters.experiencer}`;
+  }
+
+  if (summary.activeFilters.perspective) {
+    feedback += ` from '${summary.activeFilters.perspective}' perspective`;
+  }
+
+  if (summary.activeFilters.reflects === 'only') {
+    feedback += ' (pattern realizations only)';
+  }
+
+  if (summary.activeFilters.reflected_by) {
+    feedback += ` reflected by ${summary.activeFilters.reflected_by}`;
+  }
+
+  if (summary.activeFilters.qualities) {
+    feedback += ' with ' + formatQualityFilters(summary.activeFilters.qualities);
+  }
+
+  if (summary.activeFilters.created) {
+    feedback += ' ' + formatDateFilter(summary.activeFilters.created);
+  }
+
+  if (summary.activeFilters.processing) {
+    feedback += ` processed ${summary.activeFilters.processing}`;
+  }
+
+  if (summary.activeFilters.crafted === true) {
+    feedback += ' (crafted content)';
+  } else if (summary.activeFilters.crafted === false) {
+    feedback += ' (raw experiences)';
+  }
+
+  // 4. Add sort if not default
+  if (summary.activeFilters.sort === 'created') {
+    feedback += ' sorted by creation date';
+  }
+
+  // 5. Add pagination/limit info
+  if ('totalMatches' in summary && summary.totalMatches > summary.returnedCount) {
+    if (summary.range) {
+      feedback += ` (showing ${summary.range.start}-${summary.range.end})`;
+    } else {
+      feedback += ` (showing first ${summary.returnedCount})`;
+    }
+  }
+
+  return feedback;
+}
+
+/**
+ * Check if any filters besides ids/search are active
+ *
+ * @param filters - Active filters object
+ * @returns True if non-search filters are present
+ */
+function hasNonSearchFilters(filters: RecallSearchParams): boolean {
+  const searchKeys = ['ids', 'search'];
+  const filterKeys = Object.keys(filters).filter((key) => !searchKeys.includes(key));
+  return filterKeys.some((key) => filters[key as keyof RecallSearchParams] !== undefined);
+}
+
+/**
+ * Convert quality filters to readable text
+ *
+ * @param qualities - Quality filters object
+ * @returns Human-readable quality filter description
+ */
+function formatQualityFilters(qualities: any): string {
+  if (!qualities || typeof qualities !== 'object') {
+    return 'qualities';
+  }
+
+  const qualityParts: string[] = [];
+
+  for (const [quality, filter] of Object.entries(qualities)) {
+    if (typeof filter === 'string') {
+      qualityParts.push(`${quality}.${filter}`);
+    } else if (Array.isArray(filter)) {
+      qualityParts.push(`${quality}.[${filter.join(' OR ')}]`);
+    } else if (typeof filter === 'object' && filter !== null && 'present' in filter) {
+      const presentFilter = filter as { present: boolean };
+      qualityParts.push(`${presentFilter.present ? 'with' : 'without'} ${quality}`);
+    } else {
+      qualityParts.push(quality);
+    }
+  }
+
+  return qualityParts.length > 0 ? qualityParts.join(', ') : 'qualities';
+}
+
+/**
+ * Convert date filter to readable text
+ *
+ * @param dateFilter - Date filter (string or date range)
+ * @returns Human-readable date filter description
+ */
+function formatDateFilter(dateFilter: string | { start: string; end: string }): string {
+  if (typeof dateFilter === 'string') {
+    return `from ${dateFilter}`;
+  } else if (
+    dateFilter &&
+    typeof dateFilter === 'object' &&
+    'start' in dateFilter &&
+    'end' in dateFilter
+  ) {
+    return `from ${dateFilter.start} to ${dateFilter.end}`;
+  }
+  return 'with date filter';
+}
+
 /**
  * Format a experience response with natural language
  *

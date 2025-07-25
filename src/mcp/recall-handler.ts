@@ -209,6 +209,9 @@ export class RecallHandler {
       }> = [];
 
       for (const searchItem of recall.searches) {
+        // Use group_by parameter for result grouping
+        const groupBy = searchItem.group_by;
+
         const limit = searchItem.limit || 10;
 
         // Handle ID-based lookup
@@ -321,7 +324,7 @@ export class RecallHandler {
             created: searchItem.created,
             sort: isRecentQuery ? 'created' : searchItem.sort, // Force sort by created for recent
             // Handle clustering if requested
-            as: searchItem.as,
+            group_by: groupBy,
             // Pass sophisticated quality filters
             qualities: searchItem.qualities,
             // Pattern realization filters

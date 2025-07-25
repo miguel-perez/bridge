@@ -180,19 +180,44 @@ const ExperienceItemSchema = z
       .string()
       .refine(
         (val) => {
-          // Check if it's a valid emoji sequence
-          // This includes single emojis, compound emojis with ZWJ, and emojis with modifiers
-          const emojiRegex = /^(\p{Extended_Pictographic}|\p{Emoji_Component})+$/u;
+          // Comprehensive emoji validation for composite emojis
+          if (!val || val.length === 0) return false;
 
-          // Also check for specific patterns to avoid multiple separate emojis
-          // Count grapheme clusters (visual characters) to ensure it's a single emoji
-          const graphemeSegmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
-          const graphemes = Array.from(graphemeSegmenter.segment(val));
+          // Use Intl.Segmenter if available (modern browsers/Node.js)
+          if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+            const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
+            const segments = Array.from(segmenter.segment(val));
 
-          // A single emoji (even compound) should be 1 grapheme cluster
-          return emojiRegex.test(val) && graphemes.length === 1;
+            // Must be exactly one grapheme cluster (visual character)
+            if (segments.length !== 1) return false;
+
+            // Check if the single grapheme contains emoji characters
+            const segment = segments[0].segment;
+            return /\p{Emoji}/u.test(segment);
+          }
+
+          // Fallback for older environments - comprehensive emoji regex
+          // This pattern matches:
+          // - Basic emojis: \p{Emoji}
+          // - Variation selectors: \uFE0F
+          // - Zero-width joiners: \u200D
+          // - Skin tone modifiers: \p{Emoji_Modifier}
+          // - Regional indicators: \p{Regional_Indicator}
+          const comprehensiveEmojiRegex =
+            /^(?:\p{Emoji}(?:\p{Emoji_Modifier}|\uFE0F|\u200D(?:\p{Emoji}(?:\p{Emoji_Modifier}|\uFE0F)?))*)+$/u;
+
+          // Additional check: ensure it's not multiple separate emojis
+          // Split by common emoji boundaries (space, etc) and check we only have one "unit"
+          const trimmed = val.trim();
+          if (trimmed !== val) return false; // No leading/trailing whitespace
+          if (/\s/.test(val)) return false; // No internal whitespace
+
+          return comprehensiveEmojiRegex.test(val);
         },
-        { message: 'Must be a single emoji (including compound emojis)' }
+        {
+          message:
+            'Must be a single emoji (including compound emojis with modifiers, skin tones, and sequences)',
+        }
       )
       .describe(
         'Single emoji that serves as a visual/memory anchor for this experience. Choose one that captures the essence or feeling.'
@@ -297,9 +322,17 @@ const SearchItemSchema = z
       .describe('Filter by creation date')
       .optional(),
     sort: SortEnum.optional(),
+    group_by: z
+      .enum(['similarity', 'experiencer', 'date', 'qualities', 'perspective', 'none'])
+      .describe(
+        'Group results by specified criteria: similarity (clusters), experiencer, date, qualities, perspective, or none for flat results'
+      )
+      .optional(),
     as: z
       .enum(['clusters'])
-      .describe('Return results as clusters of similar experiences instead of individual results')
+      .describe(
+        'DEPRECATED: Use group_by: similarity instead. Legacy parameter for clustering results.'
+      )
       .optional(),
   })
   .strict();

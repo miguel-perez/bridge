@@ -33,7 +33,47 @@ export const EXPERIENCE_DEFAULTS = {
  */
 export const experienceSchema = z.object({
   source: z.string().optional(),
-  emoji: z.string().regex(/^\p{Emoji}$/u, 'Must be a single emoji'),
+  emoji: z.string().refine(
+    (val) => {
+      // Comprehensive emoji validation for composite emojis
+      if (!val || val.length === 0) return false;
+
+      // Use Intl.Segmenter if available (modern browsers/Node.js)
+      if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+        const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
+        const segments = Array.from(segmenter.segment(val));
+
+        // Must be exactly one grapheme cluster (visual character)
+        if (segments.length !== 1) return false;
+
+        // Check if the single grapheme contains emoji characters
+        const segment = segments[0].segment;
+        return /\p{Emoji}/u.test(segment);
+      }
+
+      // Fallback for older environments - comprehensive emoji regex
+      // This pattern matches:
+      // - Basic emojis: \p{Emoji}
+      // - Variation selectors: \uFE0F
+      // - Zero-width joiners: \u200D
+      // - Skin tone modifiers: \p{Emoji_Modifier}
+      // - Regional indicators: \p{Regional_Indicator}
+      const comprehensiveEmojiRegex =
+        /^(?:\p{Emoji}(?:\p{Emoji_Modifier}|\uFE0F|\u200D(?:\p{Emoji}(?:\p{Emoji_Modifier}|\uFE0F)?))*)+$/u;
+
+      // Additional check: ensure it's not multiple separate emojis
+      // Split by common emoji boundaries (space, etc) and check we only have one "unit"
+      const trimmed = val.trim();
+      if (trimmed !== val) return false; // No leading/trailing whitespace
+      if (/\s/.test(val)) return false; // No internal whitespace
+
+      return comprehensiveEmojiRegex.test(val);
+    },
+    {
+      message:
+        'Must be a single emoji (including compound emojis with modifiers, skin tones, and sequences)',
+    }
+  ),
   perspective: z.enum(['I', 'we', 'you', 'they']).optional(),
   experiencer: z.string().optional(),
   processing: z.enum(['during', 'right-after', 'long-after']).optional(),

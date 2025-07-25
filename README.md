@@ -77,25 +77,202 @@ experience({
 
 Search experiences with semantic, quality, and temporal scoring:
 
+#### Basic Search
+
 ```javascript
 // Semantic search
 recall({
-  searches: [{ query: 'breakthrough moments' }],
+  searches: [{ search: 'breakthrough moments' }],
 });
 
-// Quality filtering
+// ID lookup
 recall({
-  searches: [{ query: '', qualities: { mood: 'closed' } }],
+  searches: [{ ids: 'exp_123' }],
 });
 
-// Clustering analysis
+// Multiple IDs
 recall({
-  searches: [{ query: 'anxiety', as: 'clusters' }],
+  searches: [{ ids: ['exp_123', 'exp_456'] }],
 });
 
 // Recent experiences
 recall({
-  searches: [{ query: 'recent' }],
+  searches: [{ search: 'recent' }],
+});
+```
+
+#### Grouping Results
+
+The `group_by` parameter organizes experiences into meaningful groups:
+
+```javascript
+// Group by similarity (clustering)
+recall({
+  searches: [{ search: 'anxiety', group_by: 'similarity' }],
+});
+// Returns: "Found 3 similarity groups containing 12 experiences"
+
+// Group by experiencer
+recall({
+  searches: [{ group_by: 'experiencer' }],
+});
+// Returns: "Found 2 experiencer groups containing 25 experiences"
+//   - Miguel (15 experiences)
+//   - Claude (10 experiences)
+
+// Group by date
+recall({
+  searches: [{ group_by: 'date' }],
+});
+// Returns: "Found 5 daily groups from 2025-01-20 to 2025-01-25"
+//   - 2025-01-25 (8 experiences)
+//   - 2025-01-24 (6 experiences)
+
+// Group by quality signature
+recall({
+  searches: [{ group_by: 'qualities' }],
+});
+// Returns: "Found 4 quality groups containing 18 experiences"
+//   - embodied.thinking, mood.open (8 experiences)
+//   - focus.narrow, purpose.goal (5 experiences)
+
+// Group by perspective
+recall({
+  searches: [{ group_by: 'perspective' }],
+});
+// Returns: "Found 3 perspective groups containing 22 experiences"
+//   - I perspective (18 experiences)
+//   - we perspective (3 experiences)
+//   - you perspective (1 experience)
+
+// Flat results (no grouping)
+recall({
+  searches: [{ search: 'creativity', group_by: 'none' }],
+});
+```
+
+#### Quality Filtering
+
+```javascript
+// Simple quality filter
+recall({
+  searches: [{ qualities: { mood: 'closed' } }],
+});
+
+// Multiple qualities (OR logic)
+recall({
+  searches: [{ qualities: { mood: ['open', 'closed'] } }],
+});
+
+// Presence/absence filtering
+recall({
+  searches: [
+    {
+      qualities: {
+        mood: { present: false }, // WITHOUT mood qualities
+        embodied: { present: true }, // but WITH embodied qualities
+      },
+    },
+  ],
+});
+
+// Complex boolean expressions
+recall({
+  searches: [
+    {
+      qualities: {
+        $and: [{ mood: 'closed' }, { $or: [{ embodied: 'thinking' }, { focus: 'narrow' }] }],
+      },
+    },
+  ],
+});
+```
+
+#### Advanced Filtering
+
+```javascript
+// Filter by experiencer and perspective
+recall({
+  searches: [
+    {
+      search: 'problem solving',
+      experiencer: 'Miguel',
+      perspective: 'I',
+    },
+  ],
+});
+
+// Date range filtering
+recall({
+  searches: [
+    {
+      created: {
+        start: '2025-01-20',
+        end: '2025-01-25',
+      },
+    },
+  ],
+});
+
+// Processing timing
+recall({
+  searches: [
+    {
+      processing: 'right-after',
+      crafted: false, // Raw experiences only
+    },
+  ],
+});
+
+// Pattern realizations only
+recall({
+  searches: [{ reflects: 'only' }],
+});
+
+// Find experiences reflected by specific insights
+recall({
+  searches: [{ reflected_by: 'exp_insight_123' }],
+});
+```
+
+#### Pagination and Sorting
+
+```javascript
+// Paginated results
+recall({
+  searches: [
+    {
+      search: 'productivity',
+      limit: 10,
+      offset: 20,
+      sort: 'created',
+    },
+  ],
+});
+// Returns: "Found 87 experiences for 'productivity' sorted by creation date (showing 21-30)"
+
+// Sort by relevance (default)
+recall({
+  searches: [
+    {
+      search: 'creativity',
+      sort: 'relevance',
+    },
+  ],
+});
+```
+
+#### Migration from Deprecated `as` Parameter
+
+```javascript
+// ⚠️ DEPRECATED - will show warning
+recall({
+  searches: [{ search: 'anxiety', as: 'clusters' }],
+});
+
+// ✅ NEW - use group_by instead
+recall({
+  searches: [{ search: 'anxiety', group_by: 'similarity' }],
 });
 ```
 
@@ -366,6 +543,12 @@ Bridge uses a vision-driven development cycle. See [LOOP.md](./LOOP.md) for our 
 ## Current Status
 
 - ✅ Core operations (experience, recall, reconsider, release)
+- ✅ **Enhanced recall tool with advanced grouping** (similarity, experiencer, date, qualities, perspective)
+- ✅ **Comprehensive parameter support** with rich feedback generation
+- ✅ **Advanced quality filtering** with presence/absence and boolean expressions
+- ✅ **Pagination and sorting** with metadata tracking
+- ✅ **Composite emoji validation** supporting all Unicode sequences
+- ✅ **Improved similar experience formatting** with better readability
 - ✅ Minimal flow tracking with stillThinking parameter
 - ✅ Semantic search with multiple embedding providers
 - ✅ Claude Desktop UI configuration for all providers
