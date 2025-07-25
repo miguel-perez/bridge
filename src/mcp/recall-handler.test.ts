@@ -953,4 +953,50 @@ describe('RecallHandler', () => {
       expect(mockWithTimeout).toHaveBeenCalledWith(expect.any(Promise), 30000, 'Recall operation');
     });
   });
+
+  it('should handle deprecated "as" parameter with error', async () => {
+    const handler = new RecallHandler();
+
+    const result = await handler.handle({
+      searches: [{ as: 'clusters' } as any],
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toBe(
+      'I encountered an error while searching for experiences. Please try again.'
+    );
+  });
+
+  it('should handle group_by parameter correctly', async () => {
+    const handler = new RecallHandler();
+
+    // Mock the recall service to return some results
+    const mockResults = [
+      {
+        id: 'exp1',
+        type: 'source',
+        content: 'Test experience',
+        snippet: 'Test snippet',
+        metadata: {
+          created: '2025-01-15T10:00:00Z',
+          experiencer: 'Alice',
+          perspective: 'I',
+          processing: 'during',
+          experience: ['embodied.sensing'],
+        },
+        relevance_score: 0.8,
+      },
+    ];
+
+    jest.spyOn(handler['recallService'], 'search').mockResolvedValue({
+      results: mockResults,
+      stats: { total: 1 },
+    });
+
+    const result = await handler.handle({
+      searches: [{ group_by: 'experiencer' }],
+    });
+
+    expect(result.content[0].text).toContain('Found 1 experiencer groups');
+  });
 });

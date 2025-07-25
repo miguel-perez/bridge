@@ -319,7 +319,13 @@ export function generateSearchFeedback(
   }
 
   if (summary.activeFilters.reflected_by) {
-    feedback += ` reflected by ${summary.activeFilters.reflected_by}`;
+    const count = Array.isArray(summary.activeFilters.reflected_by)
+      ? summary.activeFilters.reflected_by.length
+      : 1;
+    feedback +=
+      count === 1
+        ? ` reflected by ${summary.activeFilters.reflected_by}`
+        : ` reflected by ${count} experiences`;
   }
 
   if (summary.activeFilters.qualities) {

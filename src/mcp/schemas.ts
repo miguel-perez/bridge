@@ -328,12 +328,6 @@ const SearchItemSchema = z
         'Group results by specified criteria: similarity (clusters), experiencer, date, qualities, perspective, or none for flat results'
       )
       .optional(),
-    as: z
-      .enum(['clusters'])
-      .describe(
-        'DEPRECATED: Use group_by: similarity instead. Legacy parameter for clustering results.'
-      )
-      .optional(),
   })
   .strict();
 

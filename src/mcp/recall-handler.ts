@@ -11,6 +11,14 @@ import { formatRecallResponse, type RecallResult } from '../utils/formatters.js'
 import { SEMANTIC_CONFIG } from '../core/config.js';
 import { incrementCallCount, getCallCount } from './call-counter.js';
 import { getFlowStateMessages } from './flow-messages.js';
+import {
+  groupByExperiencer,
+  groupByDate,
+  groupByQualitySignature,
+  groupByPerspective,
+  groupBySimilarity,
+  type GroupedResult,
+} from '../services/grouping.js';
 
 export interface RecallResponse {
   success: boolean;
@@ -204,11 +212,15 @@ export class RecallHandler {
       const allResults: Array<{
         search: (typeof recall.searches)[0];
         results: RecallResult[];
-        clusters?: any[];
         stats?: any;
       }> = [];
 
       for (const searchItem of recall.searches) {
+        // Validate deprecated 'as' parameter
+        if ('as' in searchItem) {
+          throw new Error('Unknown parameter: as. Use group_by: similarity instead.');
+        }
+
         // Use group_by parameter for result grouping
         const groupBy = searchItem.group_by;
 
@@ -299,7 +311,7 @@ export class RecallHandler {
         const isPureQuality = searchQuery && isQueryPurelyQuality(searchQuery);
 
         // Perform recall
-        const { results, clusters, stats } = await withTimeout(
+        const { results, stats } = await withTimeout(
           this.recallService.search({
             query: isRecentQuery ? '' : searchQuery || undefined, // Empty query for recent to get all
             limit: isRecentQuery ? Math.min(limit, 5) : limit, // Show fewer for recent
@@ -370,7 +382,6 @@ export class RecallHandler {
         allResults.push({
           search: searchItem,
           results: recallResults,
-          clusters,
           stats,
         });
       }
@@ -381,15 +392,79 @@ export class RecallHandler {
       // Format response based on number of searches
       if (allResults.length === 1) {
         // Single search - format as before
-        const { search, results: recallResults, clusters, stats } = allResults[0];
+        const { search, results: recallResults, stats } = allResults[0];
         const searchDescription = this.getSearchDescription(search);
 
-        // Handle clustering response if clusters are available
-        if (clusters && clusters.length > 0) {
-          const clusterResponse = this.formatClusterResponse(clusters, searchDescription);
+        // Handle grouping if requested
+        if (search.group_by && search.group_by !== 'none') {
+          // Convert RecallResult back to SourceRecord for grouping
+          const sourceRecords = recallResults.map((result) => ({
+            id: result.id,
+            source: result.content || '',
+            emoji: result.metadata?.emoji || '',
+            experiencer: result.metadata?.experiencer,
+            perspective: result.metadata?.perspective,
+            processing: result.metadata?.processing as
+              | 'during'
+              | 'right-after'
+              | 'long-after'
+              | undefined,
+            created: result.metadata?.created || new Date().toISOString(),
+            experience: result.metadata?.experience,
+            crafted: false, // Default value
+            reflects: [], // Default value
+          }));
+
+          let groupedResults: GroupedResult[];
+
+          switch (search.group_by) {
+            case 'similarity':
+              groupedResults = await groupBySimilarity(sourceRecords);
+              break;
+            case 'experiencer':
+              groupedResults = groupByExperiencer(sourceRecords);
+              break;
+            case 'date':
+              groupedResults = groupByDate(sourceRecords);
+              break;
+            case 'qualities':
+              groupedResults = groupByQualitySignature(sourceRecords);
+              break;
+            case 'perspective':
+              groupedResults = groupByPerspective(sourceRecords);
+              break;
+            default:
+              throw new Error(`Unknown group_by type: ${search.group_by}`);
+          }
+
+          // Format grouped response
+          const groupTypeNames = {
+            similarity: 'similarity groups',
+            experiencer: 'experiencer groups',
+            date: 'date groups',
+            qualities: 'quality pattern groups',
+            perspective: 'perspective groups',
+          };
+
+          const totalExperiences = groupedResults.reduce((sum, group) => sum + group.count, 0);
+          const response = `Found ${groupedResults.length} ${groupTypeNames[search.group_by]} containing ${totalExperiences} experiences`;
+
+          // Add group details
+          let groupDetails = '\n\n';
+          groupedResults.forEach((group, index) => {
+            groupDetails += `${index + 1}. **${group.label}** (${group.count} experiences)\n`;
+            if (group.commonQualities && group.commonQualities.length > 0) {
+              groupDetails += `   Common qualities: ${group.commonQualities.join(', ')}\n`;
+            }
+            if (group.themeSummary) {
+              groupDetails += `   Theme: ${group.themeSummary}\n`;
+            }
+            groupDetails += '\n';
+          });
+
           content.push({
             type: 'text',
-            text: clusterResponse,
+            text: response + groupDetails,
           });
         } else {
           // Calculate metadata for pagination using service response
