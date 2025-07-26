@@ -243,7 +243,8 @@ export class ExperienceHandler {
       if (results.length === 1) {
         // Single experience - use individual formatting
         const result = results[0];
-        let response = formatExperienceResponse(result);
+        const showId = process.env.BRIDGE_SHOW_IDS === 'true' || process.env.NODE_ENV === 'test';
+        let response = formatExperienceResponse(result, showId);
 
         // Find similar experience if any (unless we already did recall)
         if (!recallResults) {
@@ -285,7 +286,8 @@ export class ExperienceHandler {
         return { result: { content }, capturedExperiences: results };
       } else {
         // Multiple experiences - use batch formatting
-        const response = formatBatchExperienceResponse(results);
+        const showIds = process.env.BRIDGE_SHOW_IDS === 'true' || process.env.NODE_ENV === 'test';
+        const response = formatBatchExperienceResponse(results, showIds);
         const content: Array<{ type: 'text'; text: string }> = [
           {
             type: 'text',

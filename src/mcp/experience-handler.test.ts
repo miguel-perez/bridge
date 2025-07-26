@@ -201,7 +201,7 @@ describe('ExperienceHandler', () => {
       // No flow state anymore
 
       expect(mockExperienceService.rememberExperience).toHaveBeenCalledTimes(2);
-      expect(mockFormatBatchExperienceResponse).toHaveBeenCalledWith(mockResults);
+      expect(mockFormatBatchExperienceResponse).toHaveBeenCalledWith(mockResults, true);
     });
 
     it('should return error when source is missing', async () => {
@@ -1259,7 +1259,8 @@ describe('ExperienceHandler', () => {
             source: expect.objectContaining({
               experience: experience || [],
             }),
-          })
+          }),
+          true
         );
       });
     });

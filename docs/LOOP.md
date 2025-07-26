@@ -34,6 +34,7 @@ We use a continuous learning loop to evolve from vision to reality:
 ### 3. Experiments Generate Learnings
 
 - Run unit tests with `npm test` to validate functionality
+- Run integration tests with `npm run test:integration` for end-to-end validation
 - Review test coverage and performance metrics
 - Analyze implementation gaps and areas for improvement
 
@@ -51,12 +52,15 @@ We use a continuous learning loop to evolve from vision to reality:
 
 1. **Check current state**: Read README.md for what's actually implemented
 2. **Find next priority**: Check OPPORTUNITIES.md for scored features
-3. **Run tests**: Use `npm test` for unit tests and coverage
+3. **Run tests**:
+   - `npm test` for unit tests and coverage
+   - `npm run test:integration` for MCP protocol tests
+   - `npm run test:all` for comprehensive validation
 4. **Analyze results**: Review test coverage and performance metrics
 5. **Review results**: Check test output and error details
 6. **Update docs**: Keep README.md current with implementation
 
-**Current Quality Status**: See **README.md** for current test coverage metrics (77.12% lines, 64.68% branches)
+**Current Quality Status**: See **README.md** for current test coverage metrics (81.64% lines, 69.26% branches, 768 total tests)
 
 ### Key Commands
 
@@ -69,8 +73,11 @@ npm run lint:fix                  # Auto-fix linting issues
 npm run type-check                # Type check without building
 
 # Testing
-npm test                          # Run unit tests with Jest
-npm run test:all                  # Run all tests
+npm test                          # Run unit tests with Jest (705 tests)
+npm run test:integration          # Run integration tests with real MCP (63 tests)
+npm run test:all                  # Run all tests (768 total)
+npm run test:bridge               # Run Bridge scenario tests
+npm run loop                      # Run learning loop analysis
 npm run quality-check:full        # Run comprehensive quality checks
 ```
 
@@ -116,19 +123,25 @@ SKIP_PRE_PUSH=true git push      # Bypass pre-push
 
 **Quality Standards**:
 
-- 80%+ test coverage
+- 80%+ test coverage (currently 81.64% line, 88.95% function)
 - Zero ESLint errors
 - Zero TypeScript errors
-- All tests passing
+- All 768 tests passing (705 unit + 63 integration)
+- All 13 completed experiments proven by tests
 
 ### Test Coverage
 
 Bridge uses comprehensive unit tests to validate functionality:
 
-- **Handler Tests**: Validate MCP tool handlers and error handling
-- **Service Tests**: Test business logic and data processing
-- **Schema Tests**: Validate input/output schemas and type safety
-- **Integration Tests**: Test end-to-end workflows and edge cases
+- **Unit Tests** (705 tests): Validate individual components
+  - Handler Tests: MCP tool handlers and error handling
+  - Service Tests: Business logic and data processing
+  - Schema Tests: Input/output schemas and type safety
+- **Integration Tests** (63 tests): Real MCP client/server communication
+  - End-to-end workflows and user journeys
+  - Performance and stress testing
+  - Error handling and edge cases
+  - All completed experiments validation
 
 **Note**: Tests include comprehensive coverage reporting and performance metrics.
 

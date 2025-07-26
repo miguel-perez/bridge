@@ -351,24 +351,45 @@ Bridge uses seven quality pairs to capture experience characteristics:
 
 Bridge maintains high code quality with comprehensive test coverage:
 
-- **85.27%** line coverage (exceeds 80% target)
-- **74.54%** branch coverage (exceeds 65% target)
-- **88.1%** function coverage
+- **81.64%** line coverage (exceeds 80% target)
+- **69.26%** branch coverage (exceeds 65% target)
+- **88.95%** function coverage
+- **768 total tests** (705 unit, 63 integration)
 - 100% coverage on all critical handler files
 
+### Testing
+
 ```bash
-# Run tests
+# Run unit tests with coverage
 npm test
 
-# Run tests with coverage
-npm run test:coverage
+# Run integration tests (real MCP client/server)
+npm run test:integration
 
-# Run Bridge integration tests
-npm test
+# Run all tests (unit + integration)
+npm run test:all
 
-# Run all tests
+# Run specific test file
+npm test -- src/services/experience.test.ts
 
+# Run tests matching pattern
+npm run test:integration -- --testNamePattern="should handle"
+```
 
+### Integration Testing
+
+Bridge includes comprehensive integration tests that validate the complete MCP flow:
+
+- **Real MCP Communication**: Tests use actual client/server protocol
+- **Isolated Environments**: Each test runs in a clean temporary directory
+- **Complete Workflows**: Tests validate end-to-end user journeys
+- **Performance Testing**: Includes stress tests and concurrent operations
+
+See [src/test-utils/README.md](src/test-utils/README.md) for integration test documentation.
+
+### Code Quality
+
+```bash
 # Lint and type check
 npm run lint
 npm run type-check

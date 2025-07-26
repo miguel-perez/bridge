@@ -152,12 +152,16 @@ npm start                # Run bundled server
 
 ```bash
 npm test                 # Unit tests with coverage
-npm test                 # Unit tests
-npm run test:all         # All tests
-
+npm run test:integration # Integration tests (real MCP client/server)
+npm run test:all         # All tests (unit + integration)
+npm run test:bridge      # Bridge scenario tests
+npm run loop             # Learning loop analysis
 
 # Test a specific file
 npm test -- src/services/recall.test.ts
+
+# Run integration tests for specific area
+npm run test:integration -- --testPathPattern="experience"
 ```
 
 ### Quality Checks
@@ -178,23 +182,37 @@ See **LOOP.md** for complete methodology.
 
 ### Quality Standards
 
-- **Test Coverage**: ~85% line coverage
+- **Test Coverage**: 81.64% line coverage, 88.95% function coverage
+- **Unit Tests**: 705 tests across all modules
+- **Integration Tests**: 63 tests with real MCP communication
 - **Pre-commit**: Runs `lint:fix` and `type-check`
 - **Pre-push**: Runs full `quality-check:full`
 
-### Test Configuration
+### Integration Tests
+
+Bridge includes comprehensive integration tests that use real MCP client/server communication:
 
 ```bash
-# Run all tests
-npm test
+# Run integration tests
+npm run test:integration
 
-# Run with coverage
-npm test -- --coverage
+# Run specific integration test
+npm run test:integration -- --testNamePattern="should handle pattern reflection"
 
-# Run specific test files
-npm test -- --testPathPattern=experience
-npm test -- --testPathPattern=recall
+# Configure test delays (in .env)
+TEST_SCENARIO_DELAY=5000      # Between scenarios
+TEST_API_CALL_DELAY=1000      # After API calls
+TEST_TURN_DELAY=2000          # Between turns
 ```
+
+Integration tests cover:
+
+- Experience capture and recall
+- Pattern realizations (reflects)
+- Quality filtering and search
+- Error handling and edge cases
+- Performance and concurrent operations
+- All completed experiments from EXPERIMENTS.md
 
 ## 💡 Usage Patterns
 
