@@ -30,6 +30,17 @@ export const QUALITY_TYPES = [
   'presence',
 ] as const;
 
+/** Valid subtypes for each quality dimension */
+export const QUALITY_SUBTYPES = {
+  embodied: ['thinking', 'sensing'] as const,
+  focus: ['narrow', 'broad'] as const,
+  mood: ['open', 'closed'] as const,
+  purpose: ['goal', 'wander'] as const,
+  space: ['here', 'there'] as const,
+  time: ['past', 'future'] as const,
+  presence: ['individual', 'collective'] as const,
+} as const;
+
 /** Default values for experiential data */
 export const DEFAULTS = {
   PERSPECTIVE: 'I' as const,
@@ -52,9 +63,30 @@ export type ProcessingLevel = (typeof PROCESSING_LEVELS)[number];
 /** Experiential quality types */
 export type QualityType = (typeof QUALITY_TYPES)[number];
 
+/** Quality subtypes for each dimension */
+export type QualitySubtype<T extends QualityType> = (typeof QUALITY_SUBTYPES)[T][number];
+
+/**
+ * Complete switchboard of experiential qualities.
+ * Each quality can be:
+ * - false: not prominent (receded)
+ * - true: prominent but general
+ * - string subtype: prominent with specific quality
+ */
+export interface ExperienceQualities {
+  embodied: false | true | QualitySubtype<'embodied'>;
+  focus: false | true | QualitySubtype<'focus'>;
+  mood: false | true | QualitySubtype<'mood'>;
+  purpose: false | true | QualitySubtype<'purpose'>;
+  space: false | true | QualitySubtype<'space'>;
+  time: false | true | QualitySubtype<'time'>;
+  presence: false | true | QualitySubtype<'presence'>;
+}
+
 /**
  * Complete experiential analysis of experienceed data.
  * Array of qualities that emerge prominently in this moment.
+ * @deprecated Use ExperienceQualities for new code
  */
 export type Experience = string[];
 
@@ -72,7 +104,11 @@ export interface Source {
   // Context fields
   /** Perspective from which experience is experienceed */
   perspective?: Perspective;
-  /** Who experienced this (default: "self") */
+  /** Who experienced this (single person or array for shared experiences) */
+  who?: string | string[];
+  /** Who experienced this (default: "self")
+   * @deprecated Use who field instead
+   */
   experiencer?: string;
   /** When processing occurred relative to experience */
   processing?: ProcessingLevel;
@@ -80,8 +116,12 @@ export interface Source {
   crafted?: boolean;
 
   // Analysis fields
-  /** Experience analysis results (prominent qualities) */
+  /** Experience analysis results (prominent qualities)
+   * @deprecated Use experienceQualities for new code
+   */
   experience?: Experience;
+  /** Complete switchboard of experiential qualities */
+  experienceQualities?: ExperienceQualities;
 
   // Pattern realization fields
   /** Array of experience IDs that this experience reflects on/connects to */
@@ -314,6 +354,89 @@ export function validateExperience(experience: unknown): Experience {
  */
 export function validateStorageData(data: unknown): StorageData {
   return StorageDataSchema.parse(data);
+}
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Generates perspective based on who experienced it
+ * @param who - Single person or array of people
+ * @param providedPerspective - Optional perspective override
+ * @returns Generated or provided perspective
+ */
+export function generatePerspective(who: string | string[], providedPerspective?: string): string {
+  if (providedPerspective) {
+    return providedPerspective;
+  }
+
+  if (Array.isArray(who)) {
+    // Multiple people = "we"
+    return who.length > 1 ? 'we' : 'I';
+  }
+
+  // Single person = "I"
+  return 'I';
+}
+
+/**
+ * Converts old experience array format to new qualities switchboard
+ * @param experience - Array of quality strings
+ * @returns Complete qualities switchboard
+ */
+export function experienceArrayToQualities(experience?: string[]): ExperienceQualities {
+  // Initialize all qualities as false
+  const qualities: ExperienceQualities = {
+    embodied: false,
+    focus: false,
+    mood: false,
+    purpose: false,
+    space: false,
+    time: false,
+    presence: false,
+  };
+
+  if (!experience) return qualities;
+
+  // Parse each quality string
+  for (const tag of experience) {
+    const [quality, subtype] = tag.split('.');
+    if (quality in qualities) {
+      // Set to subtype if provided, otherwise true
+      const key = quality as keyof ExperienceQualities;
+      if (subtype) {
+        // We need to assign the subtype string
+        (qualities as any)[key] = subtype;
+      } else {
+        // No subtype, so it's true
+        (qualities as any)[key] = true;
+      }
+    }
+  }
+
+  return qualities;
+}
+
+/**
+ * Converts new qualities switchboard to old experience array format
+ * @param qualities - Complete qualities switchboard
+ * @returns Array of quality strings
+ */
+export function qualitiesToExperienceArray(qualities: ExperienceQualities): string[] {
+  const experience: string[] = [];
+
+  for (const [quality, value] of Object.entries(qualities)) {
+    if (value !== false) {
+      if (value === true) {
+        experience.push(quality);
+      } else {
+        experience.push(`${quality}.${value}`);
+      }
+    }
+  }
+
+  return experience;
 }
 
 // ============================================================================

@@ -207,7 +207,8 @@ export class ExperienceHandler {
           source: item.source,
           emoji: item.emoji,
           perspective: item.perspective,
-          experiencer: item.experiencer,
+          who: item.who,
+          experiencer: item.experiencer, // Keep for backwards compatibility
           processing: item.processing,
           crafted: item.crafted,
           experience: item.experience || undefined,

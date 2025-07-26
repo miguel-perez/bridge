@@ -49,7 +49,7 @@ describe('MCP Tools', () => {
 
     it('should have experience tool with correct properties', async () => {
       const tools = await getTools();
-      const experienceTool = tools.find((t) => t.name === 'experience');
+      const experienceTool = tools.find((t) => t.name === 'experience') as any;
 
       expect(experienceTool).toBeDefined();
       expect(experienceTool.name).toBe('experience');
@@ -59,12 +59,12 @@ describe('MCP Tools', () => {
       expect(experienceTool.idempotentHint).toBe(false);
       expect(experienceTool.openWorldHint).toBe(false);
       expect(experienceTool.inputSchema).toBeDefined();
-      expect(experienceTool.examples).toHaveLength(7);
+      expect(experienceTool.examples).toHaveLength(8);
     });
 
     it('should have recall tool with correct properties', async () => {
       const tools = await getTools();
-      const recallTool = tools.find((t) => t.name === 'recall');
+      const recallTool = tools.find((t) => t.name === 'recall') as any;
 
       expect(recallTool).toBeDefined();
       expect(recallTool.name).toBe('recall');
@@ -74,12 +74,12 @@ describe('MCP Tools', () => {
       expect(recallTool.idempotentHint).toBe(true);
       expect(recallTool.openWorldHint).toBe(false);
       expect(recallTool.inputSchema).toBeDefined();
-      expect(recallTool.examples).toHaveLength(9);
+      expect(recallTool.examples).toHaveLength(12);
     });
 
     it('should have reconsider tool with correct properties', async () => {
       const tools = await getTools();
-      const reconsiderTool = tools.find((t) => t.name === 'reconsider');
+      const reconsiderTool = tools.find((t) => t.name === 'reconsider') as any;
 
       expect(reconsiderTool).toBeDefined();
       expect(reconsiderTool.name).toBe('reconsider');
@@ -97,7 +97,7 @@ describe('MCP Tools', () => {
 
     it('should have release tool with correct properties', async () => {
       const tools = await getTools();
-      const releaseTool = tools.find((t) => t.name === 'release');
+      const releaseTool = tools.find((t) => t.name === 'release') as any;
 
       expect(releaseTool).toBeDefined();
       expect(releaseTool.name).toBe('release');
@@ -141,18 +141,18 @@ describe('MCP Tools', () => {
     it('should have proper descriptions with usage guidelines', async () => {
       const tools = await getTools();
 
-      const experienceTool = tools.find((t) => t.name === 'experience');
+      const experienceTool = tools.find((t) => t.name === 'experience') as any;
       expect(experienceTool.description).toContain('USE WHEN:');
       expect(experienceTool.description).toContain('EXAMPLES OF WHEN TO USE:');
       expect(experienceTool.description).toContain("DON'T USE FOR:");
       expect(experienceTool.description).toContain('QUALITY SIGNATURES:');
 
-      const recallTool = tools.find((t) => t.name === 'recall');
+      const recallTool = tools.find((t) => t.name === 'recall') as any;
       expect(recallTool.description).toContain('USE WHEN YOU WANT TO:');
       expect(recallTool.description).toContain('SEARCH APPROACHES:');
       expect(recallTool.description).toContain('SPECIAL SEARCHES:');
 
-      const reconsiderTool = tools.find((t) => t.name === 'reconsider');
+      const reconsiderTool = tools.find((t) => t.name === 'reconsider') as any;
       expect(reconsiderTool.description).toContain('USE WHEN:');
       expect(reconsiderTool.description).toContain('NATURAL WORKFLOW:');
       expect(reconsiderTool.description).toContain('COMMON UPDATES:');

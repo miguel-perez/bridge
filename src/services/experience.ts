@@ -7,7 +7,12 @@ import { z } from 'zod';
 import { bridgeLogger } from '../utils/bridge-logger.js';
 import { saveSource, saveEmbedding } from '../core/storage.js';
 import { generateId } from '../core/storage.js';
-import type { Source, EmbeddingRecord, Experience } from '../core/types.js';
+import type { Source, EmbeddingRecord, Experience, ExperienceQualities } from '../core/types.js';
+import {
+  generatePerspective,
+  experienceArrayToQualities,
+  qualitiesToExperienceArray,
+} from '../core/types.js';
 
 import { embeddingServiceV2 } from './embeddings-v2.js';
 
@@ -74,13 +79,47 @@ export const experienceSchema = z.object({
         'Must be a single emoji (including compound emojis with modifiers, skin tones, and sequences)',
     }
   ),
-  perspective: z.enum(['I', 'we', 'you', 'they']).optional(),
-  experiencer: z.string().optional(),
+  perspective: z.string().optional(),
+  who: z.union([z.string(), z.array(z.string())]).optional(),
+  experiencer: z.string().optional(), // Deprecated, kept for backwards compatibility
   processing: z.enum(['during', 'right-after', 'long-after']).optional(),
   crafted: z.boolean().optional(),
 
-  // Experience analysis - simplified to just prominent qualities array
-  experience: z.array(z.string()).optional(),
+  // Experience analysis - can be array or complete qualities object
+  experience: z
+    .union([
+      z.array(z.string()),
+      z.object({
+        embodied: z.union([
+          z.literal(false),
+          z.literal(true),
+          z.literal('thinking'),
+          z.literal('sensing'),
+        ]),
+        focus: z.union([
+          z.literal(false),
+          z.literal(true),
+          z.literal('narrow'),
+          z.literal('broad'),
+        ]),
+        mood: z.union([z.literal(false), z.literal(true), z.literal('open'), z.literal('closed')]),
+        purpose: z.union([
+          z.literal(false),
+          z.literal(true),
+          z.literal('goal'),
+          z.literal('wander'),
+        ]),
+        space: z.union([z.literal(false), z.literal(true), z.literal('here'), z.literal('there')]),
+        time: z.union([z.literal(false), z.literal(true), z.literal('past'), z.literal('future')]),
+        presence: z.union([
+          z.literal(false),
+          z.literal(true),
+          z.literal('individual'),
+          z.literal('collective'),
+        ]),
+      }),
+    ])
+    .optional(),
 
   // Pattern realizations - experiences that reflect on other experiences
   reflects: z.array(z.string()).optional(),
@@ -96,10 +135,11 @@ export interface ExperienceInput {
   source?: string;
   emoji: string;
   perspective?: string;
-  experiencer?: string;
+  who?: string | string[];
+  experiencer?: string; // Deprecated
   processing?: string;
   crafted?: boolean;
-  experience?: string[];
+  experience?: string[] | ExperienceQualities;
   reflects?: string[];
   context?: string;
 }
@@ -150,25 +190,47 @@ export class ExperienceService {
     // Use source or default
     const source = validatedInput.source || 'Experience experienceed';
 
-    // Create experience with prominent qualities
+    // Handle who field - backwards compatibility with experiencer
+    const who = validatedInput.who || validatedInput.experiencer || 'self';
+
+    // Generate perspective if not provided
+    const perspective = generatePerspective(who, validatedInput.perspective);
+
+    // Handle experience qualities - convert between formats as needed
     let experience: Experience | undefined;
+    let experienceQualities: ExperienceQualities | undefined;
+
     if (validatedInput.experience) {
-      if (validatedInput.experience.length > 0) {
-        experience = validatedInput.experience;
+      if (Array.isArray(validatedInput.experience)) {
+        // Old format - convert to both formats for compatibility
+        if (validatedInput.experience.length > 0) {
+          experience = validatedInput.experience;
+          experienceQualities = experienceArrayToQualities(validatedInput.experience);
+        }
+      } else {
+        // New format - convert to both formats for compatibility
+        experienceQualities = validatedInput.experience;
+        experience = qualitiesToExperienceArray(validatedInput.experience);
+        // If no qualities are prominent, don't set experience array
+        if (experience.length === 0) {
+          experience = undefined;
+        }
       }
     }
 
-    // Create source record
+    // Create source record with both old and new fields for migration period
     const sourceRecord: Source = {
       id,
       source,
       emoji: validatedInput.emoji,
       created,
-      perspective: validatedInput.perspective || 'I',
-      experiencer: validatedInput.experiencer || 'self',
+      perspective,
+      who,
+      experiencer: typeof who === 'string' ? who : who.join(' & '), // Keep for compatibility
       processing: validatedInput.processing || 'during',
       crafted: validatedInput.crafted || false,
       experience,
+      experienceQualities,
       reflects: validatedInput.reflects,
       context: validatedInput.context,
     };
@@ -217,8 +279,8 @@ export class ExperienceService {
    */
   private getDefaultsUsed(originalInput: ExperienceInput): string[] {
     const defaultsUsed = [];
-    if (!originalInput.perspective) defaultsUsed.push('perspective="I"');
-    if (!originalInput.experiencer) defaultsUsed.push('experiencer="self"');
+    if (!originalInput.perspective) defaultsUsed.push('perspective="auto-generated"');
+    if (!originalInput.who && !originalInput.experiencer) defaultsUsed.push('who="self"');
     if (!originalInput.processing) defaultsUsed.push('processing="during"');
     if (!originalInput.source) defaultsUsed.push('source="Experience experienceed"');
     return defaultsUsed;

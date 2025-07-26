@@ -116,9 +116,33 @@ export const PerspectiveField = z
     'Perspective from which experience is experienceed (e.g., I, we, you, they, or custom perspectives)'
   );
 
-// Experience analysis - simplified to prominent qualities array
-export const ExperienceObject = z.array(z.string())
-  .describe(`Array of qualities that emerge prominently in this moment. Use dot notation to specify subtypes.
+// Experience qualities schema - complete switchboard
+export const ExperienceQualitiesSchema = z.object({
+  embodied: z
+    .union([z.literal(false), z.literal(true), z.literal('thinking'), z.literal('sensing')])
+    .describe('Embodied experience: false (not prominent), true (mixed), thinking, or sensing'),
+  focus: z
+    .union([z.literal(false), z.literal(true), z.literal('narrow'), z.literal('broad')])
+    .describe('Focus quality: false (not prominent), true (mixed), narrow, or broad'),
+  mood: z
+    .union([z.literal(false), z.literal(true), z.literal('open'), z.literal('closed')])
+    .describe('Mood quality: false (not prominent), true (mixed), open, or closed'),
+  purpose: z
+    .union([z.literal(false), z.literal(true), z.literal('goal'), z.literal('wander')])
+    .describe('Purpose quality: false (not prominent), true (mixed), goal, or wander'),
+  space: z
+    .union([z.literal(false), z.literal(true), z.literal('here'), z.literal('there')])
+    .describe('Space quality: false (not prominent), true (mixed), here, or there'),
+  time: z
+    .union([z.literal(false), z.literal(true), z.literal('past'), z.literal('future')])
+    .describe('Time quality: false (not prominent), true (mixed), past, or future'),
+  presence: z
+    .union([z.literal(false), z.literal(true), z.literal('individual'), z.literal('collective')])
+    .describe('Presence quality: false (not prominent), true (mixed), individual, or collective'),
+}).describe(`Complete switchboard of experiential qualities. Each quality can be:
+- false: not prominent (receded)
+- true: prominent but general/mixed
+- string subtype: prominent with specific quality
 
 Quality detection guide:
 - embodied.thinking: "analyzing", "figuring out", "strategy" → mental processing
@@ -141,16 +165,19 @@ Quality detection guide:
 - space.there: "thinking about home" → spatially displaced
 - space: When spatial experience doesn't clearly fit here/there subtypes
 
-- time.past: "experienceing", "used to" → historical orientation
+- time.past: "remembering", "used to" → historical orientation
 - time.future: "planning", "worried about" → anticipatory orientation
 - time: When temporal flow doesn't clearly fit past/future subtypes
 
 - presence.individual: "just me", alone → solitary experience
 - presence.collective: "we", "together" → social/shared experience
-- presence: When social quality doesn't clearly fit individual/collective subtypes
+- presence: When social quality doesn't clearly fit individual/collective subtypes`);
 
-Example: ["embodied.sensing", "mood.open", "purpose.goal"]
-Qualities either emerge prominently or recede - only include what stands out.`);
+// Experience analysis - simplified to prominent qualities array (for backwards compatibility)
+export const ExperienceObject = z.union([z.array(z.string()), ExperienceQualitiesSchema])
+  .describe(`Experience qualities. Can be either:
+1. Array format (legacy): ["embodied.sensing", "mood.open", "purpose.goal"]
+2. Switchboard format (preferred): Complete qualities object with all dimensions specified`);
 
 // Experience analysis (all fields optional for update)
 export const ExperienceObjectOptional = z
@@ -223,10 +250,19 @@ const ExperienceItemSchema = z
         'Single emoji that serves as a visual/memory anchor for this experience. Choose one that captures the essence or feeling.'
       ),
     perspective: PerspectiveField.optional(),
+    who: z
+      .union([
+        z.string().describe('Single person who experienced this'),
+        z.array(z.string()).describe('Multiple people who shared this experience'),
+      ])
+      .describe(
+        'Who experienced this moment - single string for individual ("Human", "Claude", or name), array for shared experience (["Human", "Claude"])'
+      )
+      .optional(),
     experiencer: z
       .string()
       .describe(
-        'Who experienced this moment - "Human" for their experiences, "Claude" for your experiences, or their name if provided'
+        'Who experienced this moment - "Human" for their experiences, "Claude" for your experiences, or their name if provided (deprecated - use who field)'
       )
       .optional(),
     processing: ProcessingEnum.optional(),

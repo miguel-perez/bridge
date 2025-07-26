@@ -233,7 +233,7 @@ describe('MCP Server Protocol Compliance', () => {
       );
     }, 30000);
 
-    test('should handle invalid perspective values', async () => {
+    test('should accept custom perspective values', async () => {
       transport = new StdioClientTransport({
         command: 'node',
         args: [distPath],
@@ -254,7 +254,7 @@ describe('MCP Server Protocol Compliance', () => {
               source: 'Test content',
               emoji: '🧪',
               experiencer: 'Test User',
-              perspective: 'invalid_perspective', // This should fail Zod enum validation
+              perspective: 'custom_perspective', // Custom perspectives are now accepted
               processing: 'during',
             },
           ],
@@ -263,8 +263,11 @@ describe('MCP Server Protocol Compliance', () => {
 
       expect(result.content).toBeDefined();
       expect(Array.isArray(result.content)).toBe(true);
-      // Should return an error response for invalid perspective
-      expect((result.content as Array<{ text: string }>)[0].text).toContain('Invalid enum value');
+      // Should successfully process with custom perspective
+      expect((result.content as Array<{ text: string }>)[0].text).toContain('Experienceed');
+      expect((result.content as Array<{ text: string }>)[0].text).toContain(
+        'As: custom_perspective'
+      );
     }, 30000);
 
     test('should handle unknown tool gracefully', async () => {

@@ -118,9 +118,8 @@ FLOW TRACKING:
             experiences: [
               {
                 source: "I'm sitting here, heart racing about tomorrow's presentation",
-                experiencer: 'Human',
-                perspective: 'I',
-                processing: 'during',
+                emoji: '💗',
+                who: 'Human',
                 experience: ['embodied.sensing', 'time.future', 'mood.closed'],
               },
             ],
@@ -141,9 +140,8 @@ FLOW TRACKING:
             experiences: [
               {
                 source: 'I can feel that anticipation energy with you',
-                experiencer: 'Claude',
-                perspective: 'I',
-                processing: 'during',
+                emoji: '🤝',
+                who: 'Claude',
                 experience: ['presence.collective', 'embodied.sensing'],
               },
             ],
@@ -164,8 +162,8 @@ FLOW TRACKING:
             experiences: [
               {
                 source: 'We finally solved it after brainstorming for hours',
-                experiencer: 'Human',
-                perspective: 'we',
+                emoji: '🎉',
+                who: ['Human', 'Claude'],
                 processing: 'right-after',
                 experience: [
                   'embodied.thinking',
@@ -192,9 +190,8 @@ FLOW TRACKING:
             experiences: [
               {
                 source: "I'm torn between my gut feeling and what the data shows",
-                experiencer: 'Human',
-                perspective: 'I',
-                processing: 'during',
+                emoji: '🤔',
+                who: 'Human',
                 experience: ['embodied', 'purpose', 'focus.narrow'],
               },
             ],
@@ -263,15 +260,44 @@ FLOW TRACKING:
           },
         },
         {
+          id: 'complete-quality-switchboard',
+          description: 'Using complete quality switchboard format',
+          input: {
+            experiences: [
+              {
+                source: 'I feel a breakthrough coming as we work through this together',
+                emoji: '✨',
+                who: ['Human', 'Claude'],
+                experience: {
+                  embodied: 'sensing',
+                  focus: 'broad',
+                  mood: 'open',
+                  purpose: 'goal',
+                  space: 'here',
+                  time: false,
+                  presence: 'collective',
+                },
+              },
+            ],
+          },
+          output: {
+            content: [
+              {
+                type: 'text',
+                text: 'Experienced (embodied.sensing, focus.broad, mood.open, purpose.goal, space.here, presence.collective)\n\nFrom: Human & Claude\nAs: we\nWhen: during conversation\nCaptured: just now',
+              },
+            ],
+          },
+        },
+        {
           id: 'still-thinking-exploration',
           description: 'Using stillThinking to signal ongoing exploration',
           input: {
             experiences: [
               {
                 source: 'This bug is really confusing me',
-                experiencer: 'Human',
-                perspective: 'I',
-                processing: 'during',
+                emoji: '🐛',
+                who: 'Human',
                 experience: ['mood.closed', 'embodied.thinking', 'purpose.goal'],
               },
             ],

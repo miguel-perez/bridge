@@ -57,8 +57,8 @@ describe('ExperienceService', () => {
       expect(result.source.experiencer).toBe('self');
       expect(result.source.processing).toBe('during');
       expect(result.source.crafted).toBe(false);
-      expect(result.defaultsUsed).toContain('perspective="I"');
-      expect(result.defaultsUsed).toContain('experiencer="self"');
+      expect(result.defaultsUsed).toContain('perspective="auto-generated"');
+      expect(result.defaultsUsed).toContain('who="self"');
       expect(result.defaultsUsed).toContain('processing="during"');
     });
 
@@ -131,7 +131,7 @@ describe('ExperienceService', () => {
       expect(result.source.source).toBe('Test experience with embedding failure');
       expect(result.source.experiencer).toBe('test_user');
       expect(result.source.id).toBeDefined();
-      expect(result.defaultsUsed).toContain('perspective="I"');
+      expect(result.defaultsUsed).toContain('perspective="auto-generated"');
       expect(result.defaultsUsed).toContain('processing="during"');
 
       // Verify embedding was attempted but saveEmbedding was not called

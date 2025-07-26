@@ -147,11 +147,21 @@ export interface ExperienceResult {
     id: string;
     source: string;
     emoji: string;
+    who?: string | string[];
     experiencer?: string;
     perspective?: string;
     processing?: string;
     created: string;
     experience?: string[];
+    experienceQualities?: {
+      embodied: false | true | 'thinking' | 'sensing';
+      focus: false | true | 'narrow' | 'broad';
+      mood: false | true | 'open' | 'closed';
+      purpose: false | true | 'goal' | 'wander';
+      space: false | true | 'here' | 'there';
+      time: false | true | 'past' | 'future';
+      presence: false | true | 'individual' | 'collective';
+    };
   };
   defaultsUsed?: string[];
 }
@@ -438,7 +448,23 @@ export function formatExperienceResponse(
   result: ExperienceResult,
   showId: boolean = false
 ): string {
-  const qualities = result.source.experience || [];
+  // Get qualities - prefer experienceQualities if available, fall back to experience array
+  let qualities: string[] = [];
+  if (result.source.experienceQualities) {
+    // Convert qualities object to array format for display
+    for (const [quality, value] of Object.entries(result.source.experienceQualities)) {
+      if (value !== false) {
+        if (value === true) {
+          qualities.push(quality);
+        } else {
+          qualities.push(`${quality}.${value}`);
+        }
+      }
+    }
+  } else if (result.source.experience) {
+    qualities = result.source.experience;
+  }
+
   const emoji = result.source.emoji;
 
   // Simple response based on whether we have qualities
@@ -473,7 +499,23 @@ export function formatBatchExperienceResponse(
 
   for (let i = 0; i < results.length; i++) {
     const result = results[i];
-    const qualities = result.source.experience || [];
+
+    // Get qualities - prefer experienceQualities if available, fall back to experience array
+    let qualities: string[] = [];
+    if (result.source.experienceQualities) {
+      // Convert qualities object to array format for display
+      for (const [quality, value] of Object.entries(result.source.experienceQualities)) {
+        if (value !== false) {
+          if (value === true) {
+            qualities.push(quality);
+          } else {
+            qualities.push(`${quality}.${value}`);
+          }
+        }
+      }
+    } else if (result.source.experience) {
+      qualities = result.source.experience;
+    }
 
     output.push(`--- ${i + 1} ---`);
 
@@ -606,9 +648,13 @@ function formatMetadata(source: Record<string, unknown>, showId: boolean = false
     lines.push(`📝 ID: ${source.id as string}`);
   }
 
+  // Format who experienced it - handle both who and experiencer for backwards compatibility
+  const who = source.who || source.experiencer || 'me';
+  const whoStr = Array.isArray(who) ? who.join(' & ') : (who as string);
+
   lines.push(
     formatMessage(Messages.experience.from, {
-      experiencer: (source.experiencer as string) || 'me',
+      experiencer: whoStr,
     }),
     formatMessage(Messages.experience.as, { perspective: (source.perspective as string) || 'I' }),
     formatMessage(Messages.experience.when, {
