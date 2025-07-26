@@ -4,7 +4,7 @@
  */
 
 import type { SourceRecord } from '../core/types.js';
-import { KNOWN_QUALITIES } from '../core/dimensions.js';
+import { KNOWN_QUALITIES } from '../core/qualities.js';
 import { qualityFilterService, type QualityFilter } from './quality-filter.js';
 
 export interface ScoringFactors {
@@ -241,7 +241,7 @@ export function applyFiltersAndScore(
   experiences: SourceRecord[],
   query: string | string[],
   filters: {
-    experiencer?: string;
+    who?: string;
     perspective?: string;
     processing?: string;
     reflects?: 'only';
@@ -253,8 +253,8 @@ export function applyFiltersAndScore(
   let filtered = experiences;
 
   // Hard filters (binary)
-  if (filters.experiencer) {
-    filtered = filtered.filter((exp) => exp.experiencer === filters.experiencer);
+  if (filters.who) {
+    filtered = filtered.filter((exp) => exp.who === filters.who);
   }
   if (filters.perspective) {
     filtered = filtered.filter((exp) => exp.perspective === filters.perspective);

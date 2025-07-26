@@ -7,9 +7,9 @@ import { Messages, formatMessage, formatQualityList } from './messages.js';
 describe('Messages Utility', () => {
   describe('Messages object', () => {
     it('should have all experience messages', () => {
-      expect(Messages.experience.success).toBe('Experienceed');
-      expect(Messages.experience.successWithQualities).toBe('Experienceed ({qualities})');
-      expect(Messages.experience.batch).toBe('Experienceed {count} experiences');
+      expect(Messages.experience.success).toBe('Experienced');
+      expect(Messages.experience.successWithQualities).toBe('Experienced ({qualities})');
+      expect(Messages.experience.batch).toBe('Experienced {count} experiences');
       expect(Messages.experience.similar).toBe('Similar: {content}');
       expect(Messages.experience.from).toBe('From: {experiencer}');
       expect(Messages.experience.as).toBe('As: {perspective}');
@@ -28,11 +28,6 @@ describe('Messages Utility', () => {
       expect(Messages.reconsider.success).toBe('Updated');
       expect(Messages.reconsider.successWithQualities).toBe('Updated ({qualities})');
       expect(Messages.reconsider.batch).toBe('Updated {count} experiences');
-    });
-
-    it('should have all release messages', () => {
-      expect(Messages.release.success).toBe('Released');
-      expect(Messages.release.batch).toBe('Released {count} experiences');
     });
 
     it('should have all time messages', () => {
@@ -100,7 +95,7 @@ describe('Messages Utility', () => {
     it('should replace multiple placeholders', () => {
       const result = formatMessage('Found {count} experiences from {timeAgo}', {
         count: 5,
-        timeAgo: 'yesterday'
+        timeAgo: 'yesterday',
       });
       expect(result).toBe('Found 5 experiences from yesterday');
     });
@@ -112,7 +107,7 @@ describe('Messages Utility', () => {
 
     it('should handle partial replacements', () => {
       const result = formatMessage('Hello {name}! You have {count} messages', {
-        name: 'Bob'
+        name: 'Bob',
         // count is missing
       });
       expect(result).toBe('Hello Bob! You have {count} messages');
@@ -121,21 +116,21 @@ describe('Messages Utility', () => {
     it('should convert non-string values to strings', () => {
       const result = formatMessage('Count: {count}, Active: {active}', {
         count: 42,
-        active: true
+        active: true,
       });
       expect(result).toBe('Count: 42, Active: true');
     });
 
     it('should handle undefined values by keeping placeholder', () => {
       const result = formatMessage('Value: {value}', {
-        value: undefined
+        value: undefined,
       });
       expect(result).toBe('Value: {value}');
     });
 
     it('should handle null values', () => {
       const result = formatMessage('Value: {value}', {
-        value: null
+        value: null,
       });
       expect(result).toBe('Value: null');
     });
@@ -152,21 +147,21 @@ describe('Messages Utility', () => {
 
     it('should handle nested objects', () => {
       const result = formatMessage('Object: {obj}', {
-        obj: { nested: 'value' }
+        obj: { nested: 'value' },
       });
       expect(result).toBe('Object: [object Object]');
     });
 
     it('should handle arrays', () => {
       const result = formatMessage('Array: {arr}', {
-        arr: [1, 2, 3]
+        arr: [1, 2, 3],
       });
       expect(result).toBe('Array: 1,2,3');
     });
 
     it('should handle special characters in keys', () => {
       const result = formatMessage('Hello {user_name}!', {
-        user_name: 'Charlie'
+        user_name: 'Charlie',
       });
       expect(result).toBe('Hello Charlie!');
     });
@@ -174,7 +169,7 @@ describe('Messages Utility', () => {
     it('should not replace invalid placeholder formats', () => {
       const result = formatMessage('Hello { name } and {name2}', {
         name: 'Alice',
-        name2: 'Bob'
+        name2: 'Bob',
       });
       expect(result).toBe('Hello { name } and Bob');
     });
@@ -228,9 +223,9 @@ describe('Messages Utility', () => {
         'time.future',
         'presence',
         'presence.individual',
-        'presence.collective'
+        'presence.collective',
       ];
-      
+
       const result = formatQualityList(allQualities);
       expect(result).toBe(allQualities.join(', '));
     });

@@ -1,5 +1,5 @@
 import {
-  groupByExperiencer,
+  groupByWho,
   groupByDate,
   groupByQualitySignature,
   groupByPerspective,
@@ -14,7 +14,7 @@ describe('Grouping Service', () => {
       id: 'exp1',
       source: 'I feel anxious about the presentation',
       emoji: '😰',
-      experiencer: 'Alice',
+      who: 'Alice',
       perspective: 'I',
       processing: 'during',
       created: '2025-01-15T10:00:00Z',
@@ -26,7 +26,7 @@ describe('Grouping Service', () => {
       id: 'exp2',
       source: 'I feel anxious about the meeting',
       emoji: '😰',
-      experiencer: 'Bob',
+      who: 'Bob',
       perspective: 'I',
       processing: 'during',
       created: '2025-01-15T11:00:00Z',
@@ -38,7 +38,7 @@ describe('Grouping Service', () => {
       id: 'exp3',
       source: 'I am thinking deeply about this problem',
       emoji: '🤔',
-      experiencer: 'Alice',
+      who: 'Alice',
       perspective: 'I',
       processing: 'during',
       created: '2025-01-16T09:00:00Z',
@@ -50,7 +50,7 @@ describe('Grouping Service', () => {
       id: 'exp4',
       source: 'We are working together on this project',
       emoji: '👥',
-      experiencer: 'Team',
+      who: 'Team',
       perspective: 'we',
       processing: 'during',
       created: '2025-01-16T14:00:00Z',
@@ -60,38 +60,38 @@ describe('Grouping Service', () => {
     },
   ];
 
-  describe('groupByExperiencer', () => {
-    it('should group experiences by experiencer', () => {
-      const result = groupByExperiencer(mockExperiences);
+  describe('groupByWho', () => {
+    it('should group experiences by who', () => {
+      const result = groupByWho(mockExperiences);
 
       expect(result).toHaveLength(3);
       expect(result[0]).toEqual({
         key: 'Alice',
-        label: 'Alice',
+        label: 'Alice (2 experiences)',
         count: 2,
         experiences: [mockExperiences[0], mockExperiences[2]],
       });
       expect(result[1]).toEqual({
         key: 'Bob',
-        label: 'Bob',
+        label: 'Bob (1 experience)',
         count: 1,
         experiences: [mockExperiences[1]],
       });
       expect(result[2]).toEqual({
         key: 'Team',
-        label: 'Team',
+        label: 'Team (1 experience)',
         count: 1,
         experiences: [mockExperiences[3]],
       });
     });
 
-    it('should handle experiences with no experiencer', () => {
+    it('should handle experiences with no who', () => {
       const experiencesWithUnknown = [
-        { ...mockExperiences[0], experiencer: undefined },
-        { ...mockExperiences[1], experiencer: 'Bob' },
+        { ...mockExperiences[0], who: undefined },
+        { ...mockExperiences[1], who: 'Bob' },
       ];
 
-      const result = groupByExperiencer(experiencesWithUnknown);
+      const result = groupByWho(experiencesWithUnknown);
 
       expect(result).toHaveLength(2);
       // Sort by count descending, so Bob (count 1) comes before Unknown (count 1)
@@ -101,13 +101,13 @@ describe('Grouping Service', () => {
 
       expect(bobGroup).toEqual({
         key: 'Bob',
-        label: 'Bob',
+        label: 'Bob (1 experience)',
         count: 1,
         experiences: [experiencesWithUnknown[1]],
       });
       expect(unknownGroup).toEqual({
         key: 'Unknown',
-        label: 'Unknown',
+        label: 'Unknown (1 experience)',
         count: 1,
         experiences: [experiencesWithUnknown[0]],
       });
@@ -198,13 +198,13 @@ describe('Grouping Service', () => {
 
       expect(iGroup).toEqual({
         key: 'I',
-        label: 'First person (I)',
+        label: 'First person (I) (1 experience)',
         count: 1,
         experiences: [experiencesWithUnknown[1]],
       });
       expect(unknownGroup).toEqual({
         key: 'Unknown',
-        label: 'Unknown perspective',
+        label: 'Unknown perspective (1 experience)',
         count: 1,
         experiences: [experiencesWithUnknown[0]],
       });

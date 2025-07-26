@@ -11,7 +11,7 @@ import {
   formatBatchExperienceResponse,
   formatRecallResponse,
   formatReconsiderResponse,
-  formatReleaseResponse,
+  generateSearchFeedback,
   type ExperienceResult,
   type RecallResult,
 } from './formatters.js';
@@ -36,10 +36,6 @@ jest.mock('./messages.js', () => ({
     reconsider: {
       success: 'Reconsidered',
       successWithQualities: 'Reconsidered as {qualities}',
-    },
-    release: {
-      success: 'Released',
-      batch: 'Released {count} experiences',
     },
     processing: {
       during: 'in the moment',
@@ -260,7 +256,7 @@ describe('Formatter Utilities', () => {
         id: 'exp_123',
         source: 'I feel happy',
         created: '2025-01-21T11:55:00Z',
-        experiencer: 'Alice',
+        who: 'Alice',
         perspective: 'I',
         processing: 'during',
         experience: ['mood.open'],
@@ -440,23 +436,6 @@ describe('Formatter Utilities', () => {
     });
   });
 
-  describe('formatReleaseResponse', () => {
-    it('should format single release', () => {
-      const result = formatReleaseResponse(1);
-      expect(result).toBe('Released');
-    });
-
-    it('should format batch release', () => {
-      const result = formatReleaseResponse(5);
-      expect(result).toBe('Released 5 experiences');
-    });
-
-    it('should default to single release', () => {
-      const result = formatReleaseResponse();
-      expect(result).toBe('Released');
-    });
-  });
-
   describe('Time formatting', () => {
     it('should format various time differences correctly', () => {
       const testCases = [
@@ -506,6 +485,71 @@ describe('Formatter Utilities', () => {
         const formatted = formatExperienceResponse(result);
         expect(formatted).toContain(`When ${expected}`);
       }
+    });
+  });
+
+  describe('generateSearchFeedback', () => {
+    it('should generate feedback for semantic search', () => {
+      const summary = {
+        searchType: 'semantic' as const,
+        searchDescription: 'Found similar experiences',
+        totalMatches: 3,
+        returnedCount: 3,
+        activeFilters: {
+          search: 'anxiety stress',
+        },
+      };
+
+      const feedback = generateSearchFeedback(summary);
+      expect(feedback).toBe("Found 3 experiences for 'anxiety stress'");
+    });
+
+    it('should generate feedback for ID lookup', () => {
+      const summary = {
+        searchType: 'ids' as const,
+        searchDescription: 'Retrieved specific experiences',
+        totalMatches: 2,
+        returnedCount: 2,
+        activeFilters: {
+          ids: ['exp_123', 'exp_456'],
+        },
+      };
+
+      const feedback = generateSearchFeedback(summary);
+      expect(feedback).toBe('Found 2 experiences for 2 specific experience IDs');
+    });
+
+    it('should generate feedback for filtered search', () => {
+      const summary = {
+        searchType: 'filters' as const,
+        searchDescription: 'Filtered experiences',
+        totalMatches: 5,
+        returnedCount: 5,
+        activeFilters: {
+          who: 'Human',
+          mood: 'open',
+          limit: 10,
+        },
+      };
+
+      const feedback = generateSearchFeedback(summary);
+      expect(feedback).toContain('Human');
+      expect(feedback).toContain('mood');
+    });
+
+    it('should generate feedback for grouped results', () => {
+      const summary = {
+        groupType: 'who' as const,
+        groupCount: 3,
+        totalExperiences: 15,
+        searchType: 'semantic' as const,
+        searchDescription: 'Grouped by who',
+        activeFilters: {},
+      };
+
+      const feedback = generateSearchFeedback(summary);
+      expect(feedback).toContain('3 who groups');
+      expect(feedback).toContain('15 all experiences');
     });
   });
 });

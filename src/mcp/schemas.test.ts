@@ -9,28 +9,23 @@ import {
   ExperienceInputSchema,
   SearchInputSchema,
   ReconsiderInputSchema,
-  ReleaseInputSchema,
   generateExperienceExample,
   generateSearchExample,
   generateReconsiderExample,
-  generateReleaseExample,
   generateBatchExperienceExample,
   generateBatchSearchExample,
   isExperienceInput,
   isSearchInput,
   isReconsiderInput,
-  isReleaseInput,
   isToolResult,
   isToolTextContent,
   isExperienceObject,
   hasExperienceArray,
   hasSearchArray,
   hasReconsiderArray,
-  hasReleaseArray,
   type ExperienceInput,
   type SearchInput,
   type ReconsiderInput,
-  type ReleaseInput,
 } from './schemas.js';
 
 describe('Schema Validation', () => {
@@ -50,7 +45,7 @@ describe('Schema Validation', () => {
     it('should reject input without experiences array', () => {
       const input = {
         perspective: 'I',
-        experiencer: 'Alex',
+        who: 'Alex',
       };
       const result = ExperienceInputSchema.safeParse(input);
       expect(result.success).toBe(false);
@@ -71,7 +66,15 @@ describe('Schema Validation', () => {
             source: 'Test experience',
             emoji: '🧪',
             perspective: 'I',
-            experience: ['mood.open'],
+            experience: {
+              embodied: false,
+              focus: false,
+              mood: 'open',
+              purpose: false,
+              space: false,
+              time: false,
+              presence: false,
+            },
           },
         ],
       };
@@ -86,7 +89,15 @@ describe('Schema Validation', () => {
             source: 'Pattern realization',
             emoji: '💡',
             perspective: 'I',
-            experience: ['mood.open'],
+            experience: {
+              embodied: false,
+              focus: false,
+              mood: 'open',
+              purpose: false,
+              space: false,
+              time: false,
+              presence: false,
+            },
             reflects: ['exp-123', 'exp-456'],
           },
         ],
@@ -102,7 +113,15 @@ describe('Schema Validation', () => {
             source: 'Experience with empty reflects',
             emoji: '🧪',
             perspective: 'I',
-            experience: ['mood.open'],
+            experience: {
+              embodied: false,
+              focus: false,
+              mood: 'open',
+              purpose: false,
+              space: false,
+              time: false,
+              presence: false,
+            },
             reflects: [],
           },
         ],
@@ -118,10 +137,18 @@ describe('Schema Validation', () => {
             source: 'Complete experience',
             emoji: '✨',
             perspective: 'I',
-            experiencer: 'test',
+            who: 'test',
             processing: 'during',
             crafted: false,
-            experience: ['mood.open', 'embodied.sensing'],
+            experience: {
+              embodied: 'sensing',
+              focus: false,
+              mood: 'open',
+              purpose: false,
+              space: false,
+              time: false,
+              presence: false,
+            },
             reflects: ['exp-123'],
           },
         ],
@@ -137,7 +164,15 @@ describe('Schema Validation', () => {
             source: 'Test experience',
             emoji: '🧪',
             perspective: 'custom-perspective',
-            experience: ['mood.open'],
+            experience: {
+              embodied: false,
+              focus: false,
+              mood: 'open',
+              purpose: false,
+              space: false,
+              time: false,
+              presence: false,
+            },
           },
         ],
       };
@@ -227,7 +262,37 @@ describe('Schema Validation', () => {
           {
             source: 'Test with compound emoji',
             emoji: '🧑‍💻', // Person with laptop (compound)
-            experience: ['mood.open'],
+            experience: {
+              embodied: false,
+              focus: false,
+              mood: 'open',
+              purpose: false,
+              space: false,
+              time: false,
+              presence: false,
+            },
+          },
+        ],
+      };
+      const result = ExperienceInputSchema.safeParse(input);
+      expect(result.success).toBe(true);
+    });
+
+    it('should accept true for mixed/general prominent qualities', () => {
+      const input = {
+        experiences: [
+          {
+            source: 'Experience with mixed qualities',
+            emoji: '🌊',
+            experience: {
+              embodied: true, // Prominent but mixed (both thinking and sensing)
+              focus: false,
+              mood: true, // Prominent but mixed (both open and closed)
+              purpose: false,
+              space: false,
+              time: true, // Prominent but mixed (both past and future)
+              presence: false,
+            },
           },
         ],
       };
@@ -252,7 +317,15 @@ describe('Schema Validation', () => {
             {
               source: `Test with ${description}`,
               emoji,
-              experience: ['mood.open'],
+              experience: {
+                embodied: false,
+                focus: false,
+                mood: 'open',
+                purpose: false,
+                space: false,
+                time: false,
+                presence: false,
+              },
             },
           ],
         };
@@ -319,7 +392,7 @@ describe('Schema Validation', () => {
       const input = {
         searches: [
           {
-            experiencer: 'Alex',
+            who: 'Alex',
             perspective: 'I',
           },
         ],
@@ -333,7 +406,7 @@ describe('Schema Validation', () => {
         searches: [
           {
             search: 'test query',
-            experiencer: 'Alex',
+            who: 'Alex',
             perspective: 'I',
             limit: 10,
             offset: 5,
@@ -482,7 +555,15 @@ describe('Schema Validation', () => {
           {
             id: 'exp-123',
             source: 'Updated',
-            experience: ['mood.open'],
+            experience: {
+              embodied: false,
+              focus: false,
+              mood: 'open',
+              purpose: false,
+              space: false,
+              time: false,
+              presence: false,
+            },
             perspective: 'we',
             processing: 'long-after',
           },
@@ -497,36 +578,6 @@ describe('Schema Validation', () => {
         reconsiderations: [{ source: 'Missing ID' }],
       };
       const result = ReconsiderInputSchema.safeParse(input);
-      expect(result.success).toBe(false);
-    });
-  });
-
-  describe('ReleaseInputSchema', () => {
-    it('should validate valid release input', () => {
-      const input = {
-        releases: [
-          {
-            id: 'exp_123',
-            reason: 'Test cleanup',
-          },
-        ],
-      };
-
-      const result = ReleaseInputSchema.safeParse(input);
-      expect(result.success).toBe(true);
-    });
-
-    it('should reject invalid release input', () => {
-      const input = {
-        releases: [
-          {
-            // Missing required id field
-            reason: 'Test cleanup',
-          },
-        ],
-      };
-
-      const result = ReleaseInputSchema.safeParse(input);
       expect(result.success).toBe(false);
     });
   });
@@ -574,19 +625,6 @@ describe('Type Guards', () => {
     });
   });
 
-  describe('isReleaseInput', () => {
-    it('should return true for valid release input', () => {
-      const input = generateReleaseExample();
-      expect(isReleaseInput(input)).toBe(true);
-    });
-
-    it('should return false for invalid input', () => {
-      expect(isReleaseInput({ invalid: 'data' })).toBe(false);
-      expect(isReleaseInput(null)).toBe(false);
-      expect(isReleaseInput(undefined)).toBe(false);
-    });
-  });
-
   describe('isToolResult', () => {
     it('should return true for valid tool result', () => {
       const result = {
@@ -626,8 +664,16 @@ describe('Type Guards', () => {
   });
 
   describe('isExperienceObject', () => {
-    it('should return true for valid experience array', () => {
-      const experience = ['mood.open', 'embodied.sensing'];
+    it('should return true for valid experience switchboard', () => {
+      const experience = {
+        embodied: 'sensing',
+        focus: false,
+        mood: 'open',
+        purpose: false,
+        space: false,
+        time: false,
+        presence: false,
+      };
       expect(isExperienceObject(experience)).toBe(true);
     });
 
@@ -643,7 +689,23 @@ describe('Type Guards', () => {
   describe('Array Type Guards', () => {
     describe('hasExperienceArray', () => {
       it('should return true for valid experience array', () => {
-        const input = { experiences: [{ source: 'test', emoji: '🧪', experience: ['mood.open'] }] };
+        const input = {
+          experiences: [
+            {
+              source: 'test',
+              emoji: '🧪',
+              experience: {
+                embodied: false,
+                focus: false,
+                mood: 'open',
+                purpose: false,
+                space: false,
+                time: false,
+                presence: false,
+              },
+            },
+          ],
+        };
         expect(hasExperienceArray(input)).toBe(true);
       });
 
@@ -691,23 +753,6 @@ describe('Type Guards', () => {
         expect(hasReconsiderArray(input as any)).toBe(false);
       });
     });
-
-    describe('hasReleaseArray', () => {
-      it('should return true for valid release array', () => {
-        const input = { releases: [{ id: 'exp-123' }] };
-        expect(hasReleaseArray(input)).toBe(true);
-      });
-
-      it('should return false for empty release array', () => {
-        const input = { releases: [] };
-        expect(hasReleaseArray(input)).toBe(false);
-      });
-
-      it('should return false for missing releases', () => {
-        const input = { id: 'exp-123' };
-        expect(hasReleaseArray(input as any)).toBe(false);
-      });
-    });
   });
 });
 
@@ -734,13 +779,6 @@ describe('Example Generation', () => {
     expect(Array.isArray(example.reconsiderations)).toBe(true);
     expect(example.reconsiderations![0]).toHaveProperty('id');
     expect(example.reconsiderations![0]).toHaveProperty('source');
-  });
-
-  it('should generate valid release examples', () => {
-    const example = generateReleaseExample();
-    expect(example).toHaveProperty('releases');
-    expect(Array.isArray(example.releases)).toBe(true);
-    expect(example.releases![0]).toHaveProperty('id');
   });
 
   it('should generate valid batch experience examples', () => {

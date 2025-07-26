@@ -3,7 +3,6 @@
  * Provides semantic search, filtering, and sorting capabilities.
  */
 
-import { bridgeLogger } from '../utils/bridge-logger.js';
 import type { SourceRecord } from './types.js';
 
 // ============================================================================
@@ -13,7 +12,7 @@ import type { SourceRecord } from './types.js';
 /** Default values for search fields */
 export const FIELD_DEFAULTS = {
   PERSPECTIVE: 'I',
-  EXPERIENCER: 'self',
+  WHO: 'self',
   PROCESSING: 'during',
 } as const;
 
@@ -22,7 +21,11 @@ export const SORT_OPTIONS = ['relevance', 'created'] as const;
 
 /** Valid filter types */
 export const FILTER_TYPES = [
-  'experiencer', 'perspective', 'processing', 'timeRange', 'systemTimeRange'
+  'who',
+  'perspective',
+  'processing',
+  'timeRange',
+  'systemTimeRange',
 ] as const;
 
 // ============================================================================
@@ -30,10 +33,10 @@ export const FILTER_TYPES = [
 // ============================================================================
 
 /** Sort option type */
-export type SortOption = typeof SORT_OPTIONS[number];
+export type SortOption = (typeof SORT_OPTIONS)[number];
 
 /** Filter type */
-export type FilterType = typeof FILTER_TYPES[number];
+export type FilterType = (typeof FILTER_TYPES)[number];
 
 /** Time range filter */
 export interface TimeRange {
@@ -49,7 +52,7 @@ export interface SystemTimeRange {
 
 /** Advanced filter options */
 export interface FilterOptions {
-  experiencers?: string[];
+  who?: string[];
   perspectives?: string[];
   processing?: string[];
   timeRange?: TimeRange;
@@ -69,7 +72,7 @@ export interface SearchResult {
 export interface FilterStats {
   initial: number;
   final: number;
-  afterExperiencers?: number;
+  afterWho?: number;
   afterPerspectives?: number;
   afterProcessing?: number;
   afterTimeRange?: number;
@@ -94,7 +97,7 @@ function validateFilterOptions(filters: FilterOptions): void {
       throw new Error('Invalid timeRange.end date');
     }
   }
-  
+
   if (filters.systemTimeRange) {
     if (isNaN(Date.parse(filters.systemTimeRange.start))) {
       throw new Error('Invalid systemTimeRange.start date');
@@ -150,27 +153,30 @@ function isWithinRange(date: Date, start?: Date, end?: Date): boolean {
  * @param filters - The filter options to apply
  * @returns Filtered results and statistics
  */
-export function advancedFilters(results: SearchResult[], filters?: FilterOptions): { filtered: SearchResult[], stats: FilterStats } {
+export function advancedFilters(
+  results: SearchResult[],
+  filters?: FilterOptions
+): { filtered: SearchResult[]; stats: FilterStats } {
   if (!filters) {
-    return { 
-      filtered: results, 
-      stats: { initial: results.length, final: results.length } 
+    return {
+      filtered: results,
+      stats: { initial: results.length, final: results.length },
     };
   }
 
   // Validate filters
   validateFilterOptions(filters);
-  
+
   const stats: FilterStats = {
     initial: results.length,
-    final: results.length
+    final: results.length,
   };
-  
+
   let filtered = results;
-  
+
   // Time range filter (timeRange) - uses created date
   if (filters.timeRange) {
-    filtered = filtered.filter(result => {
+    filtered = filtered.filter((result) => {
       const recDate = getCreatedDate(result.source) || getSystemTimeDate(result.source);
       const start = filters.timeRange!.start ? new Date(filters.timeRange!.start) : undefined;
       const end = filters.timeRange!.end ? new Date(filters.timeRange!.end) : undefined;
@@ -178,10 +184,10 @@ export function advancedFilters(results: SearchResult[], filters?: FilterOptions
     });
     stats.afterTimeRange = filtered.length;
   }
-  
+
   // System time range filter
   if (filters.systemTimeRange) {
-    filtered = filtered.filter(result => {
+    filtered = filtered.filter((result) => {
       const recDate = getSystemTimeDate(result.source);
       const start = new Date(filters.systemTimeRange!.start);
       const end = new Date(filters.systemTimeRange!.end);
@@ -189,34 +195,38 @@ export function advancedFilters(results: SearchResult[], filters?: FilterOptions
     });
     stats.afterSystemTimeRange = filtered.length;
   }
-  
-  // Experiencers filter
-  if (filters.experiencers && filters.experiencers.length > 0) {
-    filtered = filtered.filter(result => {
-      const experiencer = result.source.experiencer || FIELD_DEFAULTS.EXPERIENCER;
-      return filters.experiencers!.includes(experiencer);
+
+  // Who filter
+  if (filters.who && filters.who.length > 0) {
+    filtered = filtered.filter((result) => {
+      const who = result.source.who || FIELD_DEFAULTS.WHO;
+      // Handle both string and string array
+      if (Array.isArray(who)) {
+        return who.some((w) => filters.who!.includes(w));
+      }
+      return filters.who!.includes(who);
     });
-    stats.afterExperiencers = filtered.length;
+    stats.afterWho = filtered.length;
   }
-  
+
   // Perspectives filter
   if (filters.perspectives && filters.perspectives.length > 0) {
-    filtered = filtered.filter(result => {
+    filtered = filtered.filter((result) => {
       const perspective = result.source.perspective || FIELD_DEFAULTS.PERSPECTIVE;
       return filters.perspectives!.includes(perspective);
     });
     stats.afterPerspectives = filtered.length;
   }
-  
+
   // Processing filter
   if (filters.processing && filters.processing.length > 0) {
-    filtered = filtered.filter(result => {
+    filtered = filtered.filter((result) => {
       const processing = result.source.processing || FIELD_DEFAULTS.PROCESSING;
       return filters.processing!.includes(processing);
     });
     stats.afterProcessing = filtered.length;
   }
-  
+
   stats.final = filtered.length;
   return { filtered, stats };
 }
@@ -233,12 +243,12 @@ export function advancedFilters(results: SearchResult[], filters?: FilterOptions
  */
 export function sortResults(results: SearchResult[], sortBy: SortOption): SearchResult[] {
   const sorted = [...results];
-  
+
   switch (sortBy) {
     case 'relevance': {
       return sorted.sort((a, b) => b.relevance - a.relevance);
     }
-    
+
     case 'created': {
       return sorted.sort((a, b) => {
         const aCreated = getCreatedDate(a.source);
@@ -247,7 +257,7 @@ export function sortResults(results: SearchResult[], sortBy: SortOption): Search
         return bCreated.getTime() - aCreated.getTime();
       });
     }
-    
+
     default: {
       return sorted;
     }
@@ -281,17 +291,7 @@ export async function semanticSearch(
   void options;
   void query;
 
-  try {
-    
-    // Get vector store for similarity search
-    // Vector store removed - embeddings now in main storage
-    
-    // Vector store removed - semantic search is not available in core search
-    // Use the search service for full functionality
-    return [];
-    
-  } catch (error) {
-    bridgeLogger.error('Semantic search failed:', error);
-    return [];
-  }
-} 
+  // Semantic search functionality has been moved to the search service
+  // This function is maintained for backward compatibility only
+  return [];
+}

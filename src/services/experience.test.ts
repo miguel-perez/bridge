@@ -1,9 +1,9 @@
 import { ExperienceService, experienceSchema, type ExperienceInput } from './experience.js';
-import { embeddingServiceV2 } from './embeddings-v2.js';
+import { embeddingService } from './embeddings.js';
 import { saveEmbedding, saveSource } from '../core/storage.js';
 
 // Mock the embeddings service
-jest.mock('./embeddings-v2.js');
+jest.mock('./embeddings.js');
 jest.mock('../core/storage.js', () => ({
   ...jest.requireActual('../core/storage.js'),
   saveEmbedding: jest.fn(),
@@ -13,7 +13,7 @@ jest.mock('../core/storage.js', () => ({
 // Type the mocks
 const mockSaveSource = saveSource as jest.MockedFunction<typeof saveSource>;
 const mockSaveEmbedding = saveEmbedding as jest.MockedFunction<typeof saveEmbedding>;
-const mockEmbeddingServiceV2 = embeddingServiceV2 as jest.Mocked<typeof embeddingServiceV2>;
+const mockEmbeddingService = embeddingService as jest.Mocked<typeof embeddingService>;
 
 describe('ExperienceService', () => {
   let experienceService: ExperienceService;
@@ -25,8 +25,8 @@ describe('ExperienceService', () => {
     // Setup default mock behavior
     mockSaveSource.mockImplementation(async (source) => source);
     mockSaveEmbedding.mockResolvedValue(undefined);
-    mockEmbeddingServiceV2.initialize.mockResolvedValue(undefined);
-    mockEmbeddingServiceV2.generateEmbedding.mockResolvedValue(new Array(384).fill(0));
+    mockEmbeddingService.initialize.mockResolvedValue(undefined);
+    mockEmbeddingService.generateEmbedding.mockResolvedValue(new Array(384).fill(0));
   });
 
   describe('rememberExperience', () => {
@@ -34,13 +34,13 @@ describe('ExperienceService', () => {
       const input = {
         source: 'Test experience',
         emoji: '🧪',
-        experiencer: 'test_user',
+        who: 'test_user',
       };
 
       const result = await experienceService.rememberExperience(input);
 
       expect(result.source.source).toBe('Test experience');
-      expect(result.source.experiencer).toBe('test_user');
+      expect(result.source.who).toBe('test_user');
       expect(result.source.id).toBeDefined();
       expect(result.source.created).toBeDefined();
     });
@@ -54,7 +54,7 @@ describe('ExperienceService', () => {
       const result = await experienceService.rememberExperience(input);
 
       expect(result.source.perspective).toBe('I');
-      expect(result.source.experiencer).toBe('self');
+      expect(result.source.who).toBe('self');
       expect(result.source.processing).toBe('during');
       expect(result.source.crafted).toBe(false);
       expect(result.defaultsUsed).toContain('perspective="auto-generated"');
@@ -65,20 +65,20 @@ describe('ExperienceService', () => {
     it('should use default source when not provided', async () => {
       const input = {
         emoji: '💭',
-        experiencer: 'test_user',
+        who: 'test_user',
       };
 
       const result = await experienceService.rememberExperience(input);
 
-      expect(result.source.source).toBe('Experience experienceed');
-      expect(result.defaultsUsed).toContain('source="Experience experienceed"');
+      expect(result.source.source).toBe('Experience experienced');
+      expect(result.defaultsUsed).toContain('source="Experience experienced"');
     });
 
     it('should generate embeddings for experienceed experiences', async () => {
       const input = {
         source: 'Test experience for embedding',
         emoji: '🔤',
-        experiencer: 'test_user',
+        who: 'test_user',
       };
 
       const result = await experienceService.rememberExperience(input);
@@ -91,7 +91,7 @@ describe('ExperienceService', () => {
       const input = {
         source: 'Test experience',
         emoji: '✨',
-        experiencer: 'test_user',
+        who: 'test_user',
         experience: ['mood.open', 'embodied.sensing', 'purpose.goal'],
       };
 
@@ -104,7 +104,7 @@ describe('ExperienceService', () => {
       const input = {
         source: 'Test experience',
         emoji: '💭',
-        experiencer: 'test_user',
+        who: 'test_user',
         experience: [],
       };
 
@@ -115,28 +115,28 @@ describe('ExperienceService', () => {
 
     it('should handle embedding generation failure gracefully', async () => {
       // Mock embedding service to throw an error
-      mockEmbeddingServiceV2.generateEmbedding.mockRejectedValue(
+      mockEmbeddingService.generateEmbedding.mockRejectedValue(
         new Error('Embedding generation failed')
       );
 
       const input = {
         source: 'Test experience with embedding failure',
         emoji: '🆘',
-        experiencer: 'test_user',
+        who: 'test_user',
       };
 
       // Should not throw error even if embedding fails
       const result = await experienceService.rememberExperience(input);
 
       expect(result.source.source).toBe('Test experience with embedding failure');
-      expect(result.source.experiencer).toBe('test_user');
+      expect(result.source.who).toBe('test_user');
       expect(result.source.id).toBeDefined();
       expect(result.defaultsUsed).toContain('perspective="auto-generated"');
       expect(result.defaultsUsed).toContain('processing="during"');
 
       // Verify embedding was attempted but saveEmbedding was not called
-      expect(mockEmbeddingServiceV2.initialize).toHaveBeenCalled();
-      expect(mockEmbeddingServiceV2.generateEmbedding).toHaveBeenCalled();
+      expect(mockEmbeddingService.initialize).toHaveBeenCalled();
+      expect(mockEmbeddingService.generateEmbedding).toHaveBeenCalled();
       expect(saveEmbedding).not.toHaveBeenCalled();
     });
 
@@ -153,7 +153,7 @@ describe('ExperienceService', () => {
       const result = await experienceService.rememberExperience(input);
 
       expect(result.source.context).toBe('Before an important presentation');
-      expect(mockEmbeddingServiceV2.generateEmbedding).toHaveBeenCalledWith(
+      expect(mockEmbeddingService.generateEmbedding).toHaveBeenCalledWith(
         'Context: Before an important presentation. "I feel anxious" [mood.closed, embodied.sensing]'
       );
     });
@@ -164,7 +164,7 @@ describe('ExperienceService', () => {
       const input = {
         source: 'Test experience',
         emoji: '🧪',
-        experiencer: 'test_user',
+        who: 'test_user',
         perspective: 'I',
         processing: 'during',
         crafted: false,

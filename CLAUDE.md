@@ -1,28 +1,19 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with the Bridge codebase.
 
-## Quick Start
+## 🚀 Quick Start
 
 ```bash
-# Install dependencies
-npm install
-
-# Run in development mode
-npm run dev
-
-# Run tests
-npm test
-
-# Check quality
-npm run quality-check
+npm install              # Install dependencies
+npm run dev              # Run in development mode
+npm test                 # Run tests
+npm run quality-check    # Check code quality
 ```
 
-## Architecture
+## 🏗️ Architecture Overview
 
-### Core Flow
-
-Bridge is an MCP (Model Context Protocol) server that enables shared experiential memory between humans and AI. The architecture follows a service-oriented pattern:
+Bridge is an MCP (Model Context Protocol) server enabling shared experiential memory between humans and AI.
 
 ```text
 MCP Client (Claude) → MCP Server → Tool Handlers → Services → Storage
@@ -30,273 +21,75 @@ MCP Client (Claude) → MCP Server → Tool Handlers → Services → Storage
                                                          Embeddings
 ```
 
-### Key Components
+### Core Components
 
-1. **MCP Layer** (`src/mcp/`)
-   - `server.ts` - MCP protocol implementation, routes tool calls
-   - `handlers.ts` - Coordinates tool handlers
-   - `*-handler.ts` - Individual tool implementations (experience, recall, etc.)
-   - Tool handlers validate input and delegate to services
+| Component     | Path            | Purpose                                  |
+| ------------- | --------------- | ---------------------------------------- |
+| **MCP Layer** | `src/mcp/`      | Protocol implementation and tool routing |
+| **Services**  | `src/services/` | Business logic and processing            |
+| **Storage**   | `src/core/`     | Data persistence and types               |
+| **Testing**   | `src/scripts/`  | Test infrastructure                      |
 
-2. **Services** (`src/services/`)
-   - `experience.ts` - Remembers experiences with quality signatures
-   - `recall.ts` - Semantic search and quality filtering
-   - `unified-scoring.ts` - Dynamic scoring system for recall
-   - `reconsider.ts` - Updates existing experiences
-   - `release.ts` - Removes experiences
-   - `embeddings.ts` - @xenova/transformers for semantic vectors
-   - `clustering.ts` - Groups similar experiences
-   - Services handle business logic and return structured results
+## 🛠️ API Reference
 
-3. **Storage** (`src/core/`)
-   - `storage.ts` - JSON persistence to `~/.bridge/experiences.json`
-   - `types.ts` - Core data structures (Source, Experience, etc.)
-   - `config.ts` - Centralized configuration and thresholds
-   - `dimensions.ts` - Known quality definitions
-   - Experiences stored with embeddings for semantic search
+### Experience Tool
 
-4. **Testing Infrastructure** (`src/scripts/`)
-   - `test-runner.ts` - Parallel test execution with three scenarios
-   - `learning-loop.ts` - Opus 4 analyzes test results using sequential thinking
-   - Unit tests co-located with source files (\*.test.ts)
-
-### Data Flow Example
+**Always use array format, even for single operations:**
 
 ```typescript
-// 1. Claude calls experience tool (array format required)
-experience({
-  experiences: [
-    {
-      source: 'I feel anxious',
-      experience: ['embodied.sensing', 'mood.closed'],
-    },
-  ],
-});
-
-// 2. MCP server routes to ExperienceHandler
-// 3. Handler validates and calls ExperienceService
-// 4. Service creates Source record, generates embedding
-// 5. Storage saves to JSON, returns result
-// 6. Handler formats user-friendly response
-// 7. Claude receives: "Experienced (embodied.sensing, mood.closed)"
-```
-
-### API Format
-
-**IMPORTANT**: All Bridge tools now require array inputs, even for single operations:
-
-```typescript
-// Experience (always use experiences array)
-experience({
-  experiences: [{ source: 'text', emoji: '📤', experience: ['mood.open'] }],
-});
-
-// Recall (always use searches array)
-recall({
-  searches: [{ query: 'keyword', limit: 5 }],
-});
-
-// Reconsider (always use reconsiderations array)
-reconsider({
-  reconsiderations: [{ id: 'exp_123', source: 'updated text' }],
-});
-
-// Release (always use releases array)
-release({
-  releases: [{ id: 'exp_123', reason: 'no longer needed' }],
-});
-```
-
-## Quality Dimensions
-
-Bridge uses seven quality pairs to capture experiential moments:
-
-- **embodied** - How consciousness textures through body/mind
-  - `.thinking` - Mental processing, analysis
-  - `.sensing` - Body awareness, emotions
-- **focus** - Attentional quality
-  - `.narrow` - Single-task concentration
-  - `.broad` - Multi-task awareness
-- **mood** - Emotional atmosphere
-  - `.open` - Expansive, curious
-  - `.closed` - Contracted, defensive
-- **purpose** - Directional momentum
-  - `.goal` - Clear direction
-  - `.wander` - Exploration
-- **space** - Spatial awareness
-  - `.here` - Present location
-  - `.there` - Elsewhere
-- **time** - Temporal orientation
-  - `.past` - Historical
-  - `.future` - Anticipatory
-- **presence** - Social quality
-  - `.individual` - Solitary
-  - `.collective` - Shared
-
-Use dot notation when quality clearly fits a subtype. Use base quality when mixed or unclear.
-
-## Key Commands
-
-### Development
-
-```bash
-npm run dev              # Watch mode with tsx
-npm run build            # TypeScript compilation
-npm run build:all        # Build + bundle
-npm start                # Run bundled server
-```
-
-### Testing
-
-```bash
-npm test                 # Run unit tests with coverage
-npm run test:bridge      # Run integration tests
-npm run test:all         # All tests + learning loop
-npm run loop             # Run learning loop analysis
-
-# Run a single test file
-npm test -- src/services/recall.test.ts
-```
-
-### Quality Checks
-
-```bash
-npm run lint             # ESLint check
-npm run lint:fix         # ESLint auto-fix
-npm run type-check       # TypeScript checking
-npm run quality-check    # Combined checks
-npm run quality-check:full # Full quality suite
-```
-
-### Build & Deploy
-
-```bash
-npm run bundle           # Create single bundle.js
-npm run quality-monitor  # Run quality monitoring
-```
-
-## Development Process
-
-Bridge follows a continuous learning loop: **VISION → OPPORTUNITIES → EXPERIMENTS → LEARNINGS → VISION**
-
-See **LOOP.md** for the complete development workflow and methodology.
-
-### Quality Standards
-
-- **Test Coverage**: Currently 85.27% line coverage
-- **Pre-commit**: Runs lint:fix and type-check
-- **Pre-push**: Runs full quality-check:full
-- **Emergency bypass**: `git push --no-verify` (use sparingly)
-
-### Learning Loop Analysis
-
-```bash
-npm run loop -- --concise    # Concise recommendations
-npm run loop -- --verbose    # Detailed analysis
-npm run loop -- --raw        # Include raw data
-```
-
-The learning loop:
-
-1. Runs three test scenarios in parallel
-2. Uses Opus 4 with sequential thinking
-3. Analyzes patterns across scenarios
-4. Provides actionable recommendations
-
-### Bridge Integration Tests
-
-The test runner now includes:
-
-- **Rate limiting**: Configurable delays to prevent API overload
-- **Streamlined scenarios**: DRY test sets that reduce redundancy
-- **Scenario groups**: Predefined test suites (minimal, standard, comprehensive)
-
-Configure test execution:
-
-```bash
-# Use standard scenarios (default)
-npm run test:bridge
-
-# Use minimal scenarios (fewer API calls)
-TEST_MINIMAL=true npm run test:bridge
-
-# Run specific scenario groups
-npm run test:bridge standard   # Core + quality + recall tests
-npm run test:bridge minimal    # Just basic tests
-npm run test:bridge smoke      # Quick smoke test
-
-# Configure rate limits (in .env)
-TEST_SCENARIO_DELAY=5000      # Between scenarios (default: 5s)
-TEST_API_CALL_DELAY=1000      # After API calls (default: 1s)
-TEST_TURN_DELAY=2000          # Between turns (default: 2s)
-```
-
-## API Usage Examples
-
-### Experience
-
-```typescript
-// Human experience
+// Basic experience
 experience({
   experiences: [
     {
       source: 'Finally got the tests passing!',
       emoji: '✅',
       experience: ['embodied.thinking', 'mood.open', 'purpose.goal'],
-      context: 'After debugging the race condition for hours', // Optional context
+      context: 'After debugging the race condition', // Optional
     },
   ],
 });
 
-// Claude's experience
+// With integrated recall (search)
 experience({
   experiences: [
     {
-      source: 'I notice we keep circling back to this pattern',
-      emoji: '🔄',
-      experience: ['embodied.thinking', 'presence.collective'],
-      experiencer: 'Claude',
-      context: 'Third time discussing similar architecture questions',
+      source: 'This bug is frustrating',
+      emoji: '🐛',
+      experience: ['mood.closed', 'embodied.thinking'],
     },
   ],
-});
-```
-
-### Recall
-
-```typescript
-// Semantic search
-recall({
-  searches: [{ query: 'frustration debugging' }],
+  recall: {
+    query: 'authentication bugs',
+    limit: 3,
+  },
 });
 
-// Quality filtering
-recall({
-  searches: [
+// With reasoning chain (nextMoment)
+experience({
+  experiences: [
     {
-      qualities: {
-        mood: 'closed',
-        purpose: ['goal', 'wander'], // OR logic
-      },
+      source: 'I see a pattern emerging',
+      emoji: '💡',
+      who: 'Claude',
+      experience: ['embodied.thinking', 'purpose.wander'],
     },
   ],
-});
-
-// Pattern realizations only
-recall({
-  searches: [{ reflects: 'only' }],
-});
-
-// Clustering mode
-recall({
-  searches: [{ query: 'learning', group_by: 'similarity' }],
+  nextMoment: {
+    embodied: 'thinking',
+    focus: 'narrow',
+    mood: 'open',
+    purpose: 'goal',
+    space: 'here',
+    time: false,
+    presence: 'collective',
+  },
 });
 ```
 
-### Reconsider
+### Reconsider Tool
 
 ```typescript
-// Update qualities
+// Update experience
 reconsider({
   reconsiderations: [
     {
@@ -315,99 +108,226 @@ reconsider({
     },
   ],
 });
-```
 
-### Release
-
-```typescript
-release({
-  releases: [
+// Release experience (integrated)
+reconsider({
+  reconsiderations: [
     {
       id: 'exp_789',
-      reason: 'Test data during development',
+      release: true,
+      releaseReason: 'Temporary emotional venting',
     },
   ],
 });
 ```
 
-### Flow Tracking (Still Thinking)
+## 🎯 Quality Dimensions
+
+Bridge captures experiential moments through seven quality pairs:
+
+| Quality      | Subtypes                     | Description                                  |
+| ------------ | ---------------------------- | -------------------------------------------- |
+| **embodied** | `.thinking`, `.sensing`      | How consciousness textures through body/mind |
+| **focus**    | `.narrow`, `.broad`          | Attentional quality                          |
+| **mood**     | `.open`, `.closed`           | Emotional atmosphere                         |
+| **purpose**  | `.goal`, `.wander`           | Directional momentum                         |
+| **space**    | `.here`, `.there`            | Spatial awareness                            |
+| **time**     | `.past`, `.future`           | Temporal orientation                         |
+| **presence** | `.individual`, `.collective` | Social quality                               |
+
+Use dot notation for clear subtypes, base quality when mixed/unclear.
+
+## 📋 Development Commands
+
+### Core Development
+
+```bash
+npm run dev              # Watch mode
+npm run build            # TypeScript compilation
+npm run build:all        # Build + bundle
+npm start                # Run bundled server
+```
+
+### Testing
+
+```bash
+npm test                 # Unit tests with coverage
+npm test                 # Unit tests
+npm run test:all         # All tests
+
+
+# Test a specific file
+npm test -- src/services/recall.test.ts
+```
+
+### Quality Checks
+
+```bash
+npm run lint             # ESLint check
+npm run lint:fix         # ESLint auto-fix
+npm run type-check       # TypeScript checking
+npm run quality-check    # Combined checks
+npm run quality-check:full # Full quality suite
+```
+
+## 🔄 Development Process
+
+Bridge follows: **VISION → OPPORTUNITIES → EXPERIMENTS → LEARNINGS → VISION**
+
+See **LOOP.md** for complete methodology.
+
+### Quality Standards
+
+- **Test Coverage**: ~85% line coverage
+- **Pre-commit**: Runs `lint:fix` and `type-check`
+- **Pre-push**: Runs full `quality-check:full`
+
+### Test Configuration
+
+```bash
+# Run all tests
+npm test
+
+# Run with coverage
+npm test -- --coverage
+
+# Run specific test files
+npm test -- --testPathPattern=experience
+npm test -- --testPathPattern=recall
+```
+
+## 💡 Usage Patterns
+
+### Search via Experience Tool
 
 ```typescript
-// Start investigating with stillThinking: true
-const result1 = await experience({
+// Semantic search
+experience({
   experiences: [
     {
-      source: 'Users report slow page loads during peak hours',
-      experience: ['embodied.thinking', 'focus.narrow'],
+      source: 'searching for debugging patterns',
+      emoji: '🔍',
+      experience: ['purpose.goal'],
     },
   ],
-  stillThinking: true,
+  recall: { query: 'debugging patterns' },
 });
-// Returns flow acknowledgment: "🤔 Still thinking... (1 step so far)"
 
-// Continue searching for patterns
-const result2 = await recall({
-  searches: [
-    {
-      query: 'performance peak hours database',
-      qualities: { embodied: 'thinking' },
-    },
-  ],
-  stillThinking: true,
-});
-// Returns: "🤔 Still thinking... (2 steps so far)"
-
-// Capture the solution
-const result3 = await experience({
+// Quality filtering
+experience({
   experiences: [
     {
-      source: 'Found it! Database connection pool was too small',
-      experience: ['mood.open', 'purpose.goal'],
+      source: 'finding closed mood moments',
+      emoji: '🔍',
+      experience: ['purpose.goal'],
     },
   ],
-  stillThinking: false, // Investigation complete
+  recall: {
+    qualities: {
+      mood: 'closed',
+      purpose: ['goal', 'wander'], // OR logic
+    },
+  },
 });
-// Returns: "✅ Flow complete! (3 total steps)"
 ```
 
-## Current Implementation Status
+### Reasoning Chains Example
 
-**What Works Today:**
+```typescript
+// 1. Start chain
+await experience({
+  experiences: [
+    {
+      source: 'Users report slow page loads',
+      who: 'Human',
+      emoji: '🐌',
+      experience: ['mood.closed', 'purpose.goal'],
+    },
+  ],
+  nextMoment: {
+    /* qualities for next exploration */
+  },
+});
 
-- Semantic search using transformer embeddings (all-MiniLM-L6-v2)
-- Quality filtering and queries
-- Unified scoring system
-- Four core operations: experience(), recall(), reconsider(), release()
-- Pattern realizations with `reflects` field
-- Clustering analysis
-- Minimal flow tracking with `stillThinking` parameter
+// 2. Continue with recall
+await experience({
+  experiences: [
+    {
+      source: 'Checking for similar issues',
+      who: 'Claude',
+      emoji: '🔍',
+      experience: ['embodied.thinking'],
+    },
+  ],
+  recall: { query: 'performance database' },
+});
 
-**Next Priorities (from OPPORTUNITIES.md):**
+// 3. Complete chain
+await experience({
+  experiences: [
+    {
+      source: 'Found it! Connection pool too small',
+      who: ['Human', 'Claude'],
+      emoji: '💡',
+      experience: ['mood.open', 'presence.collective'],
+    },
+  ],
+});
+// Auto-generates reflection on the journey
+```
 
-1. Extensible recall (Score: 270) - Technical foundation for future features
-2. Natural language quality parsing (Score: 189) - Better UX
-3. Batch operations (Score: 162) - Performance optimization
+## 📚 Key Files
 
-## External Documentation
+### Documentation
 
-### Core References
+- **README.md** - User-facing API reference
+- **LOOP.md** - Development methodology
+- **VISION.md** - Conceptual foundations
+- **OPPORTUNITIES.md** - Feature roadmap
+- **EXPERIMENTS.md** - Active experiments
+- **LEARNINGS.md** - Validated insights
 
-- **MCP TypeScript SDK**: https://raw.githubusercontent.com/modelcontextprotocol/typescript-sdk/refs/heads/main/README.md
-- **MCP Introduction**: https://modelcontextprotocol.io/introduction
-- **Anthropic Cookbook**: https://github.com/anthropics/anthropic-cookbook
+### Code Structure
+
+- `src/mcp/` - MCP protocol layer
+- `src/services/` - Business logic
+- `src/core/` - Core types and storage
+- `src/utils/` - Utilities
+
+## 🔗 External References
+
+### MCP Documentation
+
+- [MCP TypeScript SDK](https://raw.githubusercontent.com/modelcontextprotocol/typescript-sdk/refs/heads/main/README.md)
+- [MCP Introduction](https://modelcontextprotocol.io/introduction)
+- [Anthropic Cookbook](https://github.com/anthropics/anthropic-cookbook)
 
 ### Desktop Extension (DXT)
 
-- **DXT Documentation**: https://github.com/anthropics/dxt/blob/main/README.md
-- **DXT Manifest Spec**: https://github.com/anthropics/dxt/blob/main/MANIFEST.md
-- **DXT Examples**: https://github.com/anthropics/dxt/tree/main/examples
+- [DXT Documentation](https://github.com/anthropics/dxt/blob/main/README.md)
+- [DXT Manifest Spec](https://github.com/anthropics/dxt/blob/main/MANIFEST.md)
+- [DXT Examples](https://github.com/anthropics/dxt/tree/main/examples)
 
-## Key Documentation
+## ⚡ Current Status
 
-- **LOOP.md** - Development methodology and commands
-- **README.md** - Current API reference (what works today)
-- **VISION.md** - Conceptual vision and future direction
-- **OPPORTUNITIES.md** - Prioritized feature roadmap
-- **EXPERIMENTS.md** - Active tests and hypotheses
-- **LEARNINGS.md** - Validated insights from usage
-- **PHILOSOPHY.md** - Theoretical foundations
+### ✅ Working Features
+
+- Semantic search with embeddings (all-MiniLM-L6-v2)
+- Quality filtering and queries
+- Unified scoring system
+- Experience tool with integrated recall
+- Reconsider tool with integrated release
+- Pattern realizations (`reflects` field)
+- Reasoning chains with `nextMoment`
+- Auto-reflection generation
+- Clustering analysis
+
+### 🚧 Next Priorities
+
+1. Natural language quality parsing
+2. Batch operations for performance
+3. Enhanced pattern recognition
+
+---
+
+_For implementation details, see the inline comments in the codebase._

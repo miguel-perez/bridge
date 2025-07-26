@@ -57,20 +57,20 @@ The key insight: we only note dimensions that genuinely stand out. A focused cod
 
 ### The Operations
 
-Bridge provides four core operations that work together to create a living memory system:
+Bridge provides two integrated operations that work together to create a living memory system:
 
-**experience()** - Capture meaningful moments with quality signatures
-**recall()** - Search memories semantically or by quality patterns  
-**reconsider()** - Update understanding as it deepens over time
-**release()** - Let go of what no longer serves
+**experience()** - Capture meaningful moments with quality signatures and search memories
+**reconsider()** - Update understanding as it deepens over time and release what no longer serves
 
-For detailed API documentation and examples, see [README.md](./README.md).
+The API has been consolidated from 4 tools to 2 for a more unified experience. The experience tool now includes integrated recall functionality, while reconsider includes release capabilities.
+
+For detailed API documentation and examples, see [README.md](../README.md).
 
 ### Pattern Recognition in Action
 
 Patterns emerge through insight from both participants. The system captures pattern recognition from both human and AI perspectives, building collaborative wisdom through accumulated insights.
 
-For detailed examples and implementation patterns, see [README.md](./README.md).
+For detailed examples and implementation patterns, see [README.md](../README.md).
 
 ## Design Principles
 
@@ -134,4 +134,4 @@ build something neither could create alone.
 
 ---
 
-_For technical details and API documentation, see [README.md](./README.md)_
+_For technical details and API documentation, see [README.md](../README.md)_

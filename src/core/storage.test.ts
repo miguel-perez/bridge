@@ -24,9 +24,9 @@ let getSearchableText: (record: Source) => string;
 beforeAll(async () => {
   // Mock nanoid module before importing storage
   jest.unstable_mockModule('nanoid', () => ({
-    nanoid: jest.fn(() => 'test-id-12345')
+    nanoid: jest.fn(() => 'test-id-12345'),
   }));
-  
+
   // Now import storage which will use the mocked nanoid
   const storage = await import('./storage');
   generateId = storage.generateId;
@@ -68,7 +68,7 @@ describe('Storage Layer', () => {
     it('should generate unique IDs with correct prefix', async () => {
       const id1 = await generateId('src');
       const id2 = await generateId('src');
-      
+
       expect(id1).toMatch(/^src_test-id-/);
       expect(id2).toMatch(/^src_test-id-/);
       expect(id1).not.toBe(id2); // Should be different due to random suffix
@@ -106,10 +106,10 @@ describe('Storage Layer', () => {
     it('should validate against allowed roots when provided', async () => {
       // When allowed roots are provided, only files within those roots should be allowed
       const allowedRoots = [process.cwd()]; // Use current working directory as allowed root
-      
+
       expect(await validateFilePath('valid-file.txt', allowedRoots)).toBe(true);
       expect(await validateFilePath('../../../etc/passwd', allowedRoots)).toBe(false);
-      
+
       // Test with empty allowed roots - should fall back to basic validation
       expect(await validateFilePath('safe-file.txt', [])).toBe(true);
       expect(await validateFilePath('../dangerous.txt', [])).toBe(false);
@@ -130,11 +130,11 @@ describe('Storage Layer', () => {
     it('should handle edge cases in path validation', async () => {
       // Empty string
       expect(await validateFilePath('')).toBe(true);
-      
+
       // Just dots
       expect(await validateFilePath('...')).toBe(false);
       expect(await validateFilePath('..')).toBe(false);
-      
+
       // Mixed safe and dangerous
       expect(await validateFilePath('safe/../dangerous')).toBe(false);
       expect(await validateFilePath('safe/path/../more')).toBe(false);
@@ -146,8 +146,10 @@ describe('Storage Layer', () => {
       // This tests the setStorageConfig function without actually using the storage
       expect(() => setStorageConfig({ dataFile: '/custom/path.json' })).not.toThrow();
       expect(() => setStorageConfig({ storageDir: '/custom/storage' })).not.toThrow();
-      expect(() => setStorageConfig({ dataFile: '/custom/path.json', storageDir: '/custom/storage' })).not.toThrow();
-      
+      expect(() =>
+        setStorageConfig({ dataFile: '/custom/path.json', storageDir: '/custom/storage' })
+      ).not.toThrow();
+
       // Reset immediately to avoid affecting other tests
       resetStorageConfig();
     });
@@ -165,7 +167,7 @@ describe('Storage Layer', () => {
       const result = await storeFile('test-file.txt', 'test-id-123');
       // The function returns null when source file doesn't exist (which is expected behavior)
       expect(result).toBeNull();
-      
+
       // Test that invalid paths are rejected
       const invalidResult = await storeFile('../../../etc/passwd', 'test-id-123');
       expect(invalidResult).toBeNull();
@@ -179,11 +181,11 @@ describe('Storage Layer', () => {
         source: 'I notice I always feel anxious before things that end up going well',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'I',
-        experiencer: 'test',
+        who: 'test',
         processing: 'long-after',
         crafted: false,
         experience: ['embodied.sensing', 'mood.closed', 'time.future'],
-        reflects: ['exp-123', 'exp-456']
+        reflects: ['exp-123', 'exp-456'],
       };
 
       const saved = await saveSource(sourceWithReflects);
@@ -196,17 +198,17 @@ describe('Storage Layer', () => {
         source: 'Initial experience',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'I',
-        experiencer: 'test',
+        who: 'test',
         processing: 'during',
         crafted: false,
-        experience: ['mood.open']
+        experience: ['mood.open'],
       };
 
       await saveSource(source);
 
       const updatedSource: Source = {
         ...source,
-        reflects: ['exp-789']
+        reflects: ['exp-789'],
       };
 
       const updated = await updateSource(updatedSource);
@@ -219,11 +221,11 @@ describe('Storage Layer', () => {
         source: 'Experience with empty reflects',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'I',
-        experiencer: 'test',
+        who: 'test',
         processing: 'during',
         crafted: false,
         experience: ['mood.open'],
-        reflects: []
+        reflects: [],
       };
 
       const saved = await saveSource(source);
@@ -238,10 +240,10 @@ describe('Storage Layer', () => {
         source: 'Test experience',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'I',
-        experiencer: 'test',
+        who: 'test',
         processing: 'during',
         crafted: false,
-        experience: ['mood.open']
+        experience: ['mood.open'],
       };
 
       const saved = await saveSource(source);
@@ -262,17 +264,17 @@ describe('Storage Layer', () => {
         source: 'Original experience',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'I',
-        experiencer: 'test',
+        who: 'test',
         processing: 'during',
         crafted: false,
-        experience: ['mood.open']
+        experience: ['mood.open'],
       };
 
       await saveSource(source);
 
       const updatedSource: Source = {
         ...source,
-        source: 'Updated experience'
+        source: 'Updated experience',
       };
 
       const updated = await updateSource(updatedSource);
@@ -285,10 +287,10 @@ describe('Storage Layer', () => {
         source: 'Test experience',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'I',
-        experiencer: 'test',
+        who: 'test',
         processing: 'during',
         crafted: false,
-        experience: ['mood.open']
+        experience: ['mood.open'],
       };
 
       await saveSource(source);
@@ -304,10 +306,10 @@ describe('Storage Layer', () => {
         source: 'First experience',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'I',
-        experiencer: 'test',
+        who: 'test',
         processing: 'during',
         crafted: false,
-        experience: ['mood.open']
+        experience: ['mood.open'],
       };
 
       const source2: Source = {
@@ -315,10 +317,10 @@ describe('Storage Layer', () => {
         source: 'Second experience',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'I',
-        experiencer: 'test',
+        who: 'test',
         processing: 'during',
         crafted: false,
-        experience: ['mood.closed']
+        experience: ['mood.closed'],
       };
 
       await saveSource(source1);
@@ -326,8 +328,8 @@ describe('Storage Layer', () => {
 
       const allSources = await getSources();
       expect(allSources).toHaveLength(2);
-      expect(allSources.map(s => s.id)).toContain('test-001');
-      expect(allSources.map(s => s.id)).toContain('test-002');
+      expect(allSources.map((s) => s.id)).toContain('test-001');
+      expect(allSources.map((s) => s.id)).toContain('test-002');
     });
   });
 
@@ -336,7 +338,7 @@ describe('Storage Layer', () => {
       const embedding = {
         sourceId: 'test-001',
         embedding: [0.1, 0.2, 0.3],
-        created: '2024-01-01T00:00:00.000Z'
+        created: '2024-01-01T00:00:00.000Z',
       };
 
       const saved = await saveEmbedding(embedding);
@@ -355,13 +357,13 @@ describe('Storage Layer', () => {
       const embedding1 = {
         sourceId: 'test-001',
         embedding: [0.1, 0.2, 0.3],
-        created: '2024-01-01T00:00:00.000Z'
+        created: '2024-01-01T00:00:00.000Z',
       };
 
       const embedding2 = {
         sourceId: 'test-002',
         embedding: [0.4, 0.5, 0.6],
-        created: '2024-01-01T00:00:00.000Z'
+        created: '2024-01-01T00:00:00.000Z',
       };
 
       await saveEmbedding(embedding1);
@@ -369,15 +371,15 @@ describe('Storage Layer', () => {
 
       const allEmbeddings = await getAllEmbeddings();
       expect(allEmbeddings).toHaveLength(2);
-      expect(allEmbeddings.map(e => e.sourceId)).toContain('test-001');
-      expect(allEmbeddings.map(e => e.sourceId)).toContain('test-002');
+      expect(allEmbeddings.map((e) => e.sourceId)).toContain('test-001');
+      expect(allEmbeddings.map((e) => e.sourceId)).toContain('test-002');
     });
 
     it('should delete embedding', async () => {
       const embedding = {
         sourceId: 'test-001',
         embedding: [0.1, 0.2, 0.3],
-        created: '2024-01-01T00:00:00.000Z'
+        created: '2024-01-01T00:00:00.000Z',
       };
 
       await saveEmbedding(embedding);
@@ -395,10 +397,10 @@ describe('Storage Layer', () => {
         source: 'I feel anxious about the presentation',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'I',
-        experiencer: 'test',
+        who: 'test',
         processing: 'during',
         crafted: false,
-        experience: ['embodied.sensing', 'mood.closed']
+        experience: ['embodied.sensing', 'mood.closed'],
       };
 
       const searchableText = getSearchableText(source);
@@ -411,11 +413,11 @@ describe('Storage Layer', () => {
         source: 'Pattern realization',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'I',
-        experiencer: 'test',
+        who: 'test',
         processing: 'long-after',
         crafted: false,
         experience: ['mood.open'],
-        reflects: ['exp-123', 'exp-456']
+        reflects: ['exp-123', 'exp-456'],
       };
 
       const searchableText = getSearchableText(source);
@@ -460,16 +462,16 @@ describe('Storage Layer', () => {
         source: 'Concurrent test',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'I',
-        experiencer: 'test',
+        who: 'test',
         processing: 'during',
         crafted: false,
-        experience: ['mood.open']
+        experience: ['mood.open'],
       };
 
       const promises = [
         saveSource(source),
         saveSource({ ...source, id: 'test-002' }),
-        saveSource({ ...source, id: 'test-003' })
+        saveSource({ ...source, id: 'test-003' }),
       ];
 
       const results = await Promise.all(promises);
@@ -479,4 +481,4 @@ describe('Storage Layer', () => {
       expect(results[2].id).toBe('test-003');
     });
   });
-}); 
+});

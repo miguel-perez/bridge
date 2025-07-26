@@ -80,7 +80,7 @@ Layer 1: Embedding Providers (how we create vectors)
   → None (quality-only search - default)
   → TensorFlow.js (local, 25MB)
   → OpenAI (cloud, good quality)
-  → Voyage AI (cloud, best quality)
+  → OpenAI (cloud, good quality)
 
 Layer 2: Vector Stores (how we search vectors)
   → In-Memory/JSON (current, simple)
@@ -254,9 +254,9 @@ interface RecallStrategy {
 **Examples**:
 
 ```javascript
-recall({ created: 'last week' });
-recall({ created: 'yesterday' });
-recall({ created: 'past 3 days' });
+experience({ recall: { created: 'last week' } });
+experience({ recall: { created: 'yesterday' } });
+experience({ recall: { created: 'past 3 days' } });
 ```
 
 **Technical Notes**:
@@ -349,7 +349,7 @@ reconsider({
 **Core Features**:
 
 ```javascript
-recall({ as: 'sequence' });
+experience({ recall: { group_by: 'sequence' } });
 // Returns: Temporal patterns, OODA loops, recurring rhythms
 
 // Example output:

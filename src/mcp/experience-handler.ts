@@ -1,4 +1,4 @@
-import { RecallService } from '../services/recall.js';
+import { RecallService, type RecallInput, type RecallServiceResult } from '../services/search.js';
 import { ExperienceService } from '../services/experience.js';
 import { ExperienceInput, ToolResultSchema, type ToolResult } from './schemas.js';
 import {
@@ -7,8 +7,7 @@ import {
   type ExperienceResult,
 } from '../utils/formatters.js';
 import { SEMANTIC_CONFIG } from '../core/config.js';
-import { incrementCallCount, getCallCount } from './call-counter.js';
-import { getFlowStateMessages } from './flow-messages.js';
+import { incrementCallCount } from './call-counter.js';
 
 /**
  * Interface for similar experience data
@@ -51,28 +50,6 @@ function formatSimilarExperiences(similar: SimilarExperience[]): string {
   });
 
   return output;
-}
-
-/**
- * Response structure for experience capture operations
- * @remarks
- * Used internally for structured communication between handler and formatters.
- * Includes success status, captured source data, and any defaults that were applied.
- */
-export interface ExperienceResponse {
-  success: boolean;
-  source?: {
-    id: string;
-    source: string;
-    emoji: string;
-    created: string;
-    perspective?: string;
-    experiencer?: string;
-    processing?: string;
-    experience?: string[];
-  };
-  defaultsUsed?: string[];
-  error?: string;
 }
 
 /**
@@ -127,46 +104,28 @@ export class ExperienceHandler {
    * @remarks
    * Main entry point for MCP experience tool. Validates input, processes the request,
    * and ensures output conforms to MCP protocol requirements. Handles both single
-   * and batch experience capture modes. Now supports stillThinking parameter for flow tracking.
+   * and batch experience capture modes. Now supports nextMoment parameter for flow tracking.
    * @param args - Experience input data from MCP client
-   * @param stillThinking - Optional boolean indicating if more tool calls are expected
    * @returns Formatted tool result compliant with MCP protocol
    * @throws ValidationError When required fields are missing
    * @throws ServiceError When experience processing fails
    */
-  async handle(args: ExperienceInput, stillThinking = false): Promise<ToolResult> {
+  async handle(args: ExperienceInput): Promise<ToolResult> {
     try {
       incrementCallCount();
-      const result = await this.handleRegularExperience(args);
+      const { result, capturedExperiences } = await this.handleRegularExperienceWithCapture(args);
 
-      // Add flow state messages if stillThinking was explicitly passed
-      const callsSoFar = getCallCount();
-      if (args.stillThinking !== undefined) {
-        const flowMessages = getFlowStateMessages(stillThinking, callsSoFar);
-        // Add each message as a separate content item to ensure a third response
-        flowMessages.forEach((message) => {
-          result.content.push({
-            type: 'text',
-            text: message,
-          });
-        });
+      // Add nextMoment tracking if provided
+      if (args.nextMoment && capturedExperiences.length > 0) {
+        result.nextMoment = args.nextMoment;
       }
 
-      // Add stillThinking and callsSoFar to the result
-      const enhancedResult = {
-        ...result,
-        stillThinking,
-        callsSoFar,
-      };
-
-      ToolResultSchema.parse(enhancedResult);
-      return enhancedResult;
+      ToolResultSchema.parse(result);
+      return result;
     } catch (err) {
       return {
         isError: true,
         content: [{ type: 'text', text: 'Internal error: Output validation failed.' }],
-        stillThinking: false,
-        callsSoFar: getCallCount(),
       };
     }
   }
@@ -179,11 +138,14 @@ export class ExperienceHandler {
    * responses for natural conversation flow. Includes similarity detection
    * for enhanced user experience.
    * @param experience - Experience input data to process
-   * @returns Formatted tool result with natural language response
+   * @returns Object containing formatted tool result and captured experiences
    * @throws Error When source content is missing
    * @throws ServiceError When experience processing fails
    */
-  private async handleRegularExperience(experience: ExperienceInput): Promise<ToolResult> {
+  private async handleRegularExperienceWithCapture(experience: ExperienceInput): Promise<{
+    result: ToolResult;
+    capturedExperiences: ExperienceResult[];
+  }> {
     try {
       // Validate required fields - only accept array format
       if (!experience.experiences || experience.experiences.length === 0) {
@@ -208,7 +170,6 @@ export class ExperienceHandler {
           emoji: item.emoji,
           perspective: item.perspective,
           who: item.who,
-          experiencer: item.experiencer, // Keep for backwards compatibility
           processing: item.processing,
           crafted: item.crafted,
           experience: item.experience || undefined,
@@ -218,19 +179,81 @@ export class ExperienceHandler {
         results.push(result);
       }
 
+      // Handle integrated recall if requested
+      let recallResults = null;
+      if (experience.recall) {
+        const searchParams: RecallInput = {
+          limit: experience.recall.limit || 5,
+        };
+
+        // ID lookup
+        if (experience.recall.ids) {
+          searchParams.id = Array.isArray(experience.recall.ids)
+            ? experience.recall.ids[0] // RecallInput takes single ID
+            : experience.recall.ids;
+        }
+        // Semantic search
+        if (experience.recall.search) {
+          searchParams.semantic_query = Array.isArray(experience.recall.search)
+            ? experience.recall.search[0] // RecallInput takes single query
+            : experience.recall.search;
+        }
+        // Quality filtering
+        if (experience.recall.qualities) {
+          searchParams.qualities = experience.recall.qualities;
+        }
+        // Pagination
+        if (experience.recall.offset !== undefined) {
+          searchParams.offset = experience.recall.offset;
+        }
+        // Filters
+        if (experience.recall.who) {
+          searchParams.who = experience.recall.who;
+        }
+        if (experience.recall.perspective) {
+          searchParams.perspective = experience.recall.perspective;
+        }
+        if (experience.recall.processing) {
+          searchParams.processing = experience.recall.processing;
+        }
+        if (experience.recall.crafted !== undefined) {
+          searchParams.crafted = experience.recall.crafted;
+        }
+        // Pattern filters
+        if (experience.recall.reflects === 'only') {
+          searchParams.reflects = 'only';
+        }
+        // Note: reflected_by is not in RecallInput interface
+        // Date filtering
+        if (experience.recall.created) {
+          searchParams.created = experience.recall.created;
+        }
+        // Sorting and grouping
+        if (experience.recall.sort) {
+          searchParams.sort = experience.recall.sort;
+        }
+        if (experience.recall.group_by) {
+          searchParams.group_by = experience.recall.group_by;
+        }
+
+        recallResults = await this.recallService.search(searchParams);
+      }
+
       // Format response based on number of experiences
       if (results.length === 1) {
         // Single experience - use individual formatting
         const result = results[0];
         let response = formatExperienceResponse(result);
 
-        // Find similar experience if any
-        const similarText = await this.findSimilarExperience(
-          result.source.source,
-          result.source.id
-        );
-        if (similarText) {
-          response += '\n\n' + similarText;
+        // Find similar experience if any (unless we already did recall)
+        if (!recallResults) {
+          const similarText = await this.findSimilarExperience(
+            result.source.source,
+            result.source.id
+          );
+          if (similarText) {
+            response += '\n\n' + similarText;
+          }
         }
 
         // Build multi-content response
@@ -241,8 +264,17 @@ export class ExperienceHandler {
           },
         ];
 
+        // Add recall results if we have them
+        if (recallResults && recallResults.results.length > 0) {
+          const recallText = this.formatRecallResults(recallResults.results);
+          content.push({
+            type: 'text',
+            text: `\n🔍 Related experiences:\n${recallText}`,
+          });
+        }
+
         // Add contextual guidance based on simple triggers
-        const guidance = await this.selectGuidance(result, similarText !== null);
+        const guidance = await this.selectGuidance(result, recallResults !== null || false);
         if (guidance) {
           content.push({
             type: 'text',
@@ -250,29 +282,40 @@ export class ExperienceHandler {
           });
         }
 
-        return { content };
+        return { result: { content }, capturedExperiences: results };
       } else {
         // Multiple experiences - use batch formatting
         const response = formatBatchExperienceResponse(results);
+        const content: Array<{ type: 'text'; text: string }> = [
+          {
+            type: 'text',
+            text: response,
+          },
+        ];
 
-        return {
-          content: [
-            {
-              type: 'text',
-              text: response,
-            },
-          ],
-        };
+        // Add recall results if we have them
+        if (recallResults && recallResults.results.length > 0) {
+          const recallText = this.formatRecallResults(recallResults.results);
+          content.push({
+            type: 'text',
+            text: `\n🔍 Related experiences:\n${recallText}`,
+          });
+        }
+
+        return { result: { content }, capturedExperiences: results };
       }
     } catch (error) {
       return {
-        isError: true,
-        content: [
-          {
-            type: 'text',
-            text: error instanceof Error ? error.message : 'Unknown error',
-          },
-        ],
+        result: {
+          isError: true,
+          content: [
+            {
+              type: 'text',
+              text: error instanceof Error ? error.message : 'Unknown error',
+            },
+          ],
+        },
+        capturedExperiences: [],
       };
     }
   }
@@ -366,5 +409,48 @@ export class ExperienceHandler {
       // Silently fail - similarity is nice to have but not critical
       return null;
     }
+  }
+
+  /**
+   * Format recall results for display
+   */
+  private formatRecallResults(results: RecallServiceResult[]): string {
+    return results
+      .map((result, idx) => {
+        const snippet = result.snippet || result.content || '';
+        const truncated = snippet.length > 100 ? snippet.substring(0, 97) + '...' : snippet;
+        const metadata = result.metadata || {};
+        const experience = (metadata.experience as string[]) || [];
+
+        let text = `${idx + 1}. "${truncated}"`;
+        if (experience.length > 0) {
+          text += `\n   (${experience.join(', ')})`;
+        }
+        if (metadata.created) {
+          const timeAgo = this.formatTimeAgo(metadata.created as string);
+          text += `\n   ${timeAgo}`;
+        }
+
+        return text;
+      })
+      .join('\n\n');
+  }
+
+  /**
+   * Format time ago helper
+   */
+  private formatTimeAgo(timestamp: string): string {
+    const now = new Date();
+    const time = new Date(timestamp);
+    const diffMs = now.getTime() - time.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffHours < 1) return 'just now';
+    if (diffHours === 1) return '1 hour ago';
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    if (diffDays === 1) return 'yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return time.toLocaleDateString();
   }
 }

@@ -18,11 +18,11 @@ needs and theoretical foundations:
 ### Direct Methodological Precedents
 
 - **Micro-phenomenology** (Vermersch, Petitmengin): Methods for investigating discrete moments of subjective experience
-through guided evocation
+  through guided evocation
 - **Experience Sampling Method** (Csikszentmihalyi, Larson): Capturing real-time "psychological snapshots" of specific
-moments
+  moments
 - **Descriptive Experience Sampling** (Hurlburt): High-fidelity descriptions of "pristine inner experience" through
-random sampling
+  random sampling
 - **Ecological Momentary Assessment**: Real-time behavioral and emotional experience capture in natural environments
 - **Narrative Therapy** (White, Epston): Identifying "unique outcome" moments for therapeutic transformation
 - **Innovative Moments Coding System**: Tracking narrative novelties in therapeutic contexts
@@ -30,9 +30,9 @@ random sampling
 ### Conceptual Inspirations (with tensions)
 
 - **Zettelkasten Method** (Luhmann): While designed for theoretical concepts rather than experiences, it inspires our
-"atomic" approach to knowledge units
+  "atomic" approach to knowledge units
 - **Phenomenological Philosophy**: Though emphasizing continuous flow over discrete moments, provides insights about
-experiential structure
+  experiential structure
 
 ### The Pragmatic Paradox
 
@@ -96,7 +96,7 @@ require manageable units. The art lies in creating representations that honor th
 ### 1. Frame Specificity
 
 - Maps to what could be captured in a single visual frame - a held moment that contains movement, tension, and
-possibility
+  possibility
 - Maintains visual anchorability while preserving experiential flow
 - Captures a specific attentional moment without freezing living experience
 
@@ -286,7 +286,7 @@ A properly formed framed moment should:
 ### Future Possibilities
 
 - **AI Narrative Training**: Teaching machines experientially complete storytelling (requires significant technical
-development)
+  development)
 - **Collaborative Wisdom Systems**: Shared repositories of transformative moments
 
 ## Implementation Considerations

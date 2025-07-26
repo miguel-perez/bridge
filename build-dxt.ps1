@@ -18,27 +18,34 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-# Validate the main manifest.json first
-Write-Host "Validating source manifest..." -ForegroundColor Yellow
+# Generate manifest from sources
+Write-Host "Generating manifest..." -ForegroundColor Yellow
+npm run generate:manifest
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Manifest generation failed!" -ForegroundColor Red
+    exit 1
+}
+
+# Validate the generated manifest.json
+Write-Host "Validating generated manifest..." -ForegroundColor Yellow
 try {
     $manifest = Get-Content -Path "manifest.json" -Raw | ConvertFrom-Json
     if (-not $manifest.dxt_version -or -not $manifest.name -or -not $manifest.version) {
         Write-Host "❌ Invalid manifest: missing required fields" -ForegroundColor Red
         exit 1
     }
-    if ($manifest.server.entry_point -ne "index.js") {
-        Write-Host "❌ Manifest entry_point must be index.js for DXT packaging" -ForegroundColor Red
-        exit 1
-    }
-    Write-Host "✅ Source manifest validation passed" -ForegroundColor Green
+    Write-Host "✅ Generated manifest validation passed" -ForegroundColor Green
 } catch {
     Write-Host "❌ Failed to read or parse manifest.json: $_" -ForegroundColor Red
     exit 1
 }
 
-# Copy the validated manifest
-Write-Host "Copying manifest..." -ForegroundColor Yellow
-Copy-Item -Path "manifest.json" -Destination "dxt-build\"
+# Copy the manifest and update entry_point for DXT package
+Write-Host "Preparing manifest for DXT..." -ForegroundColor Yellow
+$manifest = Get-Content -Path "manifest.json" -Raw | ConvertFrom-Json
+$manifest.server.entry_point = "index.js"
+$manifest | ConvertTo-Json -Depth 10 | Set-Content -Path "dxt-build\manifest.json"
+Write-Host "✅ Updated entry_point for DXT package" -ForegroundColor Green
 
 # Display manifest info
 $manifestInfo = Get-Content -Path "dxt-build\manifest.json" -Raw | ConvertFrom-Json

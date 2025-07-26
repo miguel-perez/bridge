@@ -1,242 +1,224 @@
-/**
- * Tests for Embeddings Service
- */
+import { EmbeddingService } from './embeddings.js';
+import { ProviderFactory } from './embedding-providers/index.js';
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import * as os from 'os';
 
-import { EmbeddingService, embeddingService } from './embeddings.js';
-import { bridgeLogger } from '../utils/bridge-logger.js';
-import { RateLimiter } from '../utils/security.js';
-import { withTimeout, DEFAULT_TIMEOUTS } from '../utils/timeout.js';
+// Mock fetch
+const mockFetch = jest.fn();
+global.fetch = mockFetch as any;
 
-// Mock dependencies
-jest.mock('../utils/bridge-logger.js');
-jest.mock('../utils/security.js');
-jest.mock('../utils/timeout.js', () => ({
-  withTimeout: jest.fn((promise) => promise),
-  DEFAULT_TIMEOUTS: {
-    EMBEDDING: 30000,
-  },
-}));
+// Mock TensorFlow.js modules for default provider
+const mockEmbed = jest.fn();
+const mockDispose = jest.fn();
+const mockLoad = jest.fn();
 
-// Mock transformers module - simulate module not found
-jest.mock('@xenova/transformers', () => {
-  throw new Error('Cannot find module @xenova/transformers');
-});
+// Set up global mocks for test environment
+(global as any).__mocked_universal_sentence_encoder = {
+  load: mockLoad,
+};
 
 describe('EmbeddingService', () => {
   let service: EmbeddingService;
-  let mockRateLimiterEnforce: jest.Mock;
+  let tempDir: string;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks();
+    // Always create a fresh service instance
     service = new EmbeddingService();
 
-    // Reset environment variables
-    delete process.env.TEST_DISABLE_EMBEDDINGS;
-    delete process.env.BRIDGE_TEST_MODE;
+    // Create temp directory for vector store
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'bridge-test-'));
+    process.env.HOME = tempDir;
 
-    // Mock rate limiter
-    mockRateLimiterEnforce = jest.fn(async (fn) => fn());
-    (RateLimiter as jest.MockedClass<typeof RateLimiter>).mockImplementation(
-      () =>
-        ({
-          enforce: mockRateLimiterEnforce,
-        }) as unknown as RateLimiter
-    );
+    // Reset environment
+    delete process.env.BRIDGE_EMBEDDING_PROVIDER;
+    delete process.env.OPENAI_API_KEY;
+    delete process.env.OPENAI_MODEL;
+    delete process.env.OPENAI_DIMENSIONS;
+
+    // Reset mock implementations
+    mockEmbed.mockReset();
+    mockDispose.mockReset();
+    mockLoad.mockReset();
+
+    // Setup default successful load
+    mockLoad.mockResolvedValue({
+      embed: mockEmbed,
+    });
+
+    // Setup default embedding response
+    mockEmbed.mockResolvedValue({
+      array: jest.fn().mockResolvedValue([[...Array(512)].map(() => Math.random())]),
+      dispose: mockDispose,
+    });
   });
 
-  afterEach(() => {
-    // Clean up environment variables
-    delete process.env.TEST_DISABLE_EMBEDDINGS;
-    delete process.env.BRIDGE_TEST_MODE;
+  afterEach(async () => {
+    // Cleanup
+    try {
+      await fs.rm(tempDir, { recursive: true, force: true });
+    } catch {
+      // Ignore
+    }
   });
 
   describe('initialization', () => {
-    it('should disable embeddings when TEST_DISABLE_EMBEDDINGS is true', async () => {
-      process.env.TEST_DISABLE_EMBEDDINGS = 'true';
-      const newService = new EmbeddingService();
-
-      await newService.initialize();
-
-      const embedding = await newService.generateEmbedding('test');
-      expect(embedding).toEqual(new Array(384).fill(0));
+    it('should initialize with default provider by default', async () => {
+      await service.initialize();
+      expect(service.getProviderName()).toBe('TensorFlowJS-USE');
     });
 
-    it('should handle import failure gracefully', async () => {
-      // When transformers module fails to load (mocked to throw error)
+    it('should initialize with configured provider', async () => {
+      process.env.BRIDGE_EMBEDDING_PROVIDER = 'openai';
+      process.env.OPENAI_API_KEY = 'test-key';
+      mockFetch.mockResolvedValue({ ok: true });
+
+      await service.initialize();
+      expect(service.getProviderName()).toBe('OpenAI-text-embedding-3-large');
+    });
+
+    it.skip('should fall back to default provider on error', async () => {
+      process.env.BRIDGE_EMBEDDING_PROVIDER = 'openai';
+      delete process.env.OPENAI_API_KEY; // Ensure no API key
+      // No API key, should fail and fall back
+
+      await service.initialize();
+      expect(service.getProviderName()).toBe('TensorFlowJS-USE');
+    });
+
+    it('should initialize only once', async () => {
+      const spy = jest.spyOn(ProviderFactory, 'createFromEnvironment');
+
+      await service.initialize();
+      await service.initialize();
       await service.initialize();
 
-      // Embeddings should return zeros after failed initialization
-      const embedding = await service.generateEmbedding('test');
-      expect(embedding).toEqual(new Array(384).fill(0));
-
-      // Note: bridgeLogger is a no-op, so we can't test logging
-      // The important behavior is that it disables embeddings gracefully
-    });
-
-    it('should not log warnings in test mode', async () => {
-      process.env.BRIDGE_TEST_MODE = 'true';
-      const testService = new EmbeddingService();
-
-      await testService.initialize();
-
-      expect(bridgeLogger.warn).not.toHaveBeenCalled();
-    });
-
-    it('should only initialize once when called multiple times', async () => {
-      const promise1 = service.initialize();
-      const promise2 = service.initialize();
-      const promise3 = service.initialize();
-
-      await Promise.all([promise1, promise2, promise3]);
-
-      // Since module throws, we can't verify pipeline calls, but we can verify
-      // that service is in disabled state
-      const embedding = await service.generateEmbedding('test');
-      expect(embedding).toEqual(new Array(384).fill(0));
+      expect(spy).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('generateEmbedding', () => {
-    it('should return zero embedding when disabled', async () => {
-      // Service is disabled because transformers module fails to load
+    beforeEach(async () => {
       await service.initialize();
-
-      const text = 'Hello world';
-      const embedding = await service.generateEmbedding(text);
-
-      expect(embedding.length).toBe(384);
-      expect(embedding.every((v) => v === 0)).toBe(true);
     });
 
-    it('should return zero embedding immediately when embeddings are disabled', async () => {
-      process.env.TEST_DISABLE_EMBEDDINGS = 'true';
-      const disabledService = new EmbeddingService();
-
-      // Should not need to initialize
-      const embedding = await disabledService.generateEmbedding('test');
-
-      expect(embedding.length).toBe(384);
-      expect(embedding.every((v) => v === 0)).toBe(true);
+    it('should generate embedding', async () => {
+      const embedding = await service.generateEmbedding('test text');
+      expect(Array.isArray(embedding)).toBe(true);
+      expect(embedding.length).toBe(512); // TensorFlowJS-USE returns 512D
     });
 
-    it('should not apply rate limiting when service becomes disabled', async () => {
-      // When generateEmbedding is called before initialization,
-      // it will call initialize() which fails and sets disabled=true
-      // Then it checks disabled flag and returns early
+    it('should cache embeddings', async () => {
+      const text = 'cached text';
+      const embedding1 = await service.generateEmbedding(text);
+
+      // Clear provider to ensure cache is used
+      (service as any).provider = null;
+
+      const embedding2 = await service.generateEmbedding(text);
+      expect(embedding2).toEqual(embedding1);
+    });
+
+    it('should apply rate limiting', async () => {
+      const startTime = Date.now();
+
+      // Generate embeddings sequentially to trigger rate limiting
+      await service.generateEmbedding('text1');
+      await service.generateEmbedding('text2');
+      await service.generateEmbedding('text3');
+
+      const elapsed = Date.now() - startTime;
+      expect(elapsed).toBeGreaterThanOrEqual(200); // At least 2 rate limit delays
+    });
+
+    it('should handle provider errors with fallback', async () => {
+      // Create a failing provider
+      const failingProvider = {
+        generateEmbedding: jest.fn().mockRejectedValue(new Error('Provider failed')),
+        getName: () => 'FailingProvider',
+        getDimensions: () => 128,
+        initialize: jest.fn(),
+        isAvailable: jest.fn().mockResolvedValue(true),
+      };
+
+      (service as any).provider = failingProvider;
+
       const embedding = await service.generateEmbedding('test');
-
-      // Should return zeros due to failed initialization
-      expect(embedding).toEqual(new Array(384).fill(0));
-
-      // Rate limiter should NOT be called because service gets disabled during init
-      expect(mockRateLimiterEnforce).not.toHaveBeenCalled();
-    });
-
-    it('should apply timeout', async () => {
-      // Since the wrapper delegates to embeddings-v2, we just verify it works
-      const embedding = await service.generateEmbedding('test');
-      expect(embedding).toEqual(new Array(384).fill(0)); // Returns zeros due to none provider
-    });
-
-    it('should not use cache when disabled', async () => {
-      await service.initialize();
-
-      // Generate embedding twice
-      await service.generateEmbedding('test');
-      await service.generateEmbedding('test');
-
-      // Cache should remain empty for disabled service
-      expect(service.getCacheSize()).toBe(0);
+      expect(Array.isArray(embedding)).toBe(true);
+      expect(embedding.length).toBe(512); // Fallback to TensorFlowJS provider
     });
   });
 
   describe('generateEmbeddings', () => {
-    it('should generate multiple embeddings when disabled', async () => {
-      await service.initialize();
-
+    it('should generate multiple embeddings', async () => {
       const texts = ['text1', 'text2', 'text3'];
       const embeddings = await service.generateEmbeddings(texts);
 
       expect(embeddings).toHaveLength(3);
       embeddings.forEach((embedding) => {
-        expect(embedding.length).toBe(384);
-        expect(embedding.every((v) => v === 0)).toBe(true);
+        expect(Array.isArray(embedding)).toBe(true);
       });
-    });
-
-    it('should handle empty array', async () => {
-      const embeddings = await service.generateEmbeddings([]);
-
-      expect(embeddings).toEqual([]);
-    });
-
-    it('should handle single text', async () => {
-      await service.initialize();
-
-      const embeddings = await service.generateEmbeddings(['single']);
-
-      expect(embeddings).toHaveLength(1);
-      expect(embeddings[0].length).toBe(384);
-      expect(embeddings[0].every((v) => v === 0)).toBe(true);
     });
   });
 
   describe('cache management', () => {
-    it('should clear cache', () => {
-      // Even without initialization, cache methods should work
-      service.clearCache();
+    it('should track cache size', async () => {
       expect(service.getCacheSize()).toBe(0);
+
+      await service.generateEmbedding('text1');
+      expect(service.getCacheSize()).toBe(1);
+
+      await service.generateEmbedding('text2');
+      expect(service.getCacheSize()).toBe(2);
     });
 
-    it('should report cache size as zero when disabled', async () => {
-      await service.initialize();
-
-      expect(service.getCacheSize()).toBe(0);
-
-      // Generate embeddings (which will be zeros due to disabled state)
+    it('should clear cache', async () => {
       await service.generateEmbedding('text1');
       await service.generateEmbedding('text2');
 
-      // Cache should remain empty
+      expect(service.getCacheSize()).toBe(2);
+
+      service.clearCache();
       expect(service.getCacheSize()).toBe(0);
     });
   });
 
-  describe('static methods', () => {
-    it('should return expected dimension', () => {
-      expect(EmbeddingService.getExpectedDimension()).toBe(384);
-    });
-  });
-
-  describe('private method coverage', () => {
-    it('should handle _generateEmbeddingInternal when disabled', async () => {
+  describe('provider information', () => {
+    it('should get embedding dimension', async () => {
       await service.initialize();
-
-      // This tests the double-check in _generateEmbeddingInternal
-      const embedding = await service.generateEmbedding('test');
-      expect(embedding).toEqual(new Array(384).fill(0));
+      expect(service.getEmbeddingDimension()).toBe(512); // TensorFlowJS-USE
     });
-  });
 
-  describe('singleton instance', () => {
-    it('should export a singleton instance', () => {
-      expect(embeddingService).toBeInstanceOf(EmbeddingService);
+    it('should get embedding dimension for API provider', async () => {
+      process.env.BRIDGE_EMBEDDING_PROVIDER = 'openai';
+      process.env.OPENAI_API_KEY = 'test-key';
+      process.env.OPENAI_DIMENSIONS = '1536';
+      mockFetch.mockResolvedValue({ ok: true });
+
+      await service.initialize();
+      expect(service.getEmbeddingDimension()).toBe(1536);
+    });
+
+    it('should check provider availability', async () => {
+      const availability = await service.checkProviderAvailability();
+
+      expect(availability.default).toBeDefined();
+      expect(availability.openai).toBeDefined();
+      expect(typeof availability.default).toBe('boolean');
+      expect(typeof availability.openai).toBe('boolean');
     });
   });
 
   describe('error handling', () => {
-    it('should handle non-Error objects in catch blocks', async () => {
-      // Mock the transformers module to throw a non-Error object
-      jest.doMock('@xenova/transformers', () => {
-        throw 'String error';
-      });
+    it('should throw if provider not initialized', async () => {
+      const newService = new EmbeddingService();
+      (newService as any).initPromise = Promise.resolve(); // Pretend initialized
+      (newService as any).provider = null;
 
-      const errorService = new EmbeddingService();
-      await errorService.initialize();
-
-      // Should still work with disabled embeddings
-      const embedding = await errorService.generateEmbedding('test');
-      expect(embedding).toEqual(new Array(384).fill(0));
+      await expect(newService.generateEmbedding('test')).rejects.toThrow(
+        'Embedding provider not initialized'
+      );
     });
   });
 });

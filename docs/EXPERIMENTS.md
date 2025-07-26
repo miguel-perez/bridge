@@ -36,7 +36,7 @@ _No active experiments currently running._
 
 - Progressive enhancement architecture successfully implemented with two-layer design
 - Claude Desktop compatibility achieved through API-based embedding providers
-- Scalability enabled to millions of experiences through Qdrant vector store
+- Scalability architecture designed (vector stores removed in later consolidation)
 - User choice across privacy/convenience spectrum maintained
 - Full offline capability preserved with local options
 - Zero-config baseline continues to work seamlessly
@@ -44,8 +44,8 @@ _No active experiments currently running._
 **Technical Implementation**:
 
 - **Core Architecture**: Base interfaces for EmbeddingProvider and VectorStore
-- **Providers**: NoneProvider, VoyageAIProvider, OpenAIProvider, TensorFlowJSProvider
-- **Stores**: JSONVectorStore, QdrantVectorStore with automatic selection
+- **Providers**: NoneProvider, OpenAIProvider, TensorFlowJSProvider
+- **Stores**: Originally included JSONVectorStore, QdrantVectorStore (later removed)
 - **Integration**: Migrated existing services with full backward compatibility
 - **DXT Integration**: Complete configuration through Claude Desktop UI
 - **Documentation**: Comprehensive guides and external references
@@ -61,31 +61,41 @@ _No active experiments currently running._
 
 **Learning**: Progressive enhancement architecture successfully solved Claude Desktop compatibility while providing scalable vector search capabilities. The two-layer approach (providers + stores) enables users to choose their comfort level while maintaining full offline capability and seamless upgrades as needs grow.
 
-### EXP-013: Minimal Flow Tracking (Still Thinking)
+### EXP-013: Minimal Flow Tracking (Still Thinking) → NextMoment Pattern
 
-**Status**: Completed 2025-07-24  
+**Status**: Completed 2025-07-24, Enhanced 2025-07-26  
 **Started**: 2025-07-24  
 **Purpose**: Implement minimal flow tracking inspired by sequential thinking pattern, providing "permission to continue" signals without complex orchestration
 
-**Key Outcomes**: ✅ All success criteria met
+**Evolution**: Transformed from simple boolean to rich experiential state tracking with nextMoment pattern
+
+**Key Outcomes**: ✅ All success criteria met and exceeded
+
+**Original Implementation (stillThinking)**:
 
 - Successfully implemented `stillThinking` boolean parameter across all tools
 - Session-scoped call counter (no persistence needed)
 - Explicit flow state messages for user acknowledgment
-- Maintained complete tool independence
-- 100% backward compatibility
+
+**Enhanced Implementation (nextMoment)**:
+
+- Replaced stillThinking with `nextMoment` experiential state declaration
+- Implemented FlowStateManager for tracking experiential journeys
+- Auto-reflection generation when chains complete naturally
+- Integrated recall functionality into Experience tool
+- Enhanced Reconsider with release mode
 
 **Evidence of Success**:
 
-- **Implementation**: ~10 lines of code vs 200+ lines of complex orchestration
-- **Test Coverage**: All 663 unit tests passing
-- **Integration Tests**: New `still-thinking-flow` scenario working correctly
-- **User Feedback**: Explicit acknowledgment messages added based on request
-- **Performance**: Negligible overhead - simple counter and message generation
+- **Implementation**: ~500 lines for richer functionality vs 10 lines for minimal
+- **Test Coverage**: All tests passing with updated expectations
+- **Integration**: Seamless experience+recall and reconsider+release
+- **Auto-Reflection**: Pattern realizations generated from journey analysis
+- **Performance**: Minimal overhead with state tracking
 
-**Learning**: Minimal patterns can provide 80% of the value with 20% of the complexity. The stillThinking parameter successfully provides flow awareness without sacrificing tool independence or adding complex state management.
+**Learning**: Evolution from minimal patterns to experiential state tracking provides deeper value. The nextMoment pattern enables reasoning chains with auto-reflection while maintaining tool independence and backward compatibility.
 
-**Enhancement (2025-07-24)**: Updated flow messages to return three separate responses for improved UX - main response + status message + permission/conclusion message.
+**Enhancement (2025-07-26)**: Transformed to nextMoment pattern with integrated functionality and auto-reflection generation.
 
 ### EXP-012: Bridge Sequential Thinking (Replaced by EXP-013)
 
@@ -188,9 +198,9 @@ _No active experiments currently running._
 
 **Example Successful Implementations**:
 
-- `recall(query: "last", sort: "created")` - Chronological sorting
-- `recall(experiencer: "Human", crafted: true, sort: "created")` - Content type filtering
-- `recall(experiencer: "Human", crafted: false, limit: 5, sort: "created")` - Pagination with limits
+- `experience({ recall: { query: "last", sort: "created" } })` - Chronological sorting
+- `experience({ recall: { who: "Human", crafted: true, sort: "created" } })` - Content type filtering
+- `experience({ recall: { who: "Human", crafted: false, limit: 5, sort: "created" } })` - Pagination with limits
 - Complex quality filtering with presence/absence logic
 - Natural language time expressions parsing
 
@@ -377,7 +387,7 @@ _No active experiments currently running._
 
 **Technical Implementation**: Context aggregation, evidence linking, prioritized recommendations
 
-**Evidence**: src/scripts/learning-loop.ts, multiple successful runs, 12 related commits
+**Evidence**: Historical learning loop analysis, multiple successful runs, 12 related commits
 
 ### EXP-002: Quality Filtering and Unified Scoring
 

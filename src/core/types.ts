@@ -83,13 +83,6 @@ export interface ExperienceQualities {
   presence: false | true | QualitySubtype<'presence'>;
 }
 
-/**
- * Complete experiential analysis of experienceed data.
- * Array of qualities that emerge prominently in this moment.
- * @deprecated Use ExperienceQualities for new code
- */
-export type Experience = string[];
-
 /** A experienceed experiential moment */
 export interface Source {
   /** Unique identifier for this source */
@@ -106,20 +99,14 @@ export interface Source {
   perspective?: Perspective;
   /** Who experienced this (single person or array for shared experiences) */
   who?: string | string[];
-  /** Who experienced this (default: "self")
-   * @deprecated Use who field instead
-   */
-  experiencer?: string;
   /** When processing occurred relative to experience */
   processing?: ProcessingLevel;
   /** Whether this is crafted content (blog) vs raw experience (journal) */
   crafted?: boolean;
 
   // Analysis fields
-  /** Experience analysis results (prominent qualities)
-   * @deprecated Use experienceQualities for new code
-   */
-  experience?: Experience;
+  /** Experience analysis results (prominent qualities as array) */
+  experience?: string[];
   /** Complete switchboard of experiential qualities */
   experienceQualities?: ExperienceQualities;
 
@@ -176,22 +163,6 @@ export type StorageRecord = SourceRecord;
 // ZOD SCHEMAS FOR INTERNAL DATA MODELS
 // ============================================================================
 
-/** Zod schema for Experience */
-export const ExperienceSchema = z
-  .array(
-    z.string().refine(
-      (val) => {
-        // Accept base quality types or dot notation variants
-        const baseQuality = val.split('.')[0];
-        return QUALITY_TYPES.includes(baseQuality as QualityType);
-      },
-      {
-        message: 'Invalid quality type',
-      }
-    )
-  )
-  .describe('Array of qualities that emerge prominently in this moment');
-
 /** Zod schema for Source */
 export const SourceSchema = z.object({
   id: z.string().min(1).describe('Unique identifier for this source'),
@@ -242,13 +213,16 @@ export const SourceSchema = z.object({
     .describe('Visual/memory anchor for this experience'),
   created: z.string().describe('When the experience was experienceed (auto-generated)'),
   perspective: z.string().optional().describe('Perspective from which experience is experienceed'),
-  experiencer: z.string().optional().describe('Who experienced this'),
+  who: z
+    .union([z.string(), z.array(z.string())])
+    .optional()
+    .describe('Who experienced this'),
   processing: z
     .enum(PROCESSING_LEVELS)
     .optional()
     .describe('When processing occurred relative to experience'),
   crafted: z.boolean().optional().describe('Whether this is crafted content vs raw experience'),
-  experience: ExperienceSchema.optional().describe('Experience analysis results'),
+  experience: z.array(z.string()).optional().describe('Experience analysis results'),
   reflects: z
     .array(z.string())
     .optional()
@@ -340,13 +314,6 @@ export function isValidSource(source: unknown): source is Source {
  */
 export function validateSource(source: unknown): Source {
   return SourceSchema.parse(source);
-}
-
-/**
- * Validates an experience object using Zod schema
- */
-export function validateExperience(experience: unknown): Experience {
-  return ExperienceSchema.parse(experience);
 }
 
 /**
@@ -453,7 +420,7 @@ export function createSource(source: string, emoji: string, id?: string): Source
     emoji,
     created: new Date().toISOString(),
     perspective: DEFAULTS.PERSPECTIVE,
-    experiencer: DEFAULTS.EXPERIENCER,
+    who: DEFAULTS.EXPERIENCER,
     processing: DEFAULTS.PROCESSING,
     crafted: DEFAULTS.CRAFTED,
   };
@@ -465,6 +432,5 @@ export function createSource(source: string, emoji: string, id?: string): Source
 export function createSourceRecord(source: string, emoji: string, id?: string): SourceRecord {
   return {
     ...createSource(source, emoji, id),
-    type: 'source',
   };
 }

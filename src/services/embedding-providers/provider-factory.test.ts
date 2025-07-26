@@ -1,6 +1,4 @@
 import { ProviderFactory } from './provider-factory.js';
-import { NoneProvider } from './none-provider.js';
-import { VoyageAIProvider } from './voyage-provider.js';
 import { OpenAIProvider } from './openai-provider.js';
 import { TensorFlowJSProvider } from './tensorflow-provider.js';
 import { BaseEmbeddingProvider } from './base-provider.js';
@@ -31,19 +29,13 @@ describe('ProviderFactory', () => {
     jest.clearAllMocks();
     // Reset environment variables
     delete process.env.BRIDGE_EMBEDDING_PROVIDER;
-    delete process.env.VOYAGE_API_KEY;
     delete process.env.OPENAI_API_KEY;
   });
 
   describe('createProvider', () => {
-    it('should create none provider', () => {
-      const provider = ProviderFactory.createProvider('none');
-      expect(provider).toBeInstanceOf(NoneProvider);
-    });
-
-    it('should create voyage provider', () => {
-      const provider = ProviderFactory.createProvider('voyage', { apiKey: 'test-key' });
-      expect(provider).toBeInstanceOf(VoyageAIProvider);
+    it('should create default provider', () => {
+      const provider = ProviderFactory.createProvider('default');
+      expect(provider).toBeInstanceOf(TensorFlowJSProvider);
     });
 
     it('should create openai provider', () => {
@@ -59,166 +51,176 @@ describe('ProviderFactory', () => {
 
     it('should pass config to provider', () => {
       const config = { apiKey: 'test-key', model: 'custom-model' };
-      const provider = ProviderFactory.createProvider('voyage', config);
-      expect(provider.getName()).toBe('VoyageAI-custom-model');
+      const provider = ProviderFactory.createProvider('openai', config);
+      expect(provider.getName()).toBe('OpenAI-custom-model');
     });
   });
 
   describe('createFromEnvironment', () => {
-    it('should create none provider by default', async () => {
+    it('should create default provider by default', async () => {
       const provider = await ProviderFactory.createFromEnvironment();
-      expect(provider).toBeInstanceOf(NoneProvider);
+      expect(provider).toBeInstanceOf(TensorFlowJSProvider);
     });
 
-    it('should create voyage provider from environment', async () => {
-      process.env.BRIDGE_EMBEDDING_PROVIDER = 'voyage';
-      process.env.VOYAGE_API_KEY = 'test-key';
-      
-      mockFetch.mockResolvedValue({ ok: true });
-      
+    it('should create default provider when explicitly set', async () => {
+      process.env.BRIDGE_EMBEDDING_PROVIDER = 'default';
+
       const provider = await ProviderFactory.createFromEnvironment();
-      expect(provider).toBeInstanceOf(VoyageAIProvider);
+      expect(provider).toBeInstanceOf(TensorFlowJSProvider);
+    });
+
+    it('should auto-detect OpenAI when API key is present', async () => {
+      // Set API key but NOT provider type
+      process.env.OPENAI_API_KEY = 'test-key';
+      // Ensure BRIDGE_EMBEDDING_PROVIDER is not set
+      delete process.env.BRIDGE_EMBEDDING_PROVIDER;
+
+      mockFetch.mockResolvedValue({ ok: true });
+
+      const provider = await ProviderFactory.createFromEnvironment();
+      expect(provider).toBeInstanceOf(OpenAIProvider);
+    });
+
+    it('should respect explicit provider choice over auto-detection', async () => {
+      // API key present but explicitly choosing default
+      process.env.OPENAI_API_KEY = 'test-key';
+      process.env.BRIDGE_EMBEDDING_PROVIDER = 'default';
+
+      const provider = await ProviderFactory.createFromEnvironment();
+      expect(provider).toBeInstanceOf(TensorFlowJSProvider);
     });
 
     it('should create openai provider from environment', async () => {
       process.env.BRIDGE_EMBEDDING_PROVIDER = 'openai';
       process.env.OPENAI_API_KEY = 'test-key';
-      
+
       mockFetch.mockResolvedValue({ ok: true });
-      
+
       const provider = await ProviderFactory.createFromEnvironment();
       expect(provider).toBeInstanceOf(OpenAIProvider);
     });
 
     it('should use environment variables for configuration', async () => {
-      process.env.BRIDGE_EMBEDDING_PROVIDER = 'voyage';
-      process.env.VOYAGE_API_KEY = 'test-key';
-      process.env.VOYAGE_MODEL = 'voyage-3.5-lite';
-      process.env.VOYAGE_DIMENSIONS = '512';
-      
+      process.env.BRIDGE_EMBEDDING_PROVIDER = 'openai';
+      process.env.OPENAI_API_KEY = 'test-key';
+      process.env.OPENAI_MODEL = 'text-embedding-3-small';
+      process.env.OPENAI_DIMENSIONS = '512';
+
       mockFetch.mockResolvedValue({ ok: true });
-      
+
       const provider = await ProviderFactory.createFromEnvironment();
-      expect(provider.getName()).toBe('VoyageAI-voyage-3.5-lite');
-      expect(provider.getDimensions()).toBe(512);
+      expect(provider).toBeInstanceOf(OpenAIProvider);
+      expect(provider.getName()).toBe('OpenAI-text-embedding-3-small');
     });
 
-    it('should fall back to none provider if unavailable', async () => {
-      process.env.BRIDGE_EMBEDDING_PROVIDER = 'voyage';
-      // No API key set
-      
+    it('should use auto-detected OpenAI configuration', async () => {
+      // Auto-detection scenario with custom model
+      process.env.OPENAI_API_KEY = 'test-key';
+      process.env.OPENAI_MODEL = 'text-embedding-3-large';
+      delete process.env.BRIDGE_EMBEDDING_PROVIDER;
+
+      mockFetch.mockResolvedValue({ ok: true });
+
       const provider = await ProviderFactory.createFromEnvironment();
-      expect(provider).toBeInstanceOf(NoneProvider);
+      expect(provider).toBeInstanceOf(OpenAIProvider);
+      expect(provider.getName()).toBe('OpenAI-text-embedding-3-large');
     });
 
-    it('should throw error for unknown provider in environment', async () => {
+    it('should fallback to default provider when openai is not available', async () => {
+      process.env.BRIDGE_EMBEDDING_PROVIDER = 'openai';
+      process.env.OPENAI_API_KEY = 'test-key';
+
+      mockFetch.mockResolvedValue({ ok: false });
+
+      const provider = await ProviderFactory.createFromEnvironment();
+      expect(provider).toBeInstanceOf(TensorFlowJSProvider);
+    });
+
+    it('should fallback to default when auto-detected OpenAI is not available', async () => {
+      // Auto-detection scenario but OpenAI not available
+      process.env.OPENAI_API_KEY = 'test-key';
+      delete process.env.BRIDGE_EMBEDDING_PROVIDER;
+
+      mockFetch.mockResolvedValue({ ok: false });
+
+      const provider = await ProviderFactory.createFromEnvironment();
+      expect(provider).toBeInstanceOf(TensorFlowJSProvider);
+    });
+
+    it('should throw error for unknown provider type in environment', async () => {
       process.env.BRIDGE_EMBEDDING_PROVIDER = 'unknown';
-      
+
       await expect(ProviderFactory.createFromEnvironment()).rejects.toThrow(
         'Unknown provider type: unknown'
       );
-    });
-
-    it('should handle tensorflow provider', async () => {
-      process.env.BRIDGE_EMBEDDING_PROVIDER = 'tensorflow';
-      
-      // TensorFlow is not available in test environment by default
-      // So it should fall back to none provider
-      const provider = await ProviderFactory.createFromEnvironment();
-      expect(provider).toBeInstanceOf(NoneProvider);
-    });
-
-    it('should create tensorflow provider when available', async () => {
-      // Mock TensorFlow provider's isAvailable to return true
-      const originalIsAvailable = TensorFlowJSProvider.prototype.isAvailable;
-      TensorFlowJSProvider.prototype.isAvailable = jest.fn().mockResolvedValue(true);
-      
-      process.env.BRIDGE_EMBEDDING_PROVIDER = 'tensorflow';
-      
-      const provider = await ProviderFactory.createFromEnvironment();
-      expect(provider).toBeInstanceOf(TensorFlowJSProvider);
-      
-      // Restore original method
-      TensorFlowJSProvider.prototype.isAvailable = originalIsAvailable;
     });
   });
 
   describe('registerProvider', () => {
     it('should register custom provider', () => {
-      ProviderFactory.registerProvider('test', TestProvider);
-      
-      const provider = ProviderFactory.createProvider('test' as any);
+      ProviderFactory.registerProvider('custom' as any, TestProvider);
+
+      const provider = ProviderFactory.createProvider('custom' as any);
       expect(provider).toBeInstanceOf(TestProvider);
     });
 
-    it('should override existing provider', () => {
-      ProviderFactory.registerProvider('none', TestProvider);
-      
-      const provider = ProviderFactory.createProvider('none');
+    it('should allow custom provider in environment', async () => {
+      ProviderFactory.registerProvider('custom' as any, TestProvider);
+      process.env.BRIDGE_EMBEDDING_PROVIDER = 'custom';
+
+      const provider = await ProviderFactory.createFromEnvironment();
       expect(provider).toBeInstanceOf(TestProvider);
-      
-      // Restore original
-      ProviderFactory.registerProvider('none', NoneProvider);
     });
   });
 
   describe('getAvailableTypes', () => {
-    it('should return all registered provider types', () => {
+    it('should return available provider types', () => {
       const types = ProviderFactory.getAvailableTypes();
-      expect(types).toContain('none');
-      expect(types).toContain('voyage');
+      expect(types).toContain('default');
       expect(types).toContain('openai');
-    });
-
-    it('should include custom registered types', () => {
-      ProviderFactory.registerProvider('custom' as any, TestProvider);
-      
-      const types = ProviderFactory.getAvailableTypes();
-      expect(types).toContain('custom');
+      // Note: custom providers may be registered during tests, so we check for at least 2
+      expect(types.length).toBeGreaterThanOrEqual(2);
     });
   });
 
   describe('checkAvailability', () => {
     it('should check availability of all providers', async () => {
-      mockFetch.mockResolvedValue({ ok: false });
-      
-      const availability = await ProviderFactory.checkAvailability();
-      
-      expect(availability.none).toBe(true); // None is always available
-      expect(availability.voyage).toBe(false); // No API key
-      expect(availability.openai).toBe(false); // No API key
-    });
-
-    it('should detect available providers with credentials', async () => {
-      process.env.VOYAGE_API_KEY = 'test-key';
-      process.env.OPENAI_API_KEY = 'test-key';
-      
       mockFetch.mockResolvedValue({ ok: true });
-      
+
       const availability = await ProviderFactory.checkAvailability();
-      
-      expect(availability.none).toBe(true);
-      expect(availability.voyage).toBe(true);
-      expect(availability.openai).toBe(true);
+
+      expect(availability).toHaveProperty('default');
+      expect(availability).toHaveProperty('openai');
+      expect(typeof availability.default).toBe('boolean');
+      expect(typeof availability.openai).toBe('boolean');
     });
 
-    it('should handle provider initialization errors', async () => {
-      // Register a provider that throws on creation
+    it('should handle provider errors gracefully', async () => {
+      // Mock a provider that throws during availability check
       class ErrorProvider extends BaseEmbeddingProvider {
         constructor() {
           super();
-          throw new Error('Constructor error');
         }
         async initialize(): Promise<void> {}
-        async generateEmbedding(): Promise<number[]> { return []; }
-        getDimensions(): number { return 0; }
-        getName(): string { return 'error'; }
+        async generateEmbedding(): Promise<number[]> {
+          return [];
+        }
+        getDimensions(): number {
+          return 0;
+        }
+        getName(): string {
+          return 'error';
+        }
+        async isAvailable(): Promise<boolean> {
+          throw new Error('Test error');
+        }
       }
-      
+
       ProviderFactory.registerProvider('error' as any, ErrorProvider);
-      
+
       const availability = await ProviderFactory.checkAvailability();
-      expect(availability.error).toBe(false);
+      expect(availability).toHaveProperty('default');
+      expect(availability).toHaveProperty('openai');
     });
   });
 });

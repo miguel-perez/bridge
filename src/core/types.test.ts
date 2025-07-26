@@ -7,7 +7,6 @@ import {
   PROCESSING_LEVELS,
   QUALITY_TYPES,
   DEFAULTS,
-  type Experience,
   type Source,
   type StorageData,
   isValidQualityType,
@@ -17,12 +16,13 @@ import {
   createSource,
   createSourceRecord,
   // Zod schemas and validation functions
-  ExperienceSchema,
   SourceSchema,
   StorageDataSchema,
   validateSource,
-  validateExperience,
   validateStorageData,
+  // Conversion functions
+  experienceArrayToQualities,
+  qualitiesToExperienceArray,
 } from './types.js';
 
 describe('Constants', () => {
@@ -117,7 +117,7 @@ describe('Type Validation Functions', () => {
         emoji: '🧪',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'I',
-        experiencer: 'test',
+        who: 'test',
         processing: 'during',
         crafted: false,
         experience: ['mood.open', 'embodied.thinking'],
@@ -132,7 +132,7 @@ describe('Type Validation Functions', () => {
         emoji: '💡',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'I',
-        experiencer: 'test',
+        who: 'test',
         processing: 'during',
         crafted: false,
         experience: ['embodied.sensing', 'mood.closed', 'time.future'],
@@ -148,7 +148,7 @@ describe('Type Validation Functions', () => {
         emoji: '🧪',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'I',
-        experiencer: 'test',
+        who: 'test',
         processing: 'during',
         crafted: false,
         experience: ['mood.open', 'embodied.thinking'],
@@ -164,7 +164,7 @@ describe('Type Validation Functions', () => {
         emoji: '🧪',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'I',
-        experiencer: 'test',
+        who: 'test',
         processing: 'during',
         crafted: false,
         experience: ['mood.open'],
@@ -190,7 +190,7 @@ describe('Type Validation Functions', () => {
         emoji: '🧪',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'I',
-        experiencer: 'test',
+        who: 'test',
         processing: 'during',
         crafted: false,
         experience: ['mood.open', 'embodied.thinking'],
@@ -211,7 +211,7 @@ describe('Factory Functions', () => {
       expect(source.id).toMatch(/^src_\d+$/);
       expect(source.created).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
       expect(source.perspective).toBe('I');
-      expect(source.experiencer).toBe('self');
+      expect(source.who).toBe('self');
       expect(source.processing).toBe('during');
       expect(source.crafted).toBe(false);
     });
@@ -223,33 +223,17 @@ describe('Factory Functions', () => {
   });
 
   describe('createSourceRecord', () => {
-    it('should create a source record with type field', () => {
+    it('should create a source record', () => {
       const record = createSourceRecord('Test source', '🧪');
 
       expect(record.source).toBe('Test source');
-      expect(record.type).toBe('source');
       expect(record.id).toMatch(/^src_\d+$/);
+      expect(record.emoji).toBe('🧪');
     });
   });
 });
 
 describe('Zod Schema Validation', () => {
-  describe('ExperienceSchema', () => {
-    it('should validate valid experience', () => {
-      const validExperience: Experience = ['mood.open', 'embodied.thinking', 'purpose.goal'];
-
-      const result = ExperienceSchema.safeParse(validExperience);
-      expect(result.success).toBe(true);
-    });
-
-    it('should reject experience with invalid quality types', () => {
-      const invalidExperience = ['invalid_quality', 'embodied'];
-
-      const result = ExperienceSchema.safeParse(invalidExperience);
-      expect(result.success).toBe(false);
-    });
-  });
-
   describe('SourceSchema', () => {
     it('should validate valid source', () => {
       const validSource: Source = {
@@ -258,7 +242,7 @@ describe('Zod Schema Validation', () => {
         emoji: '🧪',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'I',
-        experiencer: 'test',
+        who: 'test',
         processing: 'during',
         crafted: false,
         experience: ['mood.open', 'embodied.thinking'],
@@ -275,7 +259,7 @@ describe('Zod Schema Validation', () => {
         emoji: '💡',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'I',
-        experiencer: 'test',
+        who: 'test',
         processing: 'during',
         crafted: false,
         experience: ['embodied.sensing', 'mood.closed', 'time.future'],
@@ -293,7 +277,7 @@ describe('Zod Schema Validation', () => {
         emoji: '😵',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'I',
-        experiencer: 'test',
+        who: 'test',
         processing: 'during',
         crafted: false,
         experience: ['mood.closed', 'focus.broad'],
@@ -311,7 +295,7 @@ describe('Zod Schema Validation', () => {
         emoji: '🧪',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'I',
-        experiencer: 'test',
+        who: 'test',
         processing: 'during',
         crafted: false,
         experience: ['mood.open', 'embodied.thinking'],
@@ -328,7 +312,7 @@ describe('Zod Schema Validation', () => {
         source: 'Test source content',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'I',
-        experiencer: 'test',
+        who: 'test',
         processing: 'during',
         crafted: false,
         experience: ['mood.open', 'embodied.thinking'],
@@ -345,7 +329,7 @@ describe('Zod Schema Validation', () => {
         source: 'Test source content',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'I',
-        experiencer: 'test',
+        who: 'test',
         processing: 'during',
         crafted: false,
         experience: ['mood.open', 'embodied.thinking'],
@@ -363,7 +347,7 @@ describe('Zod Schema Validation', () => {
         emoji: '🧪',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'custom-perspective',
-        experiencer: 'test',
+        who: 'test',
         processing: 'during',
         crafted: false,
         experience: ['mood.open', 'embodied.thinking'],
@@ -395,7 +379,7 @@ describe('Zod Schema Validation', () => {
             emoji: '🧪',
             created: '2024-01-01T00:00:00.000Z',
             perspective: 'I',
-            experiencer: 'test',
+            who: 'test',
             processing: 'during',
             crafted: false,
             experience: ['mood.open', 'embodied.thinking'],
@@ -423,7 +407,7 @@ describe('Zod Schema Validation', () => {
             emoji: '🧪',
             created: '2024-01-01T00:00:00.000Z',
             perspective: 'I',
-            experiencer: 'test',
+            who: 'test',
             processing: 'during',
             crafted: false,
             experience: ['mood.open', 'embodied.thinking'],
@@ -434,7 +418,7 @@ describe('Zod Schema Validation', () => {
             emoji: '💡',
             created: '2024-01-01T00:00:00.000Z',
             perspective: 'I',
-            experiencer: 'test',
+            who: 'test',
             processing: 'long-after',
             crafted: false,
             experience: ['embodied.sensing', 'mood.closed', 'time.future'],
@@ -468,7 +452,7 @@ describe('Zod-based Validation Functions', () => {
         emoji: '🧪',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'I',
-        experiencer: 'test',
+        who: 'test',
         processing: 'during',
         crafted: false,
         experience: ['mood.open', 'embodied.thinking'],
@@ -485,7 +469,7 @@ describe('Zod-based Validation Functions', () => {
         emoji: '💡',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'I',
-        experiencer: 'test',
+        who: 'test',
         processing: 'long-after',
         crafted: false,
         experience: ['embodied.sensing', 'mood.closed', 'time.future'],
@@ -511,7 +495,7 @@ describe('Zod-based Validation Functions', () => {
         source: 'Test source content',
         created: '2024-01-01T00:00:00.000Z',
         perspective: 'I',
-        experiencer: 'test',
+        who: 'test',
         processing: 'during',
         crafted: false,
         experience: ['mood.open', 'embodied.thinking'],
@@ -519,23 +503,6 @@ describe('Zod-based Validation Functions', () => {
       };
 
       expect(() => validateSource(invalidSourceWithReflects)).toThrow();
-    });
-  });
-
-  describe('validateExperience', () => {
-    it('should return success for valid experience', () => {
-      const validExperience: Experience = ['mood.open', 'embodied.thinking', 'purpose.goal'];
-
-      const result = validateExperience(validExperience);
-      expect(result).toBeDefined();
-    });
-
-    it('should return error for invalid experience', () => {
-      const invalidExperience = {
-        qualities: ['mood.open', 'embodied.thinking'],
-      };
-
-      expect(() => validateExperience(invalidExperience)).toThrow();
     });
   });
 
@@ -549,7 +516,7 @@ describe('Zod-based Validation Functions', () => {
             emoji: '🧪',
             created: '2024-01-01T00:00:00.000Z',
             perspective: 'I',
-            experiencer: 'test',
+            who: 'test',
             processing: 'during',
             crafted: false,
             experience: ['mood.open', 'embodied.thinking'],
@@ -570,7 +537,7 @@ describe('Zod-based Validation Functions', () => {
             emoji: '🧪',
             created: '2024-01-01T00:00:00.000Z',
             perspective: 'I',
-            experiencer: 'test',
+            who: 'test',
             processing: 'during',
             crafted: false,
             experience: ['mood.open', 'embodied.thinking'],
@@ -581,7 +548,7 @@ describe('Zod-based Validation Functions', () => {
             emoji: '💡',
             created: '2024-01-01T00:00:00.000Z',
             perspective: 'I',
-            experiencer: 'test',
+            who: 'test',
             processing: 'long-after',
             crafted: false,
             experience: ['embodied.sensing', 'mood.closed', 'time.future'],
@@ -601,6 +568,125 @@ describe('Zod-based Validation Functions', () => {
       };
 
       expect(() => validateStorageData(invalidStorageData)).toThrow();
+    });
+  });
+
+  describe('Experience conversion functions', () => {
+    describe('experienceArrayToQualities', () => {
+      it('should convert array to qualities with false defaults', () => {
+        const result = experienceArrayToQualities([]);
+        expect(result).toEqual({
+          embodied: false,
+          focus: false,
+          mood: false,
+          purpose: false,
+          space: false,
+          time: false,
+          presence: false,
+        });
+      });
+
+      it('should convert subtypes to specific values', () => {
+        const result = experienceArrayToQualities([
+          'embodied.thinking',
+          'mood.open',
+          'presence.collective',
+        ]);
+        expect(result).toEqual({
+          embodied: 'thinking',
+          focus: false,
+          mood: 'open',
+          purpose: false,
+          space: false,
+          time: false,
+          presence: 'collective',
+        });
+      });
+
+      it('should convert base qualities to true', () => {
+        const result = experienceArrayToQualities(['embodied', 'mood', 'time']);
+        expect(result).toEqual({
+          embodied: true,
+          focus: false,
+          mood: true,
+          purpose: false,
+          space: false,
+          time: true,
+          presence: false,
+        });
+      });
+
+      it('should handle mixed base and subtype qualities', () => {
+        const result = experienceArrayToQualities([
+          'embodied',
+          'mood.open',
+          'time',
+          'presence.collective',
+        ]);
+        expect(result).toEqual({
+          embodied: true,
+          focus: false,
+          mood: 'open',
+          purpose: false,
+          space: false,
+          time: true,
+          presence: 'collective',
+        });
+      });
+    });
+
+    describe('qualitiesToExperienceArray', () => {
+      it('should convert false values to empty array', () => {
+        const result = qualitiesToExperienceArray({
+          embodied: false,
+          focus: false,
+          mood: false,
+          purpose: false,
+          space: false,
+          time: false,
+          presence: false,
+        });
+        expect(result).toEqual([]);
+      });
+
+      it('should convert true values to base quality names', () => {
+        const result = qualitiesToExperienceArray({
+          embodied: true,
+          focus: false,
+          mood: true,
+          purpose: false,
+          space: false,
+          time: true,
+          presence: false,
+        });
+        expect(result).toEqual(['embodied', 'mood', 'time']);
+      });
+
+      it('should convert subtype values to dot notation', () => {
+        const result = qualitiesToExperienceArray({
+          embodied: 'thinking',
+          focus: false,
+          mood: 'open',
+          purpose: false,
+          space: false,
+          time: false,
+          presence: 'collective',
+        });
+        expect(result).toEqual(['embodied.thinking', 'mood.open', 'presence.collective']);
+      });
+
+      it('should handle mixed true and subtype values', () => {
+        const result = qualitiesToExperienceArray({
+          embodied: true,
+          focus: false,
+          mood: 'open',
+          purpose: false,
+          space: false,
+          time: true,
+          presence: 'collective',
+        });
+        expect(result).toEqual(['embodied', 'mood.open', 'time', 'presence.collective']);
+      });
     });
   });
 });

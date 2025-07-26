@@ -15,7 +15,7 @@ Bridge creates a persistent memory layer for AI interactions, allowing both huma
 **New**: Configure embedding providers directly in Claude Desktop! Choose from:
 
 - Zero-config quality search (default)
-- Cloud embeddings (Voyage AI, OpenAI) for enhanced semantic search
+- Cloud embeddings (OpenAI) for enhanced semantic search
 - Local embeddings (TensorFlow.js) for offline use
 - Qdrant vector database for million+ scale deployments
 
@@ -31,7 +31,7 @@ npm install
 
 # Set up environment variables (optional)
 cp .env.example .env
-# Edit .env and add your ANTHROPIC_API_KEY if running tests
+# Edit .env and add your OPENAI_API_KEY if running tests
 
 # Build the project
 npm run build
@@ -43,9 +43,8 @@ npm run build
 
 1. Install Bridge in Claude Desktop (see [DXT-README.md](./DXT-README.md))
 2. Configure your preferred embedding provider in Claude Desktop settings:
-   - **None**: Works out of the box, no configuration needed
-   - **Cloud**: Add your Voyage AI or OpenAI API key for better search
-   - **Local**: Choose TensorFlow for offline embeddings
+   - **Default**: Local TensorFlow embeddings (no configuration needed)
+   - **OpenAI**: Cloud embeddings for enhanced search (requires API key)
 3. Start using Bridge commands in your conversations!
 
 ### As MCP Server
@@ -70,211 +69,146 @@ experience({
       context: 'Working on the sorting optimization for three days', // Optional context
     },
   ],
+  // Optional: Declare next experiential state for reasoning chains
+  nextMoment: {
+    embodied: 'thinking',
+    focus: 'broad',
+    mood: 'open',
+    purpose: 'wander',
+    space: false,
+    time: false,
+    presence: false,
+  },
+  // Optional: Search for related experiences during capture
+  recall: {
+    query: 'algorithm optimization breakthrough',
+    limit: 3,
+  },
 });
 ```
 
-### 2. Recall
+### 2. Search via Experience (Integrated Recall)
 
-Search experiences with semantic, quality, and temporal scoring:
+Every search is an experience! Bridge now integrates search directly into the experience tool, recognizing that the act of searching is itself an experiential moment with purpose and qualities.
 
-#### Basic Search
+#### Basic Search while Capturing
 
 ```javascript
-// Semantic search
+// Capture a moment while searching for related experiences
+experience({
+  experiences: [
+    {
+      source: 'This bug is really confusing me',
+      emoji: '🐛',
+      experience: ['mood.closed', 'embodied.thinking'],
+    },
+  ],
+  recall: {
+    search: 'debugging confusion similar bugs',
+    limit: 3,
+  },
+});
+// Returns: Your experience + related experiences found
+
+// Search by ID while capturing
+experience({
+  experiences: [
+    {
+      source: 'Following up on our earlier discussion',
+      emoji: '🔗',
+      experience: ['purpose.goal', 'presence.collective'],
+    },
+  ],
+  recall: {
+    ids: 'exp_123', // Reference specific past experience
+  },
+});
+```
+
+#### Advanced Search Features
+
+All the powerful search capabilities from the standalone recall tool are available:
+
+```javascript
+// Quality filtering during capture
+experience({
+  experiences: [
+    {
+      source: 'Looking for moments of creative breakthrough',
+      emoji: '🔍',
+      experience: ['purpose.wander', 'embodied.thinking'],
+    },
+  ],
+  recall: {
+    qualities: { mood: 'open', embodied: 'thinking' },
+    limit: 5,
+  },
+});
+
+// Group results by similarity
+experience({
+  experiences: [
+    {
+      source: 'Exploring patterns in my anxiety',
+      emoji: '🌀',
+      experience: ['embodied.sensing', 'purpose.wander'],
+    },
+  ],
+  recall: {
+    search: 'anxiety nervous worry',
+    group_by: 'similarity',
+    limit: 10,
+  },
+});
+
+// Find pattern realizations
+experience({
+  experiences: [
+    {
+      source: 'Seeking insights about my learning patterns',
+      emoji: '💡',
+      experience: ['embodied.thinking', 'purpose.goal'],
+    },
+  ],
+  recall: {
+    reflects: 'only', // Find experiences that reflect on others
+    who: 'Human',
+    limit: 5,
+  },
+});
+```
+
+#### Migration Guide
+
+If you were using the standalone `recall` tool, simply wrap your search in an experience:
+
+```javascript
+// Old way (no longer available):
 recall({
   searches: [{ search: 'breakthrough moments' }],
 });
 
-// ID lookup
-recall({
-  searches: [{ ids: 'exp_123' }],
-});
-
-// Multiple IDs
-recall({
-  searches: [{ ids: ['exp_123', 'exp_456'] }],
-});
-
-// Recent experiences
-recall({
-  searches: [{ search: 'recent' }],
+// New way - recognize search as an experience:
+experience({
+  experiences: [
+    {
+      source: 'Searching for breakthrough moments',
+      emoji: '🔍',
+      experience: ['purpose.goal', 'embodied.thinking'],
+    },
+  ],
+  recall: {
+    search: 'breakthrough moments',
+  },
 });
 ```
 
-#### Grouping Results
+This approach acknowledges that:
 
-The `group_by` parameter organizes experiences into meaningful groups:
-
-```javascript
-// Group by similarity (clustering)
-recall({
-  searches: [{ search: 'anxiety', group_by: 'similarity' }],
-});
-// Returns: "Found 3 similarity groups containing 12 experiences"
-
-// Group by experiencer
-recall({
-  searches: [{ group_by: 'experiencer' }],
-});
-// Returns: "Found 2 experiencer groups containing 25 experiences"
-//   - Miguel (15 experiences)
-//   - Claude (10 experiences)
-
-// Group by date
-recall({
-  searches: [{ group_by: 'date' }],
-});
-// Returns: "Found 5 daily groups from 2025-01-20 to 2025-01-25"
-//   - 2025-01-25 (8 experiences)
-//   - 2025-01-24 (6 experiences)
-
-// Group by quality signature
-recall({
-  searches: [{ group_by: 'qualities' }],
-});
-// Returns: "Found 4 quality groups containing 18 experiences"
-//   - embodied.thinking, mood.open (8 experiences)
-//   - focus.narrow, purpose.goal (5 experiences)
-
-// Group by perspective
-recall({
-  searches: [{ group_by: 'perspective' }],
-});
-// Returns: "Found 3 perspective groups containing 22 experiences"
-//   - I perspective (18 experiences)
-//   - we perspective (3 experiences)
-//   - you perspective (1 experience)
-
-// Flat results (no grouping)
-recall({
-  searches: [{ search: 'creativity', group_by: 'none' }],
-});
-```
-
-#### Quality Filtering
-
-```javascript
-// Simple quality filter
-recall({
-  searches: [{ qualities: { mood: 'closed' } }],
-});
-
-// Multiple qualities (OR logic)
-recall({
-  searches: [{ qualities: { mood: ['open', 'closed'] } }],
-});
-
-// Presence/absence filtering
-recall({
-  searches: [
-    {
-      qualities: {
-        mood: { present: false }, // WITHOUT mood qualities
-        embodied: { present: true }, // but WITH embodied qualities
-      },
-    },
-  ],
-});
-
-// Complex boolean expressions
-recall({
-  searches: [
-    {
-      qualities: {
-        $and: [{ mood: 'closed' }, { $or: [{ embodied: 'thinking' }, { focus: 'narrow' }] }],
-      },
-    },
-  ],
-});
-```
-
-#### Advanced Filtering
-
-```javascript
-// Filter by experiencer and perspective
-recall({
-  searches: [
-    {
-      search: 'problem solving',
-      experiencer: 'Miguel',
-      perspective: 'I',
-    },
-  ],
-});
-
-// Date range filtering
-recall({
-  searches: [
-    {
-      created: {
-        start: '2025-01-20',
-        end: '2025-01-25',
-      },
-    },
-  ],
-});
-
-// Processing timing
-recall({
-  searches: [
-    {
-      processing: 'right-after',
-      crafted: false, // Raw experiences only
-    },
-  ],
-});
-
-// Pattern realizations only
-recall({
-  searches: [{ reflects: 'only' }],
-});
-
-// Find experiences reflected by specific insights
-recall({
-  searches: [{ reflected_by: 'exp_insight_123' }],
-});
-```
-
-#### Pagination and Sorting
-
-```javascript
-// Paginated results
-recall({
-  searches: [
-    {
-      search: 'productivity',
-      limit: 10,
-      offset: 20,
-      sort: 'created',
-    },
-  ],
-});
-// Returns: "Found 87 experiences for 'productivity' sorted by creation date (showing 21-30)"
-
-// Sort by relevance (default)
-recall({
-  searches: [
-    {
-      search: 'creativity',
-      sort: 'relevance',
-    },
-  ],
-});
-```
-
-#### Migration from Deprecated `as` Parameter
-
-```javascript
-// ⚠️ DEPRECATED - will show warning
-recall({
-  searches: [{ search: 'anxiety', group_by: 'similarity' }],
-});
-
-// ✅ NEW - use group_by instead
-recall({
-  searches: [{ search: 'anxiety', group_by: 'similarity' }],
-});
-```
+- Every search has intent and emotional quality
+- The act of searching is part of your experiential journey
+- Search results connect to the current moment
+- Your search itself becomes part of the memory tapestry
 
 ### 3. Reconsider
 
@@ -293,25 +227,26 @@ reconsider({
 
 ### 4. Release
 
-Remove experiences that no longer serve:
+Remove experiences that no longer serve using the reconsider tool:
 
 ```javascript
-release({
-  releases: [
+reconsider({
+  reconsiderations: [
     {
       id: experienceId,
-      reason: 'Test data cleanup',
+      release: true,
+      releaseReason: 'Test data cleanup',
     },
   ],
 });
 ```
 
-### 5. Flow Tracking (Still Thinking)
+### 5. Flow Tracking (NextMoment)
 
-Lightweight flow tracking inspired by sequential thinking's minimal pattern:
+Declare experiential states for reasoning chains with auto-reflection:
 
 ```javascript
-// Start exploring (stillThinking: true)
+// Start exploring with nextMoment
 const result1 = await experience({
   experiences: [
     {
@@ -320,40 +255,50 @@ const result1 = await experience({
       experience: ['mood.closed', 'embodied.thinking'],
     },
   ],
-  stillThinking: true, // Signal we're still working on this
+  nextMoment: {
+    embodied: 'thinking',
+    focus: 'narrow',
+    mood: false,
+    purpose: 'goal',
+    space: false,
+    time: false,
+    presence: false,
+  }, // Declare what experiential state to explore next
 });
 // Returns: {
 //   content: [
-//     { type: 'text', text: '🐛 Experienced (mood.closed, embodied.thinking)' },
-//     { type: 'text', text: '🤔 Still thinking... (1 step so far)' },
-//     { type: 'text', text: 'Continue exploring - I\'m tracking your progress.' },
-//     { type: 'text', text: 'Permission granted for more tool calls.' }
+//     { type: 'text', text: '🐛 Experienced (mood.closed, embodied.thinking)' }
 //   ],
-//   stillThinking: true,
-//   callsSoFar: 1
+//   nextMoment: { embodied: 'thinking', focus: 'narrow', ... },
+//   flow: {
+//     moments: [{ id: 'exp_123', source: '...', ... }],
+//     transitions: []
+//   }
 // }
 
-// Search for similar issues (stillThinking: true)
-const result2 = await recall({
-  searches: [
+// Experience with integrated recall
+const result2 = await experience({
+  experiences: [
     {
-      query: 'logout authentication session timeout',
+      source: 'Looking at session management code',
+      emoji: '🔍',
+      experience: ['embodied.thinking', 'focus.narrow'],
     },
   ],
-  stillThinking: true, // Still investigating
+  recall: {
+    query: 'logout authentication session timeout',
+    limit: 3,
+  }, // Search for related experiences during capture
 });
 // Returns: {
 //   content: [
-//     { type: 'text', text: 'Found 3 similar experiences...' },
-//     { type: 'text', text: '🤔 Still thinking... (2 steps so far)' },
-//     { type: 'text', text: 'Continue exploring - I\'m tracking your progress.' },
-//     { type: 'text', text: 'Permission granted for more tool calls.' }
+//     { type: 'text', text: '🔍 Experienced (embodied.thinking, focus.narrow)' },
+//     { type: 'text', text: '🔍 Related experiences:\n1. "Session timeout in UTC..."' }
 //   ],
-//   stillThinking: true,
-//   callsSoFar: 2
+//   flow: { moments: [...], transitions: [...] }
 // }
 
-// Found the solution! (stillThinking: false)
+// Complete the flow (no nextMoment)
 const result3 = await experience({
   experiences: [
     {
@@ -362,27 +307,31 @@ const result3 = await experience({
       experience: ['mood.open', 'embodied.thinking', 'purpose.goal'],
     },
   ],
-  stillThinking: false, // Done with this flow
 });
 // Returns: {
 //   content: [
-//     { type: 'text', text: '✅ Experienced (mood.open, embodied.thinking, purpose.goal)' },
-//     { type: 'text', text: '✅ Flow complete! (3 total steps)' },
-//     { type: 'text', text: 'Investigation concluded.' },
-//     { type: 'text', text: 'Great exploration!' }
+//     { type: 'text', text: '✅ Experienced (mood.open, embodied.thinking, purpose.goal)' }
 //   ],
-//   stillThinking: false,
-//   callsSoFar: 3
+//   flow: {
+//     moments: [...],
+//     transitions: [...],
+//     reflection: { // Auto-generated when chain completes
+//       source: 'Moved from mood.closed to mood.open through persistent exploration',
+//       emoji: '🔮',
+//       experience: ['embodied.thinking', 'time.past', 'presence.collective'],
+//       reflects: ['exp_123', 'exp_124', 'exp_125']
+//     }
+//   }
 // }
 ```
 
 **Key Features:**
 
-- **Minimal Pattern**: Just a boolean `stillThinking` and a `callsSoFar` counter
-- **Three Separate Responses**: Tool response + status message + permission/conclusion message
-- **Flow State Messages**: Explicit acknowledgment when `stillThinking` is used
-- **No IDs or State**: No flow IDs to manage, no orchestration
-- **Tool Independence**: Each tool remains fully autonomous
+- **NextMoment Pattern**: Declare experiential state to explore next in reasoning chains
+- **Integrated Recall**: Search for related experiences while capturing new ones
+- **Flow Tracking**: Automatic tracking of experiential journeys with transitions
+- **Auto-Reflection**: Generates pattern realizations when chains complete
+- **Enhanced Reconsider**: Supports both update and release modes
 - **Session-Scoped**: Counter resets between sessions (not persisted)
 - **Sequential Thinking Inspired**: Permission to continue, not control
 
@@ -415,10 +364,10 @@ npm test
 npm run test:coverage
 
 # Run Bridge integration tests
-npm run test:bridge
+npm test
 
-# Run the learning loop
-npm run loop
+# Run all tests
+
 
 # Lint and type check
 npm run lint
@@ -431,7 +380,7 @@ npm run type-check
 
 Bridge now supports multiple embedding providers that work seamlessly in Claude Desktop:
 
-- **Cloud Providers (Voyage AI, OpenAI)**: Work perfectly in Claude Desktop with just an API key
+- **Cloud Providers (OpenAI)**: Work perfectly in Claude Desktop with just an API key
 - **Local Provider (TensorFlow.js)**: Downloads models locally, no API key needed
 - **Default (None)**: Quality-based search works without any configuration
 
@@ -459,7 +408,7 @@ Bridge supports multiple levels of vector search capabilities:
    - Works everywhere including Claude Desktop
 
 2. **Level 1: Cloud Embeddings**
-   - Voyage AI or OpenAI embeddings
+   - OpenAI embeddings
    - Better semantic search quality
    - Requires API key
 
@@ -479,39 +428,36 @@ Bridge supports multiple levels of vector search capabilities:
 
 #### Via Claude Desktop (Recommended)
 
-If using Bridge as a Desktop Extension, you can configure embedding providers directly in the Claude Desktop UI:
+If using Bridge as a Desktop Extension, configure it directly in the Claude Desktop UI:
 
 1. Open Claude Desktop settings
 2. Navigate to MCP Servers → Bridge
-3. Configure your preferred embedding provider:
-   - **None (Default)**: Quality-only search, no API keys needed
-   - **Voyage AI**: Best quality embeddings (requires API key from voyageai.com)
-   - **OpenAI**: Good quality embeddings (requires API key from platform.openai.com)
-   - **TensorFlow**: Local embeddings, no API key needed (~25MB download)
-4. For Qdrant (advanced users):
-   - Set Qdrant URL (default: http://localhost:6333)
-   - Add API key if using Qdrant Cloud
-   - Customize collection name if needed
+3. Configure your preferences:
+   - **Data File Path**: Where to store experiences (default: ~/.bridge/experiences.json)
+   - **OpenAI API Key**: Enables enhanced semantic search and future AI-powered features
+   - **Debug Mode**: Enable for troubleshooting
+
+**Note**: Bridge automatically detects and uses OpenAI embeddings when an API key is provided. No need to manually select a provider!
 
 #### Via Environment Variables
 
-Alternatively, configure embedding providers via environment variables:
+Alternatively, configure via environment variables:
 
 ```bash
 # .env
-BRIDGE_EMBEDDING_PROVIDER=voyage  # or openai, tensorflow, none (default)
-VOYAGE_API_KEY=your-api-key
-VOYAGE_MODEL=voyage-3-large      # Optional: model selection
-VOYAGE_DIMENSIONS=1024           # Optional: output dimensions
-```
+OPENAI_API_KEY=your-api-key      # Automatically enables OpenAI embeddings
+BRIDGE_FILE_PATH=~/.bridge/experiences.json  # Optional: data location
+BRIDGE_DEBUG=true                # Optional: debug logging
 
-See [.env.example](./.env.example) for all configuration options.
+# Advanced: Force local embeddings even with API key
+BRIDGE_EMBEDDING_PROVIDER=default  # Forces TensorFlow.js (~25MB download)
+```
 
 ### Core Components
 
 - **MCP Layer**: Handles Model Context Protocol communication
 - **Tool Handlers**: Process tool calls and format responses
-- **Services**: Core business logic (experience, recall, reconsider, release)
+- **Services**: Core business logic (experience, recall, reconsider)
 - **Embedding Providers**: Pluggable text-to-vector conversion
 - **Vector Stores**: Pluggable vector storage and search
 - **Storage**: JSON persistence with optional embeddings
@@ -542,20 +488,22 @@ Bridge uses a vision-driven development cycle. See [LOOP.md](./LOOP.md) for our 
 
 ## Current Status
 
-- ✅ Core operations (experience, recall, reconsider, release)
+- ✅ Core operations (experience, recall, reconsider)
 - ✅ **Enhanced recall tool with advanced grouping** (similarity, experiencer, date, qualities, perspective)
 - ✅ **Comprehensive parameter support** with rich feedback generation
 - ✅ **Advanced quality filtering** with presence/absence and boolean expressions
 - ✅ **Pagination and sorting** with metadata tracking
 - ✅ **Composite emoji validation** supporting all Unicode sequences
 - ✅ **Improved similar experience formatting** with better readability
-- ✅ Minimal flow tracking with stillThinking parameter
+- ✅ **NextMoment reasoning chains** with auto-reflection generation
+- ✅ **Integrated recall** in Experience tool for seamless memory work
+- ✅ **Enhanced Reconsider** with both update and release modes
 - ✅ Semantic search with multiple embedding providers
 - ✅ Claude Desktop UI configuration for all providers
 - ✅ Quality filtering and unified scoring
 - ✅ Pattern recognition with clustering analysis
-- ✅ Learning loop with recommendations
+- ✅ Simplified test runner with mock responses
 - ✅ Progressive vector enhancement architecture
-- ✅ Local (TensorFlow.js) and cloud (Voyage, OpenAI) embeddings
+- ✅ Local (TensorFlow.js) and cloud (OpenAI) embeddings
 - ✅ Qdrant integration for million+ scale deployments
 - 🚧 Sequence analysis (see OPPORTUNITIES.md)

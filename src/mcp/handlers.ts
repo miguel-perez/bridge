@@ -6,16 +6,8 @@
  */
 
 import { ExperienceHandler } from './experience-handler.js';
-import { RecallHandler } from './recall-handler.js';
 import { ReconsiderHandler } from './reconsider-handler.js';
-import { ReleaseHandler } from './release-handler.js';
-
-import {} from // type RememberInput,
-// type SearchInput,
-// type ReconsiderInput,
-// type ReleaseInput,
-// type ToolResult
-'./schemas.js';
+import type { ExperienceInput, ReconsiderInput } from './schemas.js';
 
 /**
  * MCP Tool Handlers class
@@ -25,9 +17,7 @@ import {} from // type RememberInput,
  */
 export class MCPToolHandlers {
   private experienceHandler: ExperienceHandler;
-  private recallHandler: RecallHandler;
   private reconsiderHandler: ReconsiderHandler;
-  private releaseHandler: ReleaseHandler;
 
   /**
    * Initializes all MCP tool handlers
@@ -36,16 +26,14 @@ export class MCPToolHandlers {
    */
   constructor() {
     this.experienceHandler = new ExperienceHandler();
-    this.recallHandler = new RecallHandler();
     this.reconsiderHandler = new ReconsiderHandler();
-    this.releaseHandler = new ReleaseHandler();
   }
 
   /**
    * Routes tool requests to appropriate handlers
    * @remarks
    * Main entry point for all MCP tool operations. Routes requests based on tool name
-   * to the appropriate handler for processing. Now supports stillThinking parameter.
+   * to the appropriate handler for processing.
    * @param toolName - Name of the tool to execute
    * @param args - Arguments for the tool operation
    * @returns Tool result from the appropriate handler
@@ -57,22 +45,11 @@ export class MCPToolHandlers {
       args = {};
     }
 
-    // Extract stillThinking parameter if present
-    const stillThinking = typeof args.stillThinking === 'boolean' ? args.stillThinking : false;
-
-    // Remove stillThinking from args before passing to handlers
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { stillThinking: _, ...cleanArgs } = args;
-
     switch (toolName) {
       case 'experience':
-        return this.experienceHandler.handle(cleanArgs as any, stillThinking);
-      case 'recall':
-        return this.recallHandler.handle(cleanArgs as any, stillThinking);
+        return this.experienceHandler.handle(args as ExperienceInput);
       case 'reconsider':
-        return this.reconsiderHandler.handle(cleanArgs as any, stillThinking);
-      case 'release':
-        return this.releaseHandler.handle(cleanArgs as any, stillThinking);
+        return this.reconsiderHandler.handle(args as ReconsiderInput);
 
       default:
         throw new Error(`Unknown tool: ${toolName}`);

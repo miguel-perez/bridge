@@ -26,7 +26,7 @@ handle_error() {
     echo "💡 To fix the issues:"
     echo "   npm run lint:fix    # Fix linting issues"
     echo "   npm test           # Run tests"
-    echo "   npm run test:all   # Run all tests and learning loop"
+    echo "   npm run test:all   # Run all tests"
     echo "   npm run build      # Build project"
     exit 1
 }

@@ -13,7 +13,6 @@ import { join } from 'node:path';
 export interface BridgeConfig {
   dataFilePath: string;
   debugMode: boolean;
-  vectorsPath?: string; // Deprecated
 }
 
 /**
@@ -88,7 +87,6 @@ function getDefaultConfig(): BridgeConfig {
   return {
     dataFilePath: getDefaultDataFilePath(),
     debugMode: process.env.BRIDGE_DEBUG === 'true' || process.env.BRIDGE_DEBUG === '1',
-    vectorsPath: undefined, // Deprecated - embeddings are now stored in bridge.json
   };
 }
 
@@ -138,14 +136,6 @@ export function isDebugMode(): boolean {
 }
 
 /**
- * Deprecated function - use isDebugMode instead
- * @deprecated Use isDebugMode instead. This alias is for backward compatibility only.
- */
-export function isSearchDebugMode(): boolean {
-  return currentConfig.debugMode;
-}
-
-/**
  * Validate the current configuration. Throws if invalid.
  * Note: Debug logging is handled by MCP server, not console.log
  */
@@ -159,11 +149,3 @@ export function validateConfiguration(): void {
   }
   // Configuration is valid - debug logging handled by MCP server
 }
-
-/**
- * Deprecated export - use getDataFilePath instead
- * @deprecated Use getDataFilePath instead. This export is for backward compatibility only.
- */
-export const config = {
-  bridgeFilePath: getDataFilePath(),
-};

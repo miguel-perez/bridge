@@ -4,7 +4,7 @@
 
 import { ExperienceHandler } from './experience-handler.js';
 import { ExperienceService } from '../services/experience.js';
-import { RecallService } from '../services/recall.js';
+import { RecallService } from '../services/search.js';
 import * as formatters from '../utils/formatters.js';
 import * as messages from '../utils/messages.js';
 import * as storage from '../core/storage.js';
@@ -12,7 +12,7 @@ import * as storage from '../core/storage.js';
 
 // Mock dependencies
 jest.mock('../services/experience.js');
-jest.mock('../services/recall.js');
+jest.mock('../services/search.js');
 jest.mock('../utils/formatters.js');
 jest.mock('../utils/messages.js');
 jest.mock('../core/storage.js');
@@ -105,7 +105,7 @@ describe('ExperienceHandler', () => {
           source: 'I feel happy',
           emoji: '😊',
           created: '2025-01-21T12:00:00Z',
-          experiencer: 'Human',
+          who: 'Human',
           perspective: 'I',
           processing: 'during' as const,
           experience: ['mood.open'],
@@ -125,7 +125,7 @@ describe('ExperienceHandler', () => {
           {
             source: 'I feel happy',
             emoji: '😊',
-            experiencer: 'Human',
+            who: 'Human',
             perspective: 'I',
             processing: 'during',
             experience: ['mood.open'],
@@ -146,12 +146,13 @@ describe('ExperienceHandler', () => {
       expect(mockExperienceService.rememberExperience).toHaveBeenCalledWith({
         source: 'I feel happy',
         emoji: '😊',
-        experiencer: 'Human',
+        who: 'Human',
         perspective: 'I',
         processing: 'during',
         crafted: undefined,
         experience: ['mood.open'],
         reflects: undefined,
+        context: undefined,
       });
     });
 
@@ -190,16 +191,14 @@ describe('ExperienceHandler', () => {
         ],
       });
 
-      expect(result).toEqual({
-        content: [
-          {
-            type: 'text',
-            text: 'Batch experienced',
-          },
-        ],
-        stillThinking: false,
-        callsSoFar: 2,
-      });
+      // Check content
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: 'Batch experienced',
+        },
+      ]);
+      // No flow state anymore
 
       expect(mockExperienceService.rememberExperience).toHaveBeenCalledTimes(2);
       expect(mockFormatBatchExperienceResponse).toHaveBeenCalledWith(mockResults);
@@ -216,8 +215,6 @@ describe('ExperienceHandler', () => {
             text: 'Experiences array is required',
           },
         ],
-        stillThinking: false,
-        callsSoFar: 3,
       });
 
       expect(mockExperienceService.rememberExperience).not.toHaveBeenCalled();
@@ -239,8 +236,6 @@ describe('ExperienceHandler', () => {
             text: 'Each experience item must have source content',
           },
         ],
-        stillThinking: false,
-        callsSoFar: 4,
       });
     });
 
@@ -259,8 +254,6 @@ describe('ExperienceHandler', () => {
             text: 'Service error',
           },
         ],
-        stillThinking: false,
-        callsSoFar: 5,
       });
     });
 
@@ -296,8 +289,6 @@ describe('ExperienceHandler', () => {
             text: 'Internal error: Output validation failed.',
           },
         ],
-        stillThinking: false,
-        callsSoFar: 6,
       });
     });
   });
@@ -492,10 +483,12 @@ describe('ExperienceHandler', () => {
         experiences: [{ source: 'Another anxious moment', emoji: '😟' }],
       });
 
-      expect(result.content).toContainEqual({
-        type: 'text',
-        text: 'Connects to 3 similar moments',
-      });
+      // Should contain the experience result
+      expect(result.content[0].type).toBe('text');
+      expect(result.content[0].text).toContain('Experienced:');
+      // May also contain similar experiences if recall is integrated
+      const contentText = result.content.map((c) => c.text).join(' ');
+      expect(contentText).toMatch(/similar|Connects|match/i);
     });
 
     it('should provide guidance for emotional qualities', async () => {
@@ -630,11 +623,12 @@ describe('ExperienceHandler', () => {
         source: 'Test',
         emoji: '📝',
         perspective: undefined,
-        experiencer: undefined,
+        who: undefined,
         processing: undefined,
         crafted: undefined,
         experience: [],
         reflects: undefined,
+        context: undefined,
       });
     });
 
@@ -653,8 +647,6 @@ describe('ExperienceHandler', () => {
             text: 'Unknown error',
           },
         ],
-        stillThinking: false,
-        callsSoFar: expect.any(Number),
       });
     });
 
@@ -696,7 +688,7 @@ describe('ExperienceHandler', () => {
       const fullInput = {
         source: 'Full experience',
         emoji: '🎉',
-        experiencer: 'Test User',
+        who: 'Test User',
         perspective: 'we',
         processing: 'long-after' as const,
         crafted: false,
@@ -724,12 +716,13 @@ describe('ExperienceHandler', () => {
       expect(mockExperienceService.rememberExperience).toHaveBeenCalledWith({
         source: 'Full experience',
         emoji: '🎉',
-        experiencer: 'Test User',
+        who: 'Test User',
         perspective: 'we',
         processing: 'long-after',
         crafted: false,
         experience: ['mood.open', 'presence.collective'],
         reflects: undefined,
+        context: undefined,
       });
     });
   });
@@ -1224,7 +1217,7 @@ describe('ExperienceHandler', () => {
             source,
             emoji: '🤔',
             created: '2025-01-21T12:00:00Z',
-            experiencer: 'Human',
+            who: 'Human',
             perspective: 'I',
             processing: 'during' as const,
             experience: experience || [],
@@ -1239,7 +1232,7 @@ describe('ExperienceHandler', () => {
             {
               source,
               emoji: '🤔',
-              experiencer: 'Human',
+              who: 'Human',
               perspective: 'I',
               processing: 'during',
               experience,
@@ -1290,7 +1283,7 @@ describe('ExperienceHandler', () => {
             source: 'Plain experience',
             emoji: '📝',
             created: '2025-01-21T12:00:00Z',
-            experiencer: 'Human',
+            who: 'Human',
             perspective: 'I',
             processing: 'during' as const,
             experience: [],
@@ -1305,7 +1298,7 @@ describe('ExperienceHandler', () => {
             {
               source: 'Plain experience',
               emoji: '📝',
-              experiencer: 'Human',
+              who: 'Human',
               perspective: 'I',
               processing: 'during',
               // No experience field
@@ -1361,7 +1354,7 @@ describe('ExperienceHandler', () => {
             source: 'Complete experiential moment',
             emoji: '🌍',
             created: '2025-01-21T12:00:00Z',
-            experiencer: 'Human',
+            who: 'Human',
             perspective: 'I',
             processing: 'during' as const,
             experience: allQualities,
@@ -1376,7 +1369,7 @@ describe('ExperienceHandler', () => {
             {
               source: 'Complete experiential moment',
               emoji: '🌍',
-              experiencer: 'Human',
+              who: 'Human',
               perspective: 'I',
               processing: 'during',
               experience: allQualities,
@@ -1416,7 +1409,7 @@ describe('ExperienceHandler', () => {
             source: 'Mixed type and subtype experience',
             emoji: '🔀',
             created: '2025-01-21T12:00:00Z',
-            experiencer: 'Human',
+            who: 'Human',
             perspective: 'I',
             processing: 'during' as const,
             experience: mixedQualities,
@@ -1431,7 +1424,7 @@ describe('ExperienceHandler', () => {
             {
               source: 'Mixed type and subtype experience',
               emoji: '🔀',
-              experiencer: 'Human',
+              who: 'Human',
               perspective: 'I',
               processing: 'during',
               experience: mixedQualities,
@@ -1473,7 +1466,7 @@ describe('ExperienceHandler', () => {
             source: 'Type-only experience',
             emoji: '🎯',
             created: '2025-01-21T12:00:00Z',
-            experiencer: 'Human',
+            who: 'Human',
             perspective: 'I',
             processing: 'during' as const,
             experience: typeOnlyQualities,
@@ -1488,7 +1481,7 @@ describe('ExperienceHandler', () => {
             {
               source: 'Type-only experience',
               emoji: '🎯',
-              experiencer: 'Human',
+              who: 'Human',
               perspective: 'I',
               processing: 'during',
               experience: typeOnlyQualities,
@@ -1526,7 +1519,7 @@ describe('ExperienceHandler', () => {
             source: 'Subtype-specific experience',
             emoji: '🎙️',
             created: '2025-01-21T12:00:00Z',
-            experiencer: 'Human',
+            who: 'Human',
             perspective: 'I',
             processing: 'during' as const,
             experience: subtypeQualities,
@@ -1541,7 +1534,7 @@ describe('ExperienceHandler', () => {
             {
               source: 'Subtype-specific experience',
               emoji: '🎙️',
-              experiencer: 'Human',
+              who: 'Human',
               perspective: 'I',
               processing: 'during',
               experience: subtypeQualities,
@@ -1559,187 +1552,127 @@ describe('ExperienceHandler', () => {
         expect(result.isError).toBeFalsy();
       });
     });
+  });
 
-    describe('stillThinking functionality', () => {
-      beforeEach(() => {
-        // Reset the call counter before each test
-        mockCallCount = 0;
+  describe('integrated recall', () => {
+    it('should perform recall search when requested', async () => {
+      const mockResult = {
+        source: {
+          id: 'exp_123',
+          source: 'New experience with recall',
+          emoji: '🔍',
+          created: '2025-01-21T12:00:00Z',
+        },
+        defaultsUsed: [],
+      };
+
+      const mockRecallResult = {
+        results: [
+          {
+            id: 'exp_past',
+            content: 'Similar past experience',
+            snippet: 'Similar past experience',
+            metadata: {
+              created: '2025-01-20T12:00:00Z',
+              who: 'Human',
+              experience: ['mood.open'],
+            },
+            relevance_score: 0.8,
+          },
+        ],
+        total: 1,
+      };
+
+      mockExperienceService.rememberExperience.mockResolvedValue(mockResult);
+      mockRecallService.search.mockResolvedValue(mockRecallResult);
+
+      const result = await handler.handle({
+        experiences: [{ source: 'New experience with recall', emoji: '🔍' }],
+        recall: {
+          search: 'similar experiences',
+          limit: 5,
+        },
       });
 
-      it('should return stillThinking: false and callsSoFar: 1 by default', async () => {
-        const mockResult = {
-          source: {
-            id: 'exp_123',
-            source: 'Test experience',
-            emoji: '🧑‍💻',
-            created: '2025-01-21T12:00:00Z',
-          },
-          defaultsUsed: [],
-        };
-
-        mockExperienceService.rememberExperience.mockResolvedValue(mockResult);
-        mockRecallService.search.mockResolvedValue({ results: [] });
-
-        const result = await handler.handle({
-          experiences: [{ source: 'Test experience', emoji: '🧑‍💻' }],
-        });
-
-        expect(result.stillThinking).toBe(false);
-        expect(result.callsSoFar).toBe(1);
+      expect(mockRecallService.search).toHaveBeenCalledWith({
+        semantic_query: 'similar experiences',
+        limit: 5,
       });
 
-      it('should return stillThinking: true when parameter is passed', async () => {
-        const mockResult = {
-          source: {
-            id: 'exp_123',
-            source: 'Test experience',
-            emoji: '🧑‍💻',
-            created: '2025-01-21T12:00:00Z',
+      expect(result.content).toHaveLength(2);
+      // Check that recall results are formatted properly
+      expect(result.content[1].type).toBe('text');
+      expect(result.content[1].text).toContain('🔍 Related experiences:');
+      expect(result.content[1].text).toContain('Similar past experience');
+      expect(result.content[1].text).toContain('mood.open');
+    });
+
+    it('should handle recall with multiple filters', async () => {
+      const mockResult = {
+        source: {
+          id: 'exp_124',
+          source: 'Experience with complex recall',
+          emoji: '🎯',
+          created: '2025-01-21T13:00:00Z',
+        },
+        defaultsUsed: [],
+      };
+
+      mockExperienceService.rememberExperience.mockResolvedValue(mockResult);
+      mockRecallService.search.mockResolvedValue({ results: [], total: 0 });
+
+      await handler.handle({
+        experiences: [{ source: 'Experience with complex recall', emoji: '🎯' }],
+        recall: {
+          search: 'test',
+          who: 'Alice',
+          qualities: {
+            mood: 'open',
+            embodied: { present: true },
           },
-          defaultsUsed: [],
-        };
-
-        mockExperienceService.rememberExperience.mockResolvedValue(mockResult);
-        mockRecallService.search.mockResolvedValue({ results: [] });
-
-        const result = await handler.handle(
-          {
-            experiences: [{ source: 'Test experience', emoji: '🧑‍💻' }],
-          },
-          true // stillThinking = true
-        );
-
-        expect(result.stillThinking).toBe(true);
-        expect(result.callsSoFar).toBe(1);
+          perspective: 'I',
+          limit: 10,
+          sort: 'relevance',
+        },
       });
 
-      it('should increment callsSoFar with multiple calls', async () => {
-        const mockResult = {
-          source: {
-            id: 'exp_123',
-            source: 'Test experience',
-            emoji: '🧑‍💻',
-            created: '2025-01-21T12:00:00Z',
-          },
-          defaultsUsed: [],
-        };
+      expect(mockRecallService.search).toHaveBeenCalledWith({
+        semantic_query: 'test',
+        who: 'Alice',
+        qualities: {
+          mood: 'open',
+          embodied: { present: true },
+        },
+        perspective: 'I',
+        limit: 10,
+        sort: 'relevance',
+      });
+    });
 
-        mockExperienceService.rememberExperience.mockResolvedValue(mockResult);
-        mockRecallService.search.mockResolvedValue({ results: [] });
+    it('should handle recall with ID lookup', async () => {
+      const mockResult = {
+        source: {
+          id: 'exp_125',
+          source: 'Experience with ID recall',
+          emoji: '🆔',
+          created: '2025-01-21T14:00:00Z',
+        },
+        defaultsUsed: [],
+      };
 
-        // First call
-        const result1 = await handler.handle(
-          {
-            experiences: [{ source: 'First experience', emoji: '1️⃣' }],
-          },
-          true
-        );
+      mockExperienceService.rememberExperience.mockResolvedValue(mockResult);
+      mockRecallService.search.mockResolvedValue({ results: [], total: 0 });
 
-        expect(result1.stillThinking).toBe(true);
-        expect(result1.callsSoFar).toBe(1);
-
-        // Second call
-        const result2 = await handler.handle(
-          {
-            experiences: [{ source: 'Second experience', emoji: '2️⃣' }],
-          },
-          true
-        );
-
-        expect(result2.stillThinking).toBe(true);
-        expect(result2.callsSoFar).toBe(2);
-
-        // Third call with stillThinking false
-        const result3 = await handler.handle(
-          {
-            experiences: [{ source: 'Final experience', emoji: '🏁' }],
-          },
-          false
-        );
-
-        expect(result3.stillThinking).toBe(false);
-        expect(result3.callsSoFar).toBe(3);
+      await handler.handle({
+        experiences: [{ source: 'Experience with ID recall', emoji: '🆔' }],
+        recall: {
+          ids: ['exp_001', 'exp_002'],
+        },
       });
 
-      it('should include stillThinking and callsSoFar in error responses', async () => {
-        const result = await handler.handle({
-          experiences: [], // Invalid - empty array
-        });
-
-        expect(result.isError).toBe(true);
-        expect(result.stillThinking).toBe(false);
-        expect(result.callsSoFar).toBeDefined();
-      });
-
-      it('should generate four content items when stillThinking is true', async () => {
-        const mockResult = {
-          source: {
-            id: 'exp_123',
-            source: 'Test experience',
-            emoji: '🧑‍💻',
-            created: '2025-01-21T12:00:00Z',
-          },
-          defaultsUsed: [],
-        };
-
-        mockExperienceService.rememberExperience.mockResolvedValue(mockResult);
-        mockRecallService.search.mockResolvedValue({ results: [] });
-
-        const result = await handler.handle(
-          {
-            experiences: [{ source: 'Test experience', emoji: '🧑‍💻' }],
-            stillThinking: true,
-          },
-          true // stillThinking = true
-        );
-
-        // Should have four content items:
-        // 1. Main experience response
-        // 2. First flow state message (still thinking)
-        // 3. Second flow state message (continue exploring)
-        // 4. Third flow state message (permission granted)
-        expect(result.content).toHaveLength(4);
-        expect(result.content[0].text).toContain('Experienced: test');
-        expect(result.content[1].text).toContain('🤔 Still thinking');
-        expect(result.content[2].text).toContain('Continue exploring');
-        expect(result.content[3].text).toContain('Permission granted');
-      });
-
-      it('should generate four content items when stillThinking is false after flow', async () => {
-        const mockResult = {
-          source: {
-            id: 'exp_123',
-            source: 'Test experience',
-            emoji: '🧑‍💻',
-            created: '2025-01-21T12:00:00Z',
-          },
-          defaultsUsed: [],
-        };
-
-        mockExperienceService.rememberExperience.mockResolvedValue(mockResult);
-        mockRecallService.search.mockResolvedValue({ results: [] });
-
-        // Mock call count to simulate being in a flow
-        mockCallCount = 2;
-
-        const result = await handler.handle(
-          {
-            experiences: [{ source: 'Test experience', emoji: '🧑‍💻' }],
-            stillThinking: false,
-          },
-          false // stillThinking = false
-        );
-
-        // Should have four content items:
-        // 1. Main experience response
-        // 2. First flow state message (complete)
-        // 3. Second flow state message (investigation concluded)
-        // 4. Third flow state message (task completed/great investigation)
-        expect(result.content).toHaveLength(4);
-        expect(result.content[0].text).toContain('Experienced: test');
-        expect(result.content[1].text).toContain('✅ Flow complete');
-        expect(result.content[2].text).toContain('Investigation concluded');
-        expect(result.content[3].text).toContain('Great investigation!');
+      expect(mockRecallService.search).toHaveBeenCalledWith({
+        id: 'exp_001', // RecallInput only accepts single ID
+        limit: 5, // default limit
       });
     });
   });

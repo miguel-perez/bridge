@@ -148,7 +148,6 @@ export interface ExperienceResult {
     source: string;
     emoji: string;
     who?: string | string[];
-    experiencer?: string;
     perspective?: string;
     processing?: string;
     created: string;
@@ -177,7 +176,7 @@ export interface RecallResult {
   metadata?: {
     created: string;
     perspective?: string;
-    experiencer?: string;
+    who?: string | string[];
     processing?: string;
     experience?: string[];
     emoji?: string;
@@ -200,10 +199,10 @@ export interface RecallSearchParams {
   search?: string;
 
   // Grouping behavior (replacing 'as')
-  group_by?: 'similarity' | 'experiencer' | 'date' | 'qualities' | 'perspective' | 'none';
+  group_by?: 'similarity' | 'who' | 'date' | 'qualities' | 'perspective' | 'none';
 
   // Existing filters
-  experiencer?: string;
+  who?: string;
   perspective?: string;
   qualities?: any; // QualityFilters type
   created?: string | { start: string; end: string };
@@ -211,6 +210,15 @@ export interface RecallSearchParams {
   reflected_by?: string | string[];
   processing?: 'during' | 'right-after' | 'long-after';
   crafted?: boolean;
+
+  // Individual quality dimensions
+  embodied?: string;
+  focus?: string;
+  mood?: string;
+  purpose?: string;
+  space?: string;
+  time?: string;
+  presence?: string;
 
   // Display options
   limit?: number;
@@ -259,7 +267,7 @@ export interface GroupedRecallResponse {
   }>;
   summary: {
     // Grouping metadata
-    groupType: 'similarity' | 'experiencer' | 'date' | 'qualities' | 'perspective';
+    groupType: 'similarity' | 'who' | 'date' | 'qualities' | 'perspective';
     groupCount: number;
     totalExperiences: number;
 
@@ -316,8 +324,8 @@ export function generateSearchFeedback(
   }
 
   // 3. Add each active filter
-  if (summary.activeFilters.experiencer) {
-    feedback += ` by ${summary.activeFilters.experiencer}`;
+  if (summary.activeFilters.who) {
+    feedback += ` by ${summary.activeFilters.who}`;
   }
 
   if (summary.activeFilters.perspective) {
@@ -340,6 +348,23 @@ export function generateSearchFeedback(
 
   if (summary.activeFilters.qualities) {
     feedback += ' with ' + formatQualityFilters(summary.activeFilters.qualities);
+  }
+
+  // Check for individual quality dimensions in activeFilters
+  const qualityDimensions = [
+    'embodied',
+    'focus',
+    'mood',
+    'purpose',
+    'space',
+    'time',
+    'presence',
+  ] as const;
+  for (const dimension of qualityDimensions) {
+    const value = summary.activeFilters[dimension];
+    if (value) {
+      feedback += ` with ${dimension}: ${value}`;
+    }
   }
 
   if (summary.activeFilters.created) {
@@ -620,20 +645,6 @@ export function formatReconsiderResponse(
   return [response, '', formatMetadata(result.source, showId)].join('\n');
 }
 
-/**
- * Format a release response with natural language
- *
- * @param count - Number of memories released
- * @returns Natural language response string
- */
-export function formatReleaseResponse(count: number = 1): string {
-  if (count === 1) {
-    return Messages.release.success;
-  } else {
-    return formatMessage(Messages.release.batch, { count });
-  }
-}
-
 // ============================================================================
 // HELPER FUNCTIONS FOR CONVERSATIONAL FORMATTING
 // ============================================================================
@@ -648,8 +659,8 @@ function formatMetadata(source: Record<string, unknown>, showId: boolean = false
     lines.push(`📝 ID: ${source.id as string}`);
   }
 
-  // Format who experienced it - handle both who and experiencer for backwards compatibility
-  const who = source.who || source.experiencer || 'me';
+  // Format who experienced it
+  const who = source.who || 'me';
   const whoStr = Array.isArray(who) ? who.join(' & ') : (who as string);
 
   lines.push(

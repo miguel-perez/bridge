@@ -4,17 +4,16 @@
  */
 
 import { z } from 'zod';
-import { bridgeLogger } from '../utils/bridge-logger.js';
 import { saveSource, saveEmbedding } from '../core/storage.js';
 import { generateId } from '../core/storage.js';
-import type { Source, EmbeddingRecord, Experience, ExperienceQualities } from '../core/types.js';
+import type { Source, EmbeddingRecord, ExperienceQualities } from '../core/types.js';
 import {
   generatePerspective,
   experienceArrayToQualities,
   qualitiesToExperienceArray,
 } from '../core/types.js';
 
-import { embeddingServiceV2 } from './embeddings-v2.js';
+import { embeddingService } from './embeddings.js';
 
 // ============================================================================
 // CONSTANTS
@@ -81,7 +80,6 @@ export const experienceSchema = z.object({
   ),
   perspective: z.string().optional(),
   who: z.union([z.string(), z.array(z.string())]).optional(),
-  experiencer: z.string().optional(), // Deprecated, kept for backwards compatibility
   processing: z.enum(['during', 'right-after', 'long-after']).optional(),
   crafted: z.boolean().optional(),
 
@@ -136,7 +134,6 @@ export interface ExperienceInput {
   emoji: string;
   perspective?: string;
   who?: string | string[];
-  experiencer?: string; // Deprecated
   processing?: string;
   crafted?: boolean;
   experience?: string[] | ExperienceQualities;
@@ -188,16 +185,16 @@ export class ExperienceService {
     const created = new Date().toISOString();
 
     // Use source or default
-    const source = validatedInput.source || 'Experience experienceed';
+    const source = validatedInput.source || 'Experience experienced';
 
-    // Handle who field - backwards compatibility with experiencer
-    const who = validatedInput.who || validatedInput.experiencer || 'self';
+    // Handle who field
+    const who = validatedInput.who || 'self';
 
     // Generate perspective if not provided
     const perspective = generatePerspective(who, validatedInput.perspective);
 
     // Handle experience qualities - convert between formats as needed
-    let experience: Experience | undefined;
+    let experience: string[] | undefined;
     let experienceQualities: ExperienceQualities | undefined;
 
     if (validatedInput.experience) {
@@ -226,7 +223,6 @@ export class ExperienceService {
       created,
       perspective,
       who,
-      experiencer: typeof who === 'string' ? who : who.join(' & '), // Keep for compatibility
       processing: validatedInput.processing || 'during',
       crafted: validatedInput.crafted || false,
       experience,
@@ -240,7 +236,7 @@ export class ExperienceService {
 
     // Generate and save embedding
     try {
-      await embeddingServiceV2.initialize();
+      await embeddingService.initialize();
 
       // Create simple embedding text with prominent qualities and context
       const qualitiesText =
@@ -251,7 +247,7 @@ export class ExperienceService {
       // Include context in embedding if present
       const contextPrefix = savedSource.context ? `Context: ${savedSource.context}. ` : '';
       const embeddingText = `${contextPrefix}"${savedSource.source}" ${qualitiesText}`;
-      const embedding = await embeddingServiceV2.generateEmbedding(embeddingText);
+      const embedding = await embeddingService.generateEmbedding(embeddingText);
 
       // Save embedding to storage
       const embeddingRecord: EmbeddingRecord = {
@@ -266,7 +262,7 @@ export class ExperienceService {
       return { source: savedSource, defaultsUsed };
     } catch (error) {
       // Don't fail experience if embedding generation fails
-      bridgeLogger.warn('Embedding generation failed:', error);
+      // Embedding generation failed - continue without embedding
       const defaultsUsed = this.getDefaultsUsed(input);
       return { source: savedSource, defaultsUsed };
     }
@@ -280,9 +276,9 @@ export class ExperienceService {
   private getDefaultsUsed(originalInput: ExperienceInput): string[] {
     const defaultsUsed = [];
     if (!originalInput.perspective) defaultsUsed.push('perspective="auto-generated"');
-    if (!originalInput.who && !originalInput.experiencer) defaultsUsed.push('who="self"');
+    if (!originalInput.who) defaultsUsed.push('who="self"');
     if (!originalInput.processing) defaultsUsed.push('processing="during"');
-    if (!originalInput.source) defaultsUsed.push('source="Experience experienceed"');
+    if (!originalInput.source) defaultsUsed.push('source="Experience experienced"');
     return defaultsUsed;
   }
 }

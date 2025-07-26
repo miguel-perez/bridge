@@ -9,8 +9,7 @@
 import { EnrichService } from '../services/enrich.js';
 import { ReconsiderInput, type ToolResult } from './schemas.js';
 import { formatReconsiderResponse, type ExperienceResult } from '../utils/formatters.js';
-import { incrementCallCount, getCallCount } from './call-counter.js';
-import { getFlowStateMessages } from './flow-messages.js';
+import { incrementCallCount } from './call-counter.js';
 
 /**
  * Handles reconsider requests from MCP clients
@@ -34,41 +33,17 @@ export class ReconsiderHandler {
    * Handles reconsider requests
    *
    * @param args - The reconsider arguments containing updates to existing experiences
-   * @param stillThinking - Optional boolean indicating if more tool calls are expected
    * @returns Formatted reconsider result
    */
-  async handle(args: ReconsiderInput, stillThinking = false): Promise<ToolResult> {
+  async handle(args: ReconsiderInput): Promise<ToolResult> {
     try {
       incrementCallCount();
       const result = await this.handleRegularReconsider(args);
-
-      // Add flow state messages if stillThinking was explicitly passed
-      const callsSoFar = getCallCount();
-      if (args.stillThinking !== undefined) {
-        const flowMessages = getFlowStateMessages(stillThinking, callsSoFar);
-        // Add each message as a separate content item to ensure a third response
-        flowMessages.forEach((message) => {
-          result.content.push({
-            type: 'text',
-            text: message,
-          });
-        });
-      }
-
-      // Add stillThinking and callsSoFar to the result
-      const enhancedResult = {
-        ...result,
-        stillThinking,
-        callsSoFar,
-      };
-
-      return enhancedResult;
+      return result;
     } catch (err) {
       return {
         isError: true,
         content: [{ type: 'text', text: 'Internal error: Output validation failed.' }],
-        stillThinking: false,
-        callsSoFar: getCallCount(),
       };
     }
   }
@@ -96,57 +71,99 @@ export class ReconsiderHandler {
       }
 
       // Process reconsideration items
-      const results: ExperienceResult[] = [];
+      const updateResults: ExperienceResult[] = [];
+      const releaseResults: { id: string; reason?: string }[] = [];
+
       for (const item of reconsider.reconsiderations) {
-        const result = await this.reconsiderService.enrichSource({
-          id: item.id,
-          source: item.source,
-          perspective: item.perspective,
-          experiencer: item.experiencer,
-          processing: item.processing,
-          crafted: item.crafted,
-          experience: item.experience || undefined,
-          reflects: item.reflects,
-          context: item.context,
-        });
-        results.push(result);
+        if (item.release) {
+          // Handle release mode
+          const { deleteSource } = await import('../core/storage.js');
+          await deleteSource(item.id);
+          releaseResults.push({ id: item.id, reason: item.releaseReason });
+        } else {
+          // Handle update mode
+          // Convert experience to array format if needed
+          let experienceArray: string[] | undefined;
+          if (item.experience) {
+            const { qualitiesToExperienceArray } = await import('../core/types.js');
+            experienceArray = qualitiesToExperienceArray(item.experience);
+          }
+
+          const result = await this.reconsiderService.enrichSource({
+            id: item.id,
+            source: item.source,
+            perspective: item.perspective,
+            who: item.who,
+            processing: item.processing,
+            crafted: item.crafted,
+            experience: experienceArray,
+            reflects: item.reflects,
+            context: item.context,
+          });
+          updateResults.push(result);
+        }
       }
 
-      // Format response based on number of reconsiderations
-      if (results.length === 1) {
-        // Single reconsideration - use individual formatting
-        const result = results[0];
-        const response = formatReconsiderResponse(result);
+      // Format response based on operations performed
+      const totalOperations = updateResults.length + releaseResults.length;
 
-        // Build multi-content response
-        const content: Array<{ type: 'text'; text: string }> = [
-          {
-            type: 'text',
-            text: response,
-          },
-        ];
+      if (totalOperations === 1) {
+        // Single operation
+        if (updateResults.length === 1) {
+          // Single update
+          const result = updateResults[0];
+          const response = formatReconsiderResponse(result);
 
-        // Add guidance for next steps
-        const guidance = this.selectReconsiderGuidance(result);
-        if (guidance) {
-          content.push({
-            type: 'text',
-            text: guidance,
-          });
+          // Build multi-content response
+          const content: Array<{ type: 'text'; text: string }> = [
+            {
+              type: 'text',
+              text: response,
+            },
+          ];
+
+          // Add guidance for next steps
+          const guidance = this.selectReconsiderGuidance(result);
+          if (guidance) {
+            content.push({
+              type: 'text',
+              text: guidance,
+            });
+          }
+
+          return { content };
+        } else {
+          // Single release
+          const release = releaseResults[0];
+          const content = `🙏 Experience released with gratitude\n\n📝 ID: ${release.id}\n💭 Reason: ${release.reason || 'No reason provided'}\n🕐 Released: ${new Date().toLocaleString()}\n\nThank you for the insights this moment provided.`;
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: content,
+              },
+            ],
+          };
+        }
+      } else {
+        // Multiple operations - batch formatting
+        let output = '';
+
+        if (updateResults.length > 0) {
+          output += `✅ ${updateResults.length} experiences updated successfully!\n\n`;
+          for (let i = 0; i < updateResults.length; i++) {
+            const result = updateResults[i];
+            output += `📝 Updated: ${result.source.id}\n`;
+          }
         }
 
-        return { content };
-      } else {
-        // Multiple reconsiderations - use batch formatting
-        let output = `✅ ${results.length} experiences reconsidered and updated successfully!\n\n`;
-
-        for (let i = 0; i < results.length; i++) {
-          const result = results[i];
-          const source = result.source;
-
-          output += `--- Experience ${i + 1} ---\n`;
-          output += `🔄 Fields updated: content, experience\n`;
-          output += `📝 ID: ${source.id}\n\n`;
+        if (releaseResults.length > 0) {
+          if (output) output += '\n';
+          output += `🙏 ${releaseResults.length} experiences released with gratitude\n\n`;
+          for (const release of releaseResults) {
+            output += `📝 Released: ${release.id}${release.reason ? ` (${release.reason})` : ''}\n`;
+          }
         }
 
         return {

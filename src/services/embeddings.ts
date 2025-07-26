@@ -1,150 +1,169 @@
-/**
- * Legacy embedding service wrapper
- * @deprecated This file now wraps the new embeddings-v2 service for backward compatibility
- * @remarks
- * Migrated to progressive vector enhancement architecture.
- * The new service supports multiple embedding providers and vector stores.
- */
-
-import { embeddingServiceV2 } from './embeddings-v2.js';
-import { bridgeLogger } from '../utils/bridge-logger.js';
-
-// Internal flag for disabling embeddings in unit tests only
-// DO NOT set this in production - embeddings gracefully degrade when unavailable
-const EMBEDDINGS_DISABLED = process.env.TEST_DISABLE_EMBEDDINGS === 'true';
+import { RateLimiter } from '../utils/security.js';
+import { withTimeout, DEFAULT_TIMEOUTS } from '../utils/unified-timeout.js';
+import { ProviderFactory, EmbeddingProvider } from './embedding-providers/index.js';
 
 /**
- * Legacy EmbeddingService class
- * @deprecated Use embeddingServiceV2 directly
+ * Enhanced embedding service using progressive vector enhancement architecture
  * @remarks
- * This class now delegates all operations to the new embeddings-v2 service.
- * Maintains backward compatibility for existing code.
+ * Provides text-to-vector conversion with pluggable providers and stores.
+ * Supports progressive enhancement from zero-config to advanced vector search.
  */
 export class EmbeddingService {
-  private disabled = false;
+  private provider: EmbeddingProvider | null = null;
+  private initPromise: Promise<void> | null = null;
   private cache = new Map<string, number[]>();
+  private rateLimiter = new RateLimiter(100); // 100ms between requests
 
   /**
-   * Initializes the embedding service
+   * Initializes the embedding service with provider and store
    * @remarks
-   * Delegates to the new embeddings-v2 service.
+   * Creates provider from environment configuration with automatic fallback.
+   * Initializes vector store for persistent storage.
    */
   async initialize(): Promise<void> {
-    // Skip initialization if embeddings are disabled
-    if (EMBEDDINGS_DISABLED) {
-      this.disabled = true;
-      return;
+    if (this.initPromise) {
+      return this.initPromise;
     }
-    
-    return embeddingServiceV2.initialize();
+
+    this.initPromise = this._doInitialize();
+    return this.initPromise;
+  }
+
+  private async _doInitialize(): Promise<void> {
+    if (this.provider) return;
+
+    try {
+      // Create embedding provider from environment
+      this.provider = await ProviderFactory.createFromEnvironment();
+      await this.provider.initialize();
+      // Successfully initialized embedding provider
+    } catch (error) {
+      // Failed to initialize embedding service
+      // Use fallback provider
+      this.provider = await ProviderFactory.createProvider('default');
+      await this.provider.initialize();
+    }
   }
 
   /**
    * Generates semantic embedding for given text
    * @remarks
-   * Delegates to the new embeddings-v2 service.
+   * Uses configured provider with caching and rate limiting.
+   * Falls back gracefully if provider fails.
    * @param text - Text to convert to embedding
    * @returns Vector representation of the text
    */
   async generateEmbedding(text: string): Promise<number[]> {
-    // Return empty embedding if disabled
-    if (this.disabled || EMBEDDINGS_DISABLED) {
-      // Return a dummy 384-dimensional zero vector to maintain compatibility
-      return new Array(384).fill(0);
-    }
-
     // Check cache first
     const cached = this.cache.get(text);
     if (cached) {
       return cached;
     }
 
+    // Initialize if not already done
+    await this.initialize();
+
+    if (!this.provider) {
+      throw new Error('Embedding provider not initialized');
+    }
+
+    // Apply rate limiting and timeout
+    return await this.rateLimiter.enforce(async () => {
+      return await withTimeout(
+        this._generateEmbeddingInternal(text),
+        DEFAULT_TIMEOUTS.EMBEDDING,
+        'embedding generation'
+      );
+    });
+  }
+
+  private async _generateEmbeddingInternal(text: string): Promise<number[]> {
+    if (!this.provider) {
+      throw new Error('Provider not available');
+    }
+
     try {
-      const embedding = await embeddingServiceV2.generateEmbedding(text);
-      
-      // Handle dimension compatibility - old service expected 384 dimensions
-      const expectedDim = 384;
-      const actualDim = embedding.length;
-      
-      let result: number[];
-      if (actualDim === expectedDim) {
-        result = embedding;
-      } else if (actualDim < expectedDim) {
-        // Pad with zeros
-        const padded = new Array(expectedDim).fill(0);
-        for (let i = 0; i < actualDim; i++) {
-          padded[i] = embedding[i];
-        }
-        result = padded;
-      } else {
-        // Truncate
-        result = embedding.slice(0, expectedDim);
-      }
-      
+      const embedding = await this.provider.generateEmbedding(text);
+
       // Cache the result
-      this.cache.set(text, result);
-      
-      return result;
+      this.cache.set(text, embedding);
+
+      return embedding;
     } catch (error) {
-      // Failed to generate embedding, returning dummy embedding
-      if (!process.env.BRIDGE_TEST_MODE) {
-        bridgeLogger.warn(
-          'Failed to generate embedding:',
-          error instanceof Error ? error.message : error
-        );
-      }
-      // Return dummy embedding on error
-      return new Array(384).fill(0);
+      // Failed to generate embedding - return empty array
+
+      // Try fallback to default provider
+      const fallbackProvider = await ProviderFactory.createProvider('default');
+      await fallbackProvider.initialize();
+      const embedding = await fallbackProvider.generateEmbedding(text);
+
+      // Cache even the fallback result
+      this.cache.set(text, embedding);
+
+      return embedding;
     }
   }
 
   /**
    * Generates embeddings for multiple texts
    * @remarks
-   * Delegates to the new embeddings-v2 service.
+   * Processes multiple texts in parallel for efficiency.
    * @param texts - Array of texts to convert to embeddings
    * @returns Array of vector representations
    */
   async generateEmbeddings(texts: string[]): Promise<number[][]> {
-    // Handle disabled state
-    if (this.disabled || EMBEDDINGS_DISABLED) {
-      return texts.map(() => new Array(384).fill(0));
-    }
-    
-    return Promise.all(texts.map(text => this.generateEmbedding(text)));
+    await this.initialize();
+
+    const embeddings = await Promise.all(texts.map((text) => this.generateEmbedding(text)));
+    return embeddings;
   }
 
   /**
    * Clears the embedding cache
    * @remarks
-   * Delegates to the new embeddings-v2 service.
+   * Removes all cached embeddings to free memory.
    */
   clearCache(): void {
     this.cache.clear();
-    embeddingServiceV2.clearCache();
   }
 
   /**
    * Gets the current cache size
    * @remarks
-   * Delegates to the new embeddings-v2 service.
+   * Returns the number of cached embeddings for monitoring.
    * @returns Number of cached embeddings
    */
   getCacheSize(): number {
-    // Return local cache size when disabled
-    if (this.disabled || EMBEDDINGS_DISABLED) {
-      return this.cache.size;
-    }
-    return embeddingServiceV2.getCacheSize();
+    return this.cache.size;
   }
 
   /**
-   * Returns the expected embedding dimension for this service.
+   * Gets the embedding dimension from current provider
    */
-  static getExpectedDimension(): number {
-    return 384;
+  getEmbeddingDimension(): number {
+    if (!this.provider) {
+      return 1; // Default for none provider
+    }
+    return this.provider.getDimensions();
+  }
+
+  /**
+   * Gets current provider name
+   */
+  getProviderName(): string {
+    if (!this.provider) {
+      return 'Not initialized';
+    }
+    return this.provider.getName();
+  }
+
+  /**
+   * Checks which providers are available
+   */
+  async checkProviderAvailability(): Promise<Record<string, boolean>> {
+    return await ProviderFactory.checkAvailability();
   }
 }
 
-// Export a singleton instance that wraps the new service
+// Export a singleton instance for backward compatibility
 export const embeddingService = new EmbeddingService();

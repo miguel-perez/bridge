@@ -5,12 +5,14 @@
 import { ReconsiderHandler } from './reconsider-handler.js';
 import { EnrichService } from '../services/enrich.js';
 import { formatReconsiderResponse } from '../utils/formatters.js';
+import * as storage from '../core/storage.js';
 import type { ReconsiderInput } from './schemas.js';
 import type { EnrichResult } from '../services/enrich.js';
 
 // Mock dependencies
 jest.mock('../services/enrich.js');
 jest.mock('../utils/formatters.js');
+jest.mock('../core/storage.js');
 
 describe('ReconsiderHandler', () => {
   let handler: ReconsiderHandler;
@@ -123,11 +125,9 @@ describe('ReconsiderHandler', () => {
       expect(result.isError).toBeFalsy();
       expect(result.content).toHaveLength(1);
       const text = result.content[0].text;
-      expect(text).toContain('✅ 2 experiences reconsidered');
-      expect(text).toContain('--- Experience 1 ---');
-      expect(text).toContain('--- Experience 2 ---');
-      expect(text).toContain('📝 ID: exp_1');
-      expect(text).toContain('📝 ID: exp_2');
+      expect(text).toContain('✅ 2 experiences updated successfully!');
+      expect(text).toContain('📝 Updated: exp_1');
+      expect(text).toContain('📝 Updated: exp_2');
     });
 
     it('should handle reconsideration with all fields', async () => {
@@ -137,9 +137,17 @@ describe('ReconsiderHandler', () => {
             id: 'exp_123',
             source: 'Updated text',
             perspective: 'we',
-            experiencer: 'Team',
+            who: 'Team',
             processing: 'long-after',
-            experience: ['presence.collective'],
+            experience: {
+              embodied: false,
+              focus: false,
+              mood: false,
+              purpose: false,
+              space: false,
+              time: false,
+              presence: 'collective',
+            },
           },
         ],
       };
@@ -150,11 +158,11 @@ describe('ReconsiderHandler', () => {
           source: 'Updated text',
           created: '2025-01-21T12:00:00Z',
           perspective: 'we',
-          experiencer: 'Team',
+          who: 'Team',
           processing: 'long-after',
           experience: ['presence.collective'],
         },
-        updatedFields: ['source', 'perspective', 'experiencer', 'processing', 'experience'],
+        updatedFields: ['source', 'perspective', 'who', 'processing', 'experience'],
         embeddingsRegenerated: false,
       };
 
@@ -166,10 +174,12 @@ describe('ReconsiderHandler', () => {
         id: 'exp_123',
         source: 'Updated text',
         perspective: 'we',
-        experiencer: 'Team',
+        who: 'Team',
         processing: 'long-after',
         experience: ['presence.collective'],
         reflects: undefined,
+        context: undefined,
+        crafted: undefined,
       });
       expect(result.isError).toBeUndefined();
     });
@@ -343,9 +353,9 @@ describe('ReconsiderHandler', () => {
       const result = await handler.handle(input);
 
       expect(result.isError).toBeFalsy();
-      expect(result.content[0].text).toContain('✅ 2 experiences reconsidered');
-      expect(result.content[0].text).toContain('📝 ID: exp_1');
-      expect(result.content[0].text).toContain('📝 ID: exp_2');
+      expect(result.content[0].text).toContain('✅ 2 experiences updated successfully!');
+      expect(result.content[0].text).toContain('📝 Updated: exp_1');
+      expect(result.content[0].text).toContain('📝 Updated: exp_2');
     });
 
     it('should handle empty batch reconsiderations gracefully', async () => {
@@ -522,6 +532,138 @@ describe('ReconsiderHandler', () => {
       const result = await handler.handle(input);
 
       expect(result.content).toHaveLength(1);
+    });
+  });
+
+  describe('release mode', () => {
+    let mockDeleteSource: jest.MockedFunction<typeof storage.deleteSource>;
+
+    beforeEach(() => {
+      // Mock deleteSource from storage
+      mockDeleteSource = jest.mocked(storage.deleteSource);
+      mockDeleteSource.mockResolvedValue(undefined);
+    });
+
+    it('should handle single release with reason', async () => {
+      const input: ReconsiderInput = {
+        reconsiderations: [
+          {
+            id: 'exp_123',
+            release: true,
+            releaseReason: 'Test data during development',
+          },
+        ],
+      };
+
+      const result = await handler.handle(input);
+
+      expect(mockDeleteSource).toHaveBeenCalledWith('exp_123');
+      expect(result.isError).toBeFalsy();
+      expect(result.content).toHaveLength(1);
+      expect(result.content[0].text).toContain('Experience released with gratitude');
+      expect(result.content[0].text).toContain('exp_123');
+      expect(result.content[0].text).toContain('Test data during development');
+    });
+
+    it('should handle single release without reason', async () => {
+      const input: ReconsiderInput = {
+        reconsiderations: [
+          {
+            id: 'exp_456',
+            release: true,
+          },
+        ],
+      };
+
+      const result = await handler.handle(input);
+
+      expect(mockDeleteSource).toHaveBeenCalledWith('exp_456');
+      expect(result.content[0].text).toContain('No reason provided');
+    });
+
+    it('should handle batch releases', async () => {
+      const input: ReconsiderInput = {
+        reconsiderations: [
+          { id: 'exp_1', release: true, releaseReason: 'Cleanup' },
+          { id: 'exp_2', release: true },
+          { id: 'exp_3', release: true, releaseReason: 'Duplicate' },
+        ],
+      };
+
+      const result = await handler.handle(input);
+
+      expect(mockDeleteSource).toHaveBeenCalledTimes(3);
+      expect(mockDeleteSource).toHaveBeenCalledWith('exp_1');
+      expect(mockDeleteSource).toHaveBeenCalledWith('exp_2');
+      expect(mockDeleteSource).toHaveBeenCalledWith('exp_3');
+
+      expect(result.content[0].text).toContain('3 experiences released with gratitude');
+      expect(result.content[0].text).toContain('exp_1 (Cleanup)');
+      expect(result.content[0].text).toContain('exp_2');
+      expect(result.content[0].text).toContain('exp_3 (Duplicate)');
+    });
+
+    it('should handle mixed operations (updates and releases)', async () => {
+      const input: ReconsiderInput = {
+        reconsiderations: [
+          { id: 'exp_1', source: 'Updated text' },
+          { id: 'exp_2', release: true, releaseReason: 'No longer relevant' },
+          { id: 'exp_3', experience: ['mood.open'] },
+        ],
+      };
+
+      const mockResult1: EnrichResult = {
+        source: {
+          id: 'exp_1',
+          source: 'Updated text',
+          created: '2025-01-21T12:00:00Z',
+        },
+        updatedFields: ['source'],
+        embeddingsRegenerated: false,
+      };
+
+      const mockResult3: EnrichResult = {
+        source: {
+          id: 'exp_3',
+          source: 'Original text',
+          created: '2025-01-21T12:00:00Z',
+          experience: ['mood.open'],
+        },
+        updatedFields: ['experience'],
+        embeddingsRegenerated: false,
+      };
+
+      mockEnrichService.enrichSource
+        .mockResolvedValueOnce(mockResult1)
+        .mockResolvedValueOnce(mockResult3);
+
+      const result = await handler.handle(input);
+
+      expect(mockEnrichService.enrichSource).toHaveBeenCalledTimes(2);
+      expect(mockDeleteSource).toHaveBeenCalledTimes(1);
+      expect(mockDeleteSource).toHaveBeenCalledWith('exp_2');
+
+      expect(result.content[0].text).toContain('2 experiences updated successfully');
+      expect(result.content[0].text).toContain('1 experiences released with gratitude');
+      expect(result.content[0].text).toContain('exp_2 (No longer relevant)');
+    });
+
+    it('should handle release errors gracefully', async () => {
+      const input: ReconsiderInput = {
+        reconsiderations: [
+          {
+            id: 'exp_999',
+            release: true,
+          },
+        ],
+      };
+
+      mockDeleteSource.mockRejectedValue(new Error('Experience not found'));
+
+      const result = await handler.handle(input);
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('Experience not found');
     });
   });
 });

@@ -11,6 +11,8 @@ This document captures validated insights from Bridge experiments with clear evi
 
 ### 2025-07-25 - Comprehensive Bridge Recall Tool Enhancement Implementation
 
+**Note**: This work was completed before the API consolidation from 4 tools to 2. Recall functionality is now integrated into the experience tool.
+
 **Key Achievement**: Successfully implemented comprehensive recall tool enhancements covering parameter restructuring, advanced grouping, enhanced feedback, and improved user experience while maintaining 100% backward compatibility.
 
 **Technical Implementation**:
@@ -46,23 +48,21 @@ All 8 enhancement prompts completed successfully:
 **Example Impact - Before vs After**:
 
 ```javascript
-// Before: Limited functionality
+// Before: Limited functionality (standalone recall tool)
 recall({ searches: [{ query: 'anxiety', as: 'clusters' }] });
 // Basic clustering only
 
-// After: Rich functionality
-recall({
-  searches: [
-    {
-      search: 'anxiety',
-      group_by: 'experiencer',
-      qualities: { mood: 'closed' },
-      sort: 'created',
-      limit: 10,
-    },
-  ],
+// After: Rich functionality (now integrated into experience tool)
+experience({
+  recall: {
+    query: 'anxiety',
+    group_by: 'who',
+    qualities: { mood: 'closed' },
+    sort: 'created',
+    limit: 10,
+  },
 });
-// Returns: "Found 2 experiencer groups for 'anxiety' with mood.closed sorted by creation date (showing 10)"
+// Returns: "Found 2 who groups for 'anxiety' with mood.closed sorted by creation date (showing 10)"
 ```
 
 **Technical Patterns Discovered**:
@@ -89,13 +89,20 @@ recall({
 
 **Key Achievement**: Successfully implemented lightweight flow tracking inspired by sequential thinking's minimal pattern, providing "permission to continue" signals without complex orchestration. This replaced the more complex Bridge.flow() orchestration (EXP-012) with a simpler, more effective approach.
 
+**Update 2025-07-26 - Evolved to NextMoment Pattern**: Transformed the stillThinking approach into a richer experiential pattern:
+
+- Replaced stillThinking with `nextMoment` experiential state declaration
+- Added integrated recall functionality to Experience tool
+- Implemented flow state management with auto-reflection generation
+- Enhanced Reconsider tool with release mode
+
 **Technical Implementation**:
 
-- Added `stillThinking` boolean parameter to all Bridge tools (experience, recall, reconsider, release)
-- Implemented session-scoped call counter (resets between sessions, not persisted)
-- Added flow state messages for explicit acknowledgment when stillThinking is used
-- Maintained tool independence - each tool remains fully autonomous
-- Zero impact on existing functionality - completely backward compatible
+- Added `nextMoment` parameter to declare experiential states for reasoning chains
+- Implemented FlowStateManager for tracking experiential journeys
+- Added auto-reflection generation when chains complete naturally
+- Integrated recall functionality directly into Experience tool
+- Maintained tool independence while enabling richer interactions
 
 **Impact Metrics**:
 
@@ -125,8 +132,8 @@ await experience({
 // Returns: "🤔 Still thinking... (1 step so far)\nContinue exploring..."
 
 // Continue searching (stillThinking: true)
-await recall({
-  searches: [{ query: 'performance database peak hours' }],
+await experience({
+  recall: { query: 'performance database peak hours' },
   stillThinking: true,
 });
 // Returns: "🤔 Still thinking... (2 steps so far)\nPermission granted for more tool calls."
@@ -253,7 +260,7 @@ await experience({
 
 **Evidence Trail**:
 
-- Implementation: `src/scripts/test-runner.ts` with comprehensive scenario
+- Implementation: Historical test runner with comprehensive scenario
 - Test results: Successful quality detection across 16 turns before API rate limits
 - Quality validation: All detection patterns working as designed
 - Commit: 4e2720c "feat: add comprehensive quality detection scenario with non-leading prompts"
@@ -340,30 +347,36 @@ await experience({
 
 ```javascript
 // Presence/absence filtering
-recall('', {
-  qualities: {
-    mood: { present: false }, // Find experiences WITHOUT mood qualities
-    embodied: { present: true }, // But WITH embodied qualities
+experience({
+  recall: {
+    qualities: {
+      mood: { present: false }, // Find experiences WITHOUT mood qualities
+      embodied: { present: true }, // But WITH embodied qualities
+    },
   },
 });
 
 // OR logic within qualities
-recall('', {
-  qualities: {
-    embodied: ['thinking', 'sensing'], // embodied.thinking OR embodied.sensing
-    mood: 'closed', // AND mood.closed
+experience({
+  recall: {
+    qualities: {
+      embodied: ['thinking', 'sensing'], // embodied.thinking OR embodied.sensing
+      mood: 'closed', // AND mood.closed
+    },
   },
 });
 
 // Complex boolean expressions
-recall('', {
-  qualities: {
-    $and: [
-      { mood: 'closed' },
-      {
-        $or: [{ embodied: 'thinking' }, { focus: 'narrow' }],
-      },
-    ],
+experience({
+  recall: {
+    qualities: {
+      $and: [
+        { mood: 'closed' },
+        {
+          $or: [{ embodied: 'thinking' }, { focus: 'narrow' }],
+        },
+      ],
+    },
   },
 });
 ```
@@ -415,7 +428,7 @@ recall('', {
 🔧 **Tool Calls for "clustering-analysis":**
    **1.** experience(source: "I feel anxious about the presentation tomorrow", ...)
       → Experienced (embodied.sensing, mood.closed, time.future)
-   **2.** recall(query: "anxiety nervousness meeting presentation", ...)
+   **2.** experience({ recall: { query: "anxiety nervousness meeting presentation" } })
       → Found 6 experiences
 ```
 
@@ -428,8 +441,8 @@ recall('', {
 
 **Evidence Trail**:
 
-- Implementation: Enhanced `src/scripts/learning-loop.ts` with conversation flow and tool call extraction
-- Test results: `loop/recommendations-1753137452110.md` shows dramatically improved evidence quality
+- Implementation: Enhanced test analysis with conversation flow and tool call extraction
+- Test results: Historical recommendations data shows dramatically improved evidence quality
 - Commit: 65e6f1b "feat: enhance learning loop with beautifully formatted conversation flow and tool calls"
 
 ### 2025-07-21 - Clustering Analysis Implementation (EXP-006)
@@ -500,7 +513,7 @@ Found 5 clusters of similar experiences:
 
 **Evidence Trail**:
 
-- Learning loop analysis: `loop/recommendations-1753111683976.md`
+- Historical learning loop analysis: `loop/recommendations-1753111683976.md`
 - Related commits: c8c1372 (shortened tests), 74211eb (enhanced loop)
 - Test coverage metrics: 27.4% lines, 19.1% branches, 31.5% functions
 
@@ -547,7 +560,7 @@ Found 5 clusters of similar experiences:
 
 - Implementation commits: 8b46df0 (82% coverage), b1597af (initial 34.7%)
 - Experiment: EXP-004 in EXPERIMENTS.md
-- Learning loop confirmation: `loop/recommendations-1753118148548.md`
+- Historical learning loop confirmation: `loop/recommendations-1753118148548.md`
 - Coverage analysis: `coverage-analysis.md`
 
 ### 2025-07-21 - Quality Filtering Fix
@@ -591,7 +604,7 @@ relevant results.
 
 - Experiment: EXP-001 (see EXPERIMENTS.md)
 - Test run: test-run-1753069074129.json
-- Analysis: /Users/miguel/Git/bridge/loop/learning-loop-1753069156823.json
+- Analysis: Historical learning loop analysis data
 - Model: claude-opus-4-20250514
 - Thoughts generated: 8
 
@@ -654,9 +667,9 @@ relevant results.
 
 **Evidence Trail**:
 
-- Implementation: `src/scripts/learning-loop.ts`
+- Implementation: Historical learning loop analysis system
 - Related commits: 74211eb (enhanced loop), c294067 (doc updates)
-- Analysis output: `loop/recommendations-1753118148548.md`
+- Historical analysis output: `loop/recommendations-1753118148548.md`
 
 ## Gap Analysis
 
@@ -725,7 +738,7 @@ relevant results.
 
 **Evidence Trail**:
 
-- Learning loop analysis: `loop/recommendations-1753132381187.md`
+- Historical learning loop analysis: `loop/recommendations-1753132381187.md`
 - Development metrics: 310 commits over 20 days, 34% bug fix rate
 - Test coverage: 82.71% lines, 70.62% branches, 79.47% functions
 - Pattern realizations: Successfully implemented and tested

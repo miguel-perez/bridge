@@ -11,8 +11,8 @@ import {
   saveEmbedding,
   deleteEmbedding,
 } from '../core/storage.js';
-import { Source, Experience, ProcessingLevel, EmbeddingRecord } from '../core/types.js';
-import { embeddingServiceV2 } from './embeddings-v2.js';
+import { Source, ProcessingLevel, EmbeddingRecord } from '../core/types.js';
+import { embeddingService } from './embeddings.js';
 
 // ============================================================================
 // CONSTANTS
@@ -22,7 +22,7 @@ import { embeddingServiceV2 } from './embeddings-v2.js';
 export const ENRICH_DEFAULTS = {
   PERSPECTIVE: 'I',
   PROCESSING: 'during',
-  EXPERIENCER: 'self',
+  WHO: 'Human',
 };
 
 // ============================================================================
@@ -37,7 +37,13 @@ export const enrichSchema = z.object({
   id: z.string().describe('ID of the source to enrich'),
   source: z.string().optional().describe('Updated source text'),
   perspective: z.string().optional().describe('Updated perspective'),
-  experiencer: z.string().optional().describe('Updated experiencer'),
+  who: z
+    .union([
+      z.string().describe('Single person who experienced this'),
+      z.array(z.string()).describe('Multiple people who shared this experience'),
+    ])
+    .optional()
+    .describe('Updated who experienced this'),
   processing: z.string().optional().describe('Updated processing level'),
   crafted: z.boolean().optional().describe('Updated crafted flag'),
   experience: z.array(z.string()).optional().describe('Updated experience analysis'),
@@ -55,7 +61,7 @@ export interface EnrichInput {
   id: string;
   source?: string;
   perspective?: string;
-  experiencer?: string;
+  who?: string | string[];
   processing?: ProcessingLevel;
   crafted?: boolean;
   experience?: string[];
@@ -94,7 +100,7 @@ export class EnrichService {
     }
 
     // Process experience - use input or existing
-    let processedExperience: Experience | undefined = undefined;
+    let processedExperience: string[] | undefined = undefined;
     if (input.experience) {
       processedExperience = input.experience;
     } else if (existingSource.experience) {
@@ -124,7 +130,7 @@ export class EnrichService {
         const embeddingText = `${contextPrefix}"${source}" ${qualitiesText}`;
 
         try {
-          embedding = await embeddingServiceV2.generateEmbedding(embeddingText);
+          embedding = await embeddingService.generateEmbedding(embeddingText);
         } catch (error) {
           // Silently handle embedding generation errors in MCP context
         }
@@ -136,7 +142,7 @@ export class EnrichService {
       ...existingSource,
       source: input.source ?? existingSource.source,
       perspective: input.perspective ?? existingSource.perspective,
-      experiencer: input.experiencer ?? existingSource.experiencer,
+      who: input.who ?? existingSource.who,
       processing: input.processing ?? existingSource.processing,
       crafted: input.crafted ?? existingSource.crafted,
       experience: input.experience ?? existingSource.experience,
@@ -186,7 +192,7 @@ export class EnrichService {
     const fields: string[] = [];
     if (original.source !== updated.source) fields.push('source');
     if (original.perspective !== updated.perspective) fields.push('perspective');
-    if (original.experiencer !== updated.experiencer) fields.push('experiencer');
+    if (JSON.stringify(original.who) !== JSON.stringify(updated.who)) fields.push('who');
     if (original.processing !== updated.processing) fields.push('processing');
     if (original.crafted !== updated.crafted) fields.push('crafted');
     if (JSON.stringify(original.experience) !== JSON.stringify(updated.experience)) {

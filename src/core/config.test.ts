@@ -1,12 +1,10 @@
-import { 
-  getConfig, 
-  updateConfig, 
-  setDataFilePath, 
-  getDataFilePath, 
+import {
+  getConfig,
+  updateConfig,
+  setDataFilePath,
+  getDataFilePath,
   validateConfiguration,
   isDebugMode,
-  isSearchDebugMode,
-  config 
 } from './config.js';
 
 describe('Config', () => {
@@ -18,7 +16,7 @@ describe('Config', () => {
     // Clear any cached config
     updateConfig({
       dataFilePath: process.env.BRIDGE_FILE_PATH || 'bridge.json',
-      debugMode: false
+      debugMode: false,
     });
   });
 
@@ -49,9 +47,9 @@ describe('Config', () => {
     });
 
     test('should update multiple properties', () => {
-      updateConfig({ 
-        debugMode: true, 
-        dataFilePath: '/tmp/bridge.json' 
+      updateConfig({
+        debugMode: true,
+        dataFilePath: '/tmp/bridge.json',
       });
       const config = getConfig();
       expect(config.debugMode).toBe(true);
@@ -77,19 +75,9 @@ describe('Config', () => {
     test('should return debug mode status', () => {
       updateConfig({ debugMode: true });
       expect(isDebugMode()).toBe(true);
-      
+
       updateConfig({ debugMode: false });
       expect(isDebugMode()).toBe(false);
-    });
-  });
-
-  describe('isSearchDebugMode', () => {
-    test('should return search debug mode status (same as debug mode)', () => {
-      updateConfig({ debugMode: true });
-      expect(isSearchDebugMode()).toBe(true);
-      
-      updateConfig({ debugMode: false });
-      expect(isSearchDebugMode()).toBe(false);
     });
   });
 
@@ -110,7 +98,7 @@ describe('Config', () => {
       // Reset config to pick up new env var
       updateConfig({
         dataFilePath: process.env.BRIDGE_FILE_PATH || 'bridge.json',
-        debugMode: false
+        debugMode: false,
       });
       expect(getDataFilePath()).toBe('/env/path/bridge.json');
     });
@@ -119,24 +107,9 @@ describe('Config', () => {
       process.env.BRIDGE_DEBUG = 'true';
       updateConfig({
         dataFilePath: getDataFilePath(),
-        debugMode: process.env.BRIDGE_DEBUG === 'true'
+        debugMode: process.env.BRIDGE_DEBUG === 'true',
       });
       expect(isDebugMode()).toBe(true);
-      expect(isSearchDebugMode()).toBe(true);
     });
   });
-
-  describe('config export', () => {
-    test('should export config object with bridgeFilePath', () => {
-      expect(config).toBeDefined();
-      expect(config.bridgeFilePath).toBeDefined();
-      expect(typeof config.bridgeFilePath).toBe('string');
-    });
-
-    test('should reflect current data file path', () => {
-      setDataFilePath('export-test.json');
-      // The config export is static, so we need to check the actual data file path
-      expect(getDataFilePath()).toBe('export-test.json');
-    });
-  });
-}); 
+});

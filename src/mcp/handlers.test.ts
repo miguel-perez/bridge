@@ -4,22 +4,16 @@
 
 import { MCPToolHandlers } from './handlers.js';
 import { ExperienceHandler } from './experience-handler.js';
-import { RecallHandler } from './recall-handler.js';
 import { ReconsiderHandler } from './reconsider-handler.js';
-import { ReleaseHandler } from './release-handler.js';
 
 // Mock all handler modules
 jest.mock('./experience-handler.js');
-jest.mock('./recall-handler.js');
 jest.mock('./reconsider-handler.js');
-jest.mock('./release-handler.js');
 
 describe('MCPToolHandlers', () => {
   let handlers: MCPToolHandlers;
   let mockExperienceHandler: jest.Mocked<ExperienceHandler>;
-  let mockRecallHandler: jest.Mocked<RecallHandler>;
   let mockReconsiderHandler: jest.Mocked<ReconsiderHandler>;
-  let mockReleaseHandler: jest.Mocked<ReleaseHandler>;
 
   beforeEach(() => {
     // Clear all mocks
@@ -31,20 +25,14 @@ describe('MCPToolHandlers', () => {
     // Get mocked instances
     mockExperienceHandler = (ExperienceHandler as jest.MockedClass<typeof ExperienceHandler>).mock
       .instances[0] as jest.Mocked<ExperienceHandler>;
-    mockRecallHandler = (RecallHandler as jest.MockedClass<typeof RecallHandler>).mock
-      .instances[0] as jest.Mocked<RecallHandler>;
     mockReconsiderHandler = (ReconsiderHandler as jest.MockedClass<typeof ReconsiderHandler>).mock
       .instances[0] as jest.Mocked<ReconsiderHandler>;
-    mockReleaseHandler = (ReleaseHandler as jest.MockedClass<typeof ReleaseHandler>).mock
-      .instances[0] as jest.Mocked<ReleaseHandler>;
   });
 
   describe('constructor', () => {
     it('should initialize all handlers', () => {
       expect(ExperienceHandler).toHaveBeenCalledTimes(1);
-      expect(RecallHandler).toHaveBeenCalledTimes(1);
       expect(ReconsiderHandler).toHaveBeenCalledTimes(1);
-      expect(ReleaseHandler).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -57,19 +45,7 @@ describe('MCPToolHandlers', () => {
 
       const result = await handlers.handle('experience', args);
 
-      expect(mockExperienceHandler.handle).toHaveBeenCalledWith(args, false);
-      expect(result).toBe(expectedResult);
-    });
-
-    it('should delegate recall tool to RecallHandler', async () => {
-      const args = { query: 'test search' };
-      const expectedResult = { experiences: [], message: 'No results' };
-
-      mockRecallHandler.handle.mockResolvedValue(expectedResult);
-
-      const result = await handlers.handle('recall', args);
-
-      expect(mockRecallHandler.handle).toHaveBeenCalledWith(args, false);
+      expect(mockExperienceHandler.handle).toHaveBeenCalledWith(args);
       expect(result).toBe(expectedResult);
     });
 
@@ -81,19 +57,7 @@ describe('MCPToolHandlers', () => {
 
       const result = await handlers.handle('reconsider', args);
 
-      expect(mockReconsiderHandler.handle).toHaveBeenCalledWith(args, false);
-      expect(result).toBe(expectedResult);
-    });
-
-    it('should delegate release tool to ReleaseHandler', async () => {
-      const args = { id: 'exp_123', reason: 'cleanup' };
-      const expectedResult = { success: true, message: 'Released' };
-
-      mockReleaseHandler.handle.mockResolvedValue(expectedResult);
-
-      const result = await handlers.handle('release', args);
-
-      expect(mockReleaseHandler.handle).toHaveBeenCalledWith(args, false);
+      expect(mockReconsiderHandler.handle).toHaveBeenCalledWith(args);
       expect(result).toBe(expectedResult);
     });
 
@@ -101,18 +65,27 @@ describe('MCPToolHandlers', () => {
       await expect(handlers.handle('unknown', {})).rejects.toThrow('Unknown tool: unknown');
     });
 
-    it('should pass stillThinking parameter when provided', async () => {
-      const args = { source: 'test', experience: ['mood.open'], stillThinking: true };
+    it('should pass nextMoment parameter when provided', async () => {
+      const args = {
+        source: 'test',
+        experience: ['mood.open'],
+        nextMoment: {
+          embodied: 'thinking',
+          mood: 'open',
+          focus: false,
+          purpose: false,
+          space: false,
+          time: false,
+          presence: false,
+        },
+      };
       const expectedResult = { id: 'exp_123', message: 'Captured' };
 
       mockExperienceHandler.handle.mockResolvedValue(expectedResult);
 
       const result = await handlers.handle('experience', args);
 
-      expect(mockExperienceHandler.handle).toHaveBeenCalledWith(
-        { source: 'test', experience: ['mood.open'] },
-        true
-      );
+      expect(mockExperienceHandler.handle).toHaveBeenCalledWith(args);
       expect(result).toBe(expectedResult);
     });
 
@@ -130,26 +103,60 @@ describe('MCPToolHandlers', () => {
 
       const result = await handlers.handle('experience', null);
 
-      expect(mockExperienceHandler.handle).toHaveBeenCalledWith({}, false);
+      expect(mockExperienceHandler.handle).toHaveBeenCalledWith({});
       expect(result).toEqual({ success: true });
     });
 
     it('should handle undefined args', async () => {
-      mockRecallHandler.handle.mockResolvedValue({ experiences: [] });
+      mockExperienceHandler.handle.mockResolvedValue({ content: [] });
 
-      const result = await handlers.handle('recall', undefined);
+      const result = await handlers.handle('experience', undefined);
 
-      expect(mockRecallHandler.handle).toHaveBeenCalledWith({}, false);
-      expect(result).toEqual({ experiences: [] });
+      expect(mockExperienceHandler.handle).toHaveBeenCalledWith({});
+      expect(result).toEqual({ content: [] });
+    });
+  });
+
+  describe('tool-specific behavior', () => {
+    it('should handle experience with array format', async () => {
+      const args = {
+        experiences: [
+          {
+            source: 'feeling anxious',
+            emoji: '😰',
+            experience: ['embodied.sensing', 'mood.closed'],
+          },
+        ],
+      };
+
+      mockExperienceHandler.handle.mockResolvedValue({
+        content: [{ type: 'text', text: 'Experienced' }],
+      });
+
+      const result = await handlers.handle('experience', args);
+
+      expect(mockExperienceHandler.handle).toHaveBeenCalledWith(args);
+      expect(result).toHaveProperty('content');
     });
 
-    it('should handle empty string tool name', async () => {
-      await expect(handlers.handle('', {})).rejects.toThrow('Unknown tool: ');
-    });
+    it('should handle reconsider with array format', async () => {
+      const args = {
+        reconsiderations: [
+          {
+            id: 'exp_123',
+            experience: ['mood.open'],
+          },
+        ],
+      };
 
-    it('should handle tool names with different casing', async () => {
-      await expect(handlers.handle('Experience', {})).rejects.toThrow('Unknown tool: Experience');
-      await expect(handlers.handle('RECALL', {})).rejects.toThrow('Unknown tool: RECALL');
+      mockReconsiderHandler.handle.mockResolvedValue({
+        content: [{ type: 'text', text: 'Reconsidered' }],
+      });
+
+      const result = await handlers.handle('reconsider', args);
+
+      expect(mockReconsiderHandler.handle).toHaveBeenCalledWith(args);
+      expect(result).toHaveProperty('content');
     });
   });
 });

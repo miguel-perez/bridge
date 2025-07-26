@@ -17,13 +17,15 @@ describe('Embedding Search Service', () => {
   const createMockEmbedding = (sourceId: string, vector: number[]): EmbeddingRecord => ({
     sourceId,
     vector,
-    generated: new Date().toISOString()
+    generated: new Date().toISOString(),
   });
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
-    mockGetAllEmbeddings = storage.getAllEmbeddings as jest.MockedFunction<typeof storage.getAllEmbeddings>;
+
+    mockGetAllEmbeddings = storage.getAllEmbeddings as jest.MockedFunction<
+      typeof storage.getAllEmbeddings
+    >;
     mockGetAllRecords = storage.getAllRecords as jest.MockedFunction<typeof storage.getAllRecords>;
   });
 
@@ -61,7 +63,7 @@ describe('Embedding Search Service', () => {
 
       // Zero vector similarity should be 0
       expect(results).toHaveLength(2);
-      expect(results.every(r => r.similarity === 0)).toBe(true);
+      expect(results.every((r) => r.similarity === 0)).toBe(true);
     });
   });
 
@@ -86,7 +88,11 @@ describe('Embedding Search Service', () => {
       const mockEmbeddings = [
         createMockEmbedding('id1', [1, 0, 0]),
         { sourceId: 'id2', generated: new Date().toISOString() } as EmbeddingRecord, // Missing vector
-        { sourceId: 'id3', vector: null as unknown as number[], generated: new Date().toISOString() } as EmbeddingRecord, // Null vector
+        {
+          sourceId: 'id3',
+          vector: null as unknown as number[],
+          generated: new Date().toISOString(),
+        } as EmbeddingRecord, // Null vector
       ];
 
       mockGetAllEmbeddings.mockResolvedValue(mockEmbeddings);
@@ -174,7 +180,7 @@ describe('Embedding Search Service', () => {
 
       // Should skip the invalid vector
       expect(results).toHaveLength(2);
-      expect(results.map(r => r.sourceId)).toEqual(['id1', 'id3']);
+      expect(results.map((r) => r.sourceId)).toEqual(['id1', 'id3']);
     });
 
     it('should use default parameters', async () => {
@@ -201,23 +207,23 @@ describe('Embedding Search Service', () => {
         id: 'id1',
         source: 'Source 1',
         created: '2025-01-01T00:00:00Z',
-        experiencer: 'User1',
-        experience: ['mood.open']
+        who: 'User1',
+        experience: ['mood.open'],
       },
       {
         id: 'id2',
         source: 'Source 2',
         created: '2025-01-02T00:00:00Z',
-        experiencer: 'User2',
-        experience: ['mood.closed']
+        who: 'User2',
+        experience: ['mood.closed'],
       },
       {
         id: 'id3',
         source: 'Source 3',
         created: '2025-01-03T00:00:00Z',
-        experiencer: 'User3',
-        experience: ['embodied.thinking']
-      }
+        who: 'User3',
+        experience: ['embodied.thinking'],
+      },
     ];
 
     it('should return sources matching given IDs', async () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, beforeAll } from '@jest/globals';
-import { search, type RecallInput } from './recall.js';
+import { search, type RecallInput } from './search.js';
 import { saveSource, setStorageConfig, clearTestStorage } from '../core/storage.js';
 import { SourceRecord } from '../core/types.js';
 import path from 'path';
@@ -19,7 +19,8 @@ describe('Recall Relevance Scoring', () => {
     const record1: Omit<SourceRecord, 'type'> = {
       id: 'text_test_1',
       source: 'This is a test record about anxiety and stress',
-      experiencer: 'text_test',
+      emoji: '😰',
+      who: 'text_test',
       perspective: 'I',
       processing: 'during',
       created: new Date().toISOString(),
@@ -29,7 +30,8 @@ describe('Recall Relevance Scoring', () => {
     const record2: Omit<SourceRecord, 'type'> = {
       id: 'text_test_2',
       source: 'This is about something completely different',
-      experiencer: 'text_test',
+      emoji: '🤔',
+      who: 'text_test',
       perspective: 'I',
       processing: 'during',
       created: new Date().toISOString(),
@@ -42,7 +44,7 @@ describe('Recall Relevance Scoring', () => {
     // Test text relevance scoring
     const results = await search({
       query: 'anxiety',
-      experiencer: 'text_test',
+      who: 'text_test',
       sort: 'relevance',
     });
 
@@ -58,12 +60,13 @@ describe('Recall Relevance Scoring', () => {
     }
   });
 
-  it('should filter by experiencer correctly', async () => {
-    // Create test records with different experiencers
+  it('should filter by who correctly', async () => {
+    // Create test records with different who values
     const record1: Omit<SourceRecord, 'type'> = {
       id: 'filter_test_1',
       source: 'Test record from Alice',
-      experiencer: 'Alice_filter',
+      emoji: '👩',
+      who: 'Alice_filter',
       perspective: 'I',
       processing: 'during',
       created: new Date().toISOString(),
@@ -73,7 +76,8 @@ describe('Recall Relevance Scoring', () => {
     const record2: Omit<SourceRecord, 'type'> = {
       id: 'filter_test_2',
       source: 'Test record from Bob',
-      experiencer: 'Bob_filter',
+      emoji: '👨',
+      who: 'Bob_filter',
       perspective: 'I',
       processing: 'during',
       created: new Date().toISOString(),
@@ -84,7 +88,7 @@ describe('Recall Relevance Scoring', () => {
     await saveSource(record2);
 
     // Search for Alice's records
-    const results = await search({ experiencer: 'Alice_filter' });
+    const results = await search({ who: 'Alice_filter' });
 
     expect(results.results).toHaveLength(1);
     expect(results.results[0].id).toBe('filter_test_1');
@@ -97,7 +101,8 @@ describe('Recall Relevance Scoring', () => {
     const record: Omit<SourceRecord, 'type'> = {
       id: 'vector_test_1',
       source: 'I felt anxious and stressed during the meeting',
-      experiencer: 'vector_test',
+      emoji: '😰',
+      who: 'vector_test',
       perspective: 'I',
       processing: 'during',
       created: new Date().toISOString(),
@@ -109,16 +114,7 @@ describe('Recall Relevance Scoring', () => {
     // Search with both text query and vector similarity
     const searchInput: RecallInput = {
       query: 'anxious',
-      experiencer: 'vector_test',
-      vector: {
-        embodied: 0.3,
-        attentional: 0.5,
-        affective: 0.8,
-        purposive: 0.2,
-        spatial: 0.1,
-        temporal: 0.4,
-        intersubjective: 0.6,
-      },
+      who: 'vector_test',
     };
 
     const results = await search(searchInput);
@@ -135,7 +131,8 @@ describe('Recall Relevance Scoring', () => {
     const record1: Omit<SourceRecord, 'type'> = {
       id: 'sort_test_1',
       source: 'This is about anxiety and stress management techniques',
-      experiencer: 'sort_test',
+      emoji: '😰',
+      who: 'sort_test',
       perspective: 'I',
       processing: 'during',
       created: new Date().toISOString(),
@@ -145,7 +142,8 @@ describe('Recall Relevance Scoring', () => {
     const record2: Omit<SourceRecord, 'type'> = {
       id: 'sort_test_2',
       source: 'This mentions anxiety briefly in passing',
-      experiencer: 'sort_test',
+      emoji: '🤔',
+      who: 'sort_test',
       perspective: 'I',
       processing: 'during',
       created: new Date().toISOString(),
@@ -155,7 +153,8 @@ describe('Recall Relevance Scoring', () => {
     const record3: Omit<SourceRecord, 'type'> = {
       id: 'sort_test_3',
       source: 'This has nothing to do with anxiety at all',
-      experiencer: 'sort_test',
+      emoji: '😐',
+      who: 'sort_test',
       perspective: 'I',
       processing: 'during',
       created: new Date().toISOString(),
@@ -169,7 +168,7 @@ describe('Recall Relevance Scoring', () => {
     // Test sorting by relevance
     const results = await search({
       query: 'anxiety',
-      experiencer: 'sort_test',
+      who: 'sort_test',
       sort: 'relevance',
     });
 
@@ -199,7 +198,8 @@ describe('Date Range Filtering', () => {
     const record1: Omit<SourceRecord, 'type'> = {
       id: 'date_test_1',
       source: 'Record from today',
-      experiencer: 'date_test',
+      emoji: '📅',
+      who: 'date_test',
       perspective: 'I',
       processing: 'during',
       created: today.toISOString(),
@@ -209,7 +209,8 @@ describe('Date Range Filtering', () => {
     const record2: Omit<SourceRecord, 'type'> = {
       id: 'date_test_2',
       source: 'Record from yesterday',
-      experiencer: 'date_test',
+      emoji: '📅',
+      who: 'date_test',
       perspective: 'I',
       processing: 'during',
       created: yesterday.toISOString(),
@@ -222,7 +223,7 @@ describe('Date Range Filtering', () => {
     // Test same-day range: should return yesterday's record
     const results = await search({
       created: { start: yesterday.toISOString(), end: yesterday.toISOString() },
-      experiencer: 'date_test',
+      who: 'date_test',
     });
 
     expect(results.results).toHaveLength(1);
@@ -238,7 +239,8 @@ describe('Date Range Filtering', () => {
     const record1: Omit<SourceRecord, 'type'> = {
       id: 'single_date_test_1',
       source: 'Record from today',
-      experiencer: 'single_date_test',
+      emoji: '📅',
+      who: 'single_date_test',
       perspective: 'I',
       processing: 'during',
       created: today.toISOString(),
@@ -248,7 +250,8 @@ describe('Date Range Filtering', () => {
     const record2: Omit<SourceRecord, 'type'> = {
       id: 'single_date_test_2',
       source: 'Record from yesterday',
-      experiencer: 'single_date_test',
+      emoji: '📅',
+      who: 'single_date_test',
       perspective: 'I',
       processing: 'during',
       created: yesterday.toISOString(),
@@ -261,7 +264,7 @@ describe('Date Range Filtering', () => {
     // Test single date filter: should return records from yesterday onwards
     const results = await search({
       created: yesterday.toISOString(),
-      experiencer: 'single_date_test',
+      who: 'single_date_test',
     });
 
     expect(results.results).toHaveLength(2); // Both records should be returned since single date filter is "on or after"
@@ -280,7 +283,8 @@ describe('Date Range Filtering', () => {
     const record1: Omit<SourceRecord, 'type'> = {
       id: 'range_test_1',
       source: 'Record from today',
-      experiencer: 'range_test',
+      emoji: '📅',
+      who: 'range_test',
       perspective: 'I',
       processing: 'during',
       created: today.toISOString(),
@@ -290,7 +294,8 @@ describe('Date Range Filtering', () => {
     const record2: Omit<SourceRecord, 'type'> = {
       id: 'range_test_2',
       source: 'Record from yesterday',
-      experiencer: 'range_test',
+      emoji: '📅',
+      who: 'range_test',
       perspective: 'I',
       processing: 'during',
       created: yesterday.toISOString(),
@@ -300,7 +305,8 @@ describe('Date Range Filtering', () => {
     const record3: Omit<SourceRecord, 'type'> = {
       id: 'range_test_3',
       source: 'Record from two days ago',
-      experiencer: 'range_test',
+      emoji: '📅',
+      who: 'range_test',
       perspective: 'I',
       processing: 'during',
       created: twoDaysAgo.toISOString(),
@@ -314,7 +320,7 @@ describe('Date Range Filtering', () => {
     // Test multi-day range: should return yesterday and today's records
     const results = await search({
       created: { start: yesterday.toISOString(), end: today.toISOString() },
-      experiencer: 'range_test',
+      who: 'range_test',
     });
 
     expect(results.results).toHaveLength(2);
@@ -333,7 +339,8 @@ describe('Date Range Filtering', () => {
     const record1: Omit<SourceRecord, 'type'> = {
       id: 'edge_test_1',
       source: 'Early morning record',
-      experiencer: 'edge_test',
+      emoji: '📅',
+      who: 'edge_test',
       perspective: 'I',
       processing: 'during',
       created: earlyToday.toISOString(),
@@ -343,7 +350,8 @@ describe('Date Range Filtering', () => {
     const record2: Omit<SourceRecord, 'type'> = {
       id: 'edge_test_2',
       source: 'Late night record',
-      experiencer: 'edge_test',
+      emoji: '📅',
+      who: 'edge_test',
       perspective: 'I',
       processing: 'during',
       created: lateToday.toISOString(),
@@ -356,7 +364,7 @@ describe('Date Range Filtering', () => {
     // Test that both records are found when filtering for today (UTC)
     const results = await search({
       created: { start: earlyToday.toISOString(), end: lateToday.toISOString() },
-      experiencer: 'edge_test',
+      who: 'edge_test',
     });
 
     expect(results.results).toHaveLength(2);
@@ -371,13 +379,13 @@ describe('GroupBy Parameter Removal', () => {
     // TypeScript compilation will fail if groupBy is still present
     const searchInput: RecallInput = {
       query: 'test',
-      experiencer: 'test',
+      who: 'test',
       // groupBy: 'type' // This should cause a TypeScript error if uncommented
     };
 
     // If this compiles, groupBy has been successfully removed
     expect(searchInput.query).toBe('test');
-    expect(searchInput.experiencer).toBe('test');
+    expect(searchInput.who).toBe('test');
   });
 
   it('should handle search without groupBy parameter', async () => {
@@ -386,7 +394,8 @@ describe('GroupBy Parameter Removal', () => {
     const record: Omit<SourceRecord, 'type'> = {
       id: 'groupby_test_1',
       source: 'Test record for groupBy removal verification',
-      experiencer: 'groupby_test',
+      emoji: '🧪',
+      who: 'groupby_test',
       perspective: 'I',
       processing: 'during',
       created: new Date().toISOString(),
@@ -397,7 +406,7 @@ describe('GroupBy Parameter Removal', () => {
 
     // Search should work without groupBy parameter
     const results = await search({
-      experiencer: 'groupby_test',
+      who: 'groupby_test',
     });
 
     expect(results.results).toHaveLength(1);
@@ -413,13 +422,13 @@ describe('Group By Functionality', () => {
   beforeEach(async () => {
     await clearTestStorage();
 
-    // Create test data with different experiencers, dates, qualities, and perspectives
+    // Create test data with different who values, dates, qualities, and perspectives
     const testRecords: Array<Omit<SourceRecord, 'type'>> = [
       {
         id: 'group_test_1',
         source: 'Test record by Miguel on day 1',
         emoji: '👤',
-        experiencer: 'Miguel',
+        who: 'Miguel',
         perspective: 'I',
         processing: 'during',
         created: '2025-01-15T10:00:00.000Z',
@@ -430,7 +439,7 @@ describe('Group By Functionality', () => {
         id: 'group_test_2',
         source: 'Test record by Miguel on day 2',
         emoji: '👥',
-        experiencer: 'Miguel',
+        who: 'Miguel',
         perspective: 'we',
         processing: 'during',
         created: '2025-01-16T10:00:00.000Z',
@@ -441,7 +450,7 @@ describe('Group By Functionality', () => {
         id: 'group_test_3',
         source: 'Test record by Claude on day 1',
         emoji: '🤖',
-        experiencer: 'Claude',
+        who: 'Claude',
         perspective: 'I',
         processing: 'right-after',
         created: '2025-01-15T14:00:00.000Z',
@@ -452,7 +461,7 @@ describe('Group By Functionality', () => {
         id: 'group_test_4',
         source: 'Test record by Claude on day 2',
         emoji: '💬',
-        experiencer: 'Claude',
+        who: 'Claude',
         perspective: 'you',
         processing: 'during',
         created: '2025-01-16T14:00:00.000Z',
@@ -466,9 +475,9 @@ describe('Group By Functionality', () => {
     }
   });
 
-  it('should group by experiencer correctly', async () => {
+  it('should group by who correctly', async () => {
     const results = await search({
-      group_by: 'experiencer',
+      group_by: 'who',
     });
 
     expect(results.clusters).toBeDefined();
@@ -537,9 +546,11 @@ describe('Group By Functionality', () => {
     expect(results.clusters!.length).toBe(3); // I, we, you perspectives
 
     const clusters = results.clusters!;
-    expect(clusters.some((c) => c.summary.includes('I perspective (2 experience'))).toBe(true);
-    expect(clusters.some((c) => c.summary.includes('we perspective (1 experience'))).toBe(true);
-    expect(clusters.some((c) => c.summary.includes('you perspective (1 experience'))).toBe(true);
+    expect(clusters.some((c) => c.summary.includes('First person (I) (2 experience'))).toBe(true);
+    expect(clusters.some((c) => c.summary.includes('Collective (we) (1 experience'))).toBe(true);
+    expect(clusters.some((c) => c.summary.includes('Second person (you) (1 experience'))).toBe(
+      true
+    );
   });
 
   it('should handle group_by: none as flat results', async () => {
@@ -549,73 +560,5 @@ describe('Group By Functionality', () => {
 
     expect(results.clusters).toBeUndefined();
     expect(results.results.length).toBe(4);
-  });
-});
-
-describe('Deprecated AS Parameter Migration', () => {
-  let consoleSpy: jest.SpyInstance;
-
-  beforeEach(() => {
-    consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-  });
-
-  afterEach(() => {
-    consoleSpy.mockRestore();
-  });
-
-  it('should log deprecation warning when using as parameter', async () => {
-    await clearTestStorage();
-
-    const record: Omit<SourceRecord, 'type'> = {
-      id: 'deprecated_test_1',
-      source: 'Test record for deprecated as parameter',
-      emoji: '⚠️',
-      experiencer: 'deprecated_test',
-      perspective: 'I',
-      processing: 'during',
-      created: new Date().toISOString(),
-      crafted: false,
-    };
-
-    await saveSource(record);
-
-    // Use deprecated 'as' parameter
-    const results = await search({
-      as: 'clusters',
-      experiencer: 'deprecated_test',
-    });
-
-    // Should still work but with warning
-    expect(results.results).toBeDefined();
-    expect(consoleSpy).toHaveBeenCalledWith(
-      "RecallService: Parameter 'as' is deprecated. Use 'group_by: similarity' instead"
-    );
-  });
-
-  it('should prefer group_by over as when both are present', async () => {
-    await clearTestStorage();
-
-    const record: Omit<SourceRecord, 'type'> = {
-      id: 'preference_test_1',
-      source: 'Test record for parameter preference',
-      experiencer: 'preference_test',
-      perspective: 'I',
-      processing: 'during',
-      created: new Date().toISOString(),
-      crafted: false,
-    };
-
-    await saveSource(record);
-
-    // Use both parameters - group_by should take precedence
-    const results = await search({
-      as: 'clusters',
-      group_by: 'experiencer',
-      experiencer: 'preference_test',
-    });
-
-    // Should not log warning since group_by is present
-    expect(consoleSpy).not.toHaveBeenCalled();
-    expect(results.clusters).toBeDefined();
   });
 });

@@ -2,7 +2,7 @@
  * MCP Server Implementation for Bridge
  *
  * This module implements the Model Context Protocol (MCP) server for Bridge,
- * providing tools for experiencing, recalling, and enriching experiential data.
+ * providing tools for experiencing and enriching experiential data.
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -16,9 +16,10 @@ import {
 import { z } from 'zod';
 import { validateConfiguration, getDataFilePath } from '../core/config.js';
 import { setStorageConfig } from '../core/storage.js';
+import { toolTimeout } from '../utils/unified-timeout.js';
 import { embeddingService } from '../services/embeddings.js';
 import { mkdirSync } from 'fs';
-import { dirname, join } from 'path';
+import { dirname } from 'path';
 import { MCPToolHandlers } from './handlers.js';
 import { getTools } from './tools.js';
 
@@ -113,7 +114,7 @@ async function initializeConfiguration(serverInstance?: Server): Promise<void> {
     mkdirSync(dataDir, { recursive: true });
 
     // Ensure vector store data directory exists (vectors.json will be in the same directory)
-    const vectorStoreDir = dirname(join(dataDir, 'vectors.json'));
+    const vectorStoreDir = dataDir;
     mkdirSync(vectorStoreDir, { recursive: true });
 
     // Set storage configuration
@@ -132,20 +133,7 @@ async function initializeConfiguration(serverInstance?: Server): Promise<void> {
       );
     }
 
-    // Initialize core services
-    try {
-      // Initialize vector store for similarity search
-      // VectorStore removed - embeddings now in main storage
-
-      mcpLog('info', 'Vector store initialized successfully', serverInstance);
-    } catch (vectorError) {
-      // Vector search won't work but basic functionality will
-      mcpLog(
-        'warn',
-        `Vector store initialization failed: ${vectorError instanceof Error ? vectorError.message : vectorError}`,
-        serverInstance
-      );
-    }
+    // Core services initialization complete
 
     // Bridge DXT initialized successfully
     mcpLog('info', 'Bridge configuration initialized successfully', serverInstance);
@@ -251,22 +239,27 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
 
+  // Track activity for DXT idle timeout
+  if ((global as any).updateActivity) {
+    (global as any).updateActivity();
+  }
+
   try {
     // Parse stringified JSON in arguments before passing to handlers
     const parsedArgs = parseStringifiedJson(args) as Record<string, unknown>;
 
     switch (name) {
       case 'experience':
-        return await toolHandlers.handle('experience', parsedArgs);
-
-      case 'release':
-        return await toolHandlers.handle('release', parsedArgs);
-
-      case 'recall':
-        return await toolHandlers.handle('recall', parsedArgs ?? {});
+        return await toolTimeout(
+          toolHandlers.handle('experience', parsedArgs),
+          `experience tool execution`
+        );
 
       case 'reconsider':
-        return await toolHandlers.handle('reconsider', parsedArgs);
+        return await toolTimeout(
+          toolHandlers.handle('reconsider', parsedArgs),
+          `reconsider tool execution`
+        );
 
       default:
         throw new McpError(ErrorCode.InvalidParams, `Unknown tool: ${name}`);
@@ -300,8 +293,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           if (field === 'content') {
             return `Required: Content is required and cannot be empty.`;
           }
-          if (field === 'experiencer') {
-            return `Required: Experiencer is required. Specify who experienced this.`;
+          if (field === 'who') {
+            return `Required: Who is required. Specify who experienced this.`;
           }
           if (message.toLowerCase().includes('required')) {
             return `Required: ${message}`;

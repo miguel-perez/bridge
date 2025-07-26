@@ -11,27 +11,18 @@ const mockLoad = jest.fn();
   load: mockLoad,
 };
 
-// Mock logger
-jest.mock('../../utils/bridge-logger.js', () => ({
-  bridgeLogger: {
-    log: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-  },
-}));
-
 describe('TensorFlowJSProvider', () => {
   let provider: TensorFlowJSProvider;
 
   beforeEach(() => {
     jest.clearAllMocks();
     provider = new TensorFlowJSProvider();
-    
+
     // Reset mock implementations
     mockEmbed.mockReset();
     mockDispose.mockReset();
     mockLoad.mockReset();
-    
+
     // Setup default successful load
     mockLoad.mockResolvedValue({
       embed: mockEmbed,
@@ -51,7 +42,7 @@ describe('TensorFlowJSProvider', () => {
   describe('initialization', () => {
     it('should initialize successfully', async () => {
       await provider.initialize();
-      
+
       expect(mockLoad).toHaveBeenCalled();
     });
 
@@ -71,13 +62,13 @@ describe('TensorFlowJSProvider', () => {
         array: jest.fn().mockResolvedValue([[1, 0, 0, ...Array(509).fill(0)]]),
         dispose: mockDispose,
       });
-      
+
       await provider.initialize();
     });
 
     it('should generate embedding successfully', async () => {
       const embedding = await provider.generateEmbedding('test text');
-      
+
       expect(mockEmbed).toHaveBeenCalledWith(['test text']);
       expect(mockDispose).toHaveBeenCalled();
       expect(Array.isArray(embedding)).toBe(true);
@@ -92,7 +83,7 @@ describe('TensorFlowJSProvider', () => {
       });
 
       const embedding = await provider.generateEmbedding('test');
-      
+
       // Check normalization (3,4,0 -> 0.6,0.8,0)
       expect(embedding[0]).toBeCloseTo(0.6, 5);
       expect(embedding[1]).toBeCloseTo(0.8, 5);
@@ -100,7 +91,7 @@ describe('TensorFlowJSProvider', () => {
 
     it('should throw if model not initialized', async () => {
       const newProvider = new TensorFlowJSProvider();
-      
+
       await expect(newProvider.generateEmbedding('test')).rejects.toThrow(
         'TensorFlow.js model not initialized'
       );
@@ -133,7 +124,7 @@ describe('TensorFlowJSProvider', () => {
     it('should cleanup model reference', async () => {
       await provider.initialize();
       await provider.cleanup();
-      
+
       // Model should be nulled out (internal state)
       await expect(provider.generateEmbedding('test')).rejects.toThrow(
         'TensorFlow.js model not initialized'

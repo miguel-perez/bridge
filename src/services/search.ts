@@ -1,15 +1,36 @@
 import { SourceRecord } from '../core/types.js';
 import { getAllRecords } from '../core/storage.js';
-import { embeddingServiceV2 } from './embeddings-v2.js';
+import { embeddingService } from './embeddings.js';
 import { findSimilarByEmbedding } from './embedding-search.js';
 import { SEMANTIC_CONFIG } from '../core/config.js';
 import { applyFiltersAndScore } from './unified-scoring.js';
 import { ExperienceCluster, clusterExperiences } from './clustering.js';
 import { type QualityFilter } from './quality-filter.js';
+import {
+  groupByWho as groupingByWho,
+  groupByDate as groupingByDate,
+  groupByQualitySignature,
+  groupByPerspective as groupingByPerspective,
+  type GroupedResult,
+} from './grouping.js';
 
 // ============================================================================
-// GROUPING FUNCTIONS (Prompt 4)
+// GROUPING FUNCTIONS (Using shared grouping logic)
 // ============================================================================
+
+/**
+ * Convert GroupedResult to ExperienceCluster for compatibility
+ */
+function convertToExperienceCluster(group: GroupedResult): ExperienceCluster {
+  const experienceIds = group.experiences.map((exp) => exp.id);
+  return {
+    id: `group-${String(group.key).slice(0, 20)}`,
+    summary: group.label,
+    experienceIds,
+    commonQualities: group.commonQualities || [],
+    size: group.count,
+  };
+}
 
 /**
  * Group experiences by specified criteria
@@ -20,131 +41,28 @@ import { type QualityFilter } from './quality-filter.js';
  */
 async function groupExperiences(
   experiences: SourceRecord[],
-  groupBy: 'experiencer' | 'date' | 'qualities' | 'perspective'
+  groupBy: 'who' | 'date' | 'qualities' | 'perspective'
 ): Promise<ExperienceCluster[]> {
   switch (groupBy) {
-    case 'experiencer':
-      return groupByExperiencer(experiences);
-    case 'date':
-      return groupByDate(experiences);
-    case 'qualities':
-      return groupByQualities(experiences);
-    case 'perspective':
-      return groupByPerspective(experiences);
+    case 'who': {
+      const groups = groupingByWho(experiences);
+      return groups.map(convertToExperienceCluster);
+    }
+    case 'date': {
+      const groups = groupingByDate(experiences);
+      return groups.map(convertToExperienceCluster);
+    }
+    case 'qualities': {
+      const groups = groupByQualitySignature(experiences);
+      return groups.map(convertToExperienceCluster);
+    }
+    case 'perspective': {
+      const groups = groupingByPerspective(experiences);
+      return groups.map(convertToExperienceCluster);
+    }
     default:
       return [];
   }
-}
-
-/**
- * Group by unique experiencer values
- * Sort groups by experience count (descending)
- */
-function groupByExperiencer(experiences: SourceRecord[]): ExperienceCluster[] {
-  const groups = new Map<string, string[]>();
-
-  experiences.forEach((exp) => {
-    const experiencer = exp.experiencer || 'Unknown';
-    if (!groups.has(experiencer)) {
-      groups.set(experiencer, []);
-    }
-    groups.get(experiencer)!.push(exp.id);
-  });
-
-  // Sort by experience count (descending)
-  const sortedGroups = Array.from(groups.entries()).sort((a, b) => b[1].length - a[1].length);
-
-  return sortedGroups.map(([experiencer, experienceIds]) => ({
-    id: `group-experiencer-${experiencer}`,
-    summary: `${experiencer} (${experienceIds.length} experience${experienceIds.length === 1 ? '' : 's'})`,
-    experienceIds,
-    commonQualities: [],
-    size: experienceIds.length,
-  }));
-}
-
-/**
- * Group by calendar date (ignore time)
- * Sort groups chronologically
- */
-function groupByDate(experiences: SourceRecord[]): ExperienceCluster[] {
-  const groups = new Map<string, string[]>();
-
-  experiences.forEach((exp) => {
-    const date = new Date(exp.created).toISOString().split('T')[0]; // YYYY-MM-DD
-    if (!groups.has(date)) {
-      groups.set(date, []);
-    }
-    groups.get(date)!.push(exp.id);
-  });
-
-  // Sort chronologically
-  const sortedGroups = Array.from(groups.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-
-  return sortedGroups.map(([date, experienceIds]) => ({
-    id: `group-date-${date}`,
-    summary: `${date} (${experienceIds.length} experience${experienceIds.length === 1 ? '' : 's'})`,
-    experienceIds,
-    commonQualities: [],
-    size: experienceIds.length,
-  }));
-}
-
-/**
- * Group by complete quality signature
- * Experiences with identical quality arrays go together
- */
-function groupByQualities(experiences: SourceRecord[]): ExperienceCluster[] {
-  const groups = new Map<string, string[]>();
-
-  experiences.forEach((exp) => {
-    const qualities = exp.experience || [];
-    const qualityKey = qualities.sort().join(', ');
-    const displayKey = qualityKey || 'No qualities';
-
-    if (!groups.has(displayKey)) {
-      groups.set(displayKey, []);
-    }
-    groups.get(displayKey)!.push(exp.id);
-  });
-
-  // Sort by experience count (descending)
-  const sortedGroups = Array.from(groups.entries()).sort((a, b) => b[1].length - a[1].length);
-
-  return sortedGroups.map(([qualityKey, experienceIds]) => ({
-    id: `group-qualities-${qualityKey.slice(0, 20)}`,
-    summary: `${qualityKey} (${experienceIds.length} experience${experienceIds.length === 1 ? '' : 's'})`,
-    experienceIds,
-    commonQualities: qualityKey === 'No qualities' ? [] : qualityKey.split(', '),
-    size: experienceIds.length,
-  }));
-}
-
-/**
- * Group by perspective value (I, we, you, they, etc.)
- * Sort by count or alphabetically
- */
-function groupByPerspective(experiences: SourceRecord[]): ExperienceCluster[] {
-  const groups = new Map<string, string[]>();
-
-  experiences.forEach((exp) => {
-    const perspective = exp.perspective || 'Unknown';
-    if (!groups.has(perspective)) {
-      groups.set(perspective, []);
-    }
-    groups.get(perspective)!.push(exp.id);
-  });
-
-  // Sort by experience count (descending)
-  const sortedGroups = Array.from(groups.entries()).sort((a, b) => b[1].length - a[1].length);
-
-  return sortedGroups.map(([perspective, experienceIds]) => ({
-    id: `group-perspective-${perspective}`,
-    summary: `${perspective} perspective (${experienceIds.length} experience${experienceIds.length === 1 ? '' : 's'})`,
-    experienceIds,
-    commonQualities: [],
-    size: experienceIds.length,
-  }));
 }
 
 // Debug mode configuration
@@ -190,17 +108,12 @@ export interface RecallInput {
   limit?: number;
   offset?: number;
   type?: string[];
-  experiencer?: string;
+  who?: string;
   perspective?: string;
   processing?: string;
   crafted?: boolean;
   created?: string | { start: string; end: string };
   sort?: 'relevance' | 'created';
-  // NOTE: Quality filtering now uses prominent_qualities (simple array), not min/max per theoretical dimension.
-  // For legacy support, you may implement mapping if needed.
-  // Vector similarity recall (deprecated - use semantic recall instead)
-  vector?: Record<string, unknown>;
-  vector_similarity_threshold?: number;
   // Semantic recall
   semantic_query?: string;
   semantic_threshold?: number;
@@ -209,9 +122,7 @@ export interface RecallInput {
   // Display options
   show_ids?: boolean;
   // Grouping options
-  group_by?: 'similarity' | 'experiencer' | 'date' | 'qualities' | 'perspective' | 'none';
-  // Clustering option (DEPRECATED - use group_by: 'similarity' instead)
-  as?: 'clusters';
+  group_by?: 'similarity' | 'who' | 'date' | 'qualities' | 'perspective' | 'none';
   // Sophisticated quality filtering
   qualities?: QualityFilter;
   // Pattern realization filters
@@ -257,23 +168,21 @@ export interface RecallServiceResponse {
     recall_started: string;
     total_records: number;
     filtered_records: number;
-    vector_recall_performed: boolean;
     semantic_recall_performed: boolean;
     query_embedding_dimension?: number;
     similarity_scores?: Array<{
       id: string;
       score: number;
-      type: 'vector' | 'semantic';
+      type: 'semantic';
     }>;
     filter_breakdown?: {
       type_filter?: number;
-      experiencer_filter?: number;
+      who_filter?: number;
       perspective_filter?: number;
       processing_filter?: number;
       crafted_filter?: number;
       temporal_filter?: number;
       qualities_filter?: number;
-      vector_threshold_filter?: number;
       semantic_threshold_filter?: number;
       id_filter?: number;
     };
@@ -338,7 +247,6 @@ export async function search(input: RecallInput): Promise<RecallServiceResponse>
     recall_started: new Date().toISOString(),
     total_records: 0,
     filtered_records: 0,
-    vector_recall_performed: false,
     semantic_recall_performed: false,
     filter_breakdown: {},
     errors: [],
@@ -375,14 +283,12 @@ export async function search(input: RecallInput): Promise<RecallServiceResponse>
     // Apply basic filters
     // Type filtering removed - type field no longer exists in data model
 
-    if (input.experiencer) {
+    if (input.who) {
       const beforeCount = filteredRecords.length;
-      filteredRecords = filteredRecords.filter(
-        (record) => record.experiencer === input.experiencer
-      );
+      filteredRecords = filteredRecords.filter((record) => record.who === input.who);
       const afterCount = filteredRecords.length;
-      debugInfo.filter_breakdown!.experiencer_filter = beforeCount - afterCount;
-      addDebugLog(`Experiencer filter applied: ${beforeCount} -> ${afterCount} records`);
+      debugInfo.filter_breakdown!.who_filter = beforeCount - afterCount;
+      addDebugLog(`Who filter applied: ${beforeCount} -> ${afterCount} records`);
     }
 
     if (input.perspective) {
@@ -420,18 +326,6 @@ export async function search(input: RecallInput): Promise<RecallServiceResponse>
       addDebugLog(`Created filter applied: ${beforeCount} -> ${afterCount} records`);
     }
 
-    if (input.vector) {
-      debugInfo.vector_recall_performed = true;
-      addDebugLog('Starting vector similarity recall (deprecated)', {
-        vector: input.vector,
-        threshold: input.vector_similarity_threshold,
-      });
-
-      // Note: Vector similarity recall is deprecated since we removed QualityVector
-      // This is kept for backward compatibility but will not work properly
-      addDebugLog('Vector similarity recall is deprecated - use semantic recall instead');
-    }
-
     // Semantic recall
     const semanticSimilarityMap: Record<string, number> = {};
     if (input.semantic_query) {
@@ -443,7 +337,7 @@ export async function search(input: RecallInput): Promise<RecallServiceResponse>
 
       try {
         // Generate embedding for the semantic query
-        const queryEmbedding = await embeddingServiceV2.generateEmbedding(input.semantic_query);
+        const queryEmbedding = await embeddingService.generateEmbedding(input.semantic_query);
         debugInfo.query_embedding_dimension = queryEmbedding.length;
         addDebugLog(`Generated query embedding with dimension: ${queryEmbedding.length}`);
 
@@ -508,7 +402,7 @@ export async function search(input: RecallInput): Promise<RecallServiceResponse>
       filteredRecords,
       input.query || input.semantic_query || '',
       {
-        experiencer: input.experiencer,
+        who: input.who,
         perspective: input.perspective,
         processing: input.processing,
         qualities: input.qualities, // Pass sophisticated quality filters
@@ -594,7 +488,7 @@ export async function search(input: RecallInput): Promise<RecallServiceResponse>
       metadata: {
         created: record.created,
         perspective: record.perspective,
-        experiencer: record.experiencer,
+        who: record.who,
         processing: record.processing,
         experience: record.experience,
       },
@@ -605,29 +499,15 @@ export async function search(input: RecallInput): Promise<RecallServiceResponse>
     // Handle clustering if requested
     let clusters;
 
-    // Handle migration from deprecated 'as' parameter to 'group_by'
-    let groupBy = input.group_by;
-    if (input.as && !groupBy) {
-      // Log deprecation warning for service layer
-      console.warn(
-        "RecallService: Parameter 'as' is deprecated. Use 'group_by: similarity' instead"
-      );
-
-      // Convert 'as: clusters' to 'group_by: similarity'
-      if (input.as === 'clusters') {
-        groupBy = 'similarity';
-      }
-    }
-
-    if (groupBy === 'similarity') {
+    if (input.group_by === 'similarity') {
       addDebugLog('Clustering requested, generating clusters from results');
       clusters = await clusterExperiences(finalRecords);
       addDebugLog(`Generated ${clusters.length} clusters from ${finalRecords.length} experiences`);
-    } else if (groupBy && groupBy !== 'none') {
-      addDebugLog(`Grouping by ${groupBy} requested`);
-      clusters = await groupExperiences(finalRecords, groupBy);
+    } else if (input.group_by && input.group_by !== 'none') {
+      addDebugLog(`Grouping by ${input.group_by} requested`);
+      clusters = await groupExperiences(finalRecords, input.group_by);
       addDebugLog(
-        `Generated ${clusters.length} ${groupBy} groups from ${finalRecords.length} experiences`
+        `Generated ${clusters.length} ${input.group_by} groups from ${finalRecords.length} experiences`
       );
     }
 
@@ -675,10 +555,6 @@ function determineNoResultsReason(
     return 'Semantic similarity threshold too high - try lowering threshold';
   }
 
-  if (input.vector_similarity_threshold && input.vector_similarity_threshold > 0.9) {
-    return 'Vector similarity threshold too high - try lowering threshold';
-  }
-
   if (input.query && debugInfo?.filter_breakdown?.type_filter === debugInfo?.total_records) {
     return 'Text query too restrictive - no records match the query';
   }
@@ -693,21 +569,6 @@ function determineNoResultsReason(
 
   return 'Unknown reason - check debug information for details';
 }
-
-// Cosine similarity between two vectors (deprecated - no longer used)
-// function cosineSimilarity(a: Record<string, number>, b: Record<string, number>): number {
-//   const keys = ['embodied', 'attentional', 'affective', 'purposive', 'spatial', 'temporal', 'intersubjective'];
-//   let dot = 0, normA = 0, normB = 0;
-//   for (const k of keys) {
-//     const va = a[k] ?? 0;
-//     const vb = b[k] ?? 0;
-//     dot += va * vb;
-//     normA += va * va;
-//     normB += vb * vb;
-//   }
-//   if (normA === 0 || normB === 0) return 0;
-//   return dot / (Math.sqrt(normA) * Math.sqrt(normB));
-// }
 
 /**
  * Service wrapper for recall operations

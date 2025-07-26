@@ -173,26 +173,32 @@ Quality detection guide:
 - presence.collective: "we", "together" → social/shared experience
 - presence: When social quality doesn't clearly fit individual/collective subtypes`);
 
-// Experience analysis - simplified to prominent qualities array (for backwards compatibility)
-export const ExperienceObject = z.union([z.array(z.string()), ExperienceQualitiesSchema])
-  .describe(`Experience qualities. Can be either:
-1. Array format (legacy): ["embodied.sensing", "mood.open", "purpose.goal"]
-2. Switchboard format (preferred): Complete qualities object with all dimensions specified`);
+// Experience analysis - switchboard format only
+export const ExperienceObject =
+  ExperienceQualitiesSchema.describe(`Experience qualities in switchboard format. All dimensions must be specified:
+- embodied: 'thinking' | 'sensing' | false
+- focus: 'narrow' | 'broad' | false  
+- mood: 'open' | 'closed' | false
+- purpose: 'goal' | 'wander' | false
+- space: 'here' | 'there' | false
+- time: 'past' | 'future' | false
+- presence: 'individual' | 'collective' | false
+
+Set to false for qualities not prominently present.`);
 
 // Experience analysis (all fields optional for update)
-export const ExperienceObjectOptional = z
-  .array(z.string())
-  .describe(
-    `Array of qualities that emerge prominently in this moment. Use dot notation to specify subtypes:
-- embodied.thinking, embodied.sensing
-- focus.narrow, focus.broad
-- mood.open, mood.closed
-- purpose.goal, purpose.wander
-- space.here, space.there
-- time.past, time.future
-- presence.individual, presence.collective`
-  )
-  .optional();
+export const ExperienceObjectOptional = ExperienceQualitiesSchema.describe(
+  `Updated experience qualities in switchboard format. All dimensions must be specified:
+- embodied: 'thinking' | 'sensing' | false
+- focus: 'narrow' | 'broad' | false  
+- mood: 'open' | 'closed' | false
+- purpose: 'goal' | 'wander' | false
+- space: 'here' | 'there' | false
+- time: 'past' | 'future' | false
+- presence: 'individual' | 'collective' | false
+
+Set to false for qualities not prominently present.`
+).optional();
 
 // EXPERIENCE tool input - Array Only
 const ExperienceItemSchema = z
@@ -259,12 +265,6 @@ const ExperienceItemSchema = z
         'Who experienced this moment - single string for individual ("Human", "Claude", or name), array for shared experience (["Human", "Claude"])'
       )
       .optional(),
-    experiencer: z
-      .string()
-      .describe(
-        'Who experienced this moment - "Human" for their experiences, "Claude" for your experiences, or their name if provided (deprecated - use who field)'
-      )
-      .optional(),
     processing: ProcessingEnum.optional(),
     crafted: z
       .boolean()
@@ -291,10 +291,64 @@ const ExperienceItemSchema = z
 export const ExperienceInputSchema = z
   .object({
     experiences: z.array(ExperienceItemSchema).min(1).describe('Array of experiences to capture'),
-    stillThinking: z
-      .boolean()
+    recall: z
+      .object({
+        // ID lookup
+        ids: z
+          .union([
+            z.string().describe('Exact experience ID to fetch'),
+            z.array(z.string()).describe('Array of exact experience IDs to fetch'),
+          ])
+          .optional(),
+        // Semantic search
+        search: z
+          .union([
+            z.string().describe('Semantic search query'),
+            z.array(z.string()).describe('Array of search terms'),
+          ])
+          .optional(),
+        // Quality filtering - using the full QualityFilterSchema
+        qualities: QualityFilterSchema.optional(),
+        // Pagination
+        limit: z.number().describe('Maximum number of results').optional(),
+        offset: z.number().describe('Number of results to skip').optional(),
+        // Filters
+        who: z.string().describe('Filter by who experienced').optional(),
+        perspective: PerspectiveField.optional(),
+        processing: ProcessingEnum.optional(),
+        crafted: z.boolean().describe('Filter by crafted status').optional(),
+        // Pattern filters
+        reflects: z.enum(['only']).describe('Filter for pattern realizations only').optional(),
+        reflected_by: z
+          .union([
+            z.string().describe('Find experiences reflected by this ID'),
+            z.array(z.string()).describe('Find experiences reflected by these IDs'),
+          ])
+          .optional(),
+        // Date filtering
+        created: z
+          .union([
+            z.string().describe('Filter by specific date (YYYY-MM-DD)'),
+            z
+              .object({
+                start: z.string().describe('Start date (YYYY-MM-DD)'),
+                end: z.string().describe('End date (YYYY-MM-DD)'),
+              })
+              .describe('Date range'),
+          ])
+          .optional(),
+        // Sorting and grouping
+        sort: SortEnum.optional(),
+        group_by: z
+          .enum(['similarity', 'who', 'date', 'qualities', 'perspective', 'none'])
+          .describe('Group results by criteria')
+          .optional(),
+      })
       .optional()
-      .describe('Whether more tool calls are expected in this flow'),
+      .describe('Full-featured integrated recall with all standalone capabilities'),
+    nextMoment: ExperienceQualitiesSchema.optional().describe(
+      'What experiential state you intend to explore next in this reasoning chain'
+    ),
   })
   .strict()
   .describe(
@@ -323,7 +377,7 @@ const SearchItemSchema = z
     ),
     limit: z.number().describe('Maximum number of results to return').optional(),
     offset: z.number().describe('Number of results to skip for pagination').optional(),
-    experiencer: z.string().describe('Filter by experiencer').optional(),
+    who: z.string().describe('Filter by who experienced').optional(),
     perspective: PerspectiveField.optional(),
     processing: ProcessingEnum.optional(),
     crafted: z
@@ -359,9 +413,9 @@ const SearchItemSchema = z
       .optional(),
     sort: SortEnum.optional(),
     group_by: z
-      .enum(['similarity', 'experiencer', 'date', 'qualities', 'perspective', 'none'])
+      .enum(['similarity', 'who', 'date', 'qualities', 'perspective', 'none'])
       .describe(
-        'Group results by specified criteria: similarity (clusters), experiencer, date, qualities, perspective, or none for flat results'
+        'Group results by specified criteria: similarity (clusters), who, date, qualities, perspective, or none for flat results'
       )
       .optional(),
   })
@@ -370,10 +424,6 @@ const SearchItemSchema = z
 export const SearchInputSchema = z
   .object({
     searches: z.array(SearchItemSchema).min(1).describe('Array of search queries to execute'),
-    stillThinking: z
-      .boolean()
-      .optional()
-      .describe('Whether more tool calls are expected in this flow'),
   })
   .strict()
   .describe('Input for searching experiences. Always use array format, even for single searches.');
@@ -384,7 +434,15 @@ const ReconsiderItemSchema = z
     id: z.string().describe('ID of the experience to reconsider'),
     source: z.string().min(1).describe('Updated source (optional)').optional(),
     perspective: PerspectiveField.optional(),
-    experiencer: z.string().describe('Updated experiencer (optional)').optional(),
+    who: z
+      .union([
+        z.string().describe('Single person who experienced this'),
+        z.array(z.string()).describe('Multiple people who shared this experience'),
+      ])
+      .describe(
+        'Who experienced this moment - single string for individual ("Human", "Claude", or name), array for shared experience (["Human", "Claude"])'
+      )
+      .optional(),
     processing: ProcessingEnum.optional(),
     crafted: z.boolean().describe('Updated crafted status (optional)').optional(),
     experience: ExperienceObjectOptional.optional(),
@@ -398,6 +456,14 @@ const ReconsiderItemSchema = z
       .string()
       .describe('Updated context to make the experience self-contained (optional)')
       .optional(),
+    release: z
+      .boolean()
+      .describe('Whether to release (delete) this experience instead of updating it')
+      .optional(),
+    releaseReason: z
+      .string()
+      .describe('Reason for releasing this experience (only used if release is true)')
+      .optional(),
   })
   .strict();
 
@@ -407,32 +473,9 @@ export const ReconsiderInputSchema = z
       .array(ReconsiderItemSchema)
       .min(1)
       .describe('Array of experiences to reconsider'),
-    stillThinking: z
-      .boolean()
-      .optional()
-      .describe('Whether more tool calls are expected in this flow'),
   })
   .strict()
   .describe('Input for updating experiences. Always use array format, even for single updates.');
-
-// RELEASE tool input - Array Only
-const ReleaseItemSchema = z
-  .object({
-    id: z.string().describe('ID of the experience to release'),
-    reason: z.string().describe('Reason for releasing this experience (optional)').optional(),
-  })
-  .strict();
-
-export const ReleaseInputSchema = z
-  .object({
-    releases: z.array(ReleaseItemSchema).min(1).describe('Array of experiences to release'),
-    stillThinking: z
-      .boolean()
-      .optional()
-      .describe('Whether more tool calls are expected in this flow'),
-  })
-  .strict()
-  .describe('Input for releasing experiences. Always use array format, even for single releases.');
 
 // MCP Tool output schemas
 export const ToolTextContentSchema = z.object({
@@ -443,8 +486,14 @@ export const ToolTextContentSchema = z.object({
 export const ToolResultSchema = z.object({
   isError: z.boolean().optional(),
   content: z.array(ToolTextContentSchema),
-  stillThinking: z.boolean().optional(),
-  callsSoFar: z.number().optional(),
+  nextMoment: ExperienceQualitiesSchema.optional(),
+  flow: z
+    .object({
+      moments: z.array(z.any()),
+      transitions: z.array(z.any()),
+      reflection: z.any().optional(),
+    })
+    .optional(),
 });
 
 // Example generation functions
@@ -462,10 +511,18 @@ export function generateExperienceExample(): ExperienceInput {
           "I'm sitting at my desk, the afternoon light streaming through the window. My fingers hover over the keyboard, that familiar mix of excitement and uncertainty bubbling up. This project feels like it could be something special, but I'm not quite sure how to start.",
         emoji: '✨',
         perspective: 'I',
-        experiencer: 'Alex',
+        who: 'Alex',
         processing: 'during',
         crafted: false,
-        experience: ['embodied.sensing', 'mood.open', 'purpose.goal'],
+        experience: {
+          embodied: 'sensing',
+          focus: false,
+          mood: 'open',
+          purpose: 'goal',
+          space: false,
+          time: false,
+          presence: false,
+        },
       },
     ],
   };
@@ -483,7 +540,7 @@ export function generateSearchExample(): SearchInput {
       {
         search: 'creative breakthrough moments',
         limit: 5,
-        experiencer: 'Alex',
+        who: 'Alex',
         perspective: 'I',
         processing: 'during',
         sort: 'relevance',
@@ -504,24 +561,15 @@ export function generateReconsiderExample(): ReconsiderInput {
       {
         id: 'exp_1234567890',
         source: 'Updated source text with more detail about the creative process',
-        experience: ['focus'],
-      },
-    ],
-  };
-}
-
-/**
- * Generates an example release input for testing and documentation
- * @remarks
- * Provides a realistic example of experience deletion with ID and reason.
- * @returns Example release input with source ID and release reason
- */
-export function generateReleaseExample(): ReleaseInput {
-  return {
-    releases: [
-      {
-        id: 'exp_1234567890',
-        reason: 'No longer relevant to current work',
+        experience: {
+          embodied: false,
+          focus: 'narrow',
+          mood: false,
+          purpose: false,
+          space: false,
+          time: false,
+          presence: false,
+        },
       },
     ],
   };
@@ -540,20 +588,36 @@ export function generateBatchExperienceExample(): ExperienceInput {
         source: 'The first moment of clarity when the solution finally clicks into place.',
         emoji: '💡',
         perspective: 'I',
-        experiencer: 'Alex',
+        who: 'Alex',
         processing: 'right-after',
         crafted: false,
-        experience: ['focus'],
+        experience: {
+          embodied: false,
+          focus: 'narrow', // Base quality 'focus' defaults to narrow
+          mood: false,
+          purpose: false,
+          space: false,
+          time: false,
+          presence: false,
+        },
       },
       {
         source:
           'Walking through the park, the autumn leaves crunching underfoot, feeling grateful for this moment of peace.',
         emoji: '🍂',
         perspective: 'I',
-        experiencer: 'Alex',
+        who: 'Alex',
         processing: 'during',
         crafted: false,
-        experience: ['embodied.thinking', 'mood.closed'],
+        experience: {
+          embodied: 'thinking',
+          focus: false,
+          mood: 'closed',
+          purpose: false,
+          space: false,
+          time: false,
+          presence: false,
+        },
       },
     ],
   };
@@ -614,17 +678,6 @@ export function isSearchInput(value: unknown): value is SearchInput {
  */
 export function isReconsiderInput(value: unknown): value is ReconsiderInput {
   return ReconsiderInputSchema.safeParse(value).success;
-}
-
-/**
- * Type guard to check if value is a valid ReleaseInput
- * @remarks
- * Uses Zod schema validation to ensure type safety for release inputs.
- * @param value - Value to validate
- * @returns True if value matches ReleaseInput schema
- */
-export function isReleaseInput(value: unknown): value is ReleaseInput {
-  return ReleaseInputSchema.safeParse(value).success;
 }
 
 /**
@@ -698,17 +751,6 @@ export function hasReconsiderArray(value: ReconsiderInput): value is ReconsiderI
   );
 }
 
-/**
- * Type guard to check if ReleaseInput has releases array
- * @remarks
- * All release inputs now use array format.
- * @param value - ReleaseInput to check
- * @returns True if input contains releases array
- */
-export function hasReleaseArray(value: ReleaseInput): value is ReleaseInput {
-  return 'releases' in value && Array.isArray(value.releases) && value.releases.length > 0;
-}
-
 export type ToolTextContent = z.infer<typeof ToolTextContentSchema>;
 export type ToolResult = z.infer<typeof ToolResultSchema>;
 
@@ -716,4 +758,3 @@ export type ToolResult = z.infer<typeof ToolResultSchema>;
 export type ExperienceInput = z.infer<typeof ExperienceInputSchema>;
 export type SearchInput = z.infer<typeof SearchInputSchema>;
 export type ReconsiderInput = z.infer<typeof ReconsiderInputSchema>;
-export type ReleaseInput = z.infer<typeof ReleaseInputSchema>;

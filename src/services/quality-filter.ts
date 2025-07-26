@@ -6,7 +6,7 @@
  */
 
 import { SourceRecord } from '../core/types.js';
-import { KNOWN_QUALITIES, KnownQuality } from '../core/dimensions.js';
+import { KNOWN_QUALITIES, KnownQuality } from '../core/qualities.js';
 
 // Core filter types
 export interface QualityFilter {

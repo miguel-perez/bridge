@@ -1,6 +1,6 @@
 /**
  * i18n-friendly message templates for Bridge
- * 
+ *
  * Uses simple key-value structure for easy translation.
  * Avoids complex string interpolation patterns.
  */
@@ -8,37 +8,31 @@
 export const Messages = {
   // Experience operation messages
   experience: {
-    success: 'Experienceed',
-    successWithQualities: 'Experienceed ({qualities})',
-    batch: 'Experienceed {count} experiences',
+    success: 'Experienced',
+    successWithQualities: 'Experienced ({qualities})',
+    batch: 'Experienced {count} experiences',
     similar: 'Similar: {content}',
     from: 'From: {experiencer}',
     as: 'As: {perspective}',
     when: 'When: {processing}',
-    captured: 'Captured: {timeAgo}'
+    captured: 'Captured: {timeAgo}',
   },
-  
+
   // Recall operation messages
   recall: {
     found: 'Found {count} experiences',
     none: 'No experiences found',
     from: 'From {timeAgo}',
-    qualities: 'Qualities: {qualities}'
+    qualities: 'Qualities: {qualities}',
   },
-  
+
   // Reconsider operation messages
   reconsider: {
     success: 'Updated',
     successWithQualities: 'Updated ({qualities})',
-    batch: 'Updated {count} experiences'
+    batch: 'Updated {count} experiences',
   },
-  
-  // Release operation messages
-  release: {
-    success: 'Released',
-    batch: 'Released {count} experiences'
-  },
-  
+
   // Time formatting
   time: {
     justNow: 'just now',
@@ -47,40 +41,40 @@ export const Messages = {
     hoursAgo: '{hours} hours ago',
     oneHourAgo: '1 hour ago',
     yesterday: 'yesterday',
-    daysAgo: '{days} days ago'
+    daysAgo: '{days} days ago',
   },
-  
+
   // Processing timing
   processing: {
     during: 'during conversation',
     rightAfter: 'right after',
-    longAfter: 'long after'
+    longAfter: 'long after',
   },
-  
+
   // Quality types - full labels preserved
   qualities: {
-    'embodied': 'embodied',
+    embodied: 'embodied',
     'embodied.thinking': 'embodied.thinking',
     'embodied.sensing': 'embodied.sensing',
-    'focus': 'focus',
+    focus: 'focus',
     'focus.narrow': 'focus.narrow',
     'focus.broad': 'focus.broad',
-    'mood': 'mood',
+    mood: 'mood',
     'mood.open': 'mood.open',
     'mood.closed': 'mood.closed',
-    'purpose': 'purpose',
+    purpose: 'purpose',
     'purpose.goal': 'purpose.goal',
     'purpose.wander': 'purpose.wander',
-    'space': 'space',
+    space: 'space',
     'space.here': 'space.here',
     'space.there': 'space.there',
-    'time': 'time',
+    time: 'time',
     'time.past': 'time.past',
     'time.future': 'time.future',
-    'presence': 'presence',
+    presence: 'presence',
     'presence.individual': 'presence.individual',
-    'presence.collective': 'presence.collective'
-  } as Record<string, string>
+    'presence.collective': 'presence.collective',
+  } as Record<string, string>,
 };
 
 /**
@@ -101,7 +95,5 @@ export function formatMessage(template: string, values: Record<string, unknown>)
  * @returns Formatted string
  */
 export function formatQualityList(qualities: string[]): string {
-  return qualities
-    .map(q => Messages.qualities[q] || q)
-    .join(', ');
+  return qualities.map((q) => Messages.qualities[q] || q).join(', ');
 }

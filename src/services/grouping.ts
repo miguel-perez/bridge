@@ -10,23 +10,25 @@ export interface GroupedResult {
 }
 
 /**
- * Groups experiences by experiencer
+ * Groups experiences by who experienced them
  */
-export function groupByExperiencer(experiences: SourceRecord[]): GroupedResult[] {
+export function groupByWho(experiences: SourceRecord[]): GroupedResult[] {
   const groups = new Map<string, SourceRecord[]>();
 
   experiences.forEach((experience) => {
-    const experiencer = experience.experiencer || 'Unknown';
-    if (!groups.has(experiencer)) {
-      groups.set(experiencer, []);
+    const who = experience.who || 'Unknown';
+    // Handle both string and array of who
+    const whoKey = Array.isArray(who) ? who.join(' & ') : who;
+    if (!groups.has(whoKey)) {
+      groups.set(whoKey, []);
     }
-    groups.get(experiencer)!.push(experience);
+    groups.get(whoKey)!.push(experience);
   });
 
   return Array.from(groups.entries())
-    .map(([experiencer, expList]) => ({
-      key: experiencer,
-      label: experiencer,
+    .map(([who, expList]) => ({
+      key: who,
+      label: `${who} (${expList.length} experience${expList.length === 1 ? '' : 's'})`,
       count: expList.length,
       experiences: expList,
     }))
@@ -52,7 +54,7 @@ export function groupByDate(experiences: SourceRecord[]): GroupedResult[] {
   return Array.from(groups.entries())
     .map(([dateKey, expList]) => ({
       key: new Date(dateKey),
-      label: formatDateLabel(dateKey),
+      label: `${dateKey} (${expList.length} experience${expList.length === 1 ? '' : 's'})`,
       count: expList.length,
       experiences: expList,
     }))
@@ -103,7 +105,7 @@ export function groupByPerspective(experiences: SourceRecord[]): GroupedResult[]
   return Array.from(groups.entries())
     .map(([perspective, expList]) => ({
       key: perspective,
-      label: formatPerspectiveLabel(perspective),
+      label: `${formatPerspectiveLabel(perspective)} (${expList.length} experience${expList.length === 1 ? '' : 's'})`,
       count: expList.length,
       experiences: expList,
     }))
@@ -127,29 +129,6 @@ export async function groupBySimilarity(experiences: SourceRecord[]): Promise<Gr
     commonQualities: cluster.commonQualities,
     themeSummary: cluster.summary,
   }));
-}
-
-/**
- * Formats a date key into a human-readable label
- */
-function formatDateLabel(dateKey: string): string {
-  const date = new Date(dateKey);
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-
-  if (dateKey === today.toISOString().split('T')[0]) {
-    return 'Today';
-  } else if (dateKey === yesterday.toISOString().split('T')[0]) {
-    return 'Yesterday';
-  } else {
-    return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  }
 }
 
 /**

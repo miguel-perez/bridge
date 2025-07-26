@@ -62,12 +62,10 @@ describe('MCP Server Protocol Compliance', () => {
 
       // This would have failed without the initialize handler
       const tools = await client.listTools();
-      expect(tools.tools).toHaveLength(4); // experience, release, recall, reconsider
+      expect(tools.tools).toHaveLength(2); // experience, reconsider
 
       const toolNames = tools.tools.map((t) => t.name);
       expect(toolNames).toContain('experience');
-      expect(toolNames).toContain('recall');
-      expect(toolNames).toContain('release');
       expect(toolNames).toContain('reconsider');
 
       // Verify tool annotations are present
@@ -76,16 +74,8 @@ describe('MCP Server Protocol Compliance', () => {
       expect(experienceTool?.readOnlyHint).toBe(false);
       expect(experienceTool?.destructiveHint).toBe(false);
 
-      const recallTool = tools.tools.find((t) => t.name === 'recall');
-      expect(recallTool).toBeDefined();
-      expect(recallTool?.readOnlyHint).toBe(true);
-      expect(recallTool?.destructiveHint).toBe(false);
-
       const reconsiderTool = tools.tools.find((t) => t.name === 'reconsider');
       expect(reconsiderTool).toBeDefined();
-
-      const releaseTool = tools.tools.find((t) => t.name === 'release');
-      expect(releaseTool).toBeDefined();
     }, 30000);
 
     test('should execute experience tool with experiential qualities', async () => {
@@ -105,7 +95,7 @@ describe('MCP Server Protocol Compliance', () => {
         name: 'experience',
         arguments: {
           source: 'I felt a deep sense of peace while walking in the forest',
-          experiencer: 'Test User',
+          who: 'Test User',
           perspective: 'I',
           processing: 'during',
           experiential_qualities: {
@@ -117,52 +107,6 @@ describe('MCP Server Protocol Compliance', () => {
               },
             ],
           },
-        },
-      });
-
-      expect(result.content).toBeDefined();
-      expect(Array.isArray(result.content)).toBe(true);
-    }, 30000);
-
-    test('should handle recall tool with empty arguments', async () => {
-      transport = new StdioClientTransport({
-        command: 'node',
-        args: [distPath],
-        env: {
-          ...process.env,
-          NODE_ENV: 'test',
-          BRIDGE_FILE_PATH: join(tempDir, 'bridge.json'),
-        },
-      });
-
-      await client.connect(transport);
-
-      const result = await client.callTool({
-        name: 'recall',
-        arguments: {},
-      });
-
-      expect(result.content).toBeDefined();
-      expect(Array.isArray(result.content)).toBe(true);
-    }, 30000);
-
-    test('should handle release tool', async () => {
-      transport = new StdioClientTransport({
-        command: 'node',
-        args: [distPath],
-        env: {
-          ...process.env,
-          NODE_ENV: 'test',
-          BRIDGE_FILE_PATH: join(tempDir, 'bridge.json'),
-        },
-      });
-
-      await client.connect(transport);
-
-      const result = await client.callTool({
-        name: 'release',
-        arguments: {
-          id: 'test-id-123',
         },
       });
 
@@ -253,7 +197,7 @@ describe('MCP Server Protocol Compliance', () => {
             {
               source: 'Test content',
               emoji: '🧪',
-              experiencer: 'Test User',
+              who: 'Test User',
               perspective: 'custom_perspective', // Custom perspectives are now accepted
               processing: 'during',
             },
@@ -264,7 +208,7 @@ describe('MCP Server Protocol Compliance', () => {
       expect(result.content).toBeDefined();
       expect(Array.isArray(result.content)).toBe(true);
       // Should successfully process with custom perspective
-      expect((result.content as Array<{ text: string }>)[0].text).toContain('Experienceed');
+      expect((result.content as Array<{ text: string }>)[0].text).toContain('Experienced');
       expect((result.content as Array<{ text: string }>)[0].text).toContain(
         'As: custom_perspective'
       );
@@ -333,11 +277,6 @@ describe('MCP Server Protocol Compliance', () => {
       expect(experienceTool).toBeDefined();
       expect(experienceTool?.description).toBeDefined();
       expect(experienceTool?.description?.length).toBeGreaterThan(0);
-
-      const recallTool = tools.tools.find((t) => t.name === 'recall');
-      expect(recallTool).toBeDefined();
-      expect(recallTool?.description).toBeDefined();
-      expect(recallTool?.description?.length).toBeGreaterThan(0);
     }, 30000);
   });
 });

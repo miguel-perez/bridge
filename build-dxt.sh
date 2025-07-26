@@ -16,26 +16,32 @@ mkdir -p dxt-build
 echo "Building and bundling TypeScript..."
 npm run build:all
 
-# Create manifest with flat structure
-echo "Creating manifest..."
+# Generate manifest from sources
+echo "Generating manifest..."
+npm run generate:manifest
 
-# Validate the main manifest.json first
-echo "Validating source manifest..."
+# Create manifest with flat structure
+echo "Validating manifest..."
+
+# Validate the generated manifest.json
+echo "Validating generated manifest..."
 node -e "
 const manifest = require('./manifest.json');
 if (!manifest.dxt_version || !manifest.name || !manifest.version) {
   console.error('❌ Invalid manifest: missing required fields');
   process.exit(1);
 }
-if (manifest.server.entry_point !== 'index.js') {
-  console.error('❌ Manifest entry_point must be index.js for DXT packaging');
-  process.exit(1);
-}
-console.log('✅ Source manifest validation passed');
+console.log('✅ Generated manifest validation passed');
 "
 
-# Copy the validated manifest instead of hardcoding
-cp manifest.json dxt-build/manifest.json
+# Update entry_point for DXT package (flat structure)
+node -e "
+const fs = require('fs');
+const manifest = require('./manifest.json');
+manifest.server.entry_point = 'index.js';
+fs.writeFileSync('./dxt-build/manifest.json', JSON.stringify(manifest, null, 2) + '\\n');
+console.log('✅ Updated entry_point for DXT package');
+"
 
 # Validate the copied manifest
 node -e "

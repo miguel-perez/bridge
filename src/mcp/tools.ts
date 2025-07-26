@@ -32,18 +32,11 @@
 
 // Zod-based schemas for MCP tools
 import { zodToJsonSchema } from 'zod-to-json-schema';
-import {
-  ExperienceInputSchema,
-  SearchInputSchema,
-  ReconsiderInputSchema,
-  ReleaseInputSchema,
-} from './schemas.js';
+import { ExperienceInputSchema, ReconsiderInputSchema } from './schemas.js';
 
 // JSON Schemas for MCP tool registration - generate without $ref structure
 export const ExperienceInputJsonSchema = zodToJsonSchema(ExperienceInputSchema);
-export const SearchInputJsonSchema = zodToJsonSchema(SearchInputSchema);
 export const ReconsiderInputJsonSchema = zodToJsonSchema(ReconsiderInputSchema);
-export const ReleaseInputJsonSchema = zodToJsonSchema(ReleaseInputSchema);
 
 // Utility to post-process schema for MCP compatibility
 function makeDraft202012Schema(schema: Record<string, unknown>): Record<string, unknown> {
@@ -64,47 +57,46 @@ export async function getTools(): Promise<Record<string, unknown>[]> {
   return [
     {
       name: 'experience',
-      description: `Remember experiential moments that shape conversations and build shared memory. Captures authentic experiences with quality signatures for both human and AI perspectives.
+      description: `Remember experiential moments that shape conversations and build shared memory. Enables extended cognition through complementary awareness between humans and AI.
 
 USE WHEN:
-• Someone shares how they're feeling or what they're experiencing emotionally
-• Insights, realizations, or breakthroughs occur in conversation
+• Someone shares how they're feeling or what they're experiencing
+• Insights, realizations, or breakthroughs occur
 • Physical sensations connect to mental/emotional states
 • Moments of struggle, challenge, or triumph are described
-• Reflections on past experiences or future concerns arise
 • Patterns or connections become clear
-• You (as AI) notice experiential qualities in the interaction itself
+• Searching for related experiences while capturing new ones (integrated recall)
+• Building reasoning chains with experiential state tracking (nextMoment)
 
-EXAMPLES OF WHEN TO USE:
-• "The code finally compiled after hours of debugging!" → embodied.thinking, mood.open
-• "I'm nervous about tomorrow's presentation" → embodied.sensing, time.future
-• "We figured it out together" → presence.collective, purpose.goal
-• "I've been feeling stuck lately" → mood.closed, purpose.wander
-• "That moment when everything clicked" → embodied.thinking, focus.broad
-
-DON'T USE FOR:
-• Basic greetings or farewells
-• Simple factual questions or answers
-• Routine acknowledgments without experiential content
-• Pure information exchange without emotional context
-• Surface-level pleasantries
+EXTENDED COGNITION MODEL:
+• Humans: Capture 2-4 prominent qualities (natural selective attention)
+• AI: Always capture all 7 qualities (extended perception)
+• Together: Create richer experiential maps than either could alone
 
 QUALITY SIGNATURES:
-• embodied - how consciousness textures through body/mind
-• focus - narrow (concentrated) or broad (open awareness)  
-• mood - open (expansive) or closed (contracted)
-• purpose - goal (directed) or wander (exploring)
-• space - here (present location) or there (elsewhere)
-• time - past (memory) or future (anticipation)
-• presence - individual (alone) or collective (together)
+• embodied - how consciousness textures through body/mind (thinking/sensing)
+• focus - attentional quality (narrow/broad)
+• mood - emotional atmosphere (open/closed)
+• purpose - directional momentum (goal/wander)
+• space - spatial awareness (here/there)
+• time - temporal orientation (past/future)
+• presence - social quality (individual/collective)
 
-Only include qualities that genuinely stand out in the experience.
+QUALITY FORMAT:
+Each quality can be:
+• false - not prominent (receded)
+• true - prominent but mixed (e.g., both thinking and sensing)
+• string - prominent with specific direction (e.g., 'thinking' or 'sensing')
+
+INTEGRATED RECALL:
+• Add 'recall' parameter to search while capturing
+• Enables pattern discovery during experiential moments
+• Supports quality filtering, grouping, and reflection finding
 
 FLOW TRACKING:
-• Add stillThinking: true to signal you're continuing to explore
-• Omit or use stillThinking: false when done with the current thread
-• Each tool call increments callsSoFar to track progress
-• Inspired by sequential thinking's minimal pattern`,
+• Use 'nextMoment' to declare intended experiential state
+• Enables reasoning chains and experiential journeys
+• Auto-generates reflections when flows complete`,
       inputSchema: ExperienceInputJsonSchema,
       readOnlyHint: false,
       destructiveHint: false,
@@ -112,15 +104,23 @@ FLOW TRACKING:
       openWorldHint: false,
       examples: [
         {
-          id: 'user-emotional-experience',
-          description: "Remember user's emotional experience with physical sensations",
+          id: 'human-emotional-experience',
+          description: 'Human shares emotional state (2-4 qualities)',
           input: {
             experiences: [
               {
                 source: "I'm sitting here, heart racing about tomorrow's presentation",
                 emoji: '💗',
                 who: 'Human',
-                experience: ['embodied.sensing', 'time.future', 'mood.closed'],
+                experience: {
+                  embodied: 'sensing',
+                  focus: false,
+                  mood: 'closed',
+                  purpose: false,
+                  space: false,
+                  time: 'future',
+                  presence: false,
+                },
               },
             ],
           },
@@ -128,21 +128,29 @@ FLOW TRACKING:
             content: [
               {
                 type: 'text',
-                text: 'Experienced (embodied.sensing, time.future, mood.closed)\n\nFrom: Human\nAs: I\nWhen: during conversation\nCaptured: just now',
+                text: 'Experienced (embodied.sensing, mood.closed, time.future)\n\nFrom: Human\nAs: I\nWhen: during conversation\nCaptured: just now',
               },
             ],
           },
         },
         {
-          id: 'claude-experiential-response',
-          description: "Remember Claude's own experiential response to user",
+          id: 'ai-extended-perception',
+          description: 'AI captures all 7 qualities for extended cognition',
           input: {
             experiences: [
               {
-                source: 'I can feel that anticipation energy with you',
-                emoji: '🤝',
+                source: 'I sense the anticipation mixing with determination in your words',
+                emoji: '🔍',
                 who: 'Claude',
-                experience: ['presence.collective', 'embodied.sensing'],
+                experience: {
+                  embodied: 'sensing',
+                  focus: 'narrow',
+                  mood: true,
+                  purpose: 'goal',
+                  space: 'here',
+                  time: 'future',
+                  presence: 'collective',
+                },
               },
             ],
           },
@@ -150,102 +158,30 @@ FLOW TRACKING:
             content: [
               {
                 type: 'text',
-                text: 'Experienced (presence.collective, embodied.sensing)\n\nFrom: Claude\nAs: I\nWhen: during conversation\nCaptured: just now',
-              },
-            ],
-          },
-        },
-        {
-          id: 'collective-achievement',
-          description: 'Remember shared collective experience',
-          input: {
-            experiences: [
-              {
-                source: 'We finally solved it after brainstorming for hours',
-                emoji: '🎉',
-                who: ['Human', 'Claude'],
-                processing: 'right-after',
-                experience: [
-                  'embodied.thinking',
-                  'presence.collective',
-                  'purpose.goal',
-                  'time.past',
-                ],
-              },
-            ],
-          },
-          output: {
-            content: [
-              {
-                type: 'text',
-                text: 'Experienced (embodied.thinking, presence.collective, purpose.goal, time.past)\n\nFrom: Human\nAs: we\nWhen: right after\nCaptured: just now',
-              },
-            ],
-          },
-        },
-        {
-          id: 'mixed-qualities',
-          description: "Remember experience with base qualities when subtypes don't fit",
-          input: {
-            experiences: [
-              {
-                source: "I'm torn between my gut feeling and what the data shows",
-                emoji: '🤔',
-                who: 'Human',
-                experience: ['embodied', 'purpose', 'focus.narrow'],
-              },
-            ],
-          },
-          output: {
-            content: [
-              {
-                type: 'text',
-                text: 'Experienced (embodied, purpose, focus.narrow)\n\nFrom: Human\nAs: I\nWhen: during conversation\nCaptured: just now',
-              },
-            ],
-          },
-        },
-        {
-          id: 'batch-experience',
-          description: 'Remember multiple experiences at once',
-          input: {
-            experiences: [
-              {
-                source: 'The code suddenly clicked into place',
-                experiencer: 'Human',
-                perspective: 'I',
-                processing: 'right-after',
-                experience: ['embodied.thinking', 'mood.open'],
-              },
-              {
-                source: "But then I realized I'd been solving the wrong problem",
-                experiencer: 'Human',
-                perspective: 'I',
-                processing: 'right-after',
-                experience: ['embodied.thinking', 'mood.closed', 'purpose.wander'],
-              },
-            ],
-          },
-          output: {
-            content: [
-              {
-                type: 'text',
-                text: '✅ Successfully remembered 2 experiences',
+                text: 'Experienced (embodied.sensing, focus.narrow, mood, purpose.goal, space.here, time.future, presence.collective)\n\nFrom: Claude\nAs: I\nWhen: during conversation\nCaptured: just now',
               },
             ],
           },
         },
         {
           id: 'pattern-realization',
-          description: 'Create a pattern realization that reflects on multiple experiences',
+          description: 'Human realizes pattern across experiences',
           input: {
             experiences: [
               {
                 source: 'I notice I always feel anxious before things that end up going well',
-                experiencer: 'Human',
-                perspective: 'I',
+                emoji: '💡',
+                who: 'Human',
                 processing: 'long-after',
-                experience: ['embodied.thinking', 'mood.open', 'time.past'],
+                experience: {
+                  embodied: 'thinking',
+                  focus: false,
+                  mood: 'open',
+                  purpose: false,
+                  space: false,
+                  time: 'past',
+                  presence: false,
+                },
                 reflects: ['exp_123', 'exp_456'],
               },
             ],
@@ -260,18 +196,136 @@ FLOW TRACKING:
           },
         },
         {
-          id: 'complete-quality-switchboard',
-          description: 'Using complete quality switchboard format',
+          id: 'integrated-recall-search',
+          description: 'Experience with integrated recall search',
           input: {
             experiences: [
               {
-                source: 'I feel a breakthrough coming as we work through this together',
-                emoji: '✨',
-                who: ['Human', 'Claude'],
+                source: 'This reminds me of something...',
+                emoji: '🔄',
+                who: 'Human',
+                experience: {
+                  embodied: 'thinking',
+                  focus: false,
+                  mood: false,
+                  purpose: false,
+                  space: false,
+                  time: 'past',
+                  presence: false,
+                },
+              },
+            ],
+            recall: {
+              query: 'similar breakthrough moments',
+              limit: 3,
+            },
+          },
+          output: {
+            content: [
+              {
+                type: 'text',
+                text: 'Experienced (embodied.thinking, time.past)\n\nFrom: Human\nAs: I\nWhen: during conversation\nCaptured: just now\n\n🔍 Found 3 related experiences:\n• "Finally understood recursion!" (2 days ago)\n• "The solution came in the shower" (1 week ago)\n• "Everything clicked during the walk" (2 weeks ago)',
+              },
+            ],
+          },
+        },
+        {
+          id: 'reasoning-chain-next-moment',
+          description: 'Using nextMoment to build reasoning chain',
+          input: {
+            experiences: [
+              {
+                source: 'Let me think through this systematically',
+                emoji: '🧩',
+                who: 'Claude',
+                experience: {
+                  embodied: 'thinking',
+                  focus: 'narrow',
+                  mood: 'open',
+                  purpose: 'goal',
+                  space: 'here',
+                  time: false,
+                  presence: 'individual',
+                },
+              },
+            ],
+            nextMoment: {
+              embodied: 'thinking',
+              focus: 'broad',
+              mood: 'open',
+              purpose: 'wander',
+              space: 'here',
+              time: false,
+              presence: 'individual',
+            },
+          },
+          output: {
+            content: [
+              {
+                type: 'text',
+                text: 'Experienced (embodied.thinking, focus.narrow, mood.open, purpose.goal, space.here, presence.individual)\n\nFrom: Claude\nAs: I\nWhen: during conversation\nCaptured: just now\n\n➡️ Next: Shifting to broad exploration mode',
+              },
+            ],
+          },
+        },
+        {
+          id: 'context-for-atomicity',
+          description: 'Adding context for self-contained understanding',
+          input: {
+            experiences: [
+              {
+                source: 'That completely changes everything!',
+                emoji: '🌟',
+                who: 'Human',
+                context: 'After discovering the config file was in the wrong directory',
+                experience: {
+                  embodied: 'thinking',
+                  focus: false,
+                  mood: 'open',
+                  purpose: false,
+                  space: false,
+                  time: false,
+                  presence: false,
+                },
+              },
+            ],
+          },
+          output: {
+            content: [
+              {
+                type: 'text',
+                text: 'Experienced (embodied.thinking, mood.open)\n\nContext: After discovering the config file was in the wrong directory\nFrom: Human\nAs: I\nWhen: during conversation\nCaptured: just now',
+              },
+            ],
+          },
+        },
+        {
+          id: 'batch-complementary-capture',
+          description: 'Human and AI capture complementary perspectives',
+          input: {
+            experiences: [
+              {
+                source: 'I just need to get this working',
+                emoji: '😤',
+                who: 'Human',
+                experience: {
+                  embodied: false,
+                  focus: false,
+                  mood: 'closed',
+                  purpose: 'goal',
+                  space: false,
+                  time: false,
+                  presence: false,
+                },
+              },
+              {
+                source: 'I notice frustration building alongside determination',
+                emoji: '🌊',
+                who: 'Claude',
                 experience: {
                   embodied: 'sensing',
-                  focus: 'broad',
-                  mood: 'open',
+                  focus: 'narrow',
+                  mood: 'closed',
                   purpose: 'goal',
                   space: 'here',
                   time: false,
@@ -284,157 +338,29 @@ FLOW TRACKING:
             content: [
               {
                 type: 'text',
-                text: 'Experienced (embodied.sensing, focus.broad, mood.open, purpose.goal, space.here, presence.collective)\n\nFrom: Human & Claude\nAs: we\nWhen: during conversation\nCaptured: just now',
+                text: '✅ Successfully captured 2 complementary perspectives\n\nHuman: mood.closed, purpose.goal\nClaude: All 7 qualities captured for extended awareness',
               },
             ],
           },
         },
         {
-          id: 'still-thinking-exploration',
-          description: 'Using stillThinking to signal ongoing exploration',
+          id: 'mixed-qualities-true',
+          description: 'Using true for prominent but mixed qualities',
           input: {
             experiences: [
               {
-                source: 'This bug is really confusing me',
-                emoji: '🐛',
+                source: 'Processing this loss while planning next steps',
+                emoji: '🌓',
                 who: 'Human',
-                experience: ['mood.closed', 'embodied.thinking', 'purpose.goal'],
-              },
-            ],
-            stillThinking: true,
-          },
-          output: {
-            content: [
-              {
-                type: 'text',
-                text: 'Experienced (mood.closed, embodied.thinking, purpose.goal)\n\nFrom: Human\nAs: I\nWhen: during conversation\nCaptured: just now',
-              },
-              {
-                type: 'text',
-                text: "🤔 Still thinking... (1 step so far)\nContinue exploring - I'm tracking your progress.\nPermission granted for more tool calls.",
-              },
-            ],
-            stillThinking: true,
-            callsSoFar: 1,
-          },
-        },
-      ],
-    },
-    {
-      name: 'recall',
-      description: `Search shared memories to find patterns, connections, and past wisdom across all experiences.
-
-USE WHEN YOU WANT TO:
-• Find similar past experiences to what's happening now
-• Look for patterns in how someone typically responds
-• Check what was captured before making corrections
-• Explore connections between different moments
-• Reference specific past conversations
-• Understand someone's journey over time
-
-SEARCH APPROACHES:
-• Natural language: "stuck frustrated breakthrough"
-• Emotional themes: "anxiety confidence transformation"
-• Situations: "debugging presentation teamwork"
-• Quality patterns: Search by specific qualities
-• Time-based: Recent experiences or date ranges
-
-SPECIAL SEARCHES:
-• Query "last" or "recent" - see most recent captures
-• Filter by experiencer - find specific person's experiences  
-• Filter by perspective - find "we" moments vs "I" moments
-• Filter by reflects: "only" - find pattern realizations (experiences that reflect on other experiences)
-• Natural language patterns: "show me all pattern realizations" → use reflects: "only"
-• Natural language patterns: "find insights about connections" → use reflects: "only"
-• Group results by similarity, experiencer, date, qualities, or perspective using group_by
-• Combine filters for precise results
-
-FLOW TRACKING:
-• Add stillThinking: true to signal you're continuing to explore
-• Omit or use stillThinking: false when done with the current thread
-• Each tool call increments callsSoFar to track progress
-• Useful for multi-step investigations`,
-      inputSchema: SearchInputJsonSchema,
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: false,
-      examples: [
-        {
-          id: 'semantic-search',
-          description: 'Search for experiences using natural language',
-          input: {
-            searches: [
-              {
-                query: 'stuck frustrated blocked breakthrough',
-                experiencer: 'Human',
-                limit: 5,
-              },
-            ],
-          },
-          output: {
-            content: [
-              {
-                type: 'text',
-                text: '🔍 Found 3 relevant experiences:\n\n1. "I\'ve been staring at this bug for hours..." (3 days ago)\n   💭 embodied.thinking, mood.closed, purpose.goal\n\n2. "Finally! The solution was to flip the approach..." (3 days ago)\n   🎯 embodied.thinking, mood.open, purpose.goal\n\n3. "Feeling completely blocked on the API design..." (1 week ago)\n   😔 embodied.thinking, mood.closed, focus.narrow',
-              },
-            ],
-          },
-        },
-        {
-          id: 'filter-by-perspective',
-          description: 'Find collective experiences only',
-          input: {
-            searches: [
-              {
-                query: 'breakthrough insight solution',
-                perspective: 'we',
-                limit: 3,
-              },
-            ],
-          },
-          output: {
-            content: [
-              {
-                type: 'text',
-                text: '🔍 Found 2 collective experiences:\n\n1. "We finally cracked it during the whiteboard session!" (yesterday)\n   🎉 presence.collective, embodied.thinking, mood.open\n\n2. "We realized we were approaching it backwards..." (5 days ago)\n   💡 presence.collective, embodied.thinking, purpose.goal',
-              },
-            ],
-          },
-        },
-        {
-          id: 'claude-experiences',
-          description: "Search for Claude's own experiences",
-          input: {
-            searches: [
-              {
-                experiencer: 'Claude',
-                query: 'understanding connection',
-                limit: 3,
-              },
-            ],
-          },
-          output: {
-            content: [
-              {
-                type: 'text',
-                text: '🔍 Found 1 Claude experience:\n\n1. "I sense a deeper pattern emerging in our discussion" (2 hours ago)\n   🤔 embodied.thinking, presence.collective, purpose.wander',
-              },
-            ],
-          },
-        },
-        {
-          id: 'date-range-search',
-          description: 'Find experiences within a specific timeframe',
-          input: {
-            searches: [
-              {
-                query: 'decision choice direction',
-                created: {
-                  start: '2025-01-01',
-                  end: '2025-01-15',
+                experience: {
+                  embodied: true,
+                  focus: false,
+                  mood: true,
+                  purpose: true,
+                  space: false,
+                  time: true,
+                  presence: false,
                 },
-                sort: 'created',
               },
             ],
           },
@@ -442,218 +368,39 @@ FLOW TRACKING:
             content: [
               {
                 type: 'text',
-                text: '🔍 Found 2 experiences in date range:\n\n1. "Should I refactor now or push forward?" (Jan 3, 2025)\n   🤷 purpose, embodied.thinking, mood.closed\n\n2. "The path forward suddenly became clear" (Jan 10, 2025)\n   ✨ purpose.goal, mood.open, embodied.sensing',
+                text: 'Experienced (embodied, mood, purpose, time)\n\nFrom: Human\nAs: I\nWhen: during conversation\nCaptured: just now',
               },
             ],
-          },
-        },
-        {
-          id: 'batch-search',
-          description: 'Run multiple searches at once',
-          input: {
-            searches: [
-              {
-                query: 'joy celebration success',
-                limit: 2,
-                sort: 'relevance',
-              },
-              {
-                query: 'challenge difficulty struggle',
-                experiencer: 'Human',
-                limit: 2,
-                sort: 'created',
-              },
-            ],
-          },
-          output: {
-            content: [
-              {
-                type: 'text',
-                text: '✅ Completed 2 searches:\n\nSearch 1: Found 2 results for "joy celebration success"\nSearch 2: Found 2 results for "challenge difficulty struggle"',
-              },
-            ],
-          },
-        },
-        {
-          id: 'pattern-realizations',
-          description:
-            'Find all pattern realizations (experiences that reflect on other experiences)',
-          input: {
-            searches: [
-              {
-                reflects: 'only',
-                limit: 5,
-              },
-            ],
-          },
-          output: {
-            content: [
-              {
-                type: 'text',
-                text: '🔍 Found 2 pattern realizations:\n\n1. "I notice I always feel anxious before things that end up going well" (2 hours ago)\n   💡 embodied.thinking, mood.open, time.past\n   🔗 Reflects on: exp_123, exp_456\n\n2. "There\'s a pattern where my mood.closed experiences often precede mood.open breakthroughs" (1 day ago)\n   🤔 embodied.thinking, presence.collective\n   🔗 Reflects on: exp_789, exp_101',
-              },
-            ],
-          },
-        },
-        {
-          id: 'natural-language-patterns',
-          description: 'Natural language request for pattern realizations',
-          input: {
-            searches: [
-              {
-                reflects: 'only',
-                query: 'pattern realizations insights connections',
-              },
-            ],
-          },
-          output: {
-            content: [
-              {
-                type: 'text',
-                text: '🔍 Found 3 pattern realizations:\n\n1. "I notice I always feel anxious before things that end up going well" (2 hours ago)\n   💡 embodied.thinking, mood.open, time.past\n   🔗 Reflects on: exp_123, exp_456\n\n2. "There\'s a pattern where my mood.closed experiences often precede mood.open breakthroughs" (1 day ago)\n   🤔 embodied.thinking, presence.collective\n   🔗 Reflects on: exp_789, exp_101\n\n3. "I see how my learning follows a cycle of confusion → practice → clarity" (3 days ago)\n   🎯 embodied.thinking, time.past, purpose.goal\n   🔗 Reflects on: exp_202, exp_303',
-              },
-            ],
-          },
-        },
-        {
-          id: 'reflected-by-filter',
-          description: 'Find experiences that are reflected by specific pattern realizations',
-          input: {
-            searches: [
-              {
-                reflected_by: 'exp_123',
-                limit: 5,
-              },
-            ],
-          },
-          output: {
-            content: [
-              {
-                type: 'text',
-                text: '🔍 Found 2 experiences reflected by exp_123:\n\n1. "I\'m feeling anxious about tomorrow\'s presentation" (2 hours ago)\n   😰 embodied.sensing, mood.closed, time.future\n\n2. "I just nailed the presentation! It went really well" (1 hour ago)\n   🎉 mood.open, purpose.goal, embodied.sensing',
-              },
-            ],
-          },
-        },
-        {
-          id: 'group-by-similarity',
-          description: 'Group similar experiences together using clustering',
-          input: {
-            searches: [
-              {
-                query: 'anxiety nervousness stress',
-                group_by: 'similarity',
-                limit: 10,
-              },
-            ],
-          },
-          output: {
-            content: [
-              {
-                type: 'text',
-                text: '🔍 Found 3 similarity groups containing 8 experiences:\n\n1. **3 experiences about presentation anxiety**\n   Size: 3 experiences\n   Common qualities: embodied.sensing, mood.closed, time.future\n   Summary: Experiences of anticipatory anxiety before presentations\n\n2. **2 experiences about work stress**\n   Size: 2 experiences\n   Common qualities: embodied.thinking, mood.closed, purpose.goal\n   Summary: Stressful work situations requiring problem-solving\n\n3. **3 experiences about breakthrough moments**\n   Size: 3 experiences\n   Common qualities: mood.open, purpose.goal, embodied.thinking\n   Summary: Moments of clarity and successful problem resolution',
-              },
-            ],
-          },
-        },
-        {
-          id: 'group-by-experiencer',
-          description: 'Group experiences by who experienced them',
-          input: {
-            searches: [
-              {
-                query: 'learning insight breakthrough',
-                group_by: 'experiencer',
-                limit: 10,
-              },
-            ],
-          },
-          output: {
-            content: [
-              {
-                type: 'text',
-                text: "🔍 Found 2 experiencer groups containing 5 experiences:\n\n1. **Alice (3 experiences)**\n   Size: 3 experiences\n   Common qualities: embodied.thinking, mood.open\n   Summary: Alice's learning breakthroughs and insights\n\n2. **Bob (2 experiences)**\n   Size: 2 experiences\n   Common qualities: embodied.thinking, purpose.goal\n   Summary: Bob's focused problem-solving moments",
-              },
-            ],
-          },
-        },
-        {
-          id: 'group-by-date',
-          description: 'Group experiences by creation date',
-          input: {
-            searches: [
-              {
-                query: 'mood.open joy celebration',
-                group_by: 'date',
-                limit: 10,
-              },
-            ],
-          },
-          output: {
-            content: [
-              {
-                type: 'text',
-                text: '🔍 Found 3 date groups containing 6 experiences:\n\n1. **2025-01-15 (2 experiences)**\n   Size: 2 experiences\n   Common qualities: mood.open, purpose.goal\n   Summary: Successful project completion and team celebration\n\n2. **2025-01-14 (2 experiences)**\n   Size: 2 experiences\n   Common qualities: mood.open, embodied.sensing\n   Summary: Personal achievements and positive moments\n\n3. **2025-01-13 (2 experiences)**\n   Size: 2 experiences\n   Common qualities: mood.open, presence.collective\n   Summary: Collaborative successes and shared joy',
-              },
-            ],
-          },
-        },
-        {
-          id: 'still-thinking-investigation',
-          description: 'Using stillThinking during multi-step investigation',
-          input: {
-            searches: [
-              {
-                query: 'similar authentication logout errors',
-                limit: 5,
-              },
-            ],
-            stillThinking: true,
-          },
-          output: {
-            content: [
-              {
-                type: 'text',
-                text: '🔍 Found 2 relevant experiences:\n\n1. "Random logouts happening in prod" (2 days ago)\n   🐛 embodied.thinking, mood.closed, purpose.goal\n\n2. "Session timeout was set to 5 minutes instead of 5 hours" (1 week ago)\n   💡 embodied.thinking, mood.open, purpose.goal',
-              },
-              {
-                type: 'text',
-                text: "🤔 Still thinking... (2 steps so far)\nContinue exploring - I'm tracking your progress.\nPermission granted for more tool calls.",
-              },
-            ],
-            stillThinking: true,
-            callsSoFar: 2,
           },
         },
       ],
     },
     {
       name: 'reconsider',
-      description: `Update existing experiences when understanding deepens or corrections are needed.
+      description: `Update or release experiences as understanding evolves. Enables growth through revision and selective forgetting.
 
 USE WHEN:
-• You realize a captured experience was missing important qualities
-• Understanding of a moment has evolved with reflection
-• Someone clarifies what they actually meant
-• A quality signature needs adjustment
-• Perspective was recorded incorrectly (I vs we)
-• Processing time has shifted (during → long-after)
+• Captured experience needs quality adjustment
+• Understanding deepens with reflection
+• Someone clarifies what they meant
+• Perspective shifts (I → we)
+• Processing time changes (during → long-after)
+• Experience no longer serves (release mode)
 
-NATURAL WORKFLOW:
-1. Use recall to find the experience
-2. Note what needs updating
-3. Use reconsider with the experience ID and changes
+UPDATE MODE:
+• Revise any field: source, qualities, perspective, who
+• Add reflects array for pattern connections
+• Maintain experiential continuity
 
-COMMON UPDATES:
-• Adding missed qualities that were actually prominent
-• Switching from subtype to base when mixed (embodied.thinking → embodied)
-• Correcting perspective after realizing it was shared
-• Updating experiencer name if initially unclear
+RELEASE MODE:
+• Set release: true with optional reason
+• Gracefully remove experiences that no longer serve
+• Create space for new growth
 
-FLOW TRACKING:
-• Add stillThinking: true if you're reconsidering as part of a larger process
-• Omit or use stillThinking: false when the update is complete
-• Each tool call increments callsSoFar to track progress`,
+WORKFLOW:
+1. Find experience ID (use recall if needed)
+2. Update fields OR set release: true
+3. System handles the rest`,
       inputSchema: makeDraft202012Schema(ReconsiderInputJsonSchema),
       readOnlyHint: false,
       destructiveHint: false,
@@ -661,13 +408,21 @@ FLOW TRACKING:
       openWorldHint: false,
       examples: [
         {
-          id: 'add-missing-quality',
-          description: 'Add a quality that was missed during initial capture',
+          id: 'deepen-understanding',
+          description: 'Add qualities missed in initial capture',
           input: {
             reconsiderations: [
               {
-                id: 'exp_1234567890',
-                experience: ['embodied.sensing', 'mood.closed', 'purpose.goal', 'time.past'],
+                id: 'exp_abc123',
+                experience: {
+                  embodied: 'sensing',
+                  focus: false,
+                  mood: 'closed',
+                  purpose: 'goal',
+                  space: false,
+                  time: 'past',
+                  presence: false,
+                },
               },
             ],
           },
@@ -675,20 +430,29 @@ FLOW TRACKING:
             content: [
               {
                 type: 'text',
-                text: '✅ Experience reconsidered and updated successfully!\n\n📝 ID: exp_1234567890\n🔄 Fields updated: experience\n🕐 Updated: 2025-01-15T10:30:00.000Z',
+                text: '✅ Experience reconsidered\n\n📝 ID: exp_abc123\n🔄 Updated: experience (added time.past)\n🌱 Understanding deepened',
               },
             ],
           },
         },
         {
-          id: 'correct-perspective',
-          description: 'User clarifies it was a collective experience',
+          id: 'perspective-shift',
+          description: 'Realize experience was collective not individual',
           input: {
             reconsiderations: [
               {
-                id: 'exp_2345678901',
+                id: 'exp_def456',
                 perspective: 'we',
-                experience: ['embodied.thinking', 'presence.collective'],
+                who: ['Human', 'Claude'],
+                experience: {
+                  embodied: false,
+                  focus: false,
+                  mood: false,
+                  purpose: false,
+                  space: false,
+                  time: false,
+                  presence: 'collective',
+                },
               },
             ],
           },
@@ -696,19 +460,20 @@ FLOW TRACKING:
             content: [
               {
                 type: 'text',
-                text: '✅ Experience reconsidered and updated successfully!\n\n📝 ID: exp_2345678901\n🔄 Fields updated: perspective, experience\n🕐 Updated: 2025-01-15T10:31:00.000Z',
+                text: '✅ Experience reconsidered\n\n📝 ID: exp_def456\n🔄 Updated: perspective (I → we), who, presence\n🤝 Recognized shared experience',
               },
             ],
           },
         },
         {
-          id: 'fix-source-typo',
-          description: 'Correct a typo in the captured text',
+          id: 'release-single',
+          description: 'Release experience that no longer serves',
           input: {
             reconsiderations: [
               {
-                id: 'exp_3456789012',
-                source: 'I finally understood the recursive pattern in the code',
+                id: 'exp_ghi789',
+                release: true,
+                releaseReason: 'Test data during development',
               },
             ],
           },
@@ -716,19 +481,28 @@ FLOW TRACKING:
             content: [
               {
                 type: 'text',
-                text: '✅ Experience reconsidered and updated successfully!\n\n📝 ID: exp_3456789012\n🔄 Fields updated: source\n🕐 Updated: 2025-01-15T10:32:00.000Z',
+                text: '🙏 Experience released with gratitude\n\n📝 ID: exp_ghi789\n💭 Reason: Test data during development\n🌱 Space created for new growth',
               },
             ],
           },
         },
         {
-          id: 'use-base-quality',
-          description: 'Realize experience was mixed embodied state',
+          id: 'mixed-operations',
+          description: 'Update some experiences, release others',
           input: {
             reconsiderations: [
               {
-                id: 'exp_4567890123',
-                experience: ['embodied', 'focus.narrow', 'time.future'],
+                id: 'exp_update1',
+                source: 'Corrected understanding of the pattern',
+              },
+              {
+                id: 'exp_release1',
+                release: true,
+                releaseReason: 'Duplicate capture',
+              },
+              {
+                id: 'exp_update2',
+                reflects: ['exp_original1', 'exp_original2'],
               },
             ],
           },
@@ -736,170 +510,7 @@ FLOW TRACKING:
             content: [
               {
                 type: 'text',
-                text: '✅ Experience reconsidered and updated successfully!\n\n📝 ID: exp_4567890123\n🔄 Fields updated: experience\n🕐 Updated: 2025-01-15T10:33:00.000Z',
-              },
-            ],
-          },
-        },
-        {
-          id: 'batch-reconsider',
-          description: 'Update multiple experiences at once',
-          input: {
-            reconsiderations: [
-              {
-                id: 'exp_5678901234',
-                experiencer: 'Sarah',
-                perspective: 'they',
-              },
-              {
-                id: 'exp_6789012345',
-                processing: 'right-after',
-                experience: ['mood.open', 'purpose.goal'],
-              },
-            ],
-          },
-          output: {
-            content: [
-              {
-                type: 'text',
-                text: '✅ Successfully reconsidered 2 experiences',
-              },
-            ],
-          },
-        },
-      ],
-    },
-    {
-      name: 'release',
-      description: `Remove experiences that no longer serve or were captured in error.
-
-USE SPARINGLY WHEN:
-• Someone explicitly asks to delete something they shared
-• Test experiences during system learning
-• Duplicate or incomplete captures
-• Interrupted conversations that didn't complete
-• Moments shared in confidence that shouldn't persist
-
-NATURAL WORKFLOW:
-1. Use recall to find what needs releasing
-2. Confirm it's the right experience
-3. Release with optional reason
-
-PHILOSOPHY:
-Not everything needs permanent retention. Sometimes releasing creates space for new growth. Experiences are released with gratitude for their temporary service to the relationship.
-
-FLOW TRACKING:
-• Add stillThinking: true if releasing as part of a cleanup process
-• Omit or use stillThinking: false when done releasing
-• Each tool call increments callsSoFar to track progress`,
-      inputSchema: makeDraft202012Schema(ReleaseInputJsonSchema),
-      readOnlyHint: false,
-      destructiveHint: true,
-      idempotentHint: true,
-      openWorldHint: false,
-      examples: [
-        {
-          id: 'user-requested-removal',
-          description: 'User explicitly asks to remove an experience',
-          input: {
-            releases: [
-              {
-                id: 'exp_1234567890',
-                reason: 'User requested removal - venting session',
-              },
-            ],
-          },
-          output: {
-            content: [
-              {
-                type: 'text',
-                text: '🙏 Experience released with gratitude\n\n📝 ID: exp_1234567890\n💭 Reason: User requested removal - venting session\n🕐 Released: 2025-01-15T10:30:00.000Z\n\nThank you for the insights this moment provided. Significance emerges through accumulation and connection rather than through permanent retention.',
-              },
-            ],
-          },
-        },
-        {
-          id: 'test-capture-cleanup',
-          description: 'Remove test or practice captures',
-          input: {
-            releases: [
-              {
-                id: 'exp_test_001',
-                reason: 'Test capture during system learning',
-              },
-            ],
-          },
-          output: {
-            content: [
-              {
-                type: 'text',
-                text: '🙏 Experience released with gratitude\n\n📝 ID: exp_test_001\n💭 Reason: Test experience during system learning\n🕐 Released: 2025-01-15T10:31:00.000Z\n\nThank you for the insights this moment provided. Significance emerges through accumulation and connection rather than through permanent retention.',
-              },
-            ],
-          },
-        },
-        {
-          id: 'incomplete-moment',
-          description: 'Release incomplete or partial capture',
-          input: {
-            releases: [
-              {
-                id: 'exp_incomplete_123',
-                reason: 'Remembered moment was incomplete - conversation interrupted',
-              },
-            ],
-          },
-          output: {
-            content: [
-              {
-                type: 'text',
-                text: '🙏 Experience released with gratitude\n\n📝 ID: exp_incomplete_123\n💭 Reason: Remembered moment was incomplete - conversation interrupted\n🕐 Released: 2025-01-15T10:32:00.000Z\n\nThank you for the insights this moment provided. Significance emerges through accumulation and connection rather than through permanent retention.',
-              },
-            ],
-          },
-        },
-        {
-          id: 'release-without-reason',
-          description: 'Release experience without specifying reason',
-          input: {
-            releases: [
-              {
-                id: 'exp_7890123456',
-              },
-            ],
-          },
-          output: {
-            content: [
-              {
-                type: 'text',
-                text: '🙏 Experience released with gratitude\n\n📝 ID: exp_7890123456\n🕐 Released: 2025-01-15T10:33:00.000Z\n\nThank you for the insights this moment provided. Significance emerges through accumulation and connection rather than through permanent retention.',
-              },
-            ],
-          },
-        },
-        {
-          id: 'batch-release',
-          description: 'Release multiple experiences at once',
-          input: {
-            releases: [
-              {
-                id: 'exp_old_001',
-                reason: 'Outdated context from previous project',
-              },
-              {
-                id: 'exp_old_002',
-                reason: 'Duplicate of another experience',
-              },
-              {
-                id: 'exp_old_003',
-              },
-            ],
-          },
-          output: {
-            content: [
-              {
-                type: 'text',
-                text: '✅ Successfully released 3 experiences with gratitude',
+                text: '✅ 2 experiences updated successfully\n🙏 1 experience released with gratitude\n\nUpdated: exp_update1, exp_update2\nReleased: exp_release1 (Duplicate capture)',
               },
             ],
           },

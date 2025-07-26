@@ -4,12 +4,7 @@
 
 import { getTools } from './tools.js';
 import { zodToJsonSchema } from 'zod-to-json-schema';
-import {
-  ExperienceInputSchema,
-  SearchInputSchema,
-  ReconsiderInputSchema,
-  ReleaseInputSchema,
-} from './schemas.js';
+import { ExperienceInputSchema, ReconsiderInputSchema } from './schemas.js';
 
 // Mock the schemas module
 jest.mock('./schemas.js', () => ({
@@ -17,15 +12,7 @@ jest.mock('./schemas.js', () => ({
     parse: jest.fn(),
     shape: {},
   },
-  SearchInputSchema: {
-    parse: jest.fn(),
-    shape: {},
-  },
   ReconsiderInputSchema: {
-    parse: jest.fn(),
-    shape: {},
-  },
-  ReleaseInputSchema: {
     parse: jest.fn(),
     shape: {},
   },
@@ -42,9 +29,9 @@ jest.mock('zod-to-json-schema', () => ({
 
 describe('MCP Tools', () => {
   describe('getTools', () => {
-    it('should return array of 4 tools', async () => {
+    it('should return array of 2 tools', async () => {
       const tools = await getTools();
-      expect(tools).toHaveLength(4);
+      expect(tools).toHaveLength(2);
     });
 
     it('should have experience tool with correct properties', async () => {
@@ -53,7 +40,9 @@ describe('MCP Tools', () => {
 
       expect(experienceTool).toBeDefined();
       expect(experienceTool.name).toBe('experience');
-      expect(experienceTool.description).toContain('Remember experiential moments');
+      expect(experienceTool.description).toContain(
+        'Remember experiential moments that shape conversations'
+      );
       expect(experienceTool.readOnlyHint).toBe(false);
       expect(experienceTool.destructiveHint).toBe(false);
       expect(experienceTool.idempotentHint).toBe(false);
@@ -62,28 +51,15 @@ describe('MCP Tools', () => {
       expect(experienceTool.examples).toHaveLength(8);
     });
 
-    it('should have recall tool with correct properties', async () => {
-      const tools = await getTools();
-      const recallTool = tools.find((t) => t.name === 'recall') as any;
-
-      expect(recallTool).toBeDefined();
-      expect(recallTool.name).toBe('recall');
-      expect(recallTool.description).toContain('Search shared memories');
-      expect(recallTool.readOnlyHint).toBe(true);
-      expect(recallTool.destructiveHint).toBe(false);
-      expect(recallTool.idempotentHint).toBe(true);
-      expect(recallTool.openWorldHint).toBe(false);
-      expect(recallTool.inputSchema).toBeDefined();
-      expect(recallTool.examples).toHaveLength(12);
-    });
-
     it('should have reconsider tool with correct properties', async () => {
       const tools = await getTools();
       const reconsiderTool = tools.find((t) => t.name === 'reconsider') as any;
 
       expect(reconsiderTool).toBeDefined();
       expect(reconsiderTool.name).toBe('reconsider');
-      expect(reconsiderTool.description).toContain('Update existing experiences');
+      expect(reconsiderTool.description).toContain(
+        'Update or release experiences as understanding evolves'
+      );
       expect(reconsiderTool.readOnlyHint).toBe(false);
       expect(reconsiderTool.destructiveHint).toBe(false);
       expect(reconsiderTool.idempotentHint).toBe(false);
@@ -92,23 +68,7 @@ describe('MCP Tools', () => {
       expect(reconsiderTool.inputSchema.$schema).toBe(
         'https://json-schema.org/draft/2020-12/schema'
       );
-      expect(reconsiderTool.examples).toHaveLength(5);
-    });
-
-    it('should have release tool with correct properties', async () => {
-      const tools = await getTools();
-      const releaseTool = tools.find((t) => t.name === 'release') as any;
-
-      expect(releaseTool).toBeDefined();
-      expect(releaseTool.name).toBe('release');
-      expect(releaseTool.description).toContain('Remove experiences');
-      expect(releaseTool.readOnlyHint).toBe(false);
-      expect(releaseTool.destructiveHint).toBe(true);
-      expect(releaseTool.idempotentHint).toBe(true);
-      expect(releaseTool.openWorldHint).toBe(false);
-      expect(releaseTool.inputSchema).toBeDefined();
-      expect(releaseTool.inputSchema.$schema).toBe('https://json-schema.org/draft/2020-12/schema');
-      expect(releaseTool.examples).toHaveLength(5);
+      expect(reconsiderTool.examples).toHaveLength(4);
     });
 
     it('should include examples with correct structure', async () => {
@@ -132,35 +92,8 @@ describe('MCP Tools', () => {
       await getTools();
 
       expect(zodToJsonSchema).toHaveBeenCalledWith(ExperienceInputSchema);
-      expect(zodToJsonSchema).toHaveBeenCalledWith(SearchInputSchema);
       expect(zodToJsonSchema).toHaveBeenCalledWith(ReconsiderInputSchema);
-      expect(zodToJsonSchema).toHaveBeenCalledWith(ReleaseInputSchema);
-      expect(zodToJsonSchema).toHaveBeenCalledTimes(4);
-    });
-
-    it('should have proper descriptions with usage guidelines', async () => {
-      const tools = await getTools();
-
-      const experienceTool = tools.find((t) => t.name === 'experience') as any;
-      expect(experienceTool.description).toContain('USE WHEN:');
-      expect(experienceTool.description).toContain('EXAMPLES OF WHEN TO USE:');
-      expect(experienceTool.description).toContain("DON'T USE FOR:");
-      expect(experienceTool.description).toContain('QUALITY SIGNATURES:');
-
-      const recallTool = tools.find((t) => t.name === 'recall') as any;
-      expect(recallTool.description).toContain('USE WHEN YOU WANT TO:');
-      expect(recallTool.description).toContain('SEARCH APPROACHES:');
-      expect(recallTool.description).toContain('SPECIAL SEARCHES:');
-
-      const reconsiderTool = tools.find((t) => t.name === 'reconsider') as any;
-      expect(reconsiderTool.description).toContain('USE WHEN:');
-      expect(reconsiderTool.description).toContain('NATURAL WORKFLOW:');
-      expect(reconsiderTool.description).toContain('COMMON UPDATES:');
-
-      const releaseTool = tools.find((t) => t.name === 'release');
-      expect(releaseTool.description).toContain('USE SPARINGLY WHEN:');
-      expect(releaseTool.description).toContain('NATURAL WORKFLOW:');
-      expect(releaseTool.description).toContain('PHILOSOPHY:');
+      expect(zodToJsonSchema).toHaveBeenCalledTimes(2);
     });
 
     it('should have specific example scenarios', async () => {
@@ -169,38 +102,22 @@ describe('MCP Tools', () => {
       // Experience tool examples
       const experienceTool = tools.find((t) => t.name === 'experience');
       const expExampleIds = experienceTool.examples.map((e) => e.id);
-      expect(expExampleIds).toContain('user-emotional-experience');
-      expect(expExampleIds).toContain('claude-experiential-response');
-      expect(expExampleIds).toContain('collective-achievement');
-      expect(expExampleIds).toContain('mixed-qualities');
-      expect(expExampleIds).toContain('batch-experience');
-
-      // Recall tool examples
-      const recallTool = tools.find((t) => t.name === 'recall');
-      const recallExampleIds = recallTool.examples.map((e) => e.id);
-      expect(recallExampleIds).toContain('semantic-search');
-      expect(recallExampleIds).toContain('filter-by-perspective');
-      expect(recallExampleIds).toContain('claude-experiences');
-      expect(recallExampleIds).toContain('date-range-search');
-      expect(recallExampleIds).toContain('batch-search');
+      expect(expExampleIds).toContain('human-emotional-experience');
+      expect(expExampleIds).toContain('ai-extended-perception');
+      expect(expExampleIds).toContain('pattern-realization');
+      expect(expExampleIds).toContain('integrated-recall-search');
+      expect(expExampleIds).toContain('reasoning-chain-next-moment');
+      expect(expExampleIds).toContain('context-for-atomicity');
+      expect(expExampleIds).toContain('batch-complementary-capture');
+      expect(expExampleIds).toContain('mixed-qualities-true');
 
       // Reconsider tool examples
       const reconsiderTool = tools.find((t) => t.name === 'reconsider');
       const reconsiderExampleIds = reconsiderTool.examples.map((e) => e.id);
-      expect(reconsiderExampleIds).toContain('add-missing-quality');
-      expect(reconsiderExampleIds).toContain('correct-perspective');
-      expect(reconsiderExampleIds).toContain('fix-source-typo');
-      expect(reconsiderExampleIds).toContain('use-base-quality');
-      expect(reconsiderExampleIds).toContain('batch-reconsider');
-
-      // Release tool examples
-      const releaseTool = tools.find((t) => t.name === 'release');
-      const releaseExampleIds = releaseTool.examples.map((e) => e.id);
-      expect(releaseExampleIds).toContain('user-requested-removal');
-      expect(releaseExampleIds).toContain('test-capture-cleanup');
-      expect(releaseExampleIds).toContain('incomplete-moment');
-      expect(releaseExampleIds).toContain('release-without-reason');
-      expect(releaseExampleIds).toContain('batch-release');
+      expect(reconsiderExampleIds).toContain('deepen-understanding');
+      expect(reconsiderExampleIds).toContain('perspective-shift');
+      expect(reconsiderExampleIds).toContain('release-single');
+      expect(reconsiderExampleIds).toContain('mixed-operations');
     });
 
     it('should have consistent tool structure', async () => {
@@ -224,26 +141,20 @@ describe('MCP Tools', () => {
   });
 
   describe('makeDraft202012Schema', () => {
-    it('should add $schema property to reconsider and release tools', async () => {
+    it('should add $schema property to reconsider tool', async () => {
       const tools = await getTools();
 
       const reconsiderTool = tools.find((t) => t.name === 'reconsider');
       expect(reconsiderTool.inputSchema.$schema).toBe(
         'https://json-schema.org/draft/2020-12/schema'
       );
-
-      const releaseTool = tools.find((t) => t.name === 'release');
-      expect(releaseTool.inputSchema.$schema).toBe('https://json-schema.org/draft/2020-12/schema');
     });
 
-    it('should not add $schema property to experience and recall tools', async () => {
+    it('should not add $schema property to experience tool', async () => {
       const tools = await getTools();
 
       const experienceTool = tools.find((t) => t.name === 'experience');
       expect(experienceTool.inputSchema.$schema).toBeUndefined();
-
-      const recallTool = tools.find((t) => t.name === 'recall');
-      expect(recallTool.inputSchema.$schema).toBeUndefined();
     });
   });
 });

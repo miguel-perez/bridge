@@ -1,10 +1,6 @@
 import { describe, test, expect } from '@jest/globals';
 import type { SourceRecord } from './types.js';
-import { 
-  advancedFilters,
-  type SearchResult,
-  type FilterOptions
-} from './search.js';
+import { advancedFilters, type SearchResult, type FilterOptions } from './search.js';
 
 describe('Search Module', () => {
   // Test data
@@ -15,9 +11,9 @@ describe('Search Module', () => {
       source: 'First test experience',
       created: '2024-01-15T10:00:00Z',
       perspective: 'I',
-      experiencer: 'self',
+      who: 'self',
       processing: 'during',
-      crafted: false
+      crafted: false,
     },
     {
       type: 'source',
@@ -25,9 +21,9 @@ describe('Search Module', () => {
       source: 'Second test experience',
       created: '2024-01-16T14:00:00Z',
       perspective: 'we',
-      experiencer: 'team',
+      who: 'team',
       processing: 'right-after',
-      crafted: true
+      crafted: true,
     },
     {
       type: 'source',
@@ -35,9 +31,9 @@ describe('Search Module', () => {
       source: 'Third test experience',
       created: '2024-01-17T09:00:00Z',
       perspective: 'I',
-      experiencer: 'self',
+      who: 'self',
       processing: 'during',
-      crafted: false
+      crafted: false,
     },
     {
       type: 'source',
@@ -45,72 +41,74 @@ describe('Search Module', () => {
       source: 'Fourth test experience',
       created: '2024-01-18T16:00:00Z',
       perspective: 'you',
-      experiencer: 'other',
+      who: 'other',
       processing: 'long-after',
-      crafted: false
-    }
+      crafted: false,
+    },
   ];
 
-  const mockSearchResults: SearchResult[] = mockSourceRecords.map(record => ({
+  const mockSearchResults: SearchResult[] = mockSourceRecords.map((record) => ({
     type: 'source',
     id: record.id,
     relevance: 0.8,
     snippet: record.source.substring(0, 50),
-    source: record
+    source: record,
   }));
 
   describe('advancedFilters', () => {
     test('should return all results when no filters applied', () => {
       const { filtered } = advancedFilters(mockSearchResults);
-      
+
       expect(filtered).toHaveLength(4);
     });
 
-    test('should filter by experiencers', () => {
+    test('should filter by who', () => {
       const filters: FilterOptions = {
-        experiencers: ['self']
+        who: ['self'],
       };
-      
+
       const { filtered } = advancedFilters(mockSearchResults, filters);
-      
+
       expect(filtered).toHaveLength(2);
-      expect(filtered.every(result => result.source.experiencer === 'self')).toBe(true);
+      expect(filtered.every((result) => result.source.who === 'self')).toBe(true);
     });
 
     test('should filter by perspectives', () => {
       const filters: FilterOptions = {
-        perspectives: ['I', 'we']
+        perspectives: ['I', 'we'],
       };
-      
+
       const { filtered } = advancedFilters(mockSearchResults, filters);
-      
+
       expect(filtered).toHaveLength(3);
-      expect(filtered.every(result => 
-        result.source.perspective === 'I' || result.source.perspective === 'we'
-      )).toBe(true);
+      expect(
+        filtered.every(
+          (result) => result.source.perspective === 'I' || result.source.perspective === 'we'
+        )
+      ).toBe(true);
     });
 
     test('should filter by processing levels', () => {
       const filters: FilterOptions = {
-        processing: ['during']
+        processing: ['during'],
       };
-      
+
       const { filtered } = advancedFilters(mockSearchResults, filters);
-      
+
       expect(filtered).toHaveLength(2);
-      expect(filtered.every(result => result.source.processing === 'during')).toBe(true);
+      expect(filtered.every((result) => result.source.processing === 'during')).toBe(true);
     });
 
     test('should filter by created time range', () => {
       const filters: FilterOptions = {
         timeRange: {
           start: '2024-01-15T00:00:00Z',
-          end: '2024-01-16T23:59:59Z'
-        }
+          end: '2024-01-16T23:59:59Z',
+        },
       };
-      
+
       const { filtered } = advancedFilters(mockSearchResults, filters);
-      
+
       expect(filtered).toHaveLength(2);
     });
 
@@ -118,53 +116,53 @@ describe('Search Module', () => {
       const filters: FilterOptions = {
         systemTimeRange: {
           start: '2024-01-15T00:00:00Z',
-          end: '2024-01-16T23:59:59Z'
-        }
+          end: '2024-01-16T23:59:59Z',
+        },
       };
-      
+
       const { filtered } = advancedFilters(mockSearchResults, filters);
-      
+
       expect(filtered).toHaveLength(2);
     });
 
     test('should apply multiple filters', () => {
       const filters: FilterOptions = {
-        experiencers: ['self'],
+        who: ['self'],
         perspectives: ['I'],
-        processing: ['during']
+        processing: ['during'],
       };
-      
+
       const { filtered } = advancedFilters(mockSearchResults, filters);
-      
+
       expect(filtered).toHaveLength(2); // Both test-1 and test-3 match the filters
-      expect(filtered.every(result => result.source.experiencer === 'self')).toBe(true);
-      expect(filtered.every(result => result.source.perspective === 'I')).toBe(true);
-      expect(filtered.every(result => result.source.processing === 'during')).toBe(true);
+      expect(filtered.every((result) => result.source.who === 'self')).toBe(true);
+      expect(filtered.every((result) => result.source.perspective === 'I')).toBe(true);
+      expect(filtered.every((result) => result.source.processing === 'during')).toBe(true);
     });
 
     test('should handle records without created date', () => {
-      const recordsWithoutCreated = mockSourceRecords.map(record => ({
+      const recordsWithoutCreated = mockSourceRecords.map((record) => ({
         ...record,
-        created: '2024-01-15T10:00:00Z' // Use a default date instead of undefined
+        created: '2024-01-15T10:00:00Z', // Use a default date instead of undefined
       }));
-      
-      const searchResults = recordsWithoutCreated.map(record => ({
+
+      const searchResults = recordsWithoutCreated.map((record) => ({
         type: 'source' as const,
         id: record.id,
         relevance: 0.8,
         snippet: record.source.substring(0, 50),
-        source: record
+        source: record,
       }));
 
       const filters: FilterOptions = {
         timeRange: {
           start: '2024-01-15T00:00:00Z',
-          end: '2024-01-16T23:59:59Z'
-        }
+          end: '2024-01-16T23:59:59Z',
+        },
       };
-      
+
       const { filtered } = advancedFilters(searchResults, filters);
-      
+
       // Should handle records gracefully
       expect(filtered.length).toBeGreaterThan(0);
     });
@@ -177,22 +175,22 @@ describe('Search Module', () => {
           type: 'source',
           id: 'minimal',
           source: 'Minimal content',
-          created: '2024-01-15T10:00:00Z'
-        }
+          created: '2024-01-15T10:00:00Z',
+        },
       ];
 
-      const searchResults = minimalRecords.map(record => ({
+      const searchResults = minimalRecords.map((record) => ({
         type: 'source' as const,
         id: record.id,
         relevance: 0.8,
         snippet: record.source.substring(0, 50),
-        source: record
+        source: record,
       }));
 
       const filters: FilterOptions = {
-        experiencers: ['self'] // Default experiencer
+        who: ['self'], // Default who
       };
-      
+
       const { filtered } = advancedFilters(searchResults, filters);
       expect(filtered).toHaveLength(1);
     });
@@ -202,4 +200,4 @@ describe('Search Module', () => {
       expect(filtered).toHaveLength(0);
     });
   });
-}); 
+});

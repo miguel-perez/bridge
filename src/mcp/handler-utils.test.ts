@@ -10,7 +10,7 @@ import {
   formatMetadata,
   formatContent,
   formatRelevanceBreakdown,
-  formatSource
+  formatSource,
 } from './handler-utils.js';
 import type { SourceRecord, Experience } from '../core/types.js';
 
@@ -124,9 +124,9 @@ describe('Handler Utilities', () => {
       global.Date = jest.fn(() => {
         throw new Error('Date error');
       }) as unknown as typeof Date;
-      
+
       expect(formatDate('2025-01-21')).toBe('Invalid date');
-      
+
       global.Date = originalDate;
     });
   });
@@ -136,12 +136,12 @@ describe('Handler Utilities', () => {
       const source: SourceRecord = {
         id: 'test',
         source: 'content',
-        experiencer: 'Alice',
+        who: 'Alice',
         perspective: 'I',
         processing: 'during',
-        created: '2025-01-21T12:00:00Z'
+        created: '2025-01-21T12:00:00Z',
       };
-      
+
       const result = formatMetadata(source);
       // The date is in the past, so it will show full date not "Just now"
       expect(result).toMatch(/^Alice \| I \| during \| .+/);
@@ -151,9 +151,9 @@ describe('Handler Utilities', () => {
       const source: SourceRecord = {
         id: 'test',
         source: 'content',
-        created: '2025-01-21T12:00:00Z'
+        created: '2025-01-21T12:00:00Z',
       };
-      
+
       const result = formatMetadata(source);
       // The date is in the past, so it will show full date not "Just now"
       expect(result).toMatch(/^Unknown \| Unknown perspective \| Unknown processing \| .+/);
@@ -163,11 +163,11 @@ describe('Handler Utilities', () => {
       const source = {
         id: 'test',
         source: 'content',
-        experiencer: 'Bob',
+        who: 'Bob',
         perspective: 'we',
-        processing: 'long-after'
+        processing: 'long-after',
       } as SourceRecord;
-      
+
       const result = formatMetadata(source);
       expect(result).toBe('Bob | we | long-after');
     });
@@ -226,19 +226,21 @@ describe('Handler Utilities', () => {
         text_match: 0.85,
         vector_similarity: 0.92,
         semantic_similarity: 0.78,
-        filter_relevance: 1.0
+        filter_relevance: 1.0,
       };
-      
+
       const result = formatRelevanceBreakdown(breakdown);
-      expect(result).toBe('Text match: 85% | Vector similarity: 92% | Semantic similarity: 78% | Filters: 100%');
+      expect(result).toBe(
+        'Text match: 85% | Vector similarity: 92% | Semantic similarity: 78% | Filters: 100%'
+      );
     });
 
     it('should handle partial breakdown', () => {
       const breakdown = {
         text_match: 0.5,
-        semantic_similarity: 0.75
+        semantic_similarity: 0.75,
       };
-      
+
       const result = formatRelevanceBreakdown(breakdown);
       expect(result).toBe('Text match: 50% | Semantic similarity: 75%');
     });
@@ -255,9 +257,9 @@ describe('Handler Utilities', () => {
     it('should handle zero values', () => {
       const breakdown = {
         text_match: 0,
-        vector_similarity: 0
+        vector_similarity: 0,
       };
-      
+
       const result = formatRelevanceBreakdown(breakdown);
       expect(result).toBe('Text match: 0% | Vector similarity: 0%');
     });
@@ -265,9 +267,9 @@ describe('Handler Utilities', () => {
     it('should respect precision setting', () => {
       const breakdown = {
         text_match: 0.8567,
-        vector_similarity: 0.4321
+        vector_similarity: 0.4321,
       };
-      
+
       const result = formatRelevanceBreakdown(breakdown);
       // With precision 0, should round to whole numbers
       expect(result).toBe('Text match: 86% | Vector similarity: 43%');
@@ -278,9 +280,9 @@ describe('Handler Utilities', () => {
         text_match: 0.5,
         vector_similarity: undefined,
         semantic_similarity: 0.75,
-        filter_relevance: undefined
+        filter_relevance: undefined,
       };
-      
+
       const result = formatRelevanceBreakdown(breakdown);
       expect(result).toBe('Text match: 50% | Semantic similarity: 75%');
     });
@@ -292,18 +294,18 @@ describe('Handler Utilities', () => {
         id: 'exp_123',
         source: 'I feel happy today',
         perspective: 'I',
-        experiencer: 'Alice',
+        who: 'Alice',
         processing: 'during',
         crafted: false,
         created: '2025-01-21T12:00:00Z',
-        experience: ['mood.open', 'embodied.sensing']
+        experience: ['mood.open', 'embodied.sensing'],
       };
-      
+
       const result = formatSource(source);
       expect(result).toContain('ID: exp_123');
       expect(result).toContain('Content: I feel happy today');
       expect(result).toContain('Perspective: I');
-      expect(result).toContain('Experiencer: Alice');
+      expect(result).toContain('Who: Alice');
       expect(result).toContain('Processing: during');
       expect(result).toContain('Crafted: false');
       expect(result).toMatch(/Tuesday, January 21, 2025|Just now/);
@@ -314,9 +316,9 @@ describe('Handler Utilities', () => {
       const source: SourceRecord = {
         id: 'exp_456',
         source: 'Basic content',
-        created: '2025-01-21T12:00:00Z'
+        created: '2025-01-21T12:00:00Z',
       };
-      
+
       const result = formatSource(source);
       expect(result).toContain('ID: exp_456');
       expect(result).toContain('Content: Basic content');
@@ -332,19 +334,19 @@ describe('Handler Utilities', () => {
         id: 'exp_1',
         source: 'content',
         crafted: true,
-        created: '2025-01-21T12:00:00Z'
+        created: '2025-01-21T12:00:00Z',
       };
-      
+
       const result1 = formatSource(source1);
       expect(result1).toContain('Crafted: true');
-      
+
       const source2: SourceRecord = {
         id: 'exp_2',
         source: 'content',
         crafted: false,
-        created: '2025-01-21T12:00:00Z'
+        created: '2025-01-21T12:00:00Z',
       };
-      
+
       const result2 = formatSource(source2);
       expect(result2).toContain('Crafted: false');
     });
@@ -353,9 +355,9 @@ describe('Handler Utilities', () => {
       const source: SourceRecord = {
         id: 'exp_789',
         source: 'No date content',
-        created: '2025-01-21T12:00:00Z'
+        created: '2025-01-21T12:00:00Z',
       };
-      
+
       const result = formatSource(source);
       expect(result).toContain('ID: exp_789');
       expect(result).toContain('Content: No date content');
@@ -368,16 +370,16 @@ describe('Handler Utilities', () => {
         id: 'exp_123',
         source: 'content',
         perspective: 'I',
-        experiencer: 'Bob',
-        created: '2025-01-21T12:00:00Z'
+        who: 'Bob',
+        created: '2025-01-21T12:00:00Z',
       };
-      
+
       const result = formatSource(source);
       const lines = result.split('\n');
       expect(lines).toContain('ID: exp_123');
       expect(lines).toContain('Content: content');
       expect(lines).toContain('Perspective: I');
-      expect(lines).toContain('Experiencer: Bob');
+      expect(lines).toContain('Who: Bob');
     });
   });
 });

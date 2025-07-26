@@ -60,8 +60,5 @@ Thumbs.db
 *.tmp
 *.temp 
 
-# Learning loop generated files
-# (Note: OPPORTUNITIES.md, LEARNINGS.md, EXPERIMENTS.md are tracked in git)
-
 # Test data cache
 test-data/
