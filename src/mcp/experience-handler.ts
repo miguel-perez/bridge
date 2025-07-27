@@ -1,4 +1,4 @@
-import { RecallService, type RecallInput, type RecallServiceResult } from '../services/search.js';
+import { RecallService, type RecallInput, type RecallServiceResult, type RecallServiceResponse } from '../services/search.js';
 import { ExperienceService } from '../services/experience.js';
 import { ExperienceInput, ToolResultSchema, type ToolResult } from './schemas.js';
 import {
@@ -304,6 +304,14 @@ export class ExperienceHandler {
           qualities: qualityFilter,
         };
         targetStateResults = await this.recallService.search(targetStateParams);
+        
+        // If no matching target state found, get recent experiences as fallback
+        if (!targetStateResults || targetStateResults.results.length === 0) {
+          targetStateResults = await this.recallService.search({
+            limit: 10,
+            sort: 'created'
+          });
+        }
       }
 
       // Format response based on number of experiences
@@ -374,9 +382,32 @@ export class ExperienceHandler {
         // 4. Target State Examples (if nextMoment specified)
         if (targetStateResults && targetStateResults.results.length > 0) {
           const targetText = this.formatRecallResults(targetStateResults.results);
+          const hasQualityFilter = experience.nextMoment && 
+            Object.entries(experience.nextMoment).some(([_, v]) => v !== false);
+          const targetQualities = experience.nextMoment ? 
+            Object.entries(experience.nextMoment)
+              .filter(([_, v]) => v !== false)
+              .map(([k, v]) => v === true ? k : `${k}.${v}`)
+              .join(', ') : 'qualities';
+          
+          // Check what type of results we're showing
+          const response = targetStateResults as RecallServiceResponse;
+          const isPartialMatch = response.filters?.qualities === 'partial_match';
+          const isFallback = hasQualityFilter && 
+            (!response.filters || (!response.filters.qualities && !isPartialMatch));
+          
+          let headerText: string;
+          if (isPartialMatch) {
+            headerText = `🎯 Target state (partial matches for ${targetQualities}):`;
+          } else if (isFallback) {
+            headerText = `🎯 Target state (no matches for ${targetQualities}, showing recent):`;
+          } else {
+            headerText = `🎯 Target state examples (matching ${targetQualities}):`;
+          }
+            
           content.push({
             type: 'text',
-            text: `\n🎯 Target state examples (matching ${experience.nextMoment ? Object.entries(experience.nextMoment).filter(([_, v]) => v !== false).map(([k, v]) => v === true ? k : `${k}.${v}`).join(', ') : 'qualities'}):\n${targetText}`,
+            text: `\n${headerText}\n${targetText}`,
           });
         }
 
@@ -452,9 +483,32 @@ export class ExperienceHandler {
         // 4. Target State Examples (if nextMoment specified)
         if (targetStateResults && targetStateResults.results.length > 0) {
           const targetText = this.formatRecallResults(targetStateResults.results);
+          const hasQualityFilter = experience.nextMoment && 
+            Object.entries(experience.nextMoment).some(([_, v]) => v !== false);
+          const targetQualities = experience.nextMoment ? 
+            Object.entries(experience.nextMoment)
+              .filter(([_, v]) => v !== false)
+              .map(([k, v]) => v === true ? k : `${k}.${v}`)
+              .join(', ') : 'qualities';
+          
+          // Check what type of results we're showing
+          const response = targetStateResults as RecallServiceResponse;
+          const isPartialMatch = response.filters?.qualities === 'partial_match';
+          const isFallback = hasQualityFilter && 
+            (!response.filters || (!response.filters.qualities && !isPartialMatch));
+          
+          let headerText: string;
+          if (isPartialMatch) {
+            headerText = `🎯 Target state (partial matches for ${targetQualities}):`;
+          } else if (isFallback) {
+            headerText = `🎯 Target state (no matches for ${targetQualities}, showing recent):`;
+          } else {
+            headerText = `🎯 Target state examples (matching ${targetQualities}):`;
+          }
+            
           content.push({
             type: 'text',
-            text: `\n🎯 Target state examples (matching ${experience.nextMoment ? Object.entries(experience.nextMoment).filter(([_, v]) => v !== false).map(([k, v]) => v === true ? k : `${k}.${v}`).join(', ') : 'qualities'}):\n${targetText}`,
+            text: `\n${headerText}\n${targetText}`,
           });
         }
 

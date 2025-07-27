@@ -8,11 +8,13 @@ data capture and analysis directly within your AI conversations.
 1. **Build the extension** (if not already built):
    ```bash
    # macOS/Linux
-   ./build-dxt.sh
+   npm run dxt:build
    
    # Windows
-   ./build-dxt.ps1
+   npm run dxt:build:windows
    ```
+   
+   This will create a `bridge.dxt` file (~120KB) containing everything needed.
 
 2. **Install in Claude Desktop**:
    - Open Claude Desktop
@@ -23,63 +25,66 @@ data capture and analysis directly within your AI conversations.
 
 ## Configuration
 
-After installation, you'll need to configure:
+Bridge works out of the box with sensible defaults. You can optionally configure:
 
-1. **Data File Path**: Where to store your experiential data (default: `~/bridge.json`)
-2. **Debug Mode**: Enable for troubleshooting (default: false)
+1. **Data File Path**: Where to store your experiential data 
+   - Default: `Documents/Bridge/experiences.json`
+   - The directory will be created automatically if it doesn't exist
+
+2. **OpenAI API Key** (Optional): For enhanced semantic search
+   - When provided, enables advanced pattern matching with OpenAI embeddings
+   - Leave empty to disable semantic search (uses exact matching only)
+
+3. **Debug Mode**: Enable for troubleshooting (default: false)
 
 ## Available Tools
 
-Once installed, Bridge provides four MCP tools:
+Once installed, Bridge provides two powerful MCP tools:
 
 ### 1. Experience
-Remember experiences with seven-quality phenomenological analysis:
-- **Embodied**: Physical sensations and somatic awareness
-- **Attentional**: Focus patterns and awareness distribution
-- **Affective**: Emotional qualities and feeling tones
-- **Purposive**: Intentions and goal-oriented aspects
-- **Spatial**: Environmental awareness and positioning
-- **Temporal**: Time perception and flow
-- **Intersubjective**: Relational and social dimensions
+Capture and search experiential moments with seven-dimensional quality framework:
+- **embodied**: How consciousness textures through body/mind (thinking/sensing)
+- **focus**: Attentional quality (narrow/broad)
+- **mood**: Emotional atmosphere (open/closed)  
+- **purpose**: Directional momentum (goal/wander)
+- **space**: Spatial awareness (here/there)
+- **time**: Temporal orientation (past/future)
+- **presence**: Social quality (individual/collective)
 
-### 2. Search
-Find remembered experiences through:
-- Text matching (40%)
-- Vector similarity (30%)
-- Semantic relevance (20%)
-- Filter matches (10%)
+Features:
+- Integrated recall while capturing new experiences
+- Dual view: Recent Flow + Emerging Patterns
+- NextMoment target state search
+- Automatic quality-based clustering
 
-### 3. Update
-Correct or enhance existing experiences:
-- Fix content errors
-- Update experiential analysis
-- Regenerate embeddings
-- Modify metadata
-
-### 4. Release
-Let go of experiences that no longer serve:
-- Remove individual records
-- Batch deletion with reasons
-- Permanent removal from storage
+### 2. Reconsider
+Update or release experiences as understanding evolves:
+- Revise qualities, perspective, or content
+- Add pattern connections via reflects array
+- Release experiences that no longer serve
+- Maintain experiential continuity
 
 ## Usage Examples
 
 ```
-"Capture this moment of clarity while coding - I feel completely absorbed in the flow, 
-time seems to dissolve, and the solution emerges naturally from the problem space."
+"I feel completely absorbed in the flow while coding - time seems to dissolve"
+(Bridge captures with qualities: embodied.thinking, focus.narrow, mood.open, purpose.goal, time.future)
 
-"Search for experiences about 'breakthrough insights' from last week"
+"Show me recent experiences about breakthrough insights"
+(Bridge recalls with dual view: Recent Flow + Emerging Patterns)
 
-"Update experience abc123 - the content should say 'profound' not 'profane'"
+"Update experience abc123 - it was actually more sensing than thinking"
+(Bridge updates qualities while maintaining continuity)
 
-"Release all experiences tagged with 'practice sessions' - they've served their purpose"
+"I want to find experiences similar to this target state: feeling open and wandering"
+(Bridge searches using NextMoment target state matching)
 ```
 
 ## Technical Details
 
 - **Runtime**: Node.js 18+
 - **Storage**: Local JSON file
-- **Embeddings**: Generated locally using Xenova transformers
+- **Embeddings**: OpenAI text-embedding-3-large (when API key provided) or none
 - **Architecture**: MCP server with stdio transport
 - **Performance**: In-memory vector store for fast similarity search
 
@@ -96,25 +101,30 @@ time seems to dissolve, and the solution emerges naturally from the problem spac
    - Look for errors in debug logs
 
 3. **Search not finding results**:
-   - Verify embeddings are generated (may take a moment)
-   - Check that captures have completed processing
-   - Try broader search terms
+   - If using OpenAI embeddings, verify API key is correct
+   - Check that experiences have been captured
+   - Try different search terms or use quality filters
 
 ## Privacy & Security
 
 - All data stored locally on your machine
 - No external API calls for core functionality
-- Embeddings generated locally
-- Optional LLM enrichment requires API key
+- No embeddings by default (exact text matching)
+- Optional OpenAI embeddings for semantic search
 
 ## Development
 
 To modify and rebuild:
 
 1. Make changes to source code
-2. Run tests: `npm test`
-3. Rebuild: `npm run build`
-4. Package: `./build-dxt.sh` or `./build-dxt.ps1`
+2. Run quality checks: `npm run quality`
+3. Build DXT package: `npm run dxt:build` (or `dxt:build:windows`)
+
+Other useful commands:
+- `npm run dev` - Development watch mode
+- `npm test` - Run unit tests
+- `npm run test:all` - Run all tests
+- `npm run lint:fix` - Fix code style issues
 
 ## License
 

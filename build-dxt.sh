@@ -18,7 +18,7 @@ npm run build:all
 
 # Generate manifest from sources
 echo "Generating manifest..."
-npm run generate:manifest
+npm run build:manifest
 
 # Create manifest with flat structure
 echo "Validating manifest..."

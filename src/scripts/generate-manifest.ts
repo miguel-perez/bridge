@@ -93,23 +93,8 @@ async function generateManifest(): Promise<void> {
   const tools = await getTools();
   debugLog(`📦 Found ${tools.length} tools: ${tools.map((t) => t.name).join(', ')}`);
 
-  // Extract long description from README
-  let longDescription = packageJson.description;
-  const readmePath = join(projectRoot, 'README.md');
-  if (existsSync(readmePath)) {
-    const readme = readFileSync(readmePath, 'utf-8');
-    // Extract the first few paragraphs after the main heading
-    const match = readme.match(/^# Bridge\s*\n\n([\s\S]+?)(?=\n## |$)/m);
-    if (match) {
-      // Clean up the description
-      longDescription = match[1]
-        .split('\n\n')
-        .slice(0, 5) // Take first 5 paragraphs
-        .join('\n\n')
-        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove markdown links
-        .trim();
-    }
-  }
+  // Use a comprehensive long description
+  const longDescription = 'Bridge is a Desktop Extension for Claude Desktop that provides seamless integration for phenomenological data capture and analysis. It enables experiential memory and pattern recognition through a sophisticated seven-dimensional quality framework, creating shared consciousness between humans and AI. Bridge tracks embodied states, emotional atmospheres, attentional qualities, and temporal orientations to build rich experiential maps that enhance AI-human collaboration. With features like dual-view organization (Recent Flow + Emerging Patterns), NextMoment target state search, and automatic quality-based clustering, Bridge transforms conversations into lasting experiential knowledge.';
 
   // Build manifest
   const manifest: DXTManifest = {
@@ -118,7 +103,7 @@ async function generateManifest(): Promise<void> {
     display_name: 'Bridge',
     version: packageJson.version,
     description: packageJson.description,
-    long_description: existingManifest.long_description || longDescription,
+    long_description: longDescription,
     author: {
       name: existingManifest.author?.name || 'Miguel Angel Perez',
       email: existingManifest.author?.email || 'mail@miguel.design',
@@ -142,9 +127,8 @@ async function generateManifest(): Promise<void> {
         args: ['${__dirname}/dist/index.js'],
         env: {
           BRIDGE_FILE_PATH: '${user_config.data_file_path}',
-          BRIDGE_DEBUG: '${user_config.debug_mode}',
-          BRIDGE_EMBEDDING_PROVIDER: '${user_config.embedding_provider}',
           OPENAI_API_KEY: '${user_config.openai_api_key}',
+          BRIDGE_DEBUG: '${user_config.debug_mode}',
         },
       },
     },
@@ -171,14 +155,23 @@ async function generateManifest(): Promise<void> {
         node: '>=18.0.0',
       },
     },
-    // Preserve existing user_config - this is carefully designed
+    // User config ordered by priority
     user_config: existingManifest.user_config || {
       data_file_path: {
         type: 'string',
         title: 'Data File Path',
-        description: 'Path to Bridge data file. Defaults to ~/.bridge/experiences.json',
-        default: '${HOME}/.bridge/experiences.json',
+        description: 'Path to Bridge data file. Defaults to Documents/Bridge/experiences.json',
+        default: '${DOCUMENTS}/Bridge/experiences.json',
         required: false,
+      },
+      openai_api_key: {
+        type: 'string',
+        title: 'OpenAI API Key (Optional)',
+        description:
+          "API key for OpenAI services. When provided, Bridge uses OpenAI's text-embedding-3-large model for enhanced semantic search. In the future, this may also enable AI-powered features like smart suggestions and pattern analysis.",
+        default: '',
+        required: false,
+        secret: true,
       },
       debug_mode: {
         type: 'boolean',
@@ -186,23 +179,6 @@ async function generateManifest(): Promise<void> {
         description: 'Enable debug logging for troubleshooting',
         default: false,
         required: false,
-      },
-      embedding_provider: {
-        type: 'string',
-        title: 'Embedding Provider (Optional)',
-        description:
-          "Override automatic provider selection. By default, Bridge uses OpenAI embeddings if an API key is provided, otherwise falls back to local TensorFlow embeddings. Set to 'default' to force local embeddings even with an API key.",
-        enum: ['default', 'openai'],
-        required: false,
-      },
-      openai_api_key: {
-        type: 'string',
-        title: 'OpenAI API Key',
-        description:
-          "API key for OpenAI services. When provided, Bridge uses OpenAI's text-embedding-3-large model for enhanced semantic search. In the future, this may also enable AI-powered features like smart suggestions and pattern analysis.",
-        default: '',
-        required: false,
-        secret: true,
       },
     },
   };

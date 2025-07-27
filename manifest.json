@@ -5,7 +5,7 @@
   "display_name": "Bridge",
   "version": "0.1.0",
   "description": "MCP server for capturing and analyzing experiential data",
-  "long_description": "Bridge is an MCP (Model Context Protocol) server that enables shared experiential memory between humans and AI. It captures and analyzes experiential moments through a 7-dimensional quality framework, implementing an extended cognition model where humans and AI complement each other's perceptual capabilities. Bridge provides tools for capturing experiences with phenomenological depth, searching through semantic similarity, and evolving understanding through reconsideration.",
+  "long_description": "Bridge is a Desktop Extension for Claude Desktop that provides seamless integration for phenomenological data capture and analysis. It enables experiential memory and pattern recognition through a sophisticated seven-dimensional quality framework, creating shared consciousness between humans and AI. Bridge tracks embodied states, emotional atmospheres, attentional qualities, and temporal orientations to build rich experiential maps that enhance AI-human collaboration. With features like dual-view organization (Recent Flow + Emerging Patterns), NextMoment target state search, and automatic quality-based clustering, Bridge transforms conversations into lasting experiential knowledge.",
   "author": {
     "name": "Miguel Angel Perez",
     "email": "mail@miguel.design",
@@ -29,9 +29,8 @@
       ],
       "env": {
         "BRIDGE_FILE_PATH": "${user_config.data_file_path}",
-        "BRIDGE_DEBUG": "${user_config.debug_mode}",
-        "BRIDGE_EMBEDDING_PROVIDER": "${user_config.embedding_provider}",
-        "OPENAI_API_KEY": "${user_config.openai_api_key}"
+        "OPENAI_API_KEY": "${user_config.openai_api_key}",
+        "BRIDGE_DEBUG": "${user_config.debug_mode}"
       }
     }
   },
@@ -72,9 +71,17 @@
     "data_file_path": {
       "type": "string",
       "title": "Data File Path",
-      "description": "Path to Bridge data file. Defaults to ~/.bridge/experiences.json",
-      "default": "${HOME}/.bridge/experiences.json",
+      "description": "Path to Bridge data file. Defaults to Documents/Bridge/experiences.json",
+      "default": "${DOCUMENTS}/Bridge/experiences.json",
       "required": false
+    },
+    "openai_api_key": {
+      "type": "string",
+      "title": "OpenAI API Key (Optional)",
+      "description": "API key for OpenAI services. When provided, Bridge uses OpenAI's text-embedding-3-large model for enhanced semantic search. In the future, this may also enable AI-powered features like smart suggestions and pattern analysis.",
+      "default": "",
+      "required": false,
+      "secret": true
     },
     "debug_mode": {
       "type": "boolean",
@@ -82,24 +89,6 @@
       "description": "Enable debug logging for troubleshooting",
       "default": false,
       "required": false
-    },
-    "embedding_provider": {
-      "type": "string",
-      "title": "Embedding Provider (Optional)",
-      "description": "Override automatic provider selection. By default, Bridge uses OpenAI embeddings if an API key is provided, otherwise falls back to none (zero vectors). Set to 'none' to force no embeddings even with an API key.",
-      "enum": [
-        "none",
-        "openai"
-      ],
-      "required": false
-    },
-    "openai_api_key": {
-      "type": "string",
-      "title": "OpenAI API Key",
-      "description": "API key for OpenAI services. When provided, Bridge uses OpenAI's text-embedding-3-large model for enhanced semantic search. In the future, this may also enable AI-powered features like smart suggestions and pattern analysis.",
-      "default": "",
-      "required": false,
-      "secret": true
     }
   }
 }

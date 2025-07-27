@@ -8,22 +8,33 @@
     "bridge": "./dist/index.js"
   },
   "scripts": {
+    "// Development": "===================================================",
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
-    "build:all": "npm run build && npm run generate:manifest && npm run bundle",
-    "bundle": "esbuild src/mcp-server.ts --bundle --platform=node --outfile=dist/bundle.js --format=esm --external:node:* --external:util --external:buffer --external:stream --external:crypto --external:path --external:fs --external:os --external:child_process",
     "start": "node dist/bundle.js",
-    "generate:manifest": "tsx src/scripts/generate-manifest.ts",
+    
+    "// Building": "======================================================",
+    "build": "tsc",
+    "build:bundle": "esbuild src/mcp-server.ts --bundle --platform=node --outfile=dist/bundle.js --format=esm --external:node:* --external:util --external:buffer --external:stream --external:crypto --external:path --external:fs --external:os --external:child_process",
+    "build:manifest": "tsx src/scripts/generate-manifest.ts",
+    "build:all": "npm run build && npm run build:manifest && npm run build:bundle",
+    
+    "// DXT Package": "===================================================",
+    "dxt:build": "npm run build:all && ./build-dxt.sh",
+    "dxt:build:windows": "npm run build:all && powershell -ExecutionPolicy Bypass -File ./build-dxt.ps1",
+    
+    "// Testing": "=======================================================",
     "test": "jest --coverage",
     "test:integration": "npm run build && jest --config jest.config.integration.mjs",
     "test:simulation": "npm run build && jest --config jest.config.simulation.mjs",
     "test:all": "npm test && npm run test:integration",
-    "test:complete": "npm run test:all && npm run test:simulation",
-    "quality-check": "npm run lint && npm run type-check && npm test",
-    "quality-check:full": "npm run lint && npm run type-check && npm test",
+    
+    "// Code Quality": "===================================================",
     "lint": "eslint src/**/*.ts --ext .ts",
     "lint:fix": "eslint src/**/*.ts --ext .ts --fix",
     "type-check": "tsc --noEmit",
+    "quality": "npm run lint && npm run type-check && npm test",
+    
+    "// Git Hooks": "======================================================",
     "prepare": "husky install"
   },
   "lint-staged": {

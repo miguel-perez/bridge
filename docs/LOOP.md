@@ -94,8 +94,8 @@ npm run quality-check:full # Full quality check (pre-push level)
 # Build & Deploy
 
 npm run build:all # Build and bundle for production
-./build-dxt.sh # Build Desktop Extension (Unix)
-.\build-dxt.ps1 # Build Desktop Extension (Windows)
+npm run dxt:build # Build Desktop Extension (macOS/Linux)
+npm run dxt:build:windows # Build Desktop Extension (Windows)
 
 ````
 

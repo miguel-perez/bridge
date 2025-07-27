@@ -20,7 +20,7 @@ if ($LASTEXITCODE -ne 0) {
 
 # Generate manifest from sources
 Write-Host "Generating manifest..." -ForegroundColor Yellow
-npm run generate:manifest
+npm run build:manifest
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Manifest generation failed!" -ForegroundColor Red
     exit 1

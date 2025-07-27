@@ -157,11 +157,11 @@ Bridge implements the Model Context Protocol (MCP) as defined by Anthropic. Key 
 Bridge can be packaged as a Desktop Extension (.dxt file) for easy distribution:
 
 ```bash
-# Build DXT package (Unix)
-./build-dxt.sh
+# Build DXT package (macOS/Linux)
+npm run dxt:build
 
 # Build DXT package (Windows)
-.\build-dxt.ps1
+npm run dxt:build:windows
 ```
 
 The DXT manifest (`manifest.json`) is auto-generated and includes:

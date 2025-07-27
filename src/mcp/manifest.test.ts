@@ -82,9 +82,7 @@ describe('DXT Manifest', () => {
       expect((manifest as unknown as { user_config: { data_file_path: { type: string; required: boolean } } }).user_config.data_file_path.type).toBe('string');
       expect((manifest as unknown as { user_config: { data_file_path: { type: string; required: boolean } } }).user_config.data_file_path.required).toBe(false);
 
-      expect((manifest as unknown as { user_config: { embedding_provider: { enum: string[] } } }).user_config.embedding_provider).toBeDefined();
-      expect((manifest as unknown as { user_config: { embedding_provider: { enum: string[] } } }).user_config.embedding_provider.enum).toContain('none');
-      // No default value - auto-detection based on API key
+      // Embedding provider removed - auto-detection based on API key
 
       // Check secret fields are marked correctly
       expect((manifest as unknown as { user_config: { openai_api_key: { secret: boolean } } }).user_config.openai_api_key.secret).toBe(true);
@@ -125,7 +123,6 @@ describe('DXT Manifest', () => {
 
       expect(env.BRIDGE_FILE_PATH).toBe('${user_config.data_file_path}');
       expect(env.BRIDGE_DEBUG).toBe('${user_config.debug_mode}');
-      expect(env.BRIDGE_EMBEDDING_PROVIDER).toBe('${user_config.embedding_provider}');
       expect(env.OPENAI_API_KEY).toBe('${user_config.openai_api_key}');
     });
   });

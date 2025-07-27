@@ -76,6 +76,12 @@ function expandPath(path: string): string {
     path = path.replace(/\$HOME/g, homedir());
   }
 
+  // Replace ${DOCUMENTS} with platform-specific Documents directory
+  if (path.includes('${DOCUMENTS}')) {
+    const documentsDir = join(homedir(), 'Documents');
+    path = path.replace(/\$\{DOCUMENTS\}/g, documentsDir);
+  }
+
   return path;
 }
 
@@ -85,7 +91,7 @@ function expandPath(path: string): string {
  * Priority order:
  * 1. User config from DXT (BRIDGE_FILE_PATH env var)
  * 2. Environment variable BRIDGE_FILE_PATH
- * 3. Default: ~/bridge.json (cross-platform)
+ * 3. Default: ~/Documents/Bridge/experiences.json (cross-platform)
  * @returns Path to bridge.json
  */
 function getDefaultDataFilePath(): string {
@@ -93,8 +99,10 @@ function getDefaultDataFilePath(): string {
   if (typeof userConfigPath === 'string' && userConfigPath.trim().length > 0) {
     return expandPath(userConfigPath);
   }
-  // Default to home directory
-  return join(homedir(), 'bridge.json');
+  // Default to ~/Documents/Bridge/experiences.json
+  const documentsDir = join(homedir(), 'Documents');
+  const bridgeDir = join(documentsDir, 'Bridge');
+  return join(bridgeDir, 'experiences.json');
 }
 
 /**
