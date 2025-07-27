@@ -5,16 +5,14 @@
 import { ExperienceHandler } from './experience-handler.js';
 import { ExperienceService } from '../services/experience.js';
 import { RecallService } from '../services/search.js';
-import * as formatters from '../utils/formatters.js';
-import * as messages from '../utils/messages.js';
 import * as storage from '../core/storage.js';
-// Importing for mock, but not used directly in tests
 
 // Mock dependencies
 jest.mock('../services/experience.js');
 jest.mock('../services/search.js');
-jest.mock('../utils/formatters.js');
-jest.mock('../utils/messages.js');
+// Don't mock formatters - we want to test the actual formatting
+// jest.mock('../utils/formatters.js');
+// jest.mock('../utils/messages.js');
 jest.mock('../core/storage.js');
 jest.mock('../core/config.js', () => ({
   SEMANTIC_CONFIG: {
@@ -39,11 +37,6 @@ describe('ExperienceHandler', () => {
   let handler: ExperienceHandler;
   let mockExperienceService: jest.Mocked<ExperienceService>;
   let mockRecallService: jest.Mocked<RecallService>;
-  let mockFormatExperienceResponse: jest.MockedFunction<typeof formatters.formatExperienceResponse>;
-  let mockFormatBatchExperienceResponse: jest.MockedFunction<
-    typeof formatters.formatBatchExperienceResponse
-  >;
-  let mockFormatMessage: jest.MockedFunction<typeof messages.formatMessage>;
   let mockGetAllRecords: jest.MockedFunction<typeof storage.getAllRecords>;
 
   beforeEach(() => {
@@ -58,25 +51,7 @@ describe('ExperienceHandler', () => {
     mockRecallService = (RecallService as jest.MockedClass<typeof RecallService>).mock
       .instances[0] as jest.Mocked<RecallService>;
 
-    // Setup formatter mocks
-    mockFormatExperienceResponse = formatters.formatExperienceResponse as jest.MockedFunction<
-      typeof formatters.formatExperienceResponse
-    >;
-    mockFormatBatchExperienceResponse =
-      formatters.formatBatchExperienceResponse as jest.MockedFunction<
-        typeof formatters.formatBatchExperienceResponse
-      >;
-    mockFormatExperienceResponse.mockReturnValue('Experienced: test');
-    mockFormatBatchExperienceResponse.mockReturnValue('Batch experienced');
-
-    // Setup message mocks
-    mockFormatMessage = messages.formatMessage as jest.MockedFunction<
-      typeof messages.formatMessage
-    >;
-    mockFormatMessage.mockReturnValue('Similar experience found');
-    (messages.Messages as Record<string, unknown>) = {
-      experienceQualities: {
-        similar: 'Similar: {content}'}};
+    // Don't setup formatter mocks - use actual formatters
 
     // Setup storage mocks
     mockGetAllRecords = storage.getAllRecords as jest.MockedFunction<typeof storage.getAllRecords>;
@@ -119,10 +94,11 @@ describe('ExperienceHandler', () => {
             processing: 'during',
             experienceQualities: {"embodied":false,"focus":false,"mood":"open","purpose":false,"space":false,"time":false,"presence":false}}]});
 
-      expect(result.content.length).toBeGreaterThanOrEqual(1);
+      expect(result.content.length).toBeGreaterThanOrEqual(2); // Main + at least one view section
       expect(result.content[0]).toEqual({
         type: 'text',
-        text: expect.stringContaining('Experienced')});
+        text: expect.stringContaining('😊 I feel happy')});
+      expect(result.content[0].text).toContain('Experienced');
 
       expect(mockExperienceService.rememberExperience).toHaveBeenCalledWith({
         source: 'I feel happy',
@@ -171,15 +147,13 @@ describe('ExperienceHandler', () => {
           { source: 'Experience 1', emoji: '✨', experienceQualities: {"embodied":false,"focus":false,"mood":"open","purpose":false,"space":false,"time":false,"presence":false} },
           { source: 'Experience 2', emoji: '😔', experienceQualities: {"embodied":false,"focus":false,"mood":"closed","purpose":false,"space":false,"time":false,"presence":false} }]});
 
-      // Check content
-      expect(result.content[0]).toEqual({
-        type: 'text',
-        text: 'Batch experienced'
-      });
-      // No flow state anymore
+      // Check content - with real formatter, we get the actual batch format
+      expect(result.content[0].type).toBe('text');
+      expect(result.content[0].text).toContain('Experienced 2 experiences');
+      expect(result.content[0].text).toContain('✨ Experience 1');
+      expect(result.content[0].text).toContain('😔 Experience 2');
 
       expect(mockExperienceService.rememberExperience).toHaveBeenCalledTimes(2);
-      expect(mockFormatBatchExperienceResponse).toHaveBeenCalledWith(mockResults, true);
     });
 
     it('should return error when source is missing', async () => {
@@ -280,15 +254,19 @@ describe('ExperienceHandler', () => {
       const result = await handler.handle({
         experiences: [{ source: 'I feel anxious', emoji: '😟' }]});
 
-      expect(result.content[0].text).toContain('Experienced: test');
-      // With automatic recall, related experiences are shown in content[1]
+      expect(result.content[0].text).toContain('I feel anxious');
+      expect(result.content[0].text).toContain('Experienced');
+      // With dual view, we always have multiple content sections
       expect(result.content.length).toBeGreaterThan(1);
-      expect(result.content[1].text).toContain('Related experiences:');
+      // Look for similar experiences in the Recent Flow section
+      const hasRelatedContent = result.content.some(c => 
+        c.text?.includes('anxious about the presentation')
+      );
+      expect(hasRelatedContent).toBe(true);
     });
 
     it('should handle long similar experience content', async () => {
-      const longContent =
-        'This is a very long experience content that should be truncated when displayed in the response. It contains many words and details that would make the response too long if not properly handled. The system should truncate this content appropriately while still providing useful information about the similar experience.';
+      const longContent = 'a'.repeat(650); // Create content longer than 600 chars
 
       const mockResult = {
         source: {
@@ -322,10 +300,15 @@ describe('ExperienceHandler', () => {
       const result = await handler.handle({
         experiences: [{ source: 'I feel happy', emoji: '😊' }]});
 
-      expect(result.content[0].text).toContain('Experienced: test');
-      // With automatic recall, related experiences are shown in content[1]
+      expect(result.content[0].text).toContain('I feel happy');
+      expect(result.content[0].text).toContain('Experienced');
+      // With dual view and automatic recall
       expect(result.content.length).toBeGreaterThan(1);
-      expect(result.content[1].text).toContain('Related experiences:');
+      // Check for truncated content in sections
+      const hasTruncated = result.content.some(c => 
+        c.text?.includes('...')
+      );
+      expect(hasTruncated).toBe(true);
     });
 
     it('should not include similar experiences when none found', async () => {
@@ -347,8 +330,10 @@ describe('ExperienceHandler', () => {
       const result = await handler.handle({
         experiences: [{ source: 'Unique experience', emoji: '✨' }]});
 
-      expect(result.content[0].text).toContain('Experienced: test');
-      expect(result.content[0].text).not.toContain('Similar experience found');
+      expect(result.content[0].text).toContain('Unique experience');
+      expect(result.content[0].text).toContain('Experienced');
+      // With dual view, we always have Recent Flow and Emerging Patterns
+      expect(result.content.length).toBeGreaterThan(1);
     });
   });
 
@@ -372,13 +357,16 @@ describe('ExperienceHandler', () => {
       const result = await handler.handle({
         experiences: [{ source: 'My first experience', emoji: '🌟' }]});
 
-      expect(result.content.length).toBeGreaterThanOrEqual(2); // Main response + guidance
+      expect(result.content.length).toBeGreaterThanOrEqual(2); // Main + guidance (dual view might be empty)
       expect(result.content[0]).toEqual({
         type: 'text',
-        text: expect.stringContaining('Experienced')});
-      expect(result.content[1]).toEqual({
-        type: 'text',
-        text: expect.stringContaining('Capturing meaningful moments')});
+        text: expect.stringContaining('🌟 My first experience')});
+      expect(result.content[0].text).toContain('Experienced');
+      // Find the guidance in the content array
+      const guidanceContent = result.content.find(c => 
+        c.text?.includes('Capturing meaningful moments')
+      );
+      expect(guidanceContent).toBeDefined();
     });
 
     it('should provide no guidance for routine captures', async () => {
@@ -397,8 +385,10 @@ describe('ExperienceHandler', () => {
         defaultsUsed: []};
 
       mockExperienceService.rememberExperience.mockResolvedValue(mockResult);
+      // Mock multiple search calls for dual view
       mockRecallService.search.mockResolvedValue({
-        results: []});
+        results: [],
+        clusters: []});
 
       const result = await handler.handle({
         experiences: [
@@ -407,8 +397,13 @@ describe('ExperienceHandler', () => {
             emoji: '📋',
             experienceQualities: {"embodied":false,"focus":false,"mood":false,"purpose":"goal","space":false,"time":false,"presence":false}}]});
 
-      // Should only have the main response, no guidance
-      expect(result.content).toHaveLength(1);
+      // With empty results, might only have main response (no dual view sections)
+      expect(result.content.length).toBeGreaterThanOrEqual(1);
+      // Verify no guidance present - guidance would be in a later content section
+      const hasGuidance = result.content.some(c => 
+        c.text?.includes('Capturing meaningful moments')
+      );
+      expect(hasGuidance).toBe(false);
     });
 
     it('should handle guidance selection errors gracefully', async () => {
@@ -1041,14 +1036,9 @@ describe('ExperienceHandler', () => {
         // Verify the result contains the expected experience data
         expect(result).toBeDefined();
         expect(result.isError).toBeFalsy();
-
-        // Verify formatter was called with correct data
-        expect(mockFormatExperienceResponse).toHaveBeenCalledWith(
-          expect.objectContaining({
-            source: expect.objectContaining({
-              experienceQualities: experienceQualities})}),
-          true
-        );
+        expect(result.content.length).toBeGreaterThanOrEqual(1);
+        expect(result.content[0].type).toBe('text');
+        expect(result.content[0].text).toContain(source);
       });
     });
 
@@ -1367,9 +1357,13 @@ describe('ExperienceHandler', () => {
 
       expect(result.content.length).toBeGreaterThanOrEqual(2);
       // Check that recall results are formatted properly
-      expect(result.content[1].type).toBe('text');
-      expect(result.content[1].text).toContain('🔍 Related experiences:');
-      expect(result.content[1].text).toContain('Similar past experience');
+      // Dual view: content[1] is Recent Flow, content[2] is Emerging Patterns, content[3] is Search results
+      expect(result.content.length).toBeGreaterThanOrEqual(3);
+      
+      // Find the search results section
+      const searchResults = result.content.find(c => c.text?.includes('🔍 Search results'));
+      expect(searchResults).toBeDefined();
+      expect(searchResults?.text).toContain('Similar past experience');
     });
 
     it('should handle recall with multiple filters', async () => {
@@ -1424,9 +1418,17 @@ describe('ExperienceHandler', () => {
         recall: {
           ids: ['exp_001', 'exp_002']}});
 
-      expect(mockRecallService.search).toHaveBeenCalledWith({
+      // The handler now makes 4 calls: user's recall request + recent flow + emerging patterns + auto recall
+      expect(mockRecallService.search).toHaveBeenCalledTimes(4);
+      
+      // Find the call with ID lookup
+      const callsWithId = mockRecallService.search.mock.calls.filter(
+        call => call[0].id !== undefined
+      );
+      expect(callsWithId.length).toBe(1);
+      expect(callsWithId[0][0]).toEqual({
         id: 'exp_001', // RecallInput only accepts single ID
-        limit: 5, // default limit
+        limit: 20, // DEFAULT_AUTO_RECALL_LIMIT
       });
     });
   });

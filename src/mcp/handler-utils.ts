@@ -11,7 +11,7 @@ import type { SourceRecord } from '../core/types.js';
 // CONSTANTS
 // ============================================================================
 
-export const CONTENT_SNIPPET_LENGTH = 200;
+export const CONTENT_SNIPPET_LENGTH = 600;
 export const RELEVANCE_PERCENT_PRECISION = 0;
 
 // ============================================================================

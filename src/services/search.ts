@@ -73,7 +73,7 @@ function debugLog(
   message: string,
   data?: unknown
 ): { timestamp: string; message: string; data?: unknown } | null {
-  // In MCP context, we don't use console.log
+  // In MCP context, we don't use stdout logging
   // Debug information is returned in the response instead
   if (DEBUG_MODE) {
     // Store debug info for inclusion in response
@@ -344,7 +344,7 @@ export async function search(input: RecallInput): Promise<RecallServiceResponse>
         // Find similar embeddings using cosine similarity
         const similarResults = await findSimilarByEmbedding(
           queryEmbedding,
-          input.limit ? input.limit * 2 : 100, // Get more results to filter later
+          input.limit ? input.limit * 2 : 200, // Get more results to filter later - increased default
           input.semantic_threshold || SEMANTIC_CONFIG.DEFAULT_THRESHOLD
         );
 
@@ -484,7 +484,7 @@ export async function search(input: RecallInput): Promise<RecallServiceResponse>
       id: record.id,
       type: 'source', // All records are sources
       content: record.source,
-      snippet: record.source.length > 200 ? record.source.substring(0, 200) + '...' : record.source,
+      snippet: record.source.length > 600 ? record.source.substring(0, 600) + '...' : record.source,
       metadata: {
         created: record.created,
         perspective: record.perspective,

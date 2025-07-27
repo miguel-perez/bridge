@@ -86,10 +86,10 @@ describe('Formatter Utilities', () => {
       expect(result).toBe('Verylongwordwithouan...');
     });
 
-    it('should use default length of 120', () => {
-      const text = 'a'.repeat(150);
+    it('should use default length of 600', () => {
+      const text = 'a'.repeat(650);
       const result = smartTruncate(text);
-      expect(result.length).toBe(123); // 120 + '...'
+      expect(result.length).toBe(603); // 600 + '...'
     });
 
     it('should handle empty string', () => {
@@ -117,10 +117,11 @@ describe('Formatter Utilities', () => {
     it('should truncate long snippets', () => {
       const longResult = {
         ...baseResult,
-        snippet:
-          'This is a very long snippet that needs to be truncated because it exceeds the maximum allowed length for display purposes in the user interface'};
+        snippet: 'a'.repeat(650)};
       const result = formatSearchResult(longResult, 0);
       expect(result).toContain('...');
+      expect(result).toContain('a'.repeat(600));
+      expect(result).not.toContain('a'.repeat(601));
     });
 
     it('should use ID as summary when snippet is missing and showId is true', () => {
@@ -372,13 +373,15 @@ describe('Formatter Utilities', () => {
     it('should truncate long content', () => {
       const longRecall: RecallResult = {
         id: 'exp_long',
-        content: 'a'.repeat(200),
+        content: 'a'.repeat(650),
         metadata: {
           created: '2025-01-21T11:00:00Z'},
         relevance_score: 0.8};
       const result = formatRecallResponse([longRecall]);
       expect(result).toContain('...');
-      expect(result.includes('a'.repeat(200))).toBe(false);
+      expect(result.includes('a'.repeat(650))).toBe(false);
+      // Should include the truncated version
+      expect(result.includes('a'.repeat(600))).toBe(true);
     });
 
     it('should prefer snippet over content', () => {

@@ -7,6 +7,14 @@ import {
   type ExperienceResult,
 } from '../utils/formatters.js';
 import { SEMANTIC_CONFIG } from '../core/config.js';
+
+// Temporary config values until circular dependency is resolved
+const RECALL_CONFIG = {
+  DEFAULT_AUTO_RECALL_LIMIT: 20,
+  RECENT_FLOW_LIMIT: 10,
+  EMERGING_PATTERNS_LIMIT: 100,
+  TEXT_TRUNCATION_LENGTH: 600,
+};
 import { incrementCallCount } from './call-counter.js';
 
 /**
@@ -33,8 +41,8 @@ function formatSimilarExperiences(similar: SimilarExperience[]): string {
   similar.forEach((exp, index) => {
     const snippet = exp.snippet || exp.content || '';
 
-    // Use more generous truncation (100 chars instead of 80)
-    const truncated = snippet.length > 100 ? snippet.substring(0, 97) + '...' : snippet;
+    // Use generous truncation for maximum information
+    const truncated = snippet.length > RECALL_CONFIG.TEXT_TRUNCATION_LENGTH ? snippet.substring(0, RECALL_CONFIG.TEXT_TRUNCATION_LENGTH - 3) + '...' : snippet;
 
     const score = Math.round(exp.relevance_score * 100);
 
@@ -181,12 +189,16 @@ export class ExperienceHandler {
 
       // Handle integrated recall if requested or if we should do automatic recall
       let recallResults = null;
+      let targetStateResults = null;
+      let recentFlowResults = null;
+      let emergingPatterns = null;
+      
       const shouldAutoRecall = !experience.recall && results.length > 0 && 
         (experience.experiences?.[0]?.source || experience.nextMoment);
       
       if (experience.recall || shouldAutoRecall) {
         const searchParams: RecallInput = {
-          limit: experience.recall?.limit || 5,
+          limit: experience.recall?.limit || RECALL_CONFIG.DEFAULT_AUTO_RECALL_LIMIT,
         };
         
         // For automatic recall, use the content as the search query
@@ -255,6 +267,44 @@ export class ExperienceHandler {
           }
         }
       }
+      
+      // DUAL VIEW: Always get recent flow (last N chronological)
+      const recentFlowParams: RecallInput = {
+        limit: RECALL_CONFIG.RECENT_FLOW_LIMIT,
+        sort: 'created'
+      };
+      recentFlowResults = await this.recallService.search(recentFlowParams);
+      
+      // DUAL VIEW: Always get emerging patterns (grouped by qualities)
+      const patternsParams: RecallInput = {
+        limit: RECALL_CONFIG.EMERGING_PATTERNS_LIMIT,
+        group_by: 'qualities'
+      };
+      emergingPatterns = await this.recallService.search(patternsParams);
+      
+      // TARGET STATE SEARCH: If nextMoment specified, search for matching experiences
+      if (experience.nextMoment) {
+        // Convert nextMoment object to proper quality filter format
+        const qualityFilter: Record<string, unknown> = {};
+        
+        for (const [quality, value] of Object.entries(experience.nextMoment)) {
+          if (value !== false) {
+            if (value === true) {
+              // For base qualities (e.g., mood: true)
+              qualityFilter[quality] = { present: true };
+            } else {
+              // For specific values (e.g., mood: 'open')
+              qualityFilter[quality] = value;
+            }
+          }
+        }
+        
+        const targetStateParams: RecallInput = {
+          limit: 20,
+          qualities: qualityFilter,
+        };
+        targetStateResults = await this.recallService.search(targetStateParams);
+      }
 
       // Format response based on number of experiences
       if (results.length === 1) {
@@ -282,23 +332,52 @@ export class ExperienceHandler {
           },
         ];
 
-        // Add recall results if we have them
-        if (recallResults) {
+        // DUAL VIEW: Always show recent flow and emerging patterns
+        
+        // 1. Recent Flow
+        if (recentFlowResults && recentFlowResults.results.length > 0) {
+          const recentText = this.formatRecallResults(recentFlowResults.results);
+          content.push({
+            type: 'text',
+            text: `\n🕐 Recent Flow (last ${recentFlowResults.results.length} experiences):\n${recentText}`,
+          });
+        }
+        
+        // 2. Emerging Patterns
+        if (emergingPatterns && emergingPatterns.clusters && emergingPatterns.clusters.length > 0) {
+          const patternsText = this.formatGroupedResults(emergingPatterns.clusters, emergingPatterns.results);
+          content.push({
+            type: 'text',
+            text: `\n🌊 Emerging Patterns (grouped by qualities):\n${patternsText}`,
+          });
+        }
+        
+        // 3. Related experiences (if explicit recall was requested)
+        if (recallResults && experience.recall) {
           if (recallResults.clusters && recallResults.clusters.length > 0) {
             // Format grouped results
             const groupedText = this.formatGroupedResults(recallResults.clusters, recallResults.results);
             content.push({
               type: 'text',
-              text: `\n🔍 Related experiences (grouped):\n${groupedText}`,
+              text: `\n🔍 Search results (grouped):\n${groupedText}`,
             });
           } else if (recallResults.results.length > 0) {
             // Format flat results
             const recallText = this.formatRecallResults(recallResults.results);
             content.push({
               type: 'text',
-              text: `\n🔍 Related experiences:\n${recallText}`,
+              text: `\n🔍 Search results:\n${recallText}`,
             });
           }
+        }
+        
+        // 4. Target State Examples (if nextMoment specified)
+        if (targetStateResults && targetStateResults.results.length > 0) {
+          const targetText = this.formatRecallResults(targetStateResults.results);
+          content.push({
+            type: 'text',
+            text: `\n🎯 Target state examples (matching ${experience.nextMoment ? Object.entries(experience.nextMoment).filter(([_, v]) => v !== false).map(([k, v]) => v === true ? k : `${k}.${v}`).join(', ') : 'qualities'}):\n${targetText}`,
+          });
         }
 
         // Add contextual guidance based on simple triggers
@@ -331,23 +410,52 @@ export class ExperienceHandler {
           },
         ];
 
-        // Add recall results if we have them
-        if (recallResults) {
+        // DUAL VIEW: Always show recent flow and emerging patterns
+        
+        // 1. Recent Flow
+        if (recentFlowResults && recentFlowResults.results.length > 0) {
+          const recentText = this.formatRecallResults(recentFlowResults.results);
+          content.push({
+            type: 'text',
+            text: `\n🕐 Recent Flow (last ${recentFlowResults.results.length} experiences):\n${recentText}`,
+          });
+        }
+        
+        // 2. Emerging Patterns
+        if (emergingPatterns && emergingPatterns.clusters && emergingPatterns.clusters.length > 0) {
+          const patternsText = this.formatGroupedResults(emergingPatterns.clusters, emergingPatterns.results);
+          content.push({
+            type: 'text',
+            text: `\n🌊 Emerging Patterns (grouped by qualities):\n${patternsText}`,
+          });
+        }
+        
+        // 3. Related experiences (if explicit recall was requested)
+        if (recallResults && experience.recall) {
           if (recallResults.clusters && recallResults.clusters.length > 0) {
             // Format grouped results
             const groupedText = this.formatGroupedResults(recallResults.clusters, recallResults.results);
             content.push({
               type: 'text',
-              text: `\n🔍 Related experiences (grouped):\n${groupedText}`,
+              text: `\n🔍 Search results (grouped):\n${groupedText}`,
             });
           } else if (recallResults.results.length > 0) {
             // Format flat results
             const recallText = this.formatRecallResults(recallResults.results);
             content.push({
               type: 'text',
-              text: `\n🔍 Related experiences:\n${recallText}`,
+              text: `\n🔍 Search results:\n${recallText}`,
             });
           }
+        }
+        
+        // 4. Target State Examples (if nextMoment specified)
+        if (targetStateResults && targetStateResults.results.length > 0) {
+          const targetText = this.formatRecallResults(targetStateResults.results);
+          content.push({
+            type: 'text',
+            text: `\n🎯 Target state examples (matching ${experience.nextMoment ? Object.entries(experience.nextMoment).filter(([_, v]) => v !== false).map(([k, v]) => v === true ? k : `${k}.${v}`).join(', ') : 'qualities'}):\n${targetText}`,
+          });
         }
 
         // Add nextMoment if provided
@@ -495,13 +603,13 @@ export class ExperienceHandler {
           // Find experiences that belong to this cluster
           const clusterExperiences = results.filter(r => 
             cluster.experienceIds.includes(r.id)
-          ).slice(0, 3); // Show first 3
+          ); // Show ALL experiences in cluster
           
           if (clusterExperiences.length > 0) {
             text += '\n';
             clusterExperiences.forEach((exp, idx) => {
               const snippet = exp.snippet || exp.content || '';
-              const truncated = snippet.length > 80 ? snippet.substring(0, 77) + '...' : snippet;
+              const truncated = snippet.length > RECALL_CONFIG.TEXT_TRUNCATION_LENGTH ? snippet.substring(0, RECALL_CONFIG.TEXT_TRUNCATION_LENGTH - 3) + '...' : snippet;
               text += `\n   ${idx + 1}. "${truncated}"`;
               
               // Add metadata if available
@@ -523,9 +631,7 @@ export class ExperienceHandler {
               }
             });
             
-            if (cluster.experienceIds.length > 3) {
-              text += `\n   ... and ${cluster.experienceIds.length - 3} more`;
-            }
+            // Removed limit - show all experiences
           }
         } else {
           // Fallback to showing IDs if no results available
@@ -550,7 +656,7 @@ export class ExperienceHandler {
     return results
       .map((result, idx) => {
         const snippet = result.snippet || result.content || '';
-        const truncated = snippet.length > 100 ? snippet.substring(0, 97) + '...' : snippet;
+        const truncated = snippet.length > RECALL_CONFIG.TEXT_TRUNCATION_LENGTH ? snippet.substring(0, RECALL_CONFIG.TEXT_TRUNCATION_LENGTH - 3) + '...' : snippet;
         const metadata = result.metadata || {};
         const experienceQualities = metadata.experienceQualities || {};
 

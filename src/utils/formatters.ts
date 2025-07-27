@@ -12,7 +12,7 @@ import { Messages, formatMessage, formatQualityList } from './messages.js';
 // CONSTANTS
 // ============================================================================
 
-const DEFAULT_TRUNCATE_LENGTH = 120;
+const DEFAULT_TRUNCATE_LENGTH = 600;
 const ELLIPSIS = '...';
 const NO_SUMMARY_PLACEHOLDER = '[no summary]';
 
@@ -489,16 +489,19 @@ export function formatExperienceResponse(
 
   const emoji = result.source.emoji;
 
+  // Include the full source text without truncation
+  const sourceText = result.source.source;
+  
   // Simple response based on whether we have qualities
   let response: string;
   if (qualities.length > 0) {
     response =
-      `${emoji} ` +
+      `${emoji} ${sourceText}\n` +
       formatMessage(Messages.experience.successWithQualities, {
         qualities: formatQualityList(qualities),
       });
   } else {
-    response = `${emoji} ` + Messages.experience.success;
+    response = `${emoji} ${sourceText}\n` + Messages.experience.success;
   }
 
   return [response, '', formatMetadata(result.source, showId)].join('\n');
@@ -540,15 +543,19 @@ export function formatBatchExperienceResponse(
     output.push(`--- ${i + 1} ---`);
 
     const emoji = result.source.emoji;
+    const sourceText = result.source.source;
+    
+    // Include the full source text
+    output.push(`${emoji} ${sourceText}`);
+    
     if (qualities.length > 0) {
       output.push(
-        `${emoji} ` +
-          formatMessage(Messages.experience.successWithQualities, {
-            qualities: formatQualityList(qualities),
-          })
+        formatMessage(Messages.experience.successWithQualities, {
+          qualities: formatQualityList(qualities),
+        })
       );
     } else {
-      output.push(`${emoji} ` + Messages.experience.success);
+      output.push(Messages.experience.success);
     }
 
     output.push('');
@@ -747,7 +754,7 @@ function formatRecallResults(results: RecallResult[], showIds: boolean = false):
 
     // Get content (prefer snippet, fallback to content)
     const content = result.snippet || result.content || '';
-    const displayContent = content.length > 150 ? content.substring(0, 150) + '...' : content;
+    const displayContent = content.length > 600 ? content.substring(0, 600) + '...' : content;
 
     // Simple numbered format with emoji if available
     const emoji = (metadata as Record<string, unknown>).emoji as string | undefined;

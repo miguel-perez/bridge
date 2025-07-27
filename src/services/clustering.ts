@@ -118,25 +118,48 @@ async function splitClusterBySemanticSimilarity(cluster: ExperienceCluster): Pro
 function generateClusterSummary(experiences: SourceRecord[]): string {
   if (experiences.length === 0) return '';
   
-  if (experiences.length === 1) {
-    const commonQualities = getCommonQualities(experiences);
-    
-    if (commonQualities.length > 0) {
-      return `${experiences.length} experience with ${commonQualities.join(', ')}`;
+  // Extract qualities from all experiences
+  const allQualityLists = experiences
+    .map(exp => extractQualityList(exp.experienceQualities))
+    .filter(qualities => qualities.length > 0);
+  
+  if (allQualityLists.length === 0) {
+    return `${experiences.length} experience${experiences.length === 1 ? '' : 's'} (no qualities)`;
+  }
+  
+  // Find dominant quality pattern
+  const qualityCounts = new Map<string, number>();
+  allQualityLists.forEach(qualities => {
+    qualities.forEach(quality => {
+      qualityCounts.set(quality, (qualityCounts.get(quality) || 0) + 1);
+    });
+  });
+  
+  // Sort by frequency
+  const sortedQualities = Array.from(qualityCounts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .map(([quality]) => quality);
+  
+  // Find the most dominant quality using priority
+  const priorityOrder = ['purpose', 'mood', 'focus', 'embodied', 'presence', 'space', 'time'];
+  let dominantQuality = sortedQualities[0];
+  
+  for (const priority of priorityOrder) {
+    const found = sortedQualities.find(q => q.startsWith(priority));
+    if (found) {
+      dominantQuality = found;
+      break;
     }
-    
-    return `${experiences.length} experience`;
   }
   
   const commonQualities = getCommonQualities(experiences);
-  const themes = extractCommonThemes(experiences);
   
   if (commonQualities.length > 0) {
     return `${experiences.length} experiences with ${commonQualities.join(', ')}`;
-  }
-  
-  if (themes.length > 0) {
-    return `${experiences.length} experiences about ${themes.join(', ')}`;
+  } else if (dominantQuality) {
+    const dominantCount = qualityCounts.get(dominantQuality) || 0;
+    const percentage = Math.round((dominantCount / experiences.length) * 100);
+    return `${experiences.length} experiences (${percentage}% ${dominantQuality})`;
   }
   
   return `${experiences.length} experiences`;
@@ -172,7 +195,7 @@ function getCommonQualities(experiences: SourceRecord[]): string[] {
 /**
  * Extracts common themes from experience sources
  */
-function extractCommonThemes(experiences: SourceRecord[]): string[] {
+function _extractCommonThemes(experiences: SourceRecord[]): string[] {
   // This is a simplified implementation
   // In a full implementation, you would:
   // 1. Extract keywords from experience sources

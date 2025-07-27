@@ -36,6 +36,24 @@ export const SEMANTIC_CONFIG = {
 } as const;
 
 /**
+ * Recall and display configuration constants
+ */
+export const RECALL_CONFIG = {
+  // Default limits for search operations
+  DEFAULT_SEARCH_LIMIT: 50, // Default number of results for searches
+  DEFAULT_GROUP_LIMIT: 100, // Default number of results when grouping
+  DEFAULT_AUTO_RECALL_LIMIT: 20, // Default for automatic recall
+  
+  // Display configuration
+  TEXT_TRUNCATION_LENGTH: 500, // Characters to show before truncating
+  SHOW_ALL_GROUP_MEMBERS: true, // Whether to show all experiences in groups
+  
+  // Dual view configuration
+  RECENT_FLOW_LIMIT: 10, // Number of recent experiences to show
+  EMERGING_PATTERNS_LIMIT: 100, // Number of experiences to analyze for patterns
+} as const;
+
+/**
  * Expands common path variables like ~ and $HOME
  * @param path - Path that may contain variables
  * @returns Expanded path
@@ -137,7 +155,7 @@ export function isDebugMode(): boolean {
 
 /**
  * Validate the current configuration. Throws if invalid.
- * Note: Debug logging is handled by MCP server, not console.log
+ * Note: Debug logging is handled by MCP server, not stdout logging
  */
 export function validateConfiguration(): void {
   if (

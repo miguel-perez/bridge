@@ -18,7 +18,7 @@ import { humanQualities } from '../test-utils/format-converter.js';
 describe('Handler Utilities', () => {
   describe('Constants', () => {
     it('should have correct constant values', () => {
-      expect(CONTENT_SNIPPET_LENGTH).toBe(200);
+      expect(CONTENT_SNIPPET_LENGTH).toBe(600);
       expect(RELEVANCE_PERCENT_PRECISION).toBe(0);
     });
   });
@@ -197,22 +197,22 @@ describe('Handler Utilities', () => {
     });
 
     it('should truncate long content', () => {
-      const content = 'a'.repeat(250);
+      const content = 'a'.repeat(650);
       const result = formatContent(content);
-      expect(result).toBe('a'.repeat(200) + '...');
+      expect(result).toBe('a'.repeat(600) + '...');
     });
 
     it('should prefer narrative over content', () => {
-      const content = 'Long original content ' + 'x'.repeat(200);
+      const content = 'Long original content ' + 'x'.repeat(600);
       const narrative = 'Short narrative';
       expect(formatContent(content, narrative)).toBe('Short narrative');
     });
 
     it('should truncate long narrative', () => {
       const content = 'content';
-      const narrative = 'n'.repeat(250);
+      const narrative = 'n'.repeat(650);
       const result = formatContent(content, narrative);
-      expect(result).toBe('n'.repeat(200) + '...');
+      expect(result).toBe('n'.repeat(600) + '...');
     });
 
     it('should include full content when requested', () => {
