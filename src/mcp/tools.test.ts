@@ -126,7 +126,7 @@ describe('MCP Tools', () => {
       // Remove integrated-recall-search test
       expect(expExampleIds).toContain('reasoning-chain-next-moment');
       expect(expExampleIds).toContain('context-for-atomicity');
-      expect(expExampleIds).toContain('complementary-perspectives');
+      expect(expExampleIds).toContain('complete-moment-capture');
       // Remove mixed-qualities-true test
 
       // Reconsider tool examples

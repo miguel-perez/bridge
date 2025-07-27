@@ -59,9 +59,10 @@ export interface SimulationEvaluation {
     actual: number[];
     score: number;
   };
-  complementaryValue: number;  // Do combined qualities > sum of parts?
-  patternEmergence: number;    // Did meaningful insights arise?
-  naturalFlow: number;         // Does conversation feel authentic?
+  collaborativeAlignment: number;  // Shared moments captured together?
+  dimensionalNavigation: number;   // Navigation through experiential dimensions?
+  continuousCognition: number;     // Building on shared memory across conversations?
+  naturalFlow: number;             // Does conversation feel authentic?
   
   // Overall assessment
   overallScore: number;

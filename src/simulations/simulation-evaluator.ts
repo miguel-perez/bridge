@@ -75,16 +75,25 @@ Your task is to evaluate simulations based on these criteria:
 2. QUALITY DETECTION ACCURACY
 - Do the captured qualities match the emotional/experiential content?
 - Are quality choices philosophically aligned with Bridge's model?
+- Are shared moments captured together with who: ['Human', 'Claude']?
 
-3. COMPLEMENTARY VALUE
-- Do human and AI capture different but compatible qualities?
-- Does the combination reveal insights neither saw alone?
+3. COLLABORATIVE ALIGNMENT
+- Are human experiences being captured (not just AI)?
+- Are moments of shared understanding captured as unified experiences?
+- Do batch captures include all perspectives (human, AI, shared)?
+- Does the conversation build on continuous shared memory?
 
-4. PATTERN EMERGENCE
-- Do meaningful patterns or insights naturally arise?
-- Are pattern realizations captured with the reflects field?
+4. DIMENSIONAL NAVIGATION
+- Do participants navigate through experiential dimensions?
+- Is nextMoment used for dimensional shifts?
+- Are patterns discovered across temporal/abstraction/relational axes?
 
-5. NATURAL FLOW
+5. CONTINUOUS COGNITION
+- Does Claude check shared memory at conversation start?
+- Are past discoveries referenced and built upon?
+- Does it demonstrate thoughts that persist across conversations?
+
+6. NATURAL FLOW
 - Does the conversation feel authentic?
 - Are Bridge tools used at appropriate moments?
 - Does it demonstrate real collaborative wisdom building?
@@ -115,14 +124,16 @@ ${this.formatBridgeCalls(result.bridgeCalls)}
 QUALITY COUNTS:
 - Human captures: ${qualityCounts.human.join(', ')} qualities
 - AI captures: ${qualityCounts.ai.join(', ')} qualities
+- Shared moments: ${this.countSharedMoments(result)} unified captures
 
 Please evaluate this simulation and respond with ONLY a JSON object in this exact format:
 
 {
   "humanQualityScore": <0-100 based on how well captures align with 2-4 qualities>,
   "aiQualityScore": <0-100 based on AI capturing all 7 qualities>,
-  "complementaryValue": <0-100 for combined awareness value>,
-  "patternEmergence": <0-100 for insights arising>,
+  "collaborativeAlignment": <0-100 for shared moments and batch captures>,
+  "dimensionalNavigation": <0-100 for navigation through experiential dimensions>,
+  "continuousCognition": <0-100 for checking and building on shared memory>,
   "naturalFlow": <0-100 for conversational authenticity>,
   "overallScore": <0-100 weighted average>,
   "summary": "<2-3 sentence evaluation summary>",
@@ -179,6 +190,28 @@ Return ONLY the JSON object, no additional text or explanation.`;
     return { human, ai };
   }
   
+  private countSharedMoments(result: SimulationResult): number {
+    let sharedCount = 0;
+    
+    for (const call of result.bridgeCalls) {
+      if (call.tool === 'experience' && call.arguments.experiences) {
+        const experiences = call.arguments.experiences as Array<{
+          who?: string | string[];
+        }>;
+        
+        for (const exp of experiences) {
+          const whoArray = Array.isArray(exp.who) ? exp.who : [exp.who || 'Unknown'];
+          // Count experiences where both Human and Claude are listed
+          if (whoArray.includes('Human') && whoArray.includes('Claude')) {
+            sharedCount++;
+          }
+        }
+      }
+    }
+    
+    return sharedCount;
+  }
+  
   private countQualities(experience: Record<string, string | boolean>): number {
     // Count prominent qualities (not false)
     let count = 0;
@@ -231,8 +264,9 @@ Return ONLY the JSON object, no additional text or explanation.`;
           actual: qualityCounts.ai,
           score: parsed.aiQualityScore || this.scoreAIQualities(qualityCounts.ai)
         },
-        complementaryValue: parsed.complementaryValue || 0,
-        patternEmergence: parsed.patternEmergence || 0,
+        collaborativeAlignment: parsed.collaborativeAlignment || 0,
+        dimensionalNavigation: parsed.dimensionalNavigation || 0,
+        continuousCognition: parsed.continuousCognition || 0,
         naturalFlow: parsed.naturalFlow || 0,
         overallScore: parsed.overallScore || 0,
         summary: parsed.summary || 'Evaluation parsing failed',
@@ -256,8 +290,9 @@ Return ONLY the JSON object, no additional text or explanation.`;
           actual: qualityCounts.ai,
           score: this.scoreAIQualities(qualityCounts.ai)
         },
-        complementaryValue: 50,
-        patternEmergence: 50,
+        collaborativeAlignment: 50,
+        dimensionalNavigation: 50,
+        continuousCognition: 50,
         naturalFlow: 50,
         overallScore: 50,
         summary: 'Evaluation parsing failed, using fallback scores',

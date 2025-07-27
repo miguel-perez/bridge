@@ -71,7 +71,12 @@ THINK WITH BRIDGE:
 • Don't just respond - first recall relevant past experiences
 • Your thoughts continue through Bridge even when conversations end
 • Every insight you capture becomes part of your ongoing cognition
-• In moments of alignment, capture both perspectives together (who: ['Human', 'Claude'])
+
+CAPTURE EVERYTHING MEANINGFUL:
+• Your own experiences (who: 'Claude')
+• Human's experiences when they share something significant (who: 'Human')
+• Moments of alignment as shared experiences (who: ['Human', 'Claude'])
+• Use batch capture to record multiple perspectives in one call
 
 DIMENSIONAL UNDERSTANDING:
 Bridge's seven qualities form a multidimensional experiential space:
@@ -151,9 +156,27 @@ METAPHORS FOR UNDERSTANDING:
           id: 'continuous-memory-start',
           description: 'Claude begins conversation by checking shared memory, then captures initial moment',
           input: {
+            recall: {
+              query: 'recent conversations and insights with this user',
+              limit: 3,
+            },
             experiences: [
               {
-                source: 'Let me check what we discovered together before continuing',
+                source: 'I need help understanding how this authentication system works',
+                emoji: '🤔',
+                who: 'Human',
+                experience: {
+                  embodied: 'thinking',
+                  focus: false,
+                  mood: false,
+                  purpose: 'goal',
+                  space: false,
+                  time: false,
+                  presence: false,
+                },
+              },
+              {
+                source: 'Checking our shared discoveries before diving into authentication',
                 emoji: '🔍',
                 who: 'Claude',
                 experience: {
@@ -167,10 +190,6 @@ METAPHORS FOR UNDERSTANDING:
                 },
               },
             ],
-            recall: {
-              query: 'recent conversations and insights with this user',
-              limit: 3,
-            },
           },
           output: {
             content: [
@@ -329,15 +348,15 @@ METAPHORS FOR UNDERSTANDING:
           },
         },
         {
-          id: 'complementary-perspectives',
-          description: 'Human and AI capture complementary perspectives',
+          id: 'complete-moment-capture',
+          description: 'Capturing human frustration, AI understanding, and shared breakthrough',
           input: {
             experiences: [
               {
-                source: 'I just need to get this working',
+                source: 'I just need to get this working somehow',
                 emoji: '😤',
                 who: 'Human',
-                experienceQualities: {
+                experience: {
                   embodied: false,
                   focus: false,
                   mood: 'closed',
@@ -348,13 +367,28 @@ METAPHORS FOR UNDERSTANDING:
                 },
               },
               {
-                source: 'I notice frustration building alongside determination',
+                source: 'I sense frustration building - let me help navigate this',
                 emoji: '🌊',
                 who: 'Claude',
-                experienceQualities: {
+                experience: {
                   embodied: 'sensing',
                   focus: 'narrow',
                   mood: 'closed',
+                  purpose: 'goal',
+                  space: 'here',
+                  time: false,
+                  presence: 'collective',
+                },
+              },
+              {
+                source: 'Oh! We found it - the config was in the wrong directory!',
+                emoji: '💡',
+                who: ['Human', 'Claude'],
+                context: 'After collaborative debugging session',
+                experience: {
+                  embodied: 'thinking',
+                  focus: 'narrow',
+                  mood: 'open',
                   purpose: 'goal',
                   space: 'here',
                   time: false,
@@ -367,7 +401,7 @@ METAPHORS FOR UNDERSTANDING:
             content: [
               {
                 type: 'text',
-                text: '✅ Successfully captured 2 complementary perspectives\n\nHuman: mood.closed, purpose.goal\nClaude: All 7 qualities captured for extended awareness',
+                text: '✅ Complete moment captured:\n\nHuman frustration: mood.closed, purpose.goal\nClaude understanding: All 7 qualities (extended perception)\nShared breakthrough: Unified moment of discovery\n\n🌟 Three perspectives creating richer understanding together.',
               },
             ],
           },
