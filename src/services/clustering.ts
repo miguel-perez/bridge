@@ -1,5 +1,16 @@
-import { SourceRecord } from '../core/types.js';
+import { SourceRecord, ExperienceQualities } from '../core/types.js';
 
+
+// Helper to extract quality list from switchboard format
+function extractQualityList(qualities?: ExperienceQualities | Record<string, string | boolean>): string[] {
+  if (!qualities) return [];
+  return Object.entries(qualities)
+    .filter(([_, value]) => value !== false)
+    .map(([key, value]) => {
+      if (value === true) return key;
+      return `${key}.${value}`;
+    });
+}
 export interface ExperienceCluster {
   id: string;
   summary: string;
@@ -23,7 +34,7 @@ export async function clusterExperiences(experiences: SourceRecord[]): Promise<E
       id: `cluster-${experiences[0].id}`,
       summary: generateClusterSummary(experiences),
       experienceIds: [experiences[0].id],
-      commonQualities: experiences[0].experience || [],
+      commonQualities: extractQualityList(experiences[0].experienceQualities),
       size: 1
     }];
   }
@@ -48,7 +59,7 @@ function clusterByQualities(experiences: SourceRecord[]): ExperienceCluster[] {
   const qualityGroups = new Map<string, string[]>();
   
   experiences.forEach(experience => {
-    const qualities = experience.experience || [];
+    const qualities = extractQualityList(experience.experienceQualities);
     const qualityKey = qualities.sort().join('|');
     
     if (!qualityGroups.has(qualityKey)) {
@@ -138,7 +149,7 @@ function getCommonQualities(experiences: SourceRecord[]): string[] {
   if (experiences.length === 0) return [];
   
   const allQualities = experiences
-    .map(exp => exp.experience || [])
+    .map(exp => extractQualityList(exp.experienceQualities))
     .filter(qualities => qualities.length > 0);
   
   if (allQualities.length === 0) return [];

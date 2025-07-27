@@ -82,12 +82,7 @@ export class ReconsiderHandler {
           releaseResults.push({ id: item.id, reason: item.releaseReason });
         } else {
           // Handle update mode
-          // Convert experience to array format if needed
-          let experienceArray: string[] | undefined;
-          if (item.experience) {
-            const { qualitiesToExperienceArray } = await import('../core/types.js');
-            experienceArray = qualitiesToExperienceArray(item.experience);
-          }
+          
 
           const result = await this.reconsiderService.enrichSource({
             id: item.id,
@@ -96,7 +91,7 @@ export class ReconsiderHandler {
             who: item.who,
             processing: item.processing,
             crafted: item.crafted,
-            experience: experienceArray,
+            experienceQualities: item.experienceQualities,
             reflects: item.reflects,
             context: item.context,
           });
@@ -193,7 +188,7 @@ export class ReconsiderHandler {
    */
   private selectReconsiderGuidance(result: ExperienceResult): string | null {
     // Check what was updated
-    const hasQualityUpdate = result.source.experience && result.source.experience.length > 0;
+    const hasQualityUpdate = result.source.experienceQualities && Object.values(result.source.experienceQualities).some(v => v !== false);
 
     if (hasQualityUpdate) {
       return 'Updated. See connections with recall';

@@ -92,25 +92,42 @@ describe('ExperienceService', () => {
         source: 'Test experience',
         emoji: '✨',
         who: 'test_user',
-        experience: ['mood.open', 'embodied.sensing', 'purpose.goal'],
+        experience: {
+          embodied: 'sensing',
+          focus: false,
+          mood: 'open',
+          purpose: 'goal',
+          space: false,
+          time: false,
+          presence: false
+        },
       };
 
       const result = await experienceService.rememberExperience(input);
 
-      expect(result.source.experience).toEqual(['mood.open', 'embodied.sensing', 'purpose.goal']);
+      // Check that experienceQualities matches the input
+      expect(result.source.experienceQualities).toEqual(input.experience);
     });
 
-    it('should handle empty experience array', async () => {
+    it('should handle all false experience qualities', async () => {
       const input = {
         source: 'Test experience',
         emoji: '💭',
         who: 'test_user',
-        experience: [],
+        experience: {
+          embodied: false,
+          focus: false,
+          mood: false,
+          purpose: false,
+          space: false,
+          time: false,
+          presence: false
+        },
       };
 
       const result = await experienceService.rememberExperience(input);
 
-      expect(result.source.experience).toBeUndefined();
+      expect(result.source.experienceQualities).toEqual(input.experience);
     });
 
     it('should handle embedding generation failure gracefully', async () => {
@@ -146,7 +163,15 @@ describe('ExperienceService', () => {
       const input: ExperienceInput = {
         source: 'I feel anxious',
         emoji: '😰',
-        experience: ['mood.closed', 'embodied.sensing'],
+        experience: {
+          embodied: 'sensing',
+          focus: false,
+          mood: 'closed',
+          purpose: false,
+          space: false,
+          time: false,
+          presence: false
+        },
         context: 'Before an important presentation',
       };
 
@@ -154,7 +179,7 @@ describe('ExperienceService', () => {
 
       expect(result.source.context).toBe('Before an important presentation');
       expect(mockEmbeddingService.generateEmbedding).toHaveBeenCalledWith(
-        'Context: Before an important presentation. "I feel anxious" [mood.closed, embodied.sensing]'
+        'Context: Before an important presentation. "I feel anxious" [embodied.sensing, mood.closed]'
       );
     });
   });
@@ -168,7 +193,7 @@ describe('ExperienceService', () => {
         perspective: 'I',
         processing: 'during',
         crafted: false,
-        experience: ['mood.open', 'embodied.thinking'],
+        experience: {"embodied":"thinking","focus":false,"mood":"open","purpose":false,"space":false,"time":false,"presence":false},
       };
 
       expect(() => experienceSchema.parse(input)).not.toThrow();

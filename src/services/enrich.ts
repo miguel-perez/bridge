@@ -11,7 +11,7 @@ import {
   saveEmbedding,
   deleteEmbedding,
 } from '../core/storage.js';
-import { Source, ProcessingLevel, EmbeddingRecord } from '../core/types.js';
+import { Source, ProcessingLevel, EmbeddingRecord, ExperienceQualities } from '../core/types.js';
 import { embeddingService } from './embeddings.js';
 
 // ============================================================================
@@ -46,7 +46,15 @@ export const enrichSchema = z.object({
     .describe('Updated who experienced this'),
   processing: z.string().optional().describe('Updated processing level'),
   crafted: z.boolean().optional().describe('Updated crafted flag'),
-  experience: z.array(z.string()).optional().describe('Updated experience analysis'),
+  experience: z.object({
+    embodied: z.union([z.literal(false), z.literal(true), z.literal('thinking'), z.literal('sensing')]),
+    focus: z.union([z.literal(false), z.literal(true), z.literal('narrow'), z.literal('broad')]),
+    mood: z.union([z.literal(false), z.literal(true), z.literal('open'), z.literal('closed')]),
+    purpose: z.union([z.literal(false), z.literal(true), z.literal('goal'), z.literal('wander')]),
+    space: z.union([z.literal(false), z.literal(true), z.literal('here'), z.literal('there')]),
+    time: z.union([z.literal(false), z.literal(true), z.literal('past'), z.literal('future')]),
+    presence: z.union([z.literal(false), z.literal(true), z.literal('individual'), z.literal('collective')])
+  }).optional().describe('Updated experience analysis'),
   reflects: z
     .array(z.string())
     .optional()
@@ -64,7 +72,7 @@ export interface EnrichInput {
   who?: string | string[];
   processing?: ProcessingLevel;
   crafted?: boolean;
-  experience?: string[];
+  experienceQualities?: ExperienceQualities;
   reflects?: string[];
   context?: string;
 }
@@ -100,29 +108,32 @@ export class EnrichService {
     }
 
     // Process experience - use input or existing
-    let processedExperience: string[] | undefined = undefined;
-    if (input.experience) {
-      processedExperience = input.experience;
-    } else if (existingSource.experience) {
-      processedExperience = existingSource.experience;
+    let processedQualities: ExperienceQualities | undefined = undefined;
+    if (input.experienceQualities) {
+      processedQualities = input.experienceQualities;
+    } else if (existingSource.experienceQualities) {
+      processedQualities = existingSource.experienceQualities;
     }
 
     // Determine if we need to regenerate embeddings
     const shouldRegenerateEmbeddings =
       (input.source && input.source !== existingSource.source) ||
-      (input.experience &&
-        JSON.stringify(input.experience) !== JSON.stringify(existingSource.experience)) ||
+      (input.experienceQualities &&
+        JSON.stringify(input.experienceQualities) !== JSON.stringify(existingSource.experienceQualities)) ||
       (input.context !== undefined && input.context !== existingSource.context);
 
     // Generate new embedding if needed
     let embedding: number[] | undefined;
     if (shouldRegenerateEmbeddings) {
       // Create the new embedding text format: "[source]" [prominent_qualities]
-      const experience = processedExperience || existingSource.experience;
+      const experience = processedQualities || existingSource.experienceQualities;
       const source = input.source || existingSource.source;
 
       if (experience) {
-        const qualitiesText = experience.length > 0 ? `[${experience.join(', ')}]` : '[]';
+        const qualitiesArray = Object.entries(experience)
+          .filter(([_, v]) => v !== false)
+          .map(([k, v]) => v === true ? k : `${k}.${v}`);
+        const qualitiesText = qualitiesArray.length > 0 ? `[${qualitiesArray.join(', ')}]` : '[]';
 
         // Include context in embedding if present
         const context = input.context ?? existingSource.context;
@@ -145,7 +156,7 @@ export class EnrichService {
       who: input.who ?? existingSource.who,
       processing: input.processing ?? existingSource.processing,
       crafted: input.crafted ?? existingSource.crafted,
-      experience: input.experience ?? existingSource.experience,
+      experienceQualities: input.experienceQualities ?? existingSource.experienceQualities,
       reflects: input.reflects ?? existingSource.reflects,
       context: input.context ?? existingSource.context,
     };
@@ -195,7 +206,7 @@ export class EnrichService {
     if (JSON.stringify(original.who) !== JSON.stringify(updated.who)) fields.push('who');
     if (original.processing !== updated.processing) fields.push('processing');
     if (original.crafted !== updated.crafted) fields.push('crafted');
-    if (JSON.stringify(original.experience) !== JSON.stringify(updated.experience)) {
+    if (JSON.stringify(original.experienceQualities) !== JSON.stringify(updated.experienceQualities)) {
       fields.push('experience');
     }
     if (JSON.stringify(original.reflects) !== JSON.stringify(updated.reflects)) {

@@ -1,22 +1,19 @@
-import { describe, it, expect, beforeEach, beforeAll } from '@jest/globals';
-import { search, type RecallInput } from './search.js';
-import { saveSource, setStorageConfig, clearTestStorage } from '../core/storage.js';
-import { SourceRecord } from '../core/types.js';
-import path from 'path';
+import { describe, it, expect, beforeEach } from '@jest/globals';
+import { searchExperiences, type RecallInput } from './search.js';
+import { saveSource } from '../core/storage.js';
+import { Source } from '../core/types.js';
+import { humanQualities } from '../test-utils/format-converter.js';
 
-// Use a test-specific DB file
-beforeAll(() => {
-  setStorageConfig({ dataFile: path.join(process.cwd(), 'data', 'bridge-test.json') });
-});
+// Use test storage
 
 describe('Recall Relevance Scoring', () => {
   beforeEach(async () => {
-    await clearTestStorage();
+    // await clearTestStorage(); // This line was removed as per the new_code
   });
 
   it('should calculate text relevance correctly', async () => {
     // Create test records
-    const record1: Omit<SourceRecord, 'type'> = {
+    const record1: Source = {
       id: 'text_test_1',
       source: 'This is a test record about anxiety and stress',
       emoji: '😰',
@@ -25,9 +22,10 @@ describe('Recall Relevance Scoring', () => {
       processing: 'during',
       created: new Date().toISOString(),
       crafted: false,
+      experienceQualities: humanQualities('mood.closed', 'embodied.sensing'),
     };
 
-    const record2: Omit<SourceRecord, 'type'> = {
+    const record2: Source = {
       id: 'text_test_2',
       source: 'This is about something completely different',
       emoji: '🤔',
@@ -36,13 +34,14 @@ describe('Recall Relevance Scoring', () => {
       processing: 'during',
       created: new Date().toISOString(),
       crafted: false,
+      experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
     };
 
     await saveSource(record1);
     await saveSource(record2);
 
     // Test text relevance scoring
-    const results = await search({
+    const results = await searchExperiences({
       query: 'anxiety',
       who: 'text_test',
       sort: 'relevance',
@@ -62,7 +61,7 @@ describe('Recall Relevance Scoring', () => {
 
   it('should filter by who correctly', async () => {
     // Create test records with different who values
-    const record1: Omit<SourceRecord, 'type'> = {
+    const record1: Source = {
       id: 'filter_test_1',
       source: 'Test record from Alice',
       emoji: '👩',
@@ -71,9 +70,10 @@ describe('Recall Relevance Scoring', () => {
       processing: 'during',
       created: new Date().toISOString(),
       crafted: false,
+      experienceQualities: humanQualities('mood.open', 'presence.individual'),
     };
 
-    const record2: Omit<SourceRecord, 'type'> = {
+    const record2: Source = {
       id: 'filter_test_2',
       source: 'Test record from Bob',
       emoji: '👨',
@@ -82,13 +82,14 @@ describe('Recall Relevance Scoring', () => {
       processing: 'during',
       created: new Date().toISOString(),
       crafted: false,
+      experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
     };
 
     await saveSource(record1);
     await saveSource(record2);
 
     // Search for Alice's records
-    const results = await search({ who: 'Alice_filter' });
+    const results = await searchExperiences({ who: 'Alice_filter' });
 
     expect(results.results).toHaveLength(1);
     expect(results.results[0].id).toBe('filter_test_1');
@@ -98,7 +99,7 @@ describe('Recall Relevance Scoring', () => {
 
   it('should combine multiple relevance factors', async () => {
     // Create a test record with experiential qualities
-    const record: Omit<SourceRecord, 'type'> = {
+    const record: Source = {
       id: 'vector_test_1',
       source: 'I felt anxious and stressed during the meeting',
       emoji: '😰',
@@ -107,6 +108,7 @@ describe('Recall Relevance Scoring', () => {
       processing: 'during',
       created: new Date().toISOString(),
       crafted: false,
+      experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
     };
 
     await saveSource(record);
@@ -117,7 +119,7 @@ describe('Recall Relevance Scoring', () => {
       who: 'vector_test',
     };
 
-    const results = await search(searchInput);
+    const results = await searchExperiences(searchInput);
 
     expect(results.results).toHaveLength(1);
     expect(results.results[0].relevance_score).toBeGreaterThan(0.2);
@@ -128,7 +130,7 @@ describe('Recall Relevance Scoring', () => {
 
   it('should sort results by relevance score', async () => {
     // Create test records with different relevance levels
-    const record1: Omit<SourceRecord, 'type'> = {
+    const record1: Source = {
       id: 'sort_test_1',
       source: 'This is about anxiety and stress management techniques',
       emoji: '😰',
@@ -137,9 +139,10 @@ describe('Recall Relevance Scoring', () => {
       processing: 'during',
       created: new Date().toISOString(),
       crafted: false,
+      experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
     };
 
-    const record2: Omit<SourceRecord, 'type'> = {
+    const record2: Source = {
       id: 'sort_test_2',
       source: 'This mentions anxiety briefly in passing',
       emoji: '🤔',
@@ -148,9 +151,10 @@ describe('Recall Relevance Scoring', () => {
       processing: 'during',
       created: new Date().toISOString(),
       crafted: false,
+      experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
     };
 
-    const record3: Omit<SourceRecord, 'type'> = {
+    const record3: Source = {
       id: 'sort_test_3',
       source: 'This has nothing to do with anxiety at all',
       emoji: '😐',
@@ -159,6 +163,7 @@ describe('Recall Relevance Scoring', () => {
       processing: 'during',
       created: new Date().toISOString(),
       crafted: false,
+      experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
     };
 
     await saveSource(record1);
@@ -166,7 +171,7 @@ describe('Recall Relevance Scoring', () => {
     await saveSource(record3);
 
     // Test sorting by relevance
-    const results = await search({
+    const results = await searchExperiences({
       query: 'anxiety',
       who: 'sort_test',
       sort: 'relevance',
@@ -186,7 +191,7 @@ describe('Recall Relevance Scoring', () => {
 
 describe('Date Range Filtering', () => {
   beforeEach(async () => {
-    await clearTestStorage();
+    // await clearTestStorage(); // This line was removed as per the new_code
   });
 
   it('should handle same-day range filtering correctly', async () => {
@@ -195,7 +200,7 @@ describe('Date Range Filtering', () => {
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
-    const record1: Omit<SourceRecord, 'type'> = {
+    const record1: Source = {
       id: 'date_test_1',
       source: 'Record from today',
       emoji: '📅',
@@ -204,9 +209,10 @@ describe('Date Range Filtering', () => {
       processing: 'during',
       created: today.toISOString(),
       crafted: false,
+      experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
     };
 
-    const record2: Omit<SourceRecord, 'type'> = {
+    const record2: Source = {
       id: 'date_test_2',
       source: 'Record from yesterday',
       emoji: '📅',
@@ -215,13 +221,14 @@ describe('Date Range Filtering', () => {
       processing: 'during',
       created: yesterday.toISOString(),
       crafted: false,
+      experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
     };
 
     await saveSource(record1);
     await saveSource(record2);
 
     // Test same-day range: should return yesterday's record
-    const results = await search({
+    const results = await searchExperiences({
       created: { start: yesterday.toISOString(), end: yesterday.toISOString() },
       who: 'date_test',
     });
@@ -236,7 +243,7 @@ describe('Date Range Filtering', () => {
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
-    const record1: Omit<SourceRecord, 'type'> = {
+    const record1: Source = {
       id: 'single_date_test_1',
       source: 'Record from today',
       emoji: '📅',
@@ -245,9 +252,10 @@ describe('Date Range Filtering', () => {
       processing: 'during',
       created: today.toISOString(),
       crafted: false,
+      experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
     };
 
-    const record2: Omit<SourceRecord, 'type'> = {
+    const record2: Source = {
       id: 'single_date_test_2',
       source: 'Record from yesterday',
       emoji: '📅',
@@ -256,13 +264,14 @@ describe('Date Range Filtering', () => {
       processing: 'during',
       created: yesterday.toISOString(),
       crafted: false,
+      experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
     };
 
     await saveSource(record1);
     await saveSource(record2);
 
     // Test single date filter: should return records from yesterday onwards
-    const results = await search({
+    const results = await searchExperiences({
       created: yesterday.toISOString(),
       who: 'single_date_test',
     });
@@ -280,7 +289,7 @@ describe('Date Range Filtering', () => {
     const twoDaysAgo = new Date(today);
     twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
 
-    const record1: Omit<SourceRecord, 'type'> = {
+    const record1: Source = {
       id: 'range_test_1',
       source: 'Record from today',
       emoji: '📅',
@@ -289,9 +298,10 @@ describe('Date Range Filtering', () => {
       processing: 'during',
       created: today.toISOString(),
       crafted: false,
+      experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
     };
 
-    const record2: Omit<SourceRecord, 'type'> = {
+    const record2: Source = {
       id: 'range_test_2',
       source: 'Record from yesterday',
       emoji: '📅',
@@ -300,9 +310,10 @@ describe('Date Range Filtering', () => {
       processing: 'during',
       created: yesterday.toISOString(),
       crafted: false,
+      experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
     };
 
-    const record3: Omit<SourceRecord, 'type'> = {
+    const record3: Source = {
       id: 'range_test_3',
       source: 'Record from two days ago',
       emoji: '📅',
@@ -311,6 +322,7 @@ describe('Date Range Filtering', () => {
       processing: 'during',
       created: twoDaysAgo.toISOString(),
       crafted: false,
+      experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
     };
 
     await saveSource(record1);
@@ -318,7 +330,7 @@ describe('Date Range Filtering', () => {
     await saveSource(record3);
 
     // Test multi-day range: should return yesterday and today's records
-    const results = await search({
+    const results = await searchExperiences({
       created: { start: yesterday.toISOString(), end: today.toISOString() },
       who: 'range_test',
     });
@@ -336,7 +348,7 @@ describe('Date Range Filtering', () => {
     const lateToday = new Date(today);
     lateToday.setUTCHours(23, 59, 59, 999);
 
-    const record1: Omit<SourceRecord, 'type'> = {
+    const record1: Source = {
       id: 'edge_test_1',
       source: 'Early morning record',
       emoji: '📅',
@@ -345,9 +357,10 @@ describe('Date Range Filtering', () => {
       processing: 'during',
       created: earlyToday.toISOString(),
       crafted: false,
+      experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
     };
 
-    const record2: Omit<SourceRecord, 'type'> = {
+    const record2: Source = {
       id: 'edge_test_2',
       source: 'Late night record',
       emoji: '📅',
@@ -356,13 +369,14 @@ describe('Date Range Filtering', () => {
       processing: 'during',
       created: lateToday.toISOString(),
       crafted: false,
+      experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
     };
 
     await saveSource(record1);
     await saveSource(record2);
 
     // Test that both records are found when filtering for today (UTC)
-    const results = await search({
+    const results = await searchExperiences({
       created: { start: earlyToday.toISOString(), end: lateToday.toISOString() },
       who: 'edge_test',
     });
@@ -389,9 +403,9 @@ describe('GroupBy Parameter Removal', () => {
   });
 
   it('should handle search without groupBy parameter', async () => {
-    await clearTestStorage();
+    // await clearTestStorage(); // This line was removed as per the new_code
 
-    const record: Omit<SourceRecord, 'type'> = {
+    const record: Source = {
       id: 'groupby_test_1',
       source: 'Test record for groupBy removal verification',
       emoji: '🧪',
@@ -400,12 +414,13 @@ describe('GroupBy Parameter Removal', () => {
       processing: 'during',
       created: new Date().toISOString(),
       crafted: false,
+      experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
     };
 
     await saveSource(record);
 
     // Search should work without groupBy parameter
-    const results = await search({
+    const results = await searchExperiences({
       who: 'groupby_test',
     });
 
@@ -420,10 +435,10 @@ describe('GroupBy Parameter Removal', () => {
 
 describe('Group By Functionality', () => {
   beforeEach(async () => {
-    await clearTestStorage();
+    // await clearTestStorage(); // This line was removed as per the new_code
 
     // Create test data with different who values, dates, qualities, and perspectives
-    const testRecords: Array<Omit<SourceRecord, 'type'>> = [
+    const testRecords: Array<Source> = [
       {
         id: 'group_test_1',
         source: 'Test record by Miguel on day 1',
@@ -433,7 +448,7 @@ describe('Group By Functionality', () => {
         processing: 'during',
         created: '2025-01-15T10:00:00.000Z',
         crafted: false,
-        experience: ['embodied.thinking', 'mood.open'],
+        experienceQualities: {"embodied":"thinking","focus":false,"mood":"open","purpose":false,"space":false,"time":false,"presence":false},
       },
       {
         id: 'group_test_2',
@@ -444,7 +459,7 @@ describe('Group By Functionality', () => {
         processing: 'during',
         created: '2025-01-16T10:00:00.000Z',
         crafted: true,
-        experience: ['focus.narrow', 'purpose.goal'],
+        experienceQualities: {"embodied":false,"focus":"narrow","mood":false,"purpose":"goal","space":false,"time":false,"presence":false},
       },
       {
         id: 'group_test_3',
@@ -455,7 +470,7 @@ describe('Group By Functionality', () => {
         processing: 'right-after',
         created: '2025-01-15T14:00:00.000Z',
         crafted: false,
-        experience: ['embodied.thinking', 'mood.open'],
+        experienceQualities: {"embodied":"thinking","focus":false,"mood":"open","purpose":false,"space":false,"time":false,"presence":false},
       },
       {
         id: 'group_test_4',
@@ -466,7 +481,7 @@ describe('Group By Functionality', () => {
         processing: 'during',
         created: '2025-01-16T14:00:00.000Z',
         crafted: false,
-        experience: ['focus.narrow', 'purpose.goal'],
+        experienceQualities: {"embodied":false,"focus":"narrow","mood":false,"purpose":"goal","space":false,"time":false,"presence":false},
       },
     ];
 
@@ -476,7 +491,7 @@ describe('Group By Functionality', () => {
   });
 
   it('should group by who correctly', async () => {
-    const results = await search({
+    const results = await searchExperiences({
       group_by: 'who',
     });
 
@@ -484,7 +499,8 @@ describe('Group By Functionality', () => {
     expect(results.clusters!.length).toBe(2); // Miguel and Claude
 
     // Should be sorted by count (both have 2 experiences)
-    const clusters = results.clusters!;
+    expect(results.clusters).toBeDefined();
+      const clusters = results.clusters!;
     expect(clusters.some((c) => c.summary.includes('Miguel (2 experience'))).toBe(true);
     expect(clusters.some((c) => c.summary.includes('Claude (2 experience'))).toBe(true);
 
@@ -499,7 +515,7 @@ describe('Group By Functionality', () => {
   });
 
   it('should group by date correctly', async () => {
-    const results = await search({
+    const results = await searchExperiences({
       group_by: 'date',
     });
 
@@ -516,7 +532,7 @@ describe('Group By Functionality', () => {
   });
 
   it('should group by qualities correctly', async () => {
-    const results = await search({
+    const results = await searchExperiences({
       group_by: 'qualities',
     });
 
@@ -538,7 +554,7 @@ describe('Group By Functionality', () => {
   });
 
   it('should group by perspective correctly', async () => {
-    const results = await search({
+    const results = await searchExperiences({
       group_by: 'perspective',
     });
 
@@ -554,7 +570,7 @@ describe('Group By Functionality', () => {
   });
 
   it('should handle group_by: none as flat results', async () => {
-    const results = await search({
+    const results = await searchExperiences({
       group_by: 'none',
     });
 

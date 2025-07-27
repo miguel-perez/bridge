@@ -1,6 +1,6 @@
 export * from './types.js';
 export * from './base-provider.js';
-export * from './tensorflow-provider.js';
+export * from './none-provider.js';
 export * from './openai-provider.js';
 export * from './provider-factory.js';
 

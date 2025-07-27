@@ -112,7 +112,7 @@ FLOW TRACKING:
                 source: "I'm sitting here, heart racing about tomorrow's presentation",
                 emoji: '💗',
                 who: 'Human',
-                experience: {
+                experienceQualities: {
                   embodied: 'sensing',
                   focus: false,
                   mood: 'closed',
@@ -142,7 +142,7 @@ FLOW TRACKING:
                 source: 'I sense the anticipation mixing with determination in your words',
                 emoji: '🔍',
                 who: 'Claude',
-                experience: {
+                experienceQualities: {
                   embodied: 'sensing',
                   focus: 'narrow',
                   mood: true,
@@ -173,7 +173,7 @@ FLOW TRACKING:
                 emoji: '💡',
                 who: 'Human',
                 processing: 'long-after',
-                experience: {
+                experienceQualities: {
                   embodied: 'thinking',
                   focus: false,
                   mood: 'open',
@@ -204,7 +204,7 @@ FLOW TRACKING:
                 source: 'This reminds me of something...',
                 emoji: '🔄',
                 who: 'Human',
-                experience: {
+                experienceQualities: {
                   embodied: 'thinking',
                   focus: false,
                   mood: false,
@@ -238,7 +238,7 @@ FLOW TRACKING:
                 source: 'Let me think through this systematically',
                 emoji: '🧩',
                 who: 'Claude',
-                experience: {
+                experienceQualities: {
                   embodied: 'thinking',
                   focus: 'narrow',
                   mood: 'open',
@@ -278,7 +278,7 @@ FLOW TRACKING:
                 emoji: '🌟',
                 who: 'Human',
                 context: 'After discovering the config file was in the wrong directory',
-                experience: {
+                experienceQualities: {
                   embodied: 'thinking',
                   focus: false,
                   mood: 'open',
@@ -308,7 +308,7 @@ FLOW TRACKING:
                 source: 'I just need to get this working',
                 emoji: '😤',
                 who: 'Human',
-                experience: {
+                experienceQualities: {
                   embodied: false,
                   focus: false,
                   mood: 'closed',
@@ -322,7 +322,7 @@ FLOW TRACKING:
                 source: 'I notice frustration building alongside determination',
                 emoji: '🌊',
                 who: 'Claude',
-                experience: {
+                experienceQualities: {
                   embodied: 'sensing',
                   focus: 'narrow',
                   mood: 'closed',
@@ -352,7 +352,7 @@ FLOW TRACKING:
                 source: 'Processing this loss while planning next steps',
                 emoji: '🌓',
                 who: 'Human',
-                experience: {
+                experienceQualities: {
                   embodied: true,
                   focus: false,
                   mood: true,
@@ -414,7 +414,7 @@ WORKFLOW:
             reconsiderations: [
               {
                 id: 'exp_abc123',
-                experience: {
+                experienceQualities: {
                   embodied: 'sensing',
                   focus: false,
                   mood: 'closed',
@@ -444,7 +444,7 @@ WORKFLOW:
                 id: 'exp_def456',
                 perspective: 'we',
                 who: ['Human', 'Claude'],
-                experience: {
+                experienceQualities: {
                   embodied: false,
                   focus: false,
                   mood: false,

@@ -12,7 +12,8 @@ import {
   formatRelevanceBreakdown,
   formatSource,
 } from './handler-utils.js';
-import type { SourceRecord, Experience } from '../core/types.js';
+import type { SourceRecord } from '../core/types.js';
+import { humanQualities } from '../test-utils/format-converter.js';
 
 describe('Handler Utilities', () => {
   describe('Constants', () => {
@@ -24,7 +25,15 @@ describe('Handler Utilities', () => {
 
   describe('formatExperience', () => {
     it('should format experience qualities as bulleted list', () => {
-      const experience: Experience = ['mood.open', 'embodied.sensing', 'presence.collective'];
+      const experience = {
+        mood: 'open',
+        embodied: 'sensing',
+        presence: 'collective',
+        focus: false,
+        purpose: false,
+        space: false,
+        time: false
+      };
       const result = formatExperience(experience);
       expect(result).toBe('• mood.open\n• embodied.sensing\n• presence.collective');
     });
@@ -34,13 +43,21 @@ describe('Handler Utilities', () => {
       expect(result).toBe('No experiential qualities analyzed');
     });
 
-    it('should handle empty experience array', () => {
-      const result = formatExperience([]);
+    it('should handle empty experience object', () => {
+      const result = formatExperience({});
       expect(result).toBe('No experiential qualities analyzed');
     });
 
     it('should handle single quality', () => {
-      const experience: Experience = ['mood.open'];
+      const experience = {
+        mood: 'open',
+        embodied: false,
+        presence: false,
+        focus: false,
+        purpose: false,
+        space: false,
+        time: false
+      };
       const result = formatExperience(experience);
       expect(result).toBe('• mood.open');
     });
@@ -298,7 +315,7 @@ describe('Handler Utilities', () => {
         processing: 'during',
         crafted: false,
         created: '2025-01-21T12:00:00Z',
-        experience: ['mood.open', 'embodied.sensing'],
+        experienceQualities: humanQualities('mood.open', 'embodied.sensing'),
       };
 
       const result = formatSource(source);
@@ -309,7 +326,8 @@ describe('Handler Utilities', () => {
       expect(result).toContain('Processing: during');
       expect(result).toContain('Crafted: false');
       expect(result).toMatch(/Tuesday, January 21, 2025|Just now/);
-      expect(result).toContain('• mood.open\n• embodied.sensing');
+      expect(result).toContain('• mood.open');
+      expect(result).toContain('• embodied.sensing');
     });
 
     it('should format minimal source record', () => {

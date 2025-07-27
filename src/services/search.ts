@@ -490,7 +490,7 @@ export async function search(input: RecallInput): Promise<RecallServiceResponse>
         perspective: record.perspective,
         who: record.who,
         processing: record.processing,
-        experience: record.experience,
+        experienceQualities: record.experienceQualities,
       },
       relevance_score: record._relevance.score,
       relevance_breakdown: record._relevance.breakdown,

@@ -151,7 +151,6 @@ export interface ExperienceResult {
     perspective?: string;
     processing?: string;
     created: string;
-    experience?: string[];
     experienceQualities?: {
       embodied: false | true | 'thinking' | 'sensing';
       focus: false | true | 'narrow' | 'broad';
@@ -204,7 +203,7 @@ export interface RecallSearchParams {
   // Existing filters
   who?: string;
   perspective?: string;
-  qualities?: any; // QualityFilters type
+  qualities?: unknown; // QualityFilters type
   created?: string | { start: string; end: string };
   reflects?: 'only';
   reflected_by?: string | string[];
@@ -416,7 +415,7 @@ function hasNonSearchFilters(filters: RecallSearchParams): boolean {
  * @param qualities - Quality filters object
  * @returns Human-readable quality filter description
  */
-function formatQualityFilters(qualities: any): string {
+function formatQualityFilters(qualities: unknown): string {
   if (!qualities || typeof qualities !== 'object') {
     return 'qualities';
   }
@@ -474,7 +473,7 @@ export function formatExperienceResponse(
   showId: boolean = false
 ): string {
   // Get qualities - prefer experienceQualities if available, fall back to experience array
-  let qualities: string[] = [];
+  const qualities: string[] = [];
   if (result.source.experienceQualities) {
     // Convert qualities object to array format for display
     for (const [quality, value] of Object.entries(result.source.experienceQualities)) {
@@ -486,8 +485,6 @@ export function formatExperienceResponse(
         }
       }
     }
-  } else if (result.source.experience) {
-    qualities = result.source.experience;
   }
 
   const emoji = result.source.emoji;
@@ -526,7 +523,7 @@ export function formatBatchExperienceResponse(
     const result = results[i];
 
     // Get qualities - prefer experienceQualities if available, fall back to experience array
-    let qualities: string[] = [];
+    const qualities: string[] = [];
     if (result.source.experienceQualities) {
       // Convert qualities object to array format for display
       for (const [quality, value] of Object.entries(result.source.experienceQualities)) {
@@ -538,8 +535,6 @@ export function formatBatchExperienceResponse(
           }
         }
       }
-    } else if (result.source.experience) {
-      qualities = result.source.experience;
     }
 
     output.push(`--- ${i + 1} ---`);
@@ -631,7 +626,18 @@ export function formatReconsiderResponse(
   result: ExperienceResult,
   showId: boolean = false
 ): string {
-  const qualities = result.source.experience || [];
+  const qualities: string[] = [];
+  if (result.source.experienceQualities) {
+    for (const [quality, value] of Object.entries(result.source.experienceQualities)) {
+      if (value !== false) {
+        if (value === true) {
+          qualities.push(quality);
+        } else {
+          qualities.push(`${quality}.${value}`);
+        }
+      }
+    }
+  }
 
   let response: string;
   if (qualities.length > 0) {
@@ -657,6 +663,11 @@ function formatMetadata(source: Record<string, unknown>, showId: boolean = false
 
   if (showId) {
     lines.push(`📝 ID: ${source.id as string}`);
+  }
+
+  // Add context if present
+  if (source.context) {
+    lines.push(`Context: ${source.context}`);
   }
 
   // Format who experienced it

@@ -40,7 +40,7 @@ export class EmbeddingService {
     } catch (error) {
       // Failed to initialize embedding service
       // Use fallback provider
-      this.provider = await ProviderFactory.createProvider('default');
+      this.provider = await ProviderFactory.createProvider('none');
       await this.provider.initialize();
     }
   }
@@ -93,7 +93,7 @@ export class EmbeddingService {
       // Failed to generate embedding - return empty array
 
       // Try fallback to default provider
-      const fallbackProvider = await ProviderFactory.createProvider('default');
+      const fallbackProvider = await ProviderFactory.createProvider('none');
       await fallbackProvider.initialize();
       const embedding = await fallbackProvider.generateEmbedding(text);
 

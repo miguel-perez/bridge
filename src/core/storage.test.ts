@@ -1,5 +1,6 @@
 import { describe, it, expect, jest, beforeAll, beforeEach, afterEach } from '@jest/globals';
 import type { Source } from './types.js';
+import { humanQualities } from '../test-utils/format-converter.js';
 
 // Need to mock before imports for dynamic imports
 let generateId: (prefix?: string) => Promise<string>;
@@ -7,7 +8,7 @@ let validateFilePath: (filePath: string, allowedRoots?: string[]) => Promise<boo
 let saveSource: (source: Source) => Promise<Source>;
 let updateSource: (source: Source) => Promise<Source>;
 let getSource: (id: string) => Promise<Source | null>;
-let getAllRecords: () => Promise<Source[]>;
+let _getAllRecords: () => Promise<Source[]>;
 let clearTestStorage: () => Promise<void>;
 let setupTestStorage: (testName: string) => void;
 let storeFile: (sourcePath: string, sourceId: string) => Promise<string | null>;
@@ -15,9 +16,9 @@ let setStorageConfig: (config: { dataFile?: string; storageDir?: string }) => vo
 let resetStorageConfig: () => void;
 let getSources: () => Promise<Source[]>;
 let deleteSource: (id: string) => Promise<void>;
-let saveEmbedding: (embedding: any) => Promise<any>;
-let getEmbedding: (sourceId: string) => Promise<any | null>;
-let getAllEmbeddings: () => Promise<any[]>;
+let saveEmbedding: (embedding: { sourceId: string; embedding: unknown[]; created: string }) => Promise<{ sourceId: string; embedding: unknown[]; created: string }>;
+let getEmbedding: (sourceId: string) => Promise<{ sourceId: string; embedding: unknown[]; created: string } | null>;
+let getAllEmbeddings: () => Promise<{ sourceId: string; embedding: unknown[]; created: string }[]>;
 let deleteEmbedding: (sourceId: string) => Promise<void>;
 let getSearchableText: (record: Source) => string;
 
@@ -34,7 +35,7 @@ beforeAll(async () => {
   saveSource = storage.saveSource;
   updateSource = storage.updateSource;
   getSource = storage.getSource;
-  getAllRecords = storage.getAllRecords;
+  _getAllRecords = storage.getAllRecords;
   clearTestStorage = storage.clearTestStorage;
   setupTestStorage = storage.setupTestStorage;
   storeFile = storage.storeFile;
@@ -184,7 +185,7 @@ describe('Storage Layer', () => {
         who: 'test',
         processing: 'long-after',
         crafted: false,
-        experience: ['embodied.sensing', 'mood.closed', 'time.future'],
+        experienceQualities: humanQualities('embodied.sensing', 'mood.closed', 'time.future'),
         reflects: ['exp-123', 'exp-456'],
       };
 
@@ -201,7 +202,7 @@ describe('Storage Layer', () => {
         who: 'test',
         processing: 'during',
         crafted: false,
-        experience: ['mood.open'],
+        experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
       };
 
       await saveSource(source);
@@ -224,7 +225,7 @@ describe('Storage Layer', () => {
         who: 'test',
         processing: 'during',
         crafted: false,
-        experience: ['mood.open'],
+        experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
         reflects: [],
       };
 
@@ -243,7 +244,7 @@ describe('Storage Layer', () => {
         who: 'test',
         processing: 'during',
         crafted: false,
-        experience: ['mood.open'],
+        experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
       };
 
       const saved = await saveSource(source);
@@ -267,7 +268,7 @@ describe('Storage Layer', () => {
         who: 'test',
         processing: 'during',
         crafted: false,
-        experience: ['mood.open'],
+        experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
       };
 
       await saveSource(source);
@@ -290,7 +291,7 @@ describe('Storage Layer', () => {
         who: 'test',
         processing: 'during',
         crafted: false,
-        experience: ['mood.open'],
+        experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
       };
 
       await saveSource(source);
@@ -309,7 +310,7 @@ describe('Storage Layer', () => {
         who: 'test',
         processing: 'during',
         crafted: false,
-        experience: ['mood.open'],
+        experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
       };
 
       const source2: Source = {
@@ -320,7 +321,7 @@ describe('Storage Layer', () => {
         who: 'test',
         processing: 'during',
         crafted: false,
-        experience: ['mood.closed'],
+        experienceQualities: humanQualities('mood.closed', 'embodied.sensing'),
       };
 
       await saveSource(source1);
@@ -400,7 +401,7 @@ describe('Storage Layer', () => {
         who: 'test',
         processing: 'during',
         crafted: false,
-        experience: ['embodied.sensing', 'mood.closed'],
+        experienceQualities: humanQualities('embodied.sensing', 'mood.closed'),
       };
 
       const searchableText = getSearchableText(source);
@@ -416,7 +417,7 @@ describe('Storage Layer', () => {
         who: 'test',
         processing: 'long-after',
         crafted: false,
-        experience: ['mood.open'],
+        experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
         reflects: ['exp-123', 'exp-456'],
       };
 
@@ -465,7 +466,7 @@ describe('Storage Layer', () => {
         who: 'test',
         processing: 'during',
         crafted: false,
-        experience: ['mood.open'],
+        experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
       };
 
       const promises = [

@@ -1,6 +1,6 @@
 import { ProviderFactory } from './provider-factory.js';
 import { OpenAIProvider } from './openai-provider.js';
-import { TensorFlowJSProvider } from './tensorflow-provider.js';
+import { NoneProvider } from './none-provider.js';
 import { BaseEmbeddingProvider } from './base-provider.js';
 import { ProviderConfig } from './types.js';
 
@@ -33,9 +33,9 @@ describe('ProviderFactory', () => {
   });
 
   describe('createProvider', () => {
-    it('should create default provider', () => {
-      const provider = ProviderFactory.createProvider('default');
-      expect(provider).toBeInstanceOf(TensorFlowJSProvider);
+    it('should create none provider', () => {
+      const provider = ProviderFactory.createProvider('none');
+      expect(provider).toBeInstanceOf(NoneProvider);
     });
 
     it('should create openai provider', () => {
@@ -57,16 +57,16 @@ describe('ProviderFactory', () => {
   });
 
   describe('createFromEnvironment', () => {
-    it('should create default provider by default', async () => {
+    it('should create none provider by default', async () => {
       const provider = await ProviderFactory.createFromEnvironment();
-      expect(provider).toBeInstanceOf(TensorFlowJSProvider);
+      expect(provider).toBeInstanceOf(NoneProvider);
     });
 
-    it('should create default provider when explicitly set', async () => {
-      process.env.BRIDGE_EMBEDDING_PROVIDER = 'default';
+    it('should create none provider when explicitly set', async () => {
+      process.env.BRIDGE_EMBEDDING_PROVIDER = 'none';
 
       const provider = await ProviderFactory.createFromEnvironment();
-      expect(provider).toBeInstanceOf(TensorFlowJSProvider);
+      expect(provider).toBeInstanceOf(NoneProvider);
     });
 
     it('should auto-detect OpenAI when API key is present', async () => {
@@ -82,12 +82,12 @@ describe('ProviderFactory', () => {
     });
 
     it('should respect explicit provider choice over auto-detection', async () => {
-      // API key present but explicitly choosing default
+      // API key present but explicitly choosing none
       process.env.OPENAI_API_KEY = 'test-key';
-      process.env.BRIDGE_EMBEDDING_PROVIDER = 'default';
+      process.env.BRIDGE_EMBEDDING_PROVIDER = 'none';
 
       const provider = await ProviderFactory.createFromEnvironment();
-      expect(provider).toBeInstanceOf(TensorFlowJSProvider);
+      expect(provider).toBeInstanceOf(NoneProvider);
     });
 
     it('should create openai provider from environment', async () => {
@@ -133,7 +133,7 @@ describe('ProviderFactory', () => {
       mockFetch.mockResolvedValue({ ok: false });
 
       const provider = await ProviderFactory.createFromEnvironment();
-      expect(provider).toBeInstanceOf(TensorFlowJSProvider);
+      expect(provider).toBeInstanceOf(NoneProvider);
     });
 
     it('should fallback to default when auto-detected OpenAI is not available', async () => {
@@ -144,7 +144,7 @@ describe('ProviderFactory', () => {
       mockFetch.mockResolvedValue({ ok: false });
 
       const provider = await ProviderFactory.createFromEnvironment();
-      expect(provider).toBeInstanceOf(TensorFlowJSProvider);
+      expect(provider).toBeInstanceOf(NoneProvider);
     });
 
     it('should throw error for unknown provider type in environment', async () => {
@@ -176,7 +176,7 @@ describe('ProviderFactory', () => {
   describe('getAvailableTypes', () => {
     it('should return available provider types', () => {
       const types = ProviderFactory.getAvailableTypes();
-      expect(types).toContain('default');
+      expect(types).toContain('none');
       expect(types).toContain('openai');
       // Note: custom providers may be registered during tests, so we check for at least 2
       expect(types.length).toBeGreaterThanOrEqual(2);
@@ -189,9 +189,9 @@ describe('ProviderFactory', () => {
 
       const availability = await ProviderFactory.checkAvailability();
 
-      expect(availability).toHaveProperty('default');
+      expect(availability).toHaveProperty('none');
       expect(availability).toHaveProperty('openai');
-      expect(typeof availability.default).toBe('boolean');
+      expect(typeof availability.none).toBe('boolean');
       expect(typeof availability.openai).toBe('boolean');
     });
 
@@ -219,7 +219,7 @@ describe('ProviderFactory', () => {
       ProviderFactory.registerProvider('error' as any, ErrorProvider);
 
       const availability = await ProviderFactory.checkAvailability();
-      expect(availability).toHaveProperty('default');
+      expect(availability).toHaveProperty('none');
       expect(availability).toHaveProperty('openai');
     });
   });

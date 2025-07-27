@@ -1,12 +1,13 @@
+import { describe, it, expect } from '@jest/globals';
 import {
   groupByWho,
   groupByDate,
   groupByQualitySignature,
   groupByPerspective,
   groupBySimilarity,
-  type GroupedResult,
 } from './grouping.js';
 import { SourceRecord } from '../core/types.js';
+import { humanQualities } from '../test-utils/format-converter.js';
 
 describe('Grouping Service', () => {
   const mockExperiences: SourceRecord[] = [
@@ -18,7 +19,7 @@ describe('Grouping Service', () => {
       perspective: 'I',
       processing: 'during',
       created: '2025-01-15T10:00:00Z',
-      experience: ['embodied.sensing', 'mood.closed'],
+      experienceQualities: humanQualities('embodied.sensing', 'mood.closed'),
       crafted: false,
       reflects: [],
     },
@@ -30,7 +31,7 @@ describe('Grouping Service', () => {
       perspective: 'I',
       processing: 'during',
       created: '2025-01-15T11:00:00Z',
-      experience: ['embodied.sensing', 'mood.closed'],
+      experienceQualities: humanQualities('embodied.sensing', 'mood.closed'),
       crafted: false,
       reflects: [],
     },
@@ -42,7 +43,7 @@ describe('Grouping Service', () => {
       perspective: 'I',
       processing: 'during',
       created: '2025-01-16T09:00:00Z',
-      experience: ['embodied.thinking', 'focus.narrow'],
+      experienceQualities: humanQualities('embodied.thinking', 'focus.narrow'),
       crafted: false,
       reflects: [],
     },
@@ -54,7 +55,7 @@ describe('Grouping Service', () => {
       perspective: 'we',
       processing: 'during',
       created: '2025-01-16T14:00:00Z',
-      experience: ['presence.collective', 'purpose.goal'],
+      experienceQualities: humanQualities('presence.collective', 'purpose.goal'),
       crafted: false,
       reflects: [],
     },

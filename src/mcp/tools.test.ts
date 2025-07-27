@@ -36,7 +36,16 @@ describe('MCP Tools', () => {
 
     it('should have experience tool with correct properties', async () => {
       const tools = await getTools();
-      const experienceTool = tools.find((t) => t.name === 'experience') as any;
+      const experienceTool = tools.find((t) => t.name === 'experience') as unknown as {
+        name: string;
+        description: string;
+        readOnlyHint: boolean;
+        destructiveHint: boolean;
+        idempotentHint: boolean;
+        openWorldHint: boolean;
+        inputSchema: unknown;
+        examples: unknown[];
+      };
 
       expect(experienceTool).toBeDefined();
       expect(experienceTool.name).toBe('experience');
@@ -53,7 +62,16 @@ describe('MCP Tools', () => {
 
     it('should have reconsider tool with correct properties', async () => {
       const tools = await getTools();
-      const reconsiderTool = tools.find((t) => t.name === 'reconsider') as any;
+      const reconsiderTool = tools.find((t) => t.name === 'reconsider') as unknown as {
+        name: string;
+        description: string;
+        readOnlyHint: boolean;
+        destructiveHint: boolean;
+        idempotentHint: boolean;
+        openWorldHint: boolean;
+        inputSchema: unknown;
+        examples: unknown[];
+      };
 
       expect(reconsiderTool).toBeDefined();
       expect(reconsiderTool.name).toBe('reconsider');

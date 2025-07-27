@@ -172,7 +172,7 @@ export class ExperienceHandler {
           who: item.who,
           processing: item.processing,
           crafted: item.crafted,
-          experience: item.experience || undefined,
+          experience: item.experienceQualities || undefined,
           reflects: item.reflects,
           context: item.context,
         });
@@ -283,6 +283,15 @@ export class ExperienceHandler {
           });
         }
 
+        // Add nextMoment if provided
+        if (experience.nextMoment) {
+          const nextMomentText = this.formatNextMoment(experience.nextMoment);
+          content.push({
+            type: 'text',
+            text: nextMomentText,
+          });
+        }
+
         return { result: { content }, capturedExperiences: results };
       } else {
         // Multiple experiences - use batch formatting
@@ -301,6 +310,15 @@ export class ExperienceHandler {
           content.push({
             type: 'text',
             text: `\n🔍 Related experiences:\n${recallText}`,
+          });
+        }
+
+        // Add nextMoment if provided
+        if (experience.nextMoment) {
+          const nextMomentText = this.formatNextMoment(experience.nextMoment);
+          content.push({
+            type: 'text',
+            text: nextMomentText,
           });
         }
 
@@ -361,16 +379,19 @@ export class ExperienceHandler {
       }
 
       // Check if qualities suggest emotional content
-      const hasEmotionalQualities =
-        result.source.experience?.some(
-          (q) => q.includes('mood') || q.includes('embodied.sensing') || q === 'embodied'
-        ) || false;
+      const qualities = result.source.experienceQualities;
+      const hasEmotionalQualities = qualities && (
+        qualities.mood !== false || 
+        qualities.embodied === 'sensing' || 
+        qualities.embodied === true
+      );
 
       if (hasEmotionalQualities) {
-        const quality =
-          result.source.experience?.find((q) => q.includes('mood')) ||
-          result.source.experience?.[0] ||
-          'experience';
+        const quality = qualities.mood !== false ? 
+          (qualities.mood === true ? 'mood' : `mood.${qualities.mood}`) :
+          qualities.embodied !== false ? 
+            (qualities.embodied === true ? 'embodied' : `embodied.${qualities.embodied}`) :
+            'experience';
         return `Captured as ${quality}`;
       }
 
@@ -422,11 +443,15 @@ export class ExperienceHandler {
         const snippet = result.snippet || result.content || '';
         const truncated = snippet.length > 100 ? snippet.substring(0, 97) + '...' : snippet;
         const metadata = result.metadata || {};
-        const experience = (metadata.experience as string[]) || [];
+        const experienceQualities = metadata.experienceQualities || {};
 
         let text = `${idx + 1}. "${truncated}"`;
-        if (experience.length > 0) {
-          text += `\n   (${experience.join(', ')})`;
+        // Convert qualities to array for display
+        const qualitiesArray = Object.entries(experienceQualities)
+          .filter(([_, v]) => v !== false)
+          .map(([k, v]) => v === true ? k : `${k}.${v}`);
+        if (qualitiesArray.length > 0) {
+          text += `\n   (${qualitiesArray.join(', ')})`;
         }
         if (metadata.created) {
           const timeAgo = this.formatTimeAgo(metadata.created as string);
@@ -454,5 +479,24 @@ export class ExperienceHandler {
     if (diffDays === 1) return 'yesterday';
     if (diffDays < 7) return `${diffDays} days ago`;
     return time.toLocaleDateString();
+  }
+
+  /**
+   * Format nextMoment declaration
+   */
+  private formatNextMoment(nextMoment: Record<string, string | boolean>): string {
+    const qualities: string[] = [];
+    
+    for (const [quality, value] of Object.entries(nextMoment)) {
+      if (value !== false) {
+        if (value === true) {
+          qualities.push(quality);
+        } else {
+          qualities.push(`${quality}.${value}`);
+        }
+      }
+    }
+    
+    return `\n➡️ Next: ${qualities.length > 0 ? qualities.join(', ') : 'Open experiential state'}`;
   }
 }

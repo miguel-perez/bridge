@@ -24,10 +24,18 @@ function makeSource(overrides: Partial<Source> = {}): Source {
     source: overrides.source || 'Original source text',
     created: overrides.created || new Date().toISOString(),
     perspective: overrides.perspective || 'I',
-    experiencer: overrides.experiencer || 'self',
+    who: overrides.who || 'self',
     processing: overrides.processing || 'during',
     crafted: overrides.crafted ?? false,
-    experience: overrides.experience || ['mood.open', 'embodied.thinking'],
+    experienceQualities: overrides.experienceQualities || {
+      mood: 'open',
+      embodied: 'thinking',
+      focus: false,
+      purpose: false,
+      space: false,
+      time: false,
+      presence: false
+    },
     ...overrides
   };
 }
@@ -66,9 +74,25 @@ describe('EnrichService', () => {
   test('updates experience', async () => {
     const result = await enrichService.enrichSource({
       id: baseSource.id,
-      experience: ['space.here', 'mood.open', 'purpose.goal']
+      experienceQualities: {
+        space: 'here',
+        mood: 'open',
+        purpose: 'goal',
+        embodied: false,
+        focus: false,
+        time: false,
+        presence: false
+      }
     });
-    expect(result.source.experience).toEqual(['space.here', 'mood.open', 'purpose.goal']);
+    expect(result.source.experienceQualities).toEqual({
+      space: 'here',
+      mood: 'open',
+      purpose: 'goal',
+      embodied: false,
+      focus: false,
+      time: false,
+      presence: false
+    });
     expect(result.updatedFields).toContain('experience');
   });
 
@@ -88,21 +112,45 @@ describe('EnrichService', () => {
     expect(() => enrichSchema.parse(input)).not.toThrow();
   });
 
-  test('accepts valid experience array', async () => {
+  test('accepts valid experience qualities', async () => {
     const input = {
       id: 'test',
       source: 'test',
-      experience: ['mood.open', 'embodied.sensing', 'purpose.goal']
+      experience: {
+        mood: 'open',
+        embodied: 'sensing',
+        purpose: 'goal',
+        focus: false,
+        space: false,
+        time: false,
+        presence: false
+      }
     };
     expect(() => enrichSchema.parse(input)).not.toThrow();
   });
 
-  test('enrich with empty experience array', async () => {
+  test('enrich with all false experience qualities', async () => {
     const result = await enrichService.enrichSource({
       id: baseSource.id,
-      experience: []
+      experienceQualities: {
+        mood: false,
+        embodied: false,
+        purpose: false,
+        focus: false,
+        space: false,
+        time: false,
+        presence: false
+      }
     });
-    expect(result.source.experience).toEqual([]);
+    expect(result.source.experienceQualities).toEqual({
+      mood: false,
+      embodied: false,
+      purpose: false,
+      focus: false,
+      space: false,
+      time: false,
+      presence: false
+    });
   });
 
   test('enrich with no changes does not update fields', async () => {

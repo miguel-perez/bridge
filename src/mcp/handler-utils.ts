@@ -24,14 +24,26 @@ export const RELEVANCE_PERCENT_PRECISION = 0;
  * @param experience - The experience array to format
  * @returns Formatted string representation of the experience
  */
-export function formatExperience(experience: string[] | undefined): string {
-  if (!experience || experience.length === 0) {
+export function formatExperience(experienceQualities: unknown): string {
+  if (!experienceQualities || typeof experienceQualities !== 'object') {
     return 'No experiential qualities analyzed';
   }
-  const qualityLines = experience.map((q: string) => {
-    return `• ${q}`;
-  });
-  return `${qualityLines.join('\n')}`;
+  
+  const qualities = Object.entries(experienceQualities)
+    .filter(([_, value]) => value !== false)
+    .map(([key, value]) => {
+      if (value === true) {
+        return `• ${key}`;
+      } else {
+        return `• ${key}.${value}`;
+      }
+    });
+    
+  if (qualities.length === 0) {
+    return 'No experiential qualities analyzed';
+  }
+  
+  return qualities.join('\n');
 }
 
 /**
@@ -226,8 +238,8 @@ export function formatSource(source: SourceRecord): string {
   }
 
   // Experience analysis
-  if (source.experience) {
-    parts.push(formatExperience(source.experience));
+  if (source.experienceQualities) {
+    parts.push(formatExperience(source.experienceQualities));
   }
 
   return parts.join('\n');

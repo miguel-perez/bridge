@@ -1,8 +1,8 @@
 import { EmbeddingProvider, ProviderConfig } from './types.js';
-import { TensorFlowJSProvider } from './tensorflow-provider.js';
 import { OpenAIProvider } from './openai-provider.js';
+import { NoneProvider } from './none-provider.js';
 
-export type ProviderType = 'default' | 'openai';
+export type ProviderType = 'none' | 'openai';
 
 /**
  *
@@ -12,7 +12,7 @@ export class ProviderFactory {
     ProviderType,
     new (config: ProviderConfig) => EmbeddingProvider
   >([
-    ['default', TensorFlowJSProvider],
+    ['none', NoneProvider],
     ['openai', OpenAIProvider],
   ]);
 
@@ -41,7 +41,7 @@ export class ProviderFactory {
     const explicitProvider = process.env.BRIDGE_EMBEDDING_PROVIDER as ProviderType;
 
     // Determine provider type
-    let providerType: ProviderType = 'default';
+    let providerType: ProviderType = 'none';
 
     if (explicitProvider) {
       // Use explicit provider if specified
@@ -51,9 +51,9 @@ export class ProviderFactory {
       providerType = 'openai';
     }
 
-    // Default to local provider if no API key or explicit choice
-    if (providerType === 'default') {
-      return this.createProvider('default');
+    // Default to none provider if no API key or explicit choice
+    if (!providerType || providerType === 'none') {
+      return this.createProvider('none');
     }
 
     // Create provider with environment-specific config
@@ -69,7 +69,7 @@ export class ProviderFactory {
         break;
 
       default:
-        // TensorFlow.js doesn't need API keys
+        // Other providers don't need configuration
         break;
     }
 
@@ -78,10 +78,11 @@ export class ProviderFactory {
     // Check if provider is available
     const isAvailable = await provider.isAvailable();
     if (!isAvailable) {
+      // Don't log to console in production - it interferes with JSON-RPC
       if (!process.env.BRIDGE_TEST_MODE && process.env.NODE_ENV !== 'test') {
-        console.warn(`Provider ${providerType} is not available, falling back to default provider`);
+        // Provider not available, will fall back to default
       }
-      return this.createProvider('default');
+      return this.createProvider('none');
     }
 
     return provider;
@@ -109,7 +110,7 @@ export class ProviderFactory {
    */
   static async checkAvailability(): Promise<Record<ProviderType, boolean>> {
     const results: Record<ProviderType, boolean> = {
-      default: false,
+      none: false,
       openai: false,
     };
 

@@ -4,6 +4,7 @@
 
 import { QualityFilterService, QualityFilter, QualityFilterError } from './quality-filter.js';
 import { SourceRecord } from '../core/types.js';
+import { humanQualities } from '../test-utils/format-converter.js';
 
 describe('QualityFilterService', () => {
   let service: QualityFilterService;
@@ -17,22 +18,22 @@ describe('QualityFilterService', () => {
     id: 'test-1',
     source: 'I feel anxious about the presentation',
     created: '2025-07-21T10:00:00Z',
-    experience: ['embodied.sensing', 'mood.closed', 'time.future'],
-  };
+    experienceQualities: humanQualities('embodied.sensing', 'mood.closed', 'time.future'),
+    emoji: '🤔'};
 
   const mockExperienceWithMultipleQualities: SourceRecord = {
     id: 'test-2',
     source: 'I feel focused and energized',
     created: '2025-07-21T11:00:00Z',
-    experience: ['focus.narrow', 'mood.open', 'embodied.thinking', 'purpose.goal'],
-  };
+    experienceQualities: humanQualities('focus.narrow', 'mood.open', 'embodied.thinking', 'purpose.goal'),
+    emoji: '💪'};
 
   const mockExperienceWithoutQualities: SourceRecord = {
     id: 'test-3',
     source: 'Just a simple experience',
     created: '2025-07-21T12:00:00Z',
-    experience: [],
-  };
+    experienceQualities: undefined,
+    emoji: '👍'};
 
   describe('parseQualityFilter', () => {
     it('should parse simple value filters', () => {
@@ -43,8 +44,7 @@ describe('QualityFilterService', () => {
         type: 'value',
         quality: 'mood',
         values: ['closed'],
-        operator: 'exact',
-      });
+        operator: 'exact'});
     });
 
     it('should parse multiple value filters (OR logic)', () => {
@@ -55,8 +55,7 @@ describe('QualityFilterService', () => {
         type: 'value',
         quality: 'embodied',
         values: ['thinking', 'sensing'],
-        operator: 'exact',
-      });
+        operator: 'exact'});
     });
 
     it('should parse presence filters', () => {
@@ -66,8 +65,7 @@ describe('QualityFilterService', () => {
       expect(result).toEqual({
         type: 'presence',
         quality: 'mood',
-        present: true,
-      });
+        present: true});
     });
 
     it('should parse absence filters', () => {
@@ -77,15 +75,13 @@ describe('QualityFilterService', () => {
       expect(result).toEqual({
         type: 'presence',
         quality: 'mood',
-        present: false,
-      });
+        present: false});
     });
 
     it('should parse AND expressions for multiple qualities', () => {
       const filter: QualityFilter = {
         mood: 'closed',
-        embodied: 'sensing',
-      };
+        embodied: 'sensing'};
       const result = service.parseQualityFilter(filter);
 
       expect(result).toEqual({
@@ -95,22 +91,17 @@ describe('QualityFilterService', () => {
             type: 'value',
             quality: 'mood',
             values: ['closed'],
-            operator: 'exact',
-          },
+            operator: 'exact'},
           {
             type: 'value',
             quality: 'embodied',
             values: ['sensing'],
-            operator: 'exact',
-          },
-        ],
-      });
+            operator: 'exact'}]});
     });
 
     it('should parse explicit AND expressions', () => {
       const filter: QualityFilter = {
-        $and: [{ mood: 'closed' }, { embodied: 'sensing' }],
-      };
+        $and: [{ mood: 'closed' }, { embodied: 'sensing' }]};
       const result = service.parseQualityFilter(filter);
 
       expect(result).toEqual({
@@ -120,22 +111,17 @@ describe('QualityFilterService', () => {
             type: 'value',
             quality: 'mood',
             values: ['closed'],
-            operator: 'exact',
-          },
+            operator: 'exact'},
           {
             type: 'value',
             quality: 'embodied',
             values: ['sensing'],
-            operator: 'exact',
-          },
-        ],
-      });
+            operator: 'exact'}]});
     });
 
     it('should parse OR expressions', () => {
       const filter: QualityFilter = {
-        $or: [{ mood: 'closed' }, { embodied: 'sensing' }],
-      };
+        $or: [{ mood: 'closed' }, { embodied: 'sensing' }]};
       const result = service.parseQualityFilter(filter);
 
       expect(result).toEqual({
@@ -145,22 +131,17 @@ describe('QualityFilterService', () => {
             type: 'value',
             quality: 'mood',
             values: ['closed'],
-            operator: 'exact',
-          },
+            operator: 'exact'},
           {
             type: 'value',
             quality: 'embodied',
             values: ['sensing'],
-            operator: 'exact',
-          },
-        ],
-      });
+            operator: 'exact'}]});
     });
 
     it('should parse NOT expressions', () => {
       const filter: QualityFilter = {
-        $not: { mood: 'closed' },
-      };
+        $not: { mood: 'closed' }};
       const result = service.parseQualityFilter(filter);
 
       expect(result).toEqual({
@@ -169,9 +150,7 @@ describe('QualityFilterService', () => {
           type: 'value',
           quality: 'mood',
           values: ['closed'],
-          operator: 'exact',
-        },
-      });
+          operator: 'exact'}});
     });
 
     it('should parse complex nested expressions', () => {
@@ -179,10 +158,7 @@ describe('QualityFilterService', () => {
         $and: [
           { mood: 'closed' },
           {
-            $or: [{ embodied: 'thinking' }, { focus: 'narrow' }],
-          },
-        ],
-      };
+            $or: [{ embodied: 'thinking' }, { focus: 'narrow' }]}]};
       const result = service.parseQualityFilter(filter);
 
       expect(result).toEqual({
@@ -192,8 +168,7 @@ describe('QualityFilterService', () => {
             type: 'value',
             quality: 'mood',
             values: ['closed'],
-            operator: 'exact',
-          },
+            operator: 'exact'},
           {
             type: 'or',
             filters: [
@@ -201,18 +176,12 @@ describe('QualityFilterService', () => {
                 type: 'value',
                 quality: 'embodied',
                 values: ['thinking'],
-                operator: 'exact',
-              },
+                operator: 'exact'},
               {
                 type: 'value',
                 quality: 'focus',
                 values: ['narrow'],
-                operator: 'exact',
-              },
-            ],
-          },
-        ],
-      });
+                operator: 'exact'}]}]});
     });
 
     it('should throw error for empty filter', () => {
@@ -221,7 +190,7 @@ describe('QualityFilterService', () => {
     });
 
     it('should throw error for invalid filter value', () => {
-      const filter = { mood: 123 as any };
+      const filter = { mood: 123 as unknown as QualityFilter };
       expect(() => service.parseQualityFilter(filter)).toThrow(QualityFilterError);
       expect(() => service.parseQualityFilter(filter)).toThrow('Invalid filter value for quality');
     });
@@ -255,8 +224,7 @@ describe('QualityFilterService', () => {
     it('should evaluate AND expressions correctly', () => {
       const filter = service.parseQualityFilter({
         mood: 'closed',
-        embodied: 'sensing',
-      });
+        embodied: 'sensing'});
 
       expect(service.evaluateFilter(mockExperience, filter)).toBe(true); // has both
       expect(service.evaluateFilter(mockExperienceWithMultipleQualities, filter)).toBe(false); // missing mood.closed
@@ -264,8 +232,7 @@ describe('QualityFilterService', () => {
 
     it('should evaluate OR expressions correctly', () => {
       const filter = service.parseQualityFilter({
-        $or: [{ mood: 'closed' }, { embodied: 'thinking' }],
-      });
+        $or: [{ mood: 'closed' }, { embodied: 'thinking' }]});
 
       expect(service.evaluateFilter(mockExperience, filter)).toBe(true); // has mood.closed
       expect(service.evaluateFilter(mockExperienceWithMultipleQualities, filter)).toBe(true); // has embodied.thinking
@@ -274,8 +241,7 @@ describe('QualityFilterService', () => {
 
     it('should evaluate NOT expressions correctly', () => {
       const filter = service.parseQualityFilter({
-        $not: { mood: 'closed' },
-      });
+        $not: { mood: 'closed' }});
 
       expect(service.evaluateFilter(mockExperience, filter)).toBe(false); // has mood.closed
       expect(service.evaluateFilter(mockExperienceWithMultipleQualities, filter)).toBe(true); // doesn't have mood.closed
@@ -286,10 +252,7 @@ describe('QualityFilterService', () => {
         $and: [
           { mood: 'closed' },
           {
-            $or: [{ embodied: 'thinking' }, { embodied: 'sensing' }],
-          },
-        ],
-      });
+            $or: [{ embodied: 'thinking' }, { embodied: 'sensing' }]}]});
 
       expect(service.evaluateFilter(mockExperience, filter)).toBe(true); // mood.closed AND embodied.sensing (matches OR)
       expect(service.evaluateFilter(mockExperienceWithMultipleQualities, filter)).toBe(false); // missing mood.closed
@@ -302,7 +265,7 @@ describe('QualityFilterService', () => {
     });
 
     it('should handle experiences with undefined qualities', () => {
-      const experienceWithoutExperience = { ...mockExperience, experience: undefined };
+      const experienceWithoutExperience = { ...mockExperience, experienceQualities: undefined };
       const filter = service.parseQualityFilter({ mood: 'closed' });
 
       expect(service.evaluateFilter(experienceWithoutExperience, filter)).toBe(false);
@@ -320,8 +283,7 @@ describe('QualityFilterService', () => {
 
     it('should validate complex valid filters', () => {
       const filter: QualityFilter = {
-        $and: [{ mood: 'closed' }, { embodied: { present: true } }],
-      };
+        $and: [{ mood: 'closed' }, { embodied: { present: true } }]};
       const result = service.validateFilter(filter);
 
       expect(result.valid).toBe(true);
@@ -337,7 +299,7 @@ describe('QualityFilterService', () => {
     });
 
     it('should reject invalid boolean operators', () => {
-      const filter = { $invalid: [] } as any;
+      const filter = { $invalid: [] } as unknown as QualityFilter;
       const result = service.validateFilter(filter);
 
       expect(result.valid).toBe(false);
@@ -353,7 +315,7 @@ describe('QualityFilterService', () => {
     });
 
     it('should reject invalid filter values', () => {
-      const filter = { mood: 123 as any };
+      const filter = { mood: 123 as unknown as QualityFilter };
       const result = service.validateFilter(filter);
 
       expect(result.valid).toBe(false);
@@ -369,7 +331,7 @@ describe('QualityFilterService', () => {
     });
 
     it('should reject invalid presence filter values', () => {
-      const filter = { mood: { present: 'not-a-boolean' as any } };
+      const filter = { mood: { present: 'not-a-boolean' as unknown as boolean } };
       const result = service.validateFilter(filter);
 
       expect(result.valid).toBe(false);
@@ -405,15 +367,13 @@ describe('QualityFilterService', () => {
 
     it('should describe OR expressions', () => {
       const filter: QualityFilter = {
-        $or: [{ mood: 'closed' }, { embodied: 'sensing' }],
-      };
+        $or: [{ mood: 'closed' }, { embodied: 'sensing' }]};
       expect(service.describeFilter(filter)).toBe('(mood.closed OR embodied.sensing)');
     });
 
     it('should describe NOT expressions', () => {
       const filter: QualityFilter = {
-        $not: { mood: 'closed' },
-      };
+        $not: { mood: 'closed' }};
       expect(service.describeFilter(filter)).toBe('NOT (mood.closed)');
     });
 
@@ -422,10 +382,7 @@ describe('QualityFilterService', () => {
         $and: [
           { mood: 'closed' },
           {
-            $or: [{ embodied: 'thinking' }, { focus: 'narrow' }],
-          },
-        ],
-      };
+            $or: [{ embodied: 'thinking' }, { focus: 'narrow' }]}]};
       expect(service.describeFilter(filter)).toBe(
         '(mood.closed AND (embodied.thinking OR focus.narrow))'
       );
@@ -439,18 +396,18 @@ describe('QualityFilterService', () => {
 
   describe('error handling', () => {
     it('should throw QualityFilterError for evaluation errors', () => {
-      const invalidExpression = { type: 'invalid' as any };
+      const invalidExpression = { type: 'invalid' as unknown as string };
 
-      expect(() => service.evaluateFilter(mockExperience, invalidExpression as any)).toThrow(
+      expect(() => service.evaluateFilter(mockExperience, invalidExpression as unknown as QualityFilter)).toThrow(
         QualityFilterError
       );
-      expect(() => service.evaluateFilter(mockExperience, invalidExpression as any)).toThrow(
+      expect(() => service.evaluateFilter(mockExperience, invalidExpression as unknown as QualityFilter)).toThrow(
         'Unknown expression type: invalid'
       );
     });
 
     it('should provide meaningful error messages', () => {
-      const filter = { mood: 123 as any };
+      const filter = { mood: 123 as unknown as QualityFilter };
 
       expect(() => service.parseQualityFilter(filter)).toThrow(
         "Invalid filter value for quality 'mood': 123"

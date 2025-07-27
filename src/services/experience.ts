@@ -7,12 +7,7 @@ import { z } from 'zod';
 import { saveSource, saveEmbedding } from '../core/storage.js';
 import { generateId } from '../core/storage.js';
 import type { Source, EmbeddingRecord, ExperienceQualities } from '../core/types.js';
-import {
-  generatePerspective,
-  experienceArrayToQualities,
-  qualitiesToExperienceArray,
-} from '../core/types.js';
-
+import { generatePerspective } from '../core/types.js';
 import { embeddingService } from './embeddings.js';
 
 // ============================================================================
@@ -136,7 +131,7 @@ export interface ExperienceInput {
   who?: string | string[];
   processing?: string;
   crafted?: boolean;
-  experience?: string[] | ExperienceQualities;
+  experience?: ExperienceQualities;
   reflects?: string[];
   context?: string;
 }
@@ -193,26 +188,18 @@ export class ExperienceService {
     // Generate perspective if not provided
     const perspective = generatePerspective(who, validatedInput.perspective);
 
-    // Handle experience qualities - convert between formats as needed
-    let experience: string[] | undefined;
+    // Handle experience qualities - only accept switchboard format
     let experienceQualities: ExperienceQualities | undefined;
 
     if (validatedInput.experience) {
       if (Array.isArray(validatedInput.experience)) {
-        // Old format - convert to both formats for compatibility
-        if (validatedInput.experience.length > 0) {
-          experience = validatedInput.experience;
-          experienceQualities = experienceArrayToQualities(validatedInput.experience);
-        }
-      } else {
-        // New format - convert to both formats for compatibility
-        experienceQualities = validatedInput.experience;
-        experience = qualitiesToExperienceArray(validatedInput.experience);
-        // If no qualities are prominent, don't set experience array
-        if (experience.length === 0) {
-          experience = undefined;
-        }
+        // Array format is no longer supported
+        throw new Error('Array format for experience is deprecated. Please use the switchboard format with all 7 qualities specified.');
       }
+      
+      // Switchboard format - the only accepted format
+      experienceQualities = validatedInput.experience;
+      
     }
 
     // Create source record with both old and new fields for migration period
@@ -225,7 +212,6 @@ export class ExperienceService {
       who,
       processing: validatedInput.processing || 'during',
       crafted: validatedInput.crafted || false,
-      experience,
       experienceQualities,
       reflects: validatedInput.reflects,
       context: validatedInput.context,
@@ -239,10 +225,14 @@ export class ExperienceService {
       await embeddingService.initialize();
 
       // Create simple embedding text with prominent qualities and context
-      const qualitiesText =
-        savedSource.experience && savedSource.experience.length > 0
-          ? `[${savedSource.experience.join(', ')}]`
-          : '[]';
+      const qualitiesArray = savedSource.experienceQualities 
+        ? Object.entries(savedSource.experienceQualities)
+            .filter(([_, v]) => v !== false)
+            .map(([k, v]) => v === true ? k : `${k}.${v}`)
+        : [];
+      const qualitiesText = qualitiesArray.length > 0
+        ? `[${qualitiesArray.join(', ')}]`
+        : '[]';
 
       // Include context in embedding if present
       const contextPrefix = savedSource.context ? `Context: ${savedSource.context}. ` : '';

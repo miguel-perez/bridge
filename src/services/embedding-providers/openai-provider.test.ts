@@ -158,7 +158,7 @@ describe('OpenAIProvider', () => {
 
     it('should validate text input', async () => {
       await expect(provider.generateEmbedding('')).rejects.toThrow(
-        'Text must be a non-empty string'
+        'Text cannot be empty'
       );
     });
 

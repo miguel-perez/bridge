@@ -46,19 +46,19 @@ describe('BaseEmbeddingProvider', () => {
 
     it('should reject empty text', async () => {
       await expect(provider.generateEmbedding('')).rejects.toThrow(
-        'Text must be a non-empty string'
+        'Text cannot be empty'
       );
     });
 
     it('should reject null text', async () => {
       await expect(provider.generateEmbedding(null as any)).rejects.toThrow(
-        'Text must be a non-empty string'
+        'Text cannot be empty'
       );
     });
 
     it('should reject undefined text', async () => {
       await expect(provider.generateEmbedding(undefined as any)).rejects.toThrow(
-        'Text must be a non-empty string'
+        'Text cannot be empty'
       );
     });
 

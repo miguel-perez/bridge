@@ -272,7 +272,7 @@ const ExperienceItemSchema = z
         'Whether this is crafted content (blog/refined for an audience) vs raw experience (journal/immediate)'
       )
       .optional(),
-    experience: ExperienceObject,
+    experienceQualities: ExperienceObject,
     reflects: z
       .array(z.string())
       .describe(
@@ -445,7 +445,7 @@ const ReconsiderItemSchema = z
       .optional(),
     processing: ProcessingEnum.optional(),
     crafted: z.boolean().describe('Updated crafted status (optional)').optional(),
-    experience: ExperienceObjectOptional.optional(),
+    experienceQualities: ExperienceObjectOptional.optional(),
     reflects: z
       .array(z.string())
       .describe(
@@ -514,7 +514,7 @@ export function generateExperienceExample(): ExperienceInput {
         who: 'Alex',
         processing: 'during',
         crafted: false,
-        experience: {
+        experienceQualities: {
           embodied: 'sensing',
           focus: false,
           mood: 'open',
@@ -561,7 +561,7 @@ export function generateReconsiderExample(): ReconsiderInput {
       {
         id: 'exp_1234567890',
         source: 'Updated source text with more detail about the creative process',
-        experience: {
+        experienceQualities: {
           embodied: false,
           focus: 'narrow',
           mood: false,
@@ -591,7 +591,7 @@ export function generateBatchExperienceExample(): ExperienceInput {
         who: 'Alex',
         processing: 'right-after',
         crafted: false,
-        experience: {
+        experienceQualities: {
           embodied: false,
           focus: 'narrow', // Base quality 'focus' defaults to narrow
           mood: false,
@@ -609,7 +609,7 @@ export function generateBatchExperienceExample(): ExperienceInput {
         who: 'Alex',
         processing: 'during',
         crafted: false,
-        experience: {
+        experienceQualities: {
           embodied: 'thinking',
           focus: false,
           mood: 'closed',

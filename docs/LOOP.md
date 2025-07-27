@@ -35,6 +35,7 @@ We use a continuous learning loop to evolve from vision to reality:
 
 - Run unit tests with `npm test` to validate functionality
 - Run integration tests with `npm run test:integration` for end-to-end validation
+- Run simulation tests with `npm run test:simulation` for experiential validation
 - Review test coverage and performance metrics
 - Analyze implementation gaps and areas for improvement
 
@@ -55,12 +56,14 @@ We use a continuous learning loop to evolve from vision to reality:
 3. **Run tests**:
    - `npm test` for unit tests and coverage
    - `npm run test:integration` for MCP protocol tests
-   - `npm run test:all` for comprehensive validation
+   - `npm run test:simulation` for experiential validation (requires OPENAI_API_KEY)
+   - `npm run test:all` for unit + integration tests
+   - `npm run test:complete` for all tests including simulations
 4. **Analyze results**: Review test coverage and performance metrics
 5. **Review results**: Check test output and error details
 6. **Update docs**: Keep README.md current with implementation
 
-**Current Quality Status**: See **README.md** for current test coverage metrics (81.64% lines, 69.26% branches, 768 total tests)
+**Current Quality Status**: See **README.md** for current test coverage metrics (81.64% lines, 69.26% branches, 769 total tests)
 
 ### Key Commands
 
@@ -75,7 +78,9 @@ npm run type-check                # Type check without building
 # Testing
 npm test                          # Run unit tests with Jest (705 tests)
 npm run test:integration          # Run integration tests with real MCP (63 tests)
-npm run test:all                  # Run all tests (768 total)
+npm run test:simulation           # Run simulation tests with LLM (1 test)
+npm run test:all                  # Run unit + integration tests (768 tests)
+npm run test:complete             # Run all tests including simulations (769 total)
 npm run test:bridge               # Run Bridge scenario tests
 npm run loop                      # Run learning loop analysis
 npm run quality-check:full        # Run comprehensive quality checks
@@ -126,22 +131,39 @@ SKIP_PRE_PUSH=true git push      # Bypass pre-push
 - 80%+ test coverage (currently 81.64% line, 88.95% function)
 - Zero ESLint errors
 - Zero TypeScript errors
-- All 768 tests passing (705 unit + 63 integration)
-- All 13 completed experiments proven by tests
+- All 769 tests passing (705 unit + 63 integration + 1 simulation)
+- All 14 completed experiments proven by tests
 
 ### Test Coverage
 
-Bridge uses comprehensive unit tests to validate functionality:
+Bridge uses a three-layer testing pyramid:
+
+```
+┌─────────────────────────────────────┐
+│      Simulation Tests (1)           │ <- Experiential validation
+├─────────────────────────────────────┤
+│    Integration Tests (63)           │ <- Protocol validation  
+├─────────────────────────────────────┤
+│      Unit Tests (705)               │ <- Component validation
+└─────────────────────────────────────┘
+```
 
 - **Unit Tests** (705 tests): Validate individual components
   - Handler Tests: MCP tool handlers and error handling
   - Service Tests: Business logic and data processing
   - Schema Tests: Input/output schemas and type safety
+  
 - **Integration Tests** (63 tests): Real MCP client/server communication
   - End-to-end workflows and user journeys
   - Performance and stress testing
   - Error handling and edge cases
   - All completed experiments validation
+  
+- **Simulation Tests** (1 test): LLM-powered experiential validation
+  - Extended cognition model (human 2-4 qualities, AI 7 qualities)
+  - Complementary awareness and pattern emergence
+  - Natural conversational flow with Bridge integration
+  - Evaluated by GPT-4 for experiential quality
 
 **Note**: Tests include comprehensive coverage reporting and performance metrics.
 

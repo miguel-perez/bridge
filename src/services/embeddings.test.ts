@@ -6,7 +6,7 @@ import * as os from 'os';
 
 // Mock fetch
 const mockFetch = jest.fn();
-global.fetch = mockFetch as any;
+global.fetch = mockFetch as unknown as typeof fetch;
 
 // Mock TensorFlow.js modules for default provider
 const mockEmbed = jest.fn();
@@ -14,7 +14,7 @@ const mockDispose = jest.fn();
 const mockLoad = jest.fn();
 
 // Set up global mocks for test environment
-(global as any).__mocked_universal_sentence_encoder = {
+(global as unknown as Record<string, unknown>).__mocked_universal_sentence_encoder = {
   load: mockLoad,
 };
 
@@ -66,7 +66,7 @@ describe('EmbeddingService', () => {
   describe('initialization', () => {
     it('should initialize with default provider by default', async () => {
       await service.initialize();
-      expect(service.getProviderName()).toBe('TensorFlowJS-USE');
+      expect(service.getProviderName()).toBe('None');
     });
 
     it('should initialize with configured provider', async () => {
@@ -84,7 +84,7 @@ describe('EmbeddingService', () => {
       // No API key, should fail and fall back
 
       await service.initialize();
-      expect(service.getProviderName()).toBe('TensorFlowJS-USE');
+      expect(service.getProviderName()).toBe('None');
     });
 
     it('should initialize only once', async () => {
@@ -106,7 +106,7 @@ describe('EmbeddingService', () => {
     it('should generate embedding', async () => {
       const embedding = await service.generateEmbedding('test text');
       expect(Array.isArray(embedding)).toBe(true);
-      expect(embedding.length).toBe(512); // TensorFlowJS-USE returns 512D
+      expect(embedding.length).toBe(1); // NoneProvider returns 1D
     });
 
     it('should cache embeddings', async () => {
@@ -114,7 +114,7 @@ describe('EmbeddingService', () => {
       const embedding1 = await service.generateEmbedding(text);
 
       // Clear provider to ensure cache is used
-      (service as any).provider = null;
+      (service as unknown as Record<string, unknown>).provider = null;
 
       const embedding2 = await service.generateEmbedding(text);
       expect(embedding2).toEqual(embedding1);
@@ -129,24 +129,24 @@ describe('EmbeddingService', () => {
       await service.generateEmbedding('text3');
 
       const elapsed = Date.now() - startTime;
-      expect(elapsed).toBeGreaterThanOrEqual(200); // At least 2 rate limit delays
+      expect(elapsed).toBeGreaterThanOrEqual(190); // At least 2 rate limit delays (with small tolerance)
     });
 
     it('should handle provider errors with fallback', async () => {
       // Create a failing provider
       const failingProvider = {
         generateEmbedding: jest.fn().mockRejectedValue(new Error('Provider failed')),
-        getName: () => 'FailingProvider',
-        getDimensions: () => 128,
+        getName: (): string => 'FailingProvider',
+        getDimensions: (): number => 128,
         initialize: jest.fn(),
         isAvailable: jest.fn().mockResolvedValue(true),
       };
 
-      (service as any).provider = failingProvider;
+      (service as unknown as Record<string, unknown>).provider = failingProvider;
 
       const embedding = await service.generateEmbedding('test');
       expect(Array.isArray(embedding)).toBe(true);
-      expect(embedding.length).toBe(512); // Fallback to TensorFlowJS provider
+      expect(embedding.length).toBe(1); // Fallback to NoneProvider
     });
   });
 
@@ -187,7 +187,7 @@ describe('EmbeddingService', () => {
   describe('provider information', () => {
     it('should get embedding dimension', async () => {
       await service.initialize();
-      expect(service.getEmbeddingDimension()).toBe(512); // TensorFlowJS-USE
+      expect(service.getEmbeddingDimension()).toBe(1); // NoneProvider
     });
 
     it('should get embedding dimension for API provider', async () => {
@@ -203,9 +203,9 @@ describe('EmbeddingService', () => {
     it('should check provider availability', async () => {
       const availability = await service.checkProviderAvailability();
 
-      expect(availability.default).toBeDefined();
+      expect(availability.none).toBeDefined();
       expect(availability.openai).toBeDefined();
-      expect(typeof availability.default).toBe('boolean');
+      expect(typeof availability.none).toBe('boolean');
       expect(typeof availability.openai).toBe('boolean');
     });
   });
@@ -213,8 +213,8 @@ describe('EmbeddingService', () => {
   describe('error handling', () => {
     it('should throw if provider not initialized', async () => {
       const newService = new EmbeddingService();
-      (newService as any).initPromise = Promise.resolve(); // Pretend initialized
-      (newService as any).provider = null;
+      (newService as unknown as Record<string, unknown>).initPromise = Promise.resolve(); // Pretend initialized
+      (newService as unknown as Record<string, unknown>).provider = null;
 
       await expect(newService.generateEmbedding('test')).rejects.toThrow(
         'Embedding provider not initialized'

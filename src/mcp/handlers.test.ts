@@ -2,9 +2,11 @@
  * Tests for MCP Tool Handlers
  */
 
+import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { MCPToolHandlers } from './handlers.js';
 import { ExperienceHandler } from './experience-handler.js';
 import { ReconsiderHandler } from './reconsider-handler.js';
+import { humanQualities } from '../test-utils/format-converter.js';
 
 // Mock all handler modules
 jest.mock('./experience-handler.js');
@@ -38,7 +40,7 @@ describe('MCPToolHandlers', () => {
 
   describe('handle', () => {
     it('should delegate experience tool to ExperienceHandler', async () => {
-      const args = { source: 'test experience', experience: ['mood.open'] };
+      const args = { source: 'test experience', experienceQualities: humanQualities('mood.open', 'embodied.thinking') };
       const expectedResult = { id: 'exp_123', message: 'Captured' };
 
       mockExperienceHandler.handle.mockResolvedValue(expectedResult);
@@ -50,7 +52,7 @@ describe('MCPToolHandlers', () => {
     });
 
     it('should delegate reconsider tool to ReconsiderHandler', async () => {
-      const args = { id: 'exp_123', experience: ['mood.closed'] };
+      const args = { id: 'exp_123', experienceQualities: humanQualities('mood.closed', 'embodied.sensing') };
       const expectedResult = { success: true, message: 'Updated' };
 
       mockReconsiderHandler.handle.mockResolvedValue(expectedResult);
@@ -68,7 +70,7 @@ describe('MCPToolHandlers', () => {
     it('should pass nextMoment parameter when provided', async () => {
       const args = {
         source: 'test',
-        experience: ['mood.open'],
+        experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
         nextMoment: {
           embodied: 'thinking',
           mood: 'open',
@@ -124,7 +126,7 @@ describe('MCPToolHandlers', () => {
           {
             source: 'feeling anxious',
             emoji: '😰',
-            experience: ['embodied.sensing', 'mood.closed'],
+            experienceQualities: humanQualities('embodied.sensing', 'mood.closed'),
           },
         ],
       };
@@ -144,7 +146,7 @@ describe('MCPToolHandlers', () => {
         reconsiderations: [
           {
             id: 'exp_123',
-            experience: ['mood.open'],
+            experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
           },
         ],
       };

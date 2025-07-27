@@ -1,4 +1,15 @@
-import { SourceRecord } from '../core/types.js';
+import { SourceRecord, ExperienceQualities } from '../core/types.js';
+
+// Helper to extract quality list from switchboard format
+function extractQualityList(qualities?: ExperienceQualities | Record<string, string | boolean>): string[] {
+  if (!qualities) return [];
+  return Object.entries(qualities)
+    .filter(([_, value]) => value !== false)
+    .map(([key, value]) => {
+      if (value === true) return key;
+      return `${key}.${value}`;
+    });
+}
 
 export interface GroupedResult {
   key: string | Date | string[];
@@ -68,7 +79,7 @@ export function groupByQualitySignature(experiences: SourceRecord[]): GroupedRes
   const groups = new Map<string, SourceRecord[]>();
 
   experiences.forEach((experience) => {
-    const qualities = experience.experience || [];
+    const qualities = extractQualityList(experience.experienceQualities);
     const qualityKey = qualities.sort().join('|');
 
     if (!groups.has(qualityKey)) {

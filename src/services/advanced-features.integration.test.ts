@@ -8,7 +8,6 @@ import { describe, test, expect } from '@jest/globals';
 import {
   withTestEnvironment,
   callExperience,
-  callReconsider,
   verifyToolResponse,
   extractExperienceId,
   createTestExperiences,
@@ -25,7 +24,7 @@ describe('Advanced Features Integration', () => {
             {
               source: 'Starting investigation',
               emoji: '🔍',
-              experience: ['embodied.thinking', 'purpose.goal'],
+              experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":"goal","space":false,"time":false,"presence":false},
             },
           ],
           stillThinking: true,
@@ -43,7 +42,7 @@ describe('Advanced Features Integration', () => {
             {
               source: 'Found a clue',
               emoji: '🔎',
-              experience: ['embodied.thinking', 'mood.open'],
+              experienceQualities: {"embodied":"thinking","focus":false,"mood":"open","purpose":false,"space":false,"time":false,"presence":false},
             },
           ],
           stillThinking: false,
@@ -68,14 +67,14 @@ describe('Advanced Features Integration', () => {
       await callExperience(env.client, {
         source: 'Recent experience',
         emoji: '📅',
-        experience: ['time.present'],
+        experienceQualities: {"embodied":false,"focus":false,"mood":false,"purpose":false,"space":false,"time":"present","presence":false},
       });
 
       // Search with date filter
       const result = await callExperience(env.client, {
         source: 'Searching recent experiences',
         emoji: '🔍',
-        experience: ['embodied.thinking'],
+        experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
         recall: {
           created: {
             start: yesterday.toISOString().split('T')[0],
@@ -94,7 +93,7 @@ describe('Advanced Features Integration', () => {
       await callExperience(env.client, {
         source: 'A carefully written reflection on the project',
         emoji: '✍️',
-        experience: ['embodied.thinking', 'mood.open'],
+        experienceQualities: {"embodied":"thinking","focus":false,"mood":"open","purpose":false,"space":false,"time":false,"presence":false},
         crafted: true,
       });
 
@@ -102,7 +101,7 @@ describe('Advanced Features Integration', () => {
       await callExperience(env.client, {
         source: 'ugh this bug is driving me crazy',
         emoji: '😤',
-        experience: ['embodied.sensing', 'mood.closed'],
+        experienceQualities: {"embodied":"sensing","focus":false,"mood":"closed","purpose":false,"space":false,"time":false,"presence":false},
         crafted: false,
       });
 
@@ -110,7 +109,7 @@ describe('Advanced Features Integration', () => {
       const crafted = await callExperience(env.client, {
         source: 'Looking for polished thoughts',
         emoji: '📝',
-        experience: ['embodied.thinking'],
+        experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
         recall: {
           crafted: true,
         },
@@ -122,7 +121,7 @@ describe('Advanced Features Integration', () => {
       const raw = await callExperience(env.client, {
         source: 'Looking for authentic moments',
         emoji: '💭',
-        experience: ['embodied.thinking'],
+        experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
         recall: {
           crafted: false,
         },
@@ -138,14 +137,14 @@ describe('Advanced Features Integration', () => {
       const exp1 = await callExperience(env.client, {
         source: 'Feeling stuck',
         emoji: '🚧',
-        experience: ['mood.closed'],
+        experienceQualities: {"embodied":false,"focus":false,"mood":"closed","purpose":false,"space":false,"time":false,"presence":false},
       });
       const id1 = extractExperienceId(exp1);
 
       const exp2 = await callExperience(env.client, {
         source: 'Asked for help',
         emoji: '🤝',
-        experience: ['presence.collective'],
+        experienceQualities: {"embodied":false,"focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":"collective"},
       });
       const id2 = extractExperienceId(exp2);
 
@@ -153,7 +152,7 @@ describe('Advanced Features Integration', () => {
       const reflection = await callExperience(env.client, {
         source: 'I notice I need others when stuck',
         emoji: '💡',
-        experience: ['embodied.thinking', 'focus.broad'],
+        experienceQualities: {"embodied":"thinking","focus":"broad","mood":false,"purpose":false,"space":false,"time":false,"presence":false},
         reflects: [id1!, id2!],
       });
       const reflectionId = extractExperienceId(reflection);
@@ -162,7 +161,7 @@ describe('Advanced Features Integration', () => {
       const result = await callExperience(env.client, {
         source: 'What does this pattern reflect on?',
         emoji: '🔍',
-        experience: ['embodied.thinking'],
+        experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
         recall: {
           reflected_by: reflectionId,
         },
@@ -181,7 +180,7 @@ describe('Advanced Features Integration', () => {
         await callExperience(env.client, {
           source: `Experience from ${perspective} perspective`,
           emoji: '👁️',
-          experience: ['presence.individual'],
+          experienceQualities: {"embodied":false,"focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":"individual"},
           perspective,
         });
       }
@@ -190,7 +189,7 @@ describe('Advanced Features Integration', () => {
       const result = await callExperience(env.client, {
         source: 'Looking for collective experiences',
         emoji: '👥',
-        experience: ['embodied.thinking'],
+        experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
         recall: {
           perspective: 'we',
         },
@@ -206,21 +205,21 @@ describe('Advanced Features Integration', () => {
       await callExperience(env.client, {
         source: 'In the moment realization',
         emoji: '⚡',
-        experience: ['embodied.sensing'],
+        experienceQualities: {"embodied":"sensing","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
         processing: 'during',
       });
 
       await callExperience(env.client, {
         source: 'Just realized something',
         emoji: '💭',
-        experience: ['embodied.thinking'],
+        experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
         processing: 'right-after',
       });
 
       await callExperience(env.client, {
         source: 'Looking back, I understand now',
         emoji: '🔮',
-        experience: ['embodied.thinking', 'time.past'],
+        experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":false,"space":false,"time":"past","presence":false},
         processing: 'long-after',
       });
 
@@ -228,7 +227,7 @@ describe('Advanced Features Integration', () => {
       const result = await callExperience(env.client, {
         source: 'Finding retrospective insights',
         emoji: '🔍',
-        experience: ['embodied.thinking'],
+        experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
         recall: {
           processing: 'long-after',
         },
@@ -244,7 +243,7 @@ describe('Advanced Features Integration', () => {
       const result = await callExperience(env.client, {
         source: 'Testing switchboard format',
         emoji: '🎛️',
-        experience: ['embodied.thinking', 'mood.open', 'purpose.goal'],
+        experienceQualities: {"embodied":"thinking","focus":false,"mood":"open","purpose":"goal","space":false,"time":false,"presence":false},
         experienceQualities: {
           embodied: 'thinking',
           focus: true, // Mixed state
@@ -272,7 +271,7 @@ describe('Advanced Features Integration', () => {
       const result = await callExperience(env.client, {
         source: 'Complex quality search',
         emoji: '🔍',
-        experience: ['embodied.thinking'],
+        experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
         recall: {
           qualities: {
             mood: ['open', 'closed'], // OR logic
@@ -292,7 +291,7 @@ describe('Advanced Features Integration', () => {
       await callExperience(env.client, {
         source: 'First experience',
         emoji: '1️⃣',
-        experience: ['time.present'],
+        experienceQualities: {"embodied":false,"focus":false,"mood":false,"purpose":false,"space":false,"time":"present","presence":false},
       });
 
       await new Promise((resolve) => setTimeout(resolve, 100));
@@ -300,14 +299,14 @@ describe('Advanced Features Integration', () => {
       await callExperience(env.client, {
         source: 'Second experience',
         emoji: '2️⃣',
-        experience: ['time.present'],
+        experienceQualities: {"embodied":false,"focus":false,"mood":false,"purpose":false,"space":false,"time":"present","presence":false},
       });
 
       // Search with created sort
       const result = await callExperience(env.client, {
         source: 'Chronological search',
         emoji: '📅',
-        experience: ['embodied.thinking'],
+        experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
         recall: {
           sort: 'created',
           limit: 10,
@@ -333,7 +332,7 @@ describe('Advanced Features Integration', () => {
         const result = await callExperience(env.client, {
           source: `Testing ${groupBy} grouping`,
           emoji: '📊',
-          experience: ['embodied.thinking', 'purpose.goal'],
+          experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":"goal","space":false,"time":false,"presence":false},
           recall: {
             group_by: groupBy,
           },

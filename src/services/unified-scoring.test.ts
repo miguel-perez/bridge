@@ -1,34 +1,38 @@
 import { describe, it, expect } from '@jest/globals';
 import { applyFiltersAndScore } from './unified-scoring.js';
 import type { SourceRecord } from '../core/types.js';
+import { humanQualities } from '../test-utils/format-converter.js';
 
 describe('Quality Filtering', () => {
   const mockExperiences: SourceRecord[] = [
     {
       id: 'exp_1',
       source: 'Feeling anxious about tomorrow',
+      emoji: '😰',
       who: 'Human',
       perspective: 'I',
       processing: 'during',
-      experience: ['embodied.sensing', 'mood.closed', 'time.future'],
+      experienceQualities: humanQualities('embodied.sensing', 'mood.closed', 'time.future'),
       created: '2025-01-21T10:00:00Z',
     },
     {
       id: 'exp_2',
       source: 'Had a breakthrough moment',
+      emoji: '💡',
       who: 'Human',
       perspective: 'I',
       processing: 'during',
-      experience: ['embodied.thinking', 'mood.open', 'focus.broad'],
+      experienceQualities: humanQualities('embodied.thinking', 'mood.open', 'focus.broad'),
       created: '2025-01-21T10:01:00Z',
     },
     {
       id: 'exp_3',
       source: 'Feeling stuck on this problem',
+      emoji: '🤔',
       who: 'Human',
       perspective: 'I',
       processing: 'during',
-      experience: ['embodied.thinking', 'mood.closed', 'focus.narrow'],
+      experienceQualities: humanQualities('embodied.thinking', 'mood.closed', 'focus.narrow'),
       created: '2025-01-21T10:02:00Z',
     },
   ];
@@ -100,28 +104,31 @@ describe('Reflects Field Filtering', () => {
     {
       id: 'exp_1',
       source: 'Feeling anxious about tomorrow',
+      emoji: '😰',
       who: 'Human',
       perspective: 'I',
       processing: 'during',
-      experience: ['embodied.sensing', 'mood.closed', 'time.future'],
+      experienceQualities: humanQualities('embodied.sensing', 'mood.closed', 'time.future'),
       created: '2025-01-21T10:00:00Z',
     },
     {
       id: 'exp_2',
       source: 'Had a breakthrough moment',
+      emoji: '💡',
       who: 'Human',
       perspective: 'I',
       processing: 'during',
-      experience: ['embodied.thinking', 'mood.open', 'focus.broad'],
+      experienceQualities: humanQualities('embodied.thinking', 'mood.open', 'focus.broad'),
       created: '2025-01-21T10:01:00Z',
     },
     {
       id: 'pattern_1',
       source: 'I notice I always feel anxious before things that end up going well',
+      emoji: '🔍',
       who: 'Human',
       perspective: 'I',
       processing: 'long-after',
-      experience: ['embodied.sensing', 'mood.closed', 'time.future'],
+      experienceQualities: humanQualities('embodied.sensing', 'mood.closed', 'time.future'),
       reflects: ['exp_1', 'exp_2'],
       created: '2025-01-21T11:00:00Z',
     },
@@ -129,20 +136,22 @@ describe('Reflects Field Filtering', () => {
       id: 'pattern_2',
       source:
         'I see a pattern where your mood.closed experiences often precede mood.open breakthroughs',
+      emoji: '🤖',
       who: 'Claude',
       perspective: 'I',
       processing: 'long-after',
-      experience: ['embodied.thinking', 'mood.open'],
+      experienceQualities: humanQualities('embodied.thinking', 'mood.open'),
       reflects: ['exp_1', 'exp_2'],
       created: '2025-01-21T11:01:00Z',
     },
     {
       id: 'exp_3',
       source: 'Feeling stuck on this problem',
+      emoji: '🤔',
       who: 'Human',
       perspective: 'I',
       processing: 'during',
-      experience: ['embodied.thinking', 'mood.closed', 'focus.narrow'],
+      experienceQualities: humanQualities('embodied.thinking', 'mood.closed', 'focus.narrow'),
       created: '2025-01-21T10:02:00Z',
     },
   ];
@@ -181,10 +190,11 @@ describe('Reflects Field Filtering', () => {
       {
         id: 'pattern_3',
         source: 'I notice a pattern',
+        emoji: '🔍',
         who: 'Human',
         perspective: 'I',
         processing: 'long-after',
-        experience: ['embodied.thinking'],
+        experienceQualities: humanQualities('embodied.thinking', 'focus.narrow'),
         reflects: [],
         created: '2025-01-21T11:02:00Z',
       },
@@ -230,39 +240,43 @@ describe('Reflected By Filtering', () => {
     {
       id: 'exp-1',
       source: 'Original experience',
+      emoji: '💬',
       who: 'Human',
       perspective: 'I',
       processing: 'during',
-      experience: ['mood.open'],
+      experienceQualities: humanQualities('mood.open', 'presence.collective'),
       created: '2025-01-21T10:00:00Z',
     },
     {
       id: 'pattern-1',
       source: 'Pattern realization 1',
+      emoji: '🌊',
       who: 'Human',
       perspective: 'I',
       processing: 'long-after',
-      experience: ['embodied.thinking'],
+      experienceQualities: humanQualities('embodied.thinking', 'focus.narrow'),
       reflects: ['exp-1'],
       created: '2025-01-21T11:00:00Z',
     },
     {
       id: 'pattern-2',
       source: 'Pattern realization 2',
+      emoji: '🌊',
       who: 'Human',
       perspective: 'I',
       processing: 'long-after',
-      experience: ['embodied.thinking'],
+      experienceQualities: humanQualities('embodied.thinking', 'focus.narrow'),
       reflects: ['exp-1'],
       created: '2025-01-21T11:01:00Z',
     },
     {
       id: 'exp-2',
       source: 'Another experience',
+      emoji: '💭',
       who: 'Human',
       perspective: 'I',
       processing: 'during',
-      experience: ['mood.closed'],
+      experienceQualities: humanQualities('mood.closed', 'embodied.sensing'),
       created: '2025-01-21T10:01:00Z',
     },
   ];
@@ -307,41 +321,45 @@ describe('Sophisticated Quality Filtering Integration', () => {
   const mockExperience1: SourceRecord = {
     id: 'exp_1',
     source: 'I feel anxious about the presentation',
+    emoji: '😰',
     who: 'Human',
     perspective: 'I',
     processing: 'during',
     created: '2025-01-21T10:00:00Z',
-    experience: ['embodied.sensing', 'mood.closed', 'time.future'],
+    experienceQualities: humanQualities('embodied.sensing', 'mood.closed', 'time.future'),
   };
 
   const mockExperience2: SourceRecord = {
     id: 'exp_2',
     source: 'I feel excited about the project',
+    emoji: '🎉',
     who: 'Human',
     perspective: 'I',
     processing: 'during',
     created: '2025-01-21T10:01:00Z',
-    experience: ['embodied.thinking', 'mood.open', 'time.future'],
+    experienceQualities: humanQualities('embodied.thinking', 'mood.open', 'time.future'),
   };
 
   const mockExperience3: SourceRecord = {
     id: 'exp_3',
     source: 'I am focused on solving this problem',
+    emoji: '🎯',
     who: 'Human',
     perspective: 'I',
     processing: 'during',
     created: '2025-01-21T10:02:00Z',
-    experience: ['focus.narrow', 'purpose.goal'],
+    experienceQualities: humanQualities('focus.narrow', 'purpose.goal'),
   };
 
   const mockExperience4: SourceRecord = {
     id: 'exp_4',
     source: 'I feel calm and centered',
+    emoji: '🧘',
     who: 'Human',
     perspective: 'I',
     processing: 'during',
     created: '2025-01-21T10:03:00Z',
-    experience: ['embodied.sensing', 'mood.open', 'space.here'],
+    experienceQualities: humanQualities('embodied.sensing', 'mood.open', 'space.here'),
   };
 
   const experiences = [mockExperience1, mockExperience2, mockExperience3, mockExperience4];
@@ -445,7 +463,7 @@ describe('Sophisticated Quality Filtering Integration', () => {
     it('should handle invalid quality filters gracefully', () => {
       const filters = {
         qualities: {
-          mood: 'invalid_value' as any,
+          mood: 'invalid_value' as unknown as string,
         },
       };
 

@@ -35,7 +35,7 @@ describe('Error Handling Integration', () => {
         await callExperience(env.client, {
           source: 'Test',
           emoji: '🧪',
-          experience: ['invalid.quality', 'embodied.invalid', 'notaquality'],
+          experienceQualities: {"embodied":"invalid","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false,"invalid":"quality","notaquality":true},
         });
         expect(true).toBe(false); // Should not reach here
       } catch (error: any) {
@@ -65,7 +65,7 @@ describe('Error Handling Integration', () => {
       const result = await callExperience(env.client, {
         source: longText,
         emoji: '📜',
-        experience: ['embodied.thinking'],
+        experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
       });
 
       // Should handle gracefully
@@ -79,7 +79,7 @@ describe('Error Handling Integration', () => {
       const result = await callExperience(env.client, {
         source: 'Test with invalid emoji',
         emoji: 'not-an-emoji',
-        experience: ['embodied.thinking'],
+        experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
       });
 
       // Invalid emoji might cause an error or use default
@@ -98,7 +98,7 @@ describe('Error Handling Integration', () => {
       const exp1 = await callExperience(env.client, {
         source: 'First experience',
         emoji: '1️⃣',
-        experience: ['embodied.thinking'],
+        experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
       });
       const id1 = extractExperienceId(exp1);
 
@@ -107,7 +107,7 @@ describe('Error Handling Integration', () => {
         await callExperience(env.client, {
           source: 'Self-referential',
           emoji: '🔄',
-          experience: ['embodied.thinking'],
+          experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
           reflects: [id1!, id1!], // Duplicate reference
         });
         // Should still work but deduplicate
@@ -125,7 +125,7 @@ describe('Error Handling Integration', () => {
         await callExperience(env.client, {
           source: 'Search with bad date',
           emoji: '📅',
-          experience: ['embodied.thinking'],
+          experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
           recall: {
             created: 'not-a-date',
           },
@@ -143,7 +143,7 @@ describe('Error Handling Integration', () => {
       const exp = await callExperience(env.client, {
         source: 'Test experience',
         emoji: '🧪',
-        experience: ['embodied.thinking'],
+        experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
       });
       const id = extractExperienceId(exp);
 
@@ -151,7 +151,7 @@ describe('Error Handling Integration', () => {
       const result = await callExperience(env.client, {
         source: 'Conflicting search',
         emoji: '🔍',
-        experience: ['embodied.thinking'],
+        experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
         recall: {
           ids: id,
           query: 'completely different search',
@@ -169,7 +169,7 @@ describe('Error Handling Integration', () => {
       const exp = await callExperience(env.client, {
         source: 'To be released',
         emoji: '🗑️',
-        experience: ['embodied.thinking'],
+        experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
       });
       const id = extractExperienceId(exp);
 
@@ -204,7 +204,7 @@ describe('Error Handling Integration', () => {
               {
                 source: 'Valid experience',
                 emoji: '✅',
-                experience: ['embodied.thinking'],
+                experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
               },
               {
                 // Missing required fields
@@ -213,7 +213,7 @@ describe('Error Handling Integration', () => {
               {
                 source: 'Another valid one',
                 emoji: '✅',
-                experience: ['mood.open'],
+                experienceQualities: {"embodied":false,"focus":false,"mood":"open","purpose":false,"space":false,"time":false,"presence":false},
               },
             ],
           },

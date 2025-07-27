@@ -84,6 +84,14 @@ export class QualityFilterError extends Error {
  *
  */
 export class QualityFilterService {
+  private hasQuality(qualities: unknown, quality: string): boolean {
+    const [base, subtype] = quality.split('.');
+    const value = (qualities as Record<string, unknown>)[base];
+    if (!value) return false;
+    if (subtype) return value === subtype;
+    return value !== false;
+  }
+
   /**
    * Parse a quality filter into an internal expression tree
    */
@@ -125,7 +133,7 @@ export class QualityFilterService {
         qualityFilters.push({
           type: 'presence',
           quality,
-          present: value.present,
+          present: (value as { present: boolean }).present,
         });
       } else if (typeof value === 'string') {
         // Single value filter
@@ -220,8 +228,9 @@ export class QualityFilterService {
    * Evaluate a presence/absence filter
    */
   private evaluatePresenceFilter(filter: PresenceFilter, experience: SourceRecord): boolean {
-    const experienceQualities = experience.experience || [];
-    const hasQuality = experienceQualities.some((q: string) => q.startsWith(filter.quality + '.'));
+    const qualities = experience.experienceQualities || {};
+    const qualityValue = qualities[filter.quality as keyof typeof qualities];
+    const hasQuality = qualityValue !== false && qualityValue !== undefined;
 
     return filter.present ? hasQuality : !hasQuality;
   }
@@ -230,12 +239,12 @@ export class QualityFilterService {
    * Evaluate a value filter
    */
   private evaluateValueFilter(filter: ValueFilter, experience: SourceRecord): boolean {
-    const experienceQualities = experience.experience || [];
+    const qualities = experience.experienceQualities || {};
 
-    // Check if any of the filter values match any of the experience qualities
+    // Check if any of the filter values match the experience quality
     return filter.values.some((filterValue) => {
-      const fullQuality = `${filter.quality}.${filterValue}`;
-      return experienceQualities.includes(fullQuality);
+      const qualityValue = qualities[filter.quality as keyof typeof qualities];
+      return qualityValue === filterValue;
     });
   }
 
@@ -317,7 +326,7 @@ export class QualityFilterService {
         if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
           // Presence/absence filter
           if ('present' in value) {
-            if (typeof value.present !== 'boolean') {
+            if (typeof (value as { present: boolean }).present !== 'boolean') {
               errors.push(`present must be a boolean at ${currentPath}`);
             }
           } else {

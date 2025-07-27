@@ -26,7 +26,7 @@ export abstract class BaseEmbeddingProvider implements EmbeddingProvider {
 
   protected validateText(text: string): void {
     if (!text || typeof text !== 'string') {
-      throw new Error('Text must be a non-empty string');
+      throw new Error('Text cannot be empty');
     }
     if (text.length > 1000000) {
       throw new Error('Text exceeds maximum length of 1M characters');

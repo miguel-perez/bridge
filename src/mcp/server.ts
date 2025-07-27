@@ -37,6 +37,7 @@ const SERVER_VERSION = '0.1.0';
 /**
  * Sends log messages to the MCP client using log/message notifications
  * This is the proper way to log in MCP servers - never use console.log/console.error
+ * @deprecated Use mcpLog from safe-logger.ts instead
  */
 function mcpLog(level: 'info' | 'warn' | 'error', message: string, serverInstance?: Server): void {
   if (serverInstance && typeof serverInstance.notification === 'function') {
@@ -191,17 +192,11 @@ export async function initializeBridgeConfiguration(): Promise<void> {
  * This is required for MCP protocol compliance
  */
 server.setRequestHandler(InitializeRequestSchema, async (request) => {
-  const { clientInfo } = request.params;
+  const { clientInfo: _clientInfo, protocolVersion: _protocolVersion } = request.params;
 
-  // Log the initialization request
-  mcpLog(
-    'info',
-    `Initializing MCP server for client: ${clientInfo?.name || 'unknown'} (${clientInfo?.version || 'unknown'})`,
-    server
-  );
-
-  return {
-    protocolVersion: '2024-11-05',
+  // Prepare response immediately without any logging
+  const response = {
+    protocolVersion: '2025-06-18',
     capabilities: {
       tools: {
         listChanged: false,
@@ -218,6 +213,10 @@ server.setRequestHandler(InitializeRequestSchema, async (request) => {
       version: SERVER_VERSION,
     },
   };
+  
+  // Don't log during initialize response to avoid protocol corruption
+  
+  return response;
 });
 
 /**
@@ -240,8 +239,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
 
   // Track activity for DXT idle timeout
-  if ((global as any).updateActivity) {
-    (global as any).updateActivity();
+  if ((global as unknown as { updateActivity?: () => void })?.updateActivity) {
+    (global as unknown as { updateActivity?: () => void }).updateActivity?.();
   }
 
   try {

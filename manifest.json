@@ -5,7 +5,7 @@
   "display_name": "Bridge",
   "version": "0.1.0",
   "description": "MCP server for capturing and analyzing experiential data",
-  "long_description": "Bridge is an MCP (Model Context Protocol) server that enables shared experiential memory between humans and AI. It",
+  "long_description": "Bridge is an MCP (Model Context Protocol) server that enables shared experiential memory between humans and AI. It captures and analyzes experiential moments through a 7-dimensional quality framework, implementing an extended cognition model where humans and AI complement each other's perceptual capabilities. Bridge provides tools for capturing experiences with phenomenological depth, searching through semantic similarity, and evolving understanding through reconsideration.",
   "author": {
     "name": "Miguel Angel Perez",
     "email": "mail@miguel.design",
@@ -24,7 +24,9 @@
     "entry_point": "dist/index.js",
     "mcp_config": {
       "command": "node",
-      "args": ["${__dirname}/dist/index.js"],
+      "args": [
+        "${__dirname}/dist/index.js"
+      ],
       "env": {
         "BRIDGE_FILE_PATH": "${user_config.data_file_path}",
         "BRIDGE_DEBUG": "${user_config.debug_mode}",
@@ -57,7 +59,11 @@
   ],
   "license": "MIT",
   "compatibility": {
-    "platforms": ["darwin", "win32", "linux"],
+    "platforms": [
+      "darwin",
+      "win32",
+      "linux"
+    ],
     "runtimes": {
       "node": ">=18.0.0"
     }
@@ -80,8 +86,11 @@
     "embedding_provider": {
       "type": "string",
       "title": "Embedding Provider (Optional)",
-      "description": "Override automatic provider selection. By default, Bridge uses OpenAI embeddings if an API key is provided, otherwise falls back to local TensorFlow embeddings. Set to 'default' to force local embeddings even with an API key.",
-      "enum": ["default", "openai"],
+      "description": "Override automatic provider selection. By default, Bridge uses OpenAI embeddings if an API key is provided, otherwise falls back to none (zero vectors). Set to 'none' to force no embeddings even with an API key.",
+      "enum": [
+        "none",
+        "openai"
+      ],
       "required": false
     },
     "openai_api_key": {

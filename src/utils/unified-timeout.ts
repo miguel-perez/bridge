@@ -37,7 +37,9 @@ export const TIMEOUTS = {
  */
 export class TimeoutError extends Error {
   /**
-   *
+   * Creates a new timeout error with operation details
+   * @param operation - Name of the operation that timed out
+   * @param timeoutMs - Timeout duration in milliseconds
    */
   constructor(operation: string, timeoutMs: number) {
     super(`Operation '${operation}' timed out after ${timeoutMs}ms`);
@@ -186,7 +188,10 @@ export class CircuitBreaker {
   private state: 'closed' | 'open' | 'half-open' = 'closed';
 
   /**
-   *
+   * Creates a new circuit breaker with failure thresholds and timeouts
+   * @param failureThreshold - Number of failures before opening circuit
+   * @param timeoutMs - Timeout for individual operations
+   * @param resetTimeoutMs - Time to wait before attempting reset
    */
   constructor(
     private readonly failureThreshold: number = 5,

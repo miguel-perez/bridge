@@ -13,6 +13,7 @@ import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { getTools } from '../mcp/tools.js';
+import { errorLog, debugLog } from '../utils/safe-logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -60,14 +61,22 @@ interface DXTManifest {
       node: string;
     };
   };
-  user_config: Record<string, any>;
+  user_config: Record<string, unknown> | Record<string, {
+    type: string;
+    title: string;
+    description: string;
+    default?: unknown;
+    required?: boolean;
+  }>;
 }
 
 /**
- *
+ * Generates a DXT manifest.json file from project sources
+ * Reads package.json, existing manifest, and tool implementations
+ * to create a complete manifest for Claude Desktop integration
  */
-async function generateManifest() {
-  console.log('🔧 Generating manifest.json from project sources...\n');
+async function generateManifest(): Promise<void> {
+  debugLog('🔧 Generating manifest.json from project sources...\n');
 
   // Read package.json
   const packageJsonPath = join(projectRoot, 'package.json');
@@ -75,14 +84,14 @@ async function generateManifest() {
 
   // Read existing manifest for user_config (preserve manual configuration)
   const existingManifestPath = join(projectRoot, 'manifest.json');
-  let existingManifest: any = {};
+  let existingManifest: Partial<DXTManifest> = {};
   if (existsSync(existingManifestPath)) {
     existingManifest = JSON.parse(readFileSync(existingManifestPath, 'utf-8'));
   }
 
   // Get tools from implementation
   const tools = await getTools();
-  console.log(`📦 Found ${tools.length} tools: ${tools.map((t) => t.name).join(', ')}`);
+  debugLog(`📦 Found ${tools.length} tools: ${tools.map((t) => t.name).join(', ')}`);
 
   // Extract long description from README
   let longDescription = packageJson.description;
@@ -208,20 +217,20 @@ async function generateManifest() {
   const outputPath = join(projectRoot, 'manifest.json');
   writeFileSync(outputPath, JSON.stringify(manifestWithNotice, null, 2) + '\n');
 
-  console.log('\n✅ Generated manifest.json successfully!');
-  console.log(`📄 Output: ${outputPath}`);
-  console.log(`\n📊 Summary:`);
-  console.log(`  - Version: ${manifest.version}`);
-  console.log(
+  debugLog('\n✅ Generated manifest.json successfully!');
+  debugLog(`📄 Output: ${outputPath}`);
+  debugLog(`\n📊 Summary:`);
+  debugLog(`  - Version: ${manifest.version}`);
+  debugLog(
     `  - Tools: ${manifest.tools.length} (${manifest.tools.map((t) => t.name).join(', ')})`
   );
-  console.log(`  - User config options: ${Object.keys(manifest.user_config).length}`);
+  debugLog(`  - User config options: ${Object.keys(manifest.user_config).length}`);
 }
 
 // Run if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   generateManifest().catch((error) => {
-    console.error('❌ Error generating manifest:', error);
+    errorLog('❌ Error generating manifest:', error);
     process.exit(1);
   });
 }

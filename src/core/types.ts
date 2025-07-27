@@ -222,7 +222,7 @@ export const SourceSchema = z.object({
     .optional()
     .describe('When processing occurred relative to experience'),
   crafted: z.boolean().optional().describe('Whether this is crafted content vs raw experience'),
-  experience: z.array(z.string()).optional().describe('Experience analysis results'),
+  // experience array field removed - use experienceQualities only
   reflects: z
     .array(z.string())
     .optional()
@@ -296,8 +296,8 @@ export function isValidSource(source: unknown): source is Source {
     typeof src.emoji === 'string' &&
     src.emoji.match(/^\p{Emoji}$/u) !== null &&
     typeof src.created === 'string' &&
-    (src.experience === undefined ||
-      (Array.isArray(src.experience) && src.experience.length >= 0)) &&
+    (src.experienceQualities === undefined ||
+      (typeof src.experienceQualities === 'object' && src.experienceQualities !== null)) &&
     (src.perspective === undefined ||
       (typeof src.perspective === 'string' && isValidPerspective(src.perspective))) &&
     (src.processing === undefined ||
@@ -374,10 +374,10 @@ export function experienceArrayToQualities(experience?: string[]): ExperienceQua
       const key = quality as keyof ExperienceQualities;
       if (subtype) {
         // We need to assign the subtype string
-        (qualities as any)[key] = subtype;
+        (qualities as unknown as Record<string, string>)[key] = subtype;
       } else {
         // No subtype, so it's true
-        (qualities as any)[key] = true;
+        (qualities as unknown as Record<string, boolean>)[key] = true;
       }
     }
   }
@@ -390,22 +390,6 @@ export function experienceArrayToQualities(experience?: string[]): ExperienceQua
  * @param qualities - Complete qualities switchboard
  * @returns Array of quality strings
  */
-export function qualitiesToExperienceArray(qualities: ExperienceQualities): string[] {
-  const experience: string[] = [];
-
-  for (const [quality, value] of Object.entries(qualities)) {
-    if (value !== false) {
-      if (value === true) {
-        experience.push(quality);
-      } else {
-        experience.push(`${quality}.${value}`);
-      }
-    }
-  }
-
-  return experience;
-}
-
 // ============================================================================
 // FACTORY FUNCTIONS
 // ============================================================================

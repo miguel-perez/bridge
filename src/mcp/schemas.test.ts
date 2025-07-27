@@ -23,9 +23,6 @@ import {
   hasExperienceArray,
   hasSearchArray,
   hasReconsiderArray,
-  type ExperienceInput,
-  type SearchInput,
-  type ReconsiderInput,
 } from './schemas.js';
 
 describe('Schema Validation', () => {
@@ -66,7 +63,7 @@ describe('Schema Validation', () => {
             source: 'Test experience',
             emoji: '🧪',
             perspective: 'I',
-            experience: {
+            experienceQualities: {
               embodied: false,
               focus: false,
               mood: 'open',
@@ -89,7 +86,7 @@ describe('Schema Validation', () => {
             source: 'Pattern realization',
             emoji: '💡',
             perspective: 'I',
-            experience: {
+            experienceQualities: {
               embodied: false,
               focus: false,
               mood: 'open',
@@ -113,7 +110,7 @@ describe('Schema Validation', () => {
             source: 'Experience with empty reflects',
             emoji: '🧪',
             perspective: 'I',
-            experience: {
+            experienceQualities: {
               embodied: false,
               focus: false,
               mood: 'open',
@@ -140,7 +137,7 @@ describe('Schema Validation', () => {
             who: 'test',
             processing: 'during',
             crafted: false,
-            experience: {
+            experienceQualities: {
               embodied: 'sensing',
               focus: false,
               mood: 'open',
@@ -164,7 +161,7 @@ describe('Schema Validation', () => {
             source: 'Test experience',
             emoji: '🧪',
             perspective: 'custom-perspective',
-            experience: {
+            experienceQualities: {
               embodied: false,
               focus: false,
               mood: 'open',
@@ -186,7 +183,7 @@ describe('Schema Validation', () => {
           {
             source: 'Test experience',
             processing: 'invalid',
-            experience: ['mood.open'],
+            experienceQualities: ['mood.open'],
           },
         ],
       };
@@ -199,7 +196,7 @@ describe('Schema Validation', () => {
         experiences: [
           {
             source: 'Test experience',
-            experience: 'not-an-array',
+            experienceQualities: 'not-an-array',
           },
         ],
       };
@@ -212,8 +209,8 @@ describe('Schema Validation', () => {
         experiences: [
           {
             source: 'Test experience',
-            experience: ['mood.open'],
-            reflects: 'not-an-array' as any,
+            experienceQualities: ['mood.open'],
+            reflects: 'not-an-array' as unknown as string[],
           },
         ],
       };
@@ -227,7 +224,7 @@ describe('Schema Validation', () => {
           {
             source: '',
             emoji: '🧪',
-            experience: ['mood.open'],
+            experienceQualities: ['mood.open'],
           },
         ],
       };
@@ -248,7 +245,7 @@ describe('Schema Validation', () => {
         experiences: [
           {
             source: 'Test experience',
-            experience: 'invalid',
+            experienceQualities: 'invalid',
           },
         ],
       };
@@ -262,7 +259,7 @@ describe('Schema Validation', () => {
           {
             source: 'Test with compound emoji',
             emoji: '🧑‍💻', // Person with laptop (compound)
-            experience: {
+            experienceQualities: {
               embodied: false,
               focus: false,
               mood: 'open',
@@ -284,7 +281,7 @@ describe('Schema Validation', () => {
           {
             source: 'Experience with mixed qualities',
             emoji: '🌊',
-            experience: {
+            experienceQualities: {
               embodied: true, // Prominent but mixed (both thinking and sensing)
               focus: false,
               mood: true, // Prominent but mixed (both open and closed)
@@ -317,7 +314,7 @@ describe('Schema Validation', () => {
             {
               source: `Test with ${description}`,
               emoji,
-              experience: {
+              experienceQualities: {
                 embodied: false,
                 focus: false,
                 mood: 'open',
@@ -340,7 +337,7 @@ describe('Schema Validation', () => {
           {
             source: 'Test with multiple emojis',
             emoji: '😀😀', // Two separate emojis
-            experience: ['mood.open'],
+            experienceQualities: ['mood.open'],
           },
         ],
       };
@@ -354,7 +351,7 @@ describe('Schema Validation', () => {
           {
             source: 'Test with non-emoji',
             emoji: 'A', // Regular letter
-            experience: ['mood.open'],
+            experienceQualities: ['mood.open'],
           },
         ],
       };
@@ -462,7 +459,7 @@ describe('Schema Validation', () => {
         searches: [
           {
             search: 'test query',
-            sort: 'invalid' as any,
+            sort: 'invalid' as unknown as string,
           },
         ],
       };
@@ -503,7 +500,7 @@ describe('Schema Validation', () => {
             search: 'test query',
             invalidField: 'not-allowed',
           },
-        ] as any,
+        ] as unknown as { searches: { search: string; invalidField: string }[] },
       };
       const result = SearchInputSchema.safeParse(input);
       expect(result.success).toBe(false);
@@ -555,7 +552,7 @@ describe('Schema Validation', () => {
           {
             id: 'exp-123',
             source: 'Updated',
-            experience: {
+            experienceQualities: {
               embodied: false,
               focus: false,
               mood: 'open',
@@ -694,7 +691,7 @@ describe('Type Guards', () => {
             {
               source: 'test',
               emoji: '🧪',
-              experience: {
+              experienceQualities: {
                 embodied: false,
                 focus: false,
                 mood: 'open',
@@ -716,7 +713,7 @@ describe('Type Guards', () => {
 
       it('should return false for missing experiences', () => {
         const input = { source: 'test' };
-        expect(hasExperienceArray(input as any)).toBe(false);
+        expect(hasExperienceArray(input as unknown as { experiences?: unknown[] })).toBe(false);
       });
     });
 
@@ -733,7 +730,7 @@ describe('Type Guards', () => {
 
       it('should return false for missing searches', () => {
         const input = { search: 'test' };
-        expect(hasSearchArray(input as any)).toBe(false);
+        expect(hasSearchArray(input as unknown as { search: string })).toBe(false);
       });
     });
 
@@ -750,7 +747,7 @@ describe('Type Guards', () => {
 
       it('should return false for missing reconsiderations', () => {
         const input = { id: 'exp-123' };
-        expect(hasReconsiderArray(input as any)).toBe(false);
+        expect(hasReconsiderArray(input as unknown as { id: string })).toBe(false);
       });
     });
   });
@@ -763,7 +760,7 @@ describe('Example Generation', () => {
     expect(Array.isArray(example.experiences)).toBe(true);
     expect(example.experiences![0]).toHaveProperty('source');
     expect(example.experiences![0]).toHaveProperty('perspective');
-    expect(example.experiences![0]).toHaveProperty('experience');
+    expect(example.experiences![0]).toHaveProperty('experienceQualities');
   });
 
   it('should generate valid search examples', () => {

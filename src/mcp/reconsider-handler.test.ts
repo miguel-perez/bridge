@@ -8,6 +8,7 @@ import { formatReconsiderResponse } from '../utils/formatters.js';
 import * as storage from '../core/storage.js';
 import type { ReconsiderInput } from './schemas.js';
 import type { EnrichResult } from '../services/enrich.js';
+import { humanQualities } from '../test-utils/format-converter.js';
 
 // Mock dependencies
 jest.mock('../services/enrich.js');
@@ -43,23 +44,19 @@ describe('ReconsiderHandler', () => {
       const input: ReconsiderInput = {
         reconsiderations: [
           {
-            id: 'exp_123',
-            source: 'Updated text',
-            experience: ['mood.open'],
-          },
-        ],
-      };
+        id: 'exp_123',
+        source: 'Updated text',
+            experienceQualities: humanQualities('mood.open', 'embodied.thinking')}]};
 
       const mockResult: EnrichResult = {
-        source: {
-          id: 'exp_123',
-          source: 'Updated text',
-          created: '2025-01-21T12:00:00Z',
-          experience: ['mood.open'],
-        },
-        updatedFields: ['source', 'experience'],
-        embeddingsRegenerated: false,
-      };
+      source: {
+        id: 'exp_123',
+        source: 'Updated text',
+        emoji: '🔄',
+        created: '2025-01-21T12:00:00Z',
+          experienceQualities: humanQualities('mood.open', 'embodied.thinking')},
+      updatedFields: ['source', 'experience'],
+        embeddingsRegenerated: false};
 
       mockEnrichService.enrichSource.mockResolvedValue(mockResult);
 
@@ -69,12 +66,10 @@ describe('ReconsiderHandler', () => {
       expect(result.content).toHaveLength(2); // Response + guidance
       expect(result.content[0]).toEqual({
         type: 'text',
-        text: 'Reconsidered successfully',
-      });
+        text: 'Reconsidered successfully'});
       expect(result.content[1]).toEqual({
         type: 'text',
-        text: 'Updated. See connections with recall',
-      });
+        text: 'Updated. See connections with recall'});
     });
 
     it('should handle batch reconsiderations', async () => {
@@ -83,38 +78,29 @@ describe('ReconsiderHandler', () => {
           {
             id: 'exp_1',
             source: 'Updated text 1',
-            experience: ['mood.open'],
-          },
+            experienceQualities: humanQualities('mood.open', 'embodied.thinking')},
           {
             id: 'exp_2',
             source: 'Updated text 2',
-            experience: ['embodied.sensing'],
-          },
-        ],
-      };
+            experienceQualities: humanQualities('embodied.sensing', 'mood.closed')}]};
 
       const mockResults: EnrichResult[] = [
         {
-          source: {
+      source: {
             id: 'exp_1',
             source: 'Updated text 1',
-            created: '2025-01-21T12:00:00Z',
-            experience: ['mood.open'],
-          },
-          updatedFields: ['source', 'experience'],
-          embeddingsRegenerated: false,
-        },
+        created: '2025-01-21T12:00:00Z',
+            experienceQualities: humanQualities('mood.open', 'embodied.thinking')},
+      updatedFields: ['source', 'experience'],
+          embeddingsRegenerated: false},
         {
-          source: {
+      source: {
             id: 'exp_2',
             source: 'Updated text 2',
-            created: '2025-01-21T12:00:00Z',
-            experience: ['embodied.sensing'],
-          },
-          updatedFields: ['source', 'experience'],
-          embeddingsRegenerated: false,
-        },
-      ];
+        created: '2025-01-21T12:00:00Z',
+            experienceQualities: humanQualities('embodied.sensing', 'mood.closed')},
+      updatedFields: ['source', 'experience'],
+          embeddingsRegenerated: false}];
 
       mockEnrichService.enrichSource
         .mockResolvedValueOnce(mockResults[0])
@@ -134,37 +120,31 @@ describe('ReconsiderHandler', () => {
       const input: ReconsiderInput = {
         reconsiderations: [
           {
-            id: 'exp_123',
-            source: 'Updated text',
+        id: 'exp_123',
+        source: 'Updated text',
             perspective: 'we',
             who: 'Team',
             processing: 'long-after',
-            experience: {
+            experienceQualities: {
               embodied: false,
               focus: false,
               mood: false,
               purpose: false,
               space: false,
               time: false,
-              presence: 'collective',
-            },
-          },
-        ],
-      };
+              presence: 'collective'}}]};
 
       const mockResult: EnrichResult = {
-        source: {
-          id: 'exp_123',
-          source: 'Updated text',
-          created: '2025-01-21T12:00:00Z',
+      source: {
+        id: 'exp_123',
+        source: 'Updated text',
+        created: '2025-01-21T12:00:00Z',
           perspective: 'we',
           who: 'Team',
           processing: 'long-after',
-          experience: ['presence.collective'],
-        },
+          experienceQualities: humanQualities('presence.collective', 'mood.open')},
         updatedFields: ['source', 'perspective', 'who', 'processing', 'experience'],
-        embeddingsRegenerated: false,
-      };
+        embeddingsRegenerated: false};
 
       mockEnrichService.enrichSource.mockResolvedValue(mockResult);
 
@@ -176,11 +156,18 @@ describe('ReconsiderHandler', () => {
         perspective: 'we',
         who: 'Team',
         processing: 'long-after',
-        experience: ['presence.collective'],
+        experienceQualities: {
+          embodied: false,
+          focus: false,
+          mood: false,
+          purpose: false,
+          space: false,
+          time: false,
+          presence: 'collective'
+        },
         reflects: undefined,
         context: undefined,
-        crafted: undefined,
-      });
+        crafted: undefined});
       expect(result.isError).toBeUndefined();
     });
 
@@ -188,21 +175,16 @@ describe('ReconsiderHandler', () => {
       const input: ReconsiderInput = {
         reconsiderations: [
           {
-            id: 'exp_123',
-            source: 'Updated text only',
-          },
-        ],
-      };
+        id: 'exp_123',
+            source: 'Updated text only'}]};
 
       const mockResult: EnrichResult = {
-        source: {
-          id: 'exp_123',
+      source: {
+        id: 'exp_123',
           source: 'Updated text only',
-          created: '2025-01-21T12:00:00Z',
-        },
+          created: '2025-01-21T12:00:00Z'},
         updatedFields: ['source'],
-        embeddingsRegenerated: false,
-      };
+        embeddingsRegenerated: false};
 
       mockEnrichService.enrichSource.mockResolvedValue(mockResult);
 
@@ -212,19 +194,15 @@ describe('ReconsiderHandler', () => {
       expect(result.content).toHaveLength(1); // No guidance for non-quality updates
       expect(result.content[0]).toEqual({
         type: 'text',
-        text: 'Reconsidered successfully',
-      });
+        text: 'Reconsidered successfully'});
     });
 
     it('should return error when service throws', async () => {
       const input: ReconsiderInput = {
         reconsiderations: [
           {
-            id: 'exp_123',
-            source: 'Updated text',
-          },
-        ],
-      };
+        id: 'exp_123',
+            source: 'Updated text'}]};
 
       mockEnrichService.enrichSource.mockRejectedValue(new Error('Service error'));
 
@@ -233,19 +211,15 @@ describe('ReconsiderHandler', () => {
       expect(result.isError).toBe(true);
       expect(result.content[0]).toEqual({
         type: 'text',
-        text: 'Service error',
-      });
+        text: 'Service error'});
     });
 
     it('should return generic error for non-Error throws', async () => {
       const input: ReconsiderInput = {
         reconsiderations: [
           {
-            id: 'exp_123',
-            source: 'Updated text',
-          },
-        ],
-      };
+        id: 'exp_123',
+            source: 'Updated text'}]};
 
       mockEnrichService.enrichSource.mockRejectedValue('String error');
 
@@ -254,26 +228,21 @@ describe('ReconsiderHandler', () => {
       expect(result.isError).toBe(true);
       expect(result.content[0]).toEqual({
         type: 'text',
-        text: 'Unknown error',
-      });
+        text: 'Unknown error'});
     });
 
     it('should catch and handle formatting errors', async () => {
       const input: ReconsiderInput = {
         reconsiderations: [
           {
-            id: 'exp_123',
-            source: 'Updated text',
-          },
-        ],
-      };
+        id: 'exp_123',
+            source: 'Updated text'}]};
 
       // Mock formatReconsiderResponse to throw
       mockEnrichService.enrichSource.mockResolvedValue({
         source: { id: 'exp_123', source: 'Updated', created: '2025-01-21T12:00:00Z' },
         updatedFields: ['source'],
-        embeddingsRegenerated: false,
-      });
+        embeddingsRegenerated: false});
       mockFormatReconsiderResponse.mockImplementation(() => {
         throw new Error('Formatting error');
       });
@@ -284,8 +253,7 @@ describe('ReconsiderHandler', () => {
       expect(result.isError).toBe(true);
       expect(result.content[0]).toEqual({
         type: 'text',
-        text: 'Formatting error',
-      });
+        text: 'Formatting error'});
     });
   });
 
@@ -294,20 +262,17 @@ describe('ReconsiderHandler', () => {
       const input: ReconsiderInput = {
         reconsiderations: [
           {
-            source: 'Updated text',
-            experience: ['mood.open'],
+        source: 'Updated text',
+        experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
             // Missing id
-          } as any,
-        ],
-      };
+          } as unknown as ReconsiderInput['reconsiderations'][0]]};
 
       const result = await handler.handle(input);
 
       expect(result.isError).toBe(true);
       expect(result.content[0]).toEqual({
         type: 'text',
-        text: 'Each reconsideration item must have an ID',
-      });
+        text: 'Each reconsideration item must have an ID'});
     });
 
     it('should validate batch reconsiderations require IDs', async () => {
@@ -315,36 +280,27 @@ describe('ReconsiderHandler', () => {
         reconsiderations: [
           {
             id: 'exp_1',
-            source: 'Updated text 1',
-          },
+            source: 'Updated text 1'},
           {
             id: 'exp_2',
-            source: 'Updated text 2',
-          },
-        ],
-      };
+            source: 'Updated text 2'}]};
 
       // Mock the enrichSource calls for batch processing
       const mockResults: EnrichResult[] = [
         {
-          source: {
+      source: {
             id: 'exp_1',
             source: 'Updated text 1',
-            created: '2025-01-21T12:00:00Z',
-          },
+            created: '2025-01-21T12:00:00Z'},
           updatedFields: ['source'],
-          embeddingsRegenerated: false,
-        },
+          embeddingsRegenerated: false},
         {
-          source: {
+      source: {
             id: 'exp_2',
             source: 'Updated text 2',
-            created: '2025-01-21T12:00:00Z',
-          },
+            created: '2025-01-21T12:00:00Z'},
           updatedFields: ['source'],
-          embeddingsRegenerated: false,
-        },
-      ];
+          embeddingsRegenerated: false}];
 
       mockEnrichService.enrichSource
         .mockResolvedValueOnce(mockResults[0])
@@ -360,38 +316,32 @@ describe('ReconsiderHandler', () => {
 
     it('should handle empty batch reconsiderations gracefully', async () => {
       const input: ReconsiderInput = {
-        reconsiderations: [],
-      };
+        reconsiderations: []};
 
       const result = await handler.handle(input);
 
       expect(result.isError).toBe(true);
       expect(result.content[0]).toEqual({
         type: 'text',
-        text: 'Reconsiderations array is required',
-      });
+        text: 'Reconsiderations array is required'});
     });
 
     it('should pass undefined for missing optional fields', async () => {
       const input: ReconsiderInput = {
         reconsiderations: [
           {
-            id: 'exp_123',
-            source: 'Updated text',
+        id: 'exp_123',
+        source: 'Updated text',
             // No optional fields provided
-          },
-        ],
-      };
+          }]};
 
       const mockResult: EnrichResult = {
-        source: {
-          id: 'exp_123',
-          source: 'Updated text',
-          created: '2025-01-21T12:00:00Z',
-        },
+      source: {
+        id: 'exp_123',
+        source: 'Updated text',
+          created: '2025-01-21T12:00:00Z'},
         updatedFields: ['source'],
-        embeddingsRegenerated: false,
-      };
+        embeddingsRegenerated: false};
 
       mockEnrichService.enrichSource.mockResolvedValue(mockResult);
 
@@ -405,31 +355,23 @@ describe('ReconsiderHandler', () => {
         processing: undefined,
         crafted: undefined,
         experience: undefined,
-        reflects: undefined,
-      });
+        reflects: undefined});
     });
 
     it('should handle experience as empty array', async () => {
       const input: ReconsiderInput = {
         reconsiderations: [
           {
-            id: 'exp_123',
-            source: 'Updated text',
-            experience: [],
-          },
-        ],
-      };
+        id: 'exp_123',
+            source: 'Updated text'}]};
 
       const mockResult: EnrichResult = {
-        source: {
-          id: 'exp_123',
-          source: 'Updated text',
-          created: '2025-01-21T12:00:00Z',
-          experience: [],
-        },
-        updatedFields: ['source', 'experience'],
-        embeddingsRegenerated: false,
-      };
+      source: {
+        id: 'exp_123',
+        source: 'Updated text',
+          created: '2025-01-21T12:00:00Z'},
+      updatedFields: ['source', 'experience'],
+        embeddingsRegenerated: false};
 
       mockEnrichService.enrichSource.mockResolvedValue(mockResult);
 
@@ -438,13 +380,11 @@ describe('ReconsiderHandler', () => {
       expect(mockEnrichService.enrichSource).toHaveBeenCalledWith({
         id: 'exp_123',
         source: 'Updated text',
-        experience: [],
         perspective: undefined,
         experiencer: undefined,
         processing: undefined,
         crafted: undefined,
-        reflects: undefined,
-      });
+        reflects: undefined});
     });
   });
 
@@ -453,23 +393,18 @@ describe('ReconsiderHandler', () => {
       const input: ReconsiderInput = {
         reconsiderations: [
           {
-            id: 'exp_123',
-            source: 'Updated text',
-            experience: ['mood.open', 'embodied.thinking'],
-          },
-        ],
-      };
+        id: 'exp_123',
+        source: 'Updated text',
+            experienceQualities: humanQualities('mood.open', 'embodied.thinking')}]};
 
       const mockResult: EnrichResult = {
-        source: {
-          id: 'exp_123',
-          source: 'Updated text',
-          created: '2025-01-21T12:00:00Z',
-          experience: ['mood.open', 'embodied.thinking'],
-        },
-        updatedFields: ['source', 'experience'],
-        embeddingsRegenerated: false,
-      };
+      source: {
+        id: 'exp_123',
+        source: 'Updated text',
+        created: '2025-01-21T12:00:00Z',
+          experienceQualities: humanQualities('mood.open', 'embodied.thinking')},
+      updatedFields: ['source', 'experience'],
+        embeddingsRegenerated: false};
 
       mockEnrichService.enrichSource.mockResolvedValue(mockResult);
 
@@ -478,29 +413,23 @@ describe('ReconsiderHandler', () => {
       expect(result.content).toHaveLength(2);
       expect(result.content[1]).toEqual({
         type: 'text',
-        text: 'Updated. See connections with recall',
-      });
+        text: 'Updated. See connections with recall'});
     });
 
     it('should not provide guidance when no qualities', async () => {
       const input: ReconsiderInput = {
         reconsiderations: [
           {
-            id: 'exp_123',
-            source: 'Updated text',
-          },
-        ],
-      };
+        id: 'exp_123',
+            source: 'Updated text'}]};
 
       const mockResult: EnrichResult = {
-        source: {
-          id: 'exp_123',
-          source: 'Updated text',
-          created: '2025-01-21T12:00:00Z',
-        },
+      source: {
+        id: 'exp_123',
+        source: 'Updated text',
+          created: '2025-01-21T12:00:00Z'},
         updatedFields: ['source'],
-        embeddingsRegenerated: false,
-      };
+        embeddingsRegenerated: false};
 
       mockEnrichService.enrichSource.mockResolvedValue(mockResult);
 
@@ -512,20 +441,15 @@ describe('ReconsiderHandler', () => {
     it('should not provide guidance when qualities are empty', async () => {
       const input: ReconsiderInput = {
         id: 'exp_123',
-        source: 'Updated text',
-        experience: [],
-      };
+        source: 'Updated text'};
 
       const mockResult: EnrichResult = {
-        source: {
-          id: 'exp_123',
-          source: 'Updated text',
-          created: '2025-01-21T12:00:00Z',
-          experience: [],
-        },
-        updatedFields: ['source', 'experience'],
-        embeddingsRegenerated: false,
-      };
+      source: {
+        id: 'exp_123',
+        source: 'Updated text',
+          created: '2025-01-21T12:00:00Z'},
+      updatedFields: ['source', 'experience'],
+        embeddingsRegenerated: false};
 
       mockEnrichService.enrichSource.mockResolvedValue(mockResult);
 
@@ -548,12 +472,9 @@ describe('ReconsiderHandler', () => {
       const input: ReconsiderInput = {
         reconsiderations: [
           {
-            id: 'exp_123',
+        id: 'exp_123',
             release: true,
-            releaseReason: 'Test data during development',
-          },
-        ],
-      };
+            releaseReason: 'Test data during development'}]};
 
       const result = await handler.handle(input);
 
@@ -570,10 +491,7 @@ describe('ReconsiderHandler', () => {
         reconsiderations: [
           {
             id: 'exp_456',
-            release: true,
-          },
-        ],
-      };
+            release: true}]};
 
       const result = await handler.handle(input);
 
@@ -586,9 +504,7 @@ describe('ReconsiderHandler', () => {
         reconsiderations: [
           { id: 'exp_1', release: true, releaseReason: 'Cleanup' },
           { id: 'exp_2', release: true },
-          { id: 'exp_3', release: true, releaseReason: 'Duplicate' },
-        ],
-      };
+          { id: 'exp_3', release: true, releaseReason: 'Duplicate' }]};
 
       const result = await handler.handle(input);
 
@@ -608,30 +524,24 @@ describe('ReconsiderHandler', () => {
         reconsiderations: [
           { id: 'exp_1', source: 'Updated text' },
           { id: 'exp_2', release: true, releaseReason: 'No longer relevant' },
-          { id: 'exp_3', experience: ['mood.open'] },
-        ],
-      };
+          { id: 'exp_3', experienceQualities: humanQualities('mood.open', 'embodied.thinking') }]};
 
       const mockResult1: EnrichResult = {
-        source: {
+      source: {
           id: 'exp_1',
-          source: 'Updated text',
-          created: '2025-01-21T12:00:00Z',
-        },
+        source: 'Updated text',
+          created: '2025-01-21T12:00:00Z'},
         updatedFields: ['source'],
-        embeddingsRegenerated: false,
-      };
+        embeddingsRegenerated: false};
 
       const mockResult3: EnrichResult = {
-        source: {
+      source: {
           id: 'exp_3',
           source: 'Original text',
-          created: '2025-01-21T12:00:00Z',
-          experience: ['mood.open'],
-        },
+        created: '2025-01-21T12:00:00Z',
+          experienceQualities: humanQualities('mood.open', 'embodied.thinking')},
         updatedFields: ['experience'],
-        embeddingsRegenerated: false,
-      };
+        embeddingsRegenerated: false};
 
       mockEnrichService.enrichSource
         .mockResolvedValueOnce(mockResult1)
@@ -653,10 +563,7 @@ describe('ReconsiderHandler', () => {
         reconsiderations: [
           {
             id: 'exp_999',
-            release: true,
-          },
-        ],
-      };
+            release: true}]};
 
       mockDeleteSource.mockRejectedValue(new Error('Experience not found'));
 

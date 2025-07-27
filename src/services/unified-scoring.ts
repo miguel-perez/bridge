@@ -3,9 +3,20 @@
  * Dynamically adapts weights based on query characteristics without explicit modes
  */
 
-import type { SourceRecord } from '../core/types.js';
+import type { SourceRecord, ExperienceQualities } from '../core/types.js';
 import { KNOWN_QUALITIES } from '../core/qualities.js';
 import { qualityFilterService, type QualityFilter } from './quality-filter.js';
+
+// Helper to extract quality list from switchboard format
+function extractQualityList(qualities?: ExperienceQualities | Record<string, string | boolean>): string[] {
+  if (!qualities) return [];
+  return Object.entries(qualities)
+    .filter(([_, value]) => value !== false)
+    .map(([key, value]) => {
+      if (value === true) return key;
+      return `${key}.${value}`;
+    });
+}
 
 export interface ScoringFactors {
   semantic: number;
@@ -115,7 +126,7 @@ export function calculateQualityRelevance(
   const queryQualities = extractQualities(query);
   if (queryQualities.length === 0) return 0;
 
-  const experienceQualities = experience.experience || [];
+  const experienceQualities = extractQualityList(experience.experienceQualities);
   let relevance = 0;
 
   for (const qQual of queryQualities) {
@@ -178,7 +189,7 @@ export function calculateRecencyScore(experience: SourceRecord): number {
  * Calculate quality density (rewards richer experiences)
  */
 export function calculateQualityDensity(experience: SourceRecord): number {
-  const qualityCount = experience.experience?.length || 0;
+  const qualityCount = extractQualityList(experience.experienceQualities).length;
   return Math.min(qualityCount / 5, 1.0);
 }
 
@@ -300,7 +311,7 @@ export function applyFiltersAndScore(
     if (query && isQueryPurelyQuality(query)) {
       const queryQualities = extractQualities(query);
       filtered = filtered.filter((exp) => {
-        const experienceQualities = exp.experience || [];
+        const experienceQualities = extractQualityList(exp.experienceQualities);
 
         if (Array.isArray(query)) {
           // For array queries, ALL qualities must match

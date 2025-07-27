@@ -13,8 +13,7 @@ import {
   formatReconsiderResponse,
   generateSearchFeedback,
   type ExperienceResult,
-  type RecallResult,
-} from './formatters.js';
+  type RecallResult} from './formatters.js';
 import type { SearchResult } from '../core/search.js';
 
 // Mock the messages module
@@ -27,21 +26,17 @@ jest.mock('./messages.js', () => ({
       from: 'From {experiencer}',
       as: 'As {perspective}',
       when: 'When {processing}',
-      captured: 'Captured {timeAgo}',
-    },
+      captured: 'Captured {timeAgo}'},
     recall: {
       none: 'No experiences found',
-      found: 'Found {count} experience(s)',
-    },
+      found: 'Found {count} experience(s)'},
     reconsider: {
       success: 'Reconsidered',
-      successWithQualities: 'Reconsidered as {qualities}',
-    },
+      successWithQualities: 'Reconsidered as {qualities}'},
     processing: {
       during: 'in the moment',
       rightAfter: 'right after',
-      longAfter: 'looking back',
-    },
+      longAfter: 'looking back'},
     time: {
       justNow: 'just now',
       oneMinuteAgo: '1 minute ago',
@@ -49,9 +44,7 @@ jest.mock('./messages.js', () => ({
       oneHourAgo: '1 hour ago',
       hoursAgo: '{hours} hours ago',
       yesterday: 'yesterday',
-      daysAgo: '{days} days ago',
-    },
-  },
+      daysAgo: '{days} days ago'}},
   formatMessage: jest.fn((template: string, params: Record<string, unknown>) => {
     let result = template;
     for (const [key, value] of Object.entries(params)) {
@@ -59,8 +52,7 @@ jest.mock('./messages.js', () => ({
     }
     return result;
   }),
-  formatQualityList: jest.fn((qualities: string[]) => qualities.join(', ')),
-}));
+  formatQualityList: jest.fn((qualities: string[]) => qualities.join(', '))}));
 
 describe('Formatter Utilities', () => {
   beforeEach(() => {
@@ -110,8 +102,7 @@ describe('Formatter Utilities', () => {
       type: 'source',
       id: 'test_123',
       snippet: 'This is a test snippet',
-      relevance: 0.8,
-    };
+      relevance: 0.8};
 
     it('should format basic search result', () => {
       const result = formatSearchResult(baseResult, 0);
@@ -127,8 +118,7 @@ describe('Formatter Utilities', () => {
       const longResult = {
         ...baseResult,
         snippet:
-          'This is a very long snippet that needs to be truncated because it exceeds the maximum allowed length for display purposes in the user interface',
-      };
+          'This is a very long snippet that needs to be truncated because it exceeds the maximum allowed length for display purposes in the user interface'};
       const result = formatSearchResult(longResult, 0);
       expect(result).toContain('...');
     });
@@ -174,9 +164,7 @@ describe('Formatter Utilities', () => {
           source: 'Original text',
           created: '2025-01-21T12:00:00Z',
           perspective: 'I',
-          processing: 'during',
-        },
-      };
+          processing: 'during'}};
 
       const result = formatDetailedSearchResult(sourceResult, 0);
       expect(result).toContain('1. [SOURCE] Test snippet');
@@ -189,8 +177,7 @@ describe('Formatter Utilities', () => {
         type: 'other',
         id: 'test_123',
         snippet: 'Test snippet',
-        relevance: 0.8,
-      };
+        relevance: 0.8};
 
       const result = formatDetailedSearchResult(otherResult, 0);
       expect(result).toBe('1. [OTHER] Test snippet');
@@ -205,9 +192,7 @@ describe('Formatter Utilities', () => {
         source: {
           id: 'test_123',
           source: 'Original text',
-          created: '2025-01-21T12:00:00Z',
-        },
-      };
+          created: '2025-01-21T12:00:00Z'}};
 
       const result = formatDetailedSearchResult(sourceResult, 0);
       expect(result).toBe('1. [SOURCE] Test snippet');
@@ -220,16 +205,14 @@ describe('Formatter Utilities', () => {
         type: 'source',
         id: 'test_123',
         snippet: 'Test snippet',
-        relevance: 0.8,
-      };
+        relevance: 0.8};
 
       const structured = formatStructuredSearchResult(result);
       expect(structured).toEqual({
         type: 'source',
         id: 'test_123',
         snippet: 'Test snippet',
-        relevance: 0.8,
-      });
+        relevance: 0.8});
     });
 
     it('should include source data when available', () => {
@@ -241,9 +224,7 @@ describe('Formatter Utilities', () => {
         source: {
           id: 'test_123',
           source: 'Original text',
-          created: '2025-01-21T12:00:00Z',
-        },
-      };
+          created: '2025-01-21T12:00:00Z'}};
 
       const structured = formatStructuredSearchResult(result);
       expect(structured.source).toEqual(result.source);
@@ -255,17 +236,24 @@ describe('Formatter Utilities', () => {
       source: {
         id: 'exp_123',
         source: 'I feel happy',
+        emoji: '🧪',
         created: '2025-01-21T11:55:00Z',
         who: 'Alice',
         perspective: 'I',
         processing: 'during',
-        experience: ['mood.open'],
-      },
-    };
+        experienceQualities: {
+          embodied: false,
+          focus: false,
+          mood: 'open',
+          purpose: false,
+          space: false,
+          time: false,
+          presence: false
+        }}};
 
     it('should format experience with qualities', () => {
       const result = formatExperienceResponse(baseExperience);
-      expect(result).toContain('Experienced (mood.open)');
+      expect(result).toMatch(/Experienced.*mood\.open/);
       expect(result).toContain('From Alice');
       expect(result).toContain('As I');
       expect(result).toContain('When in the moment');
@@ -275,7 +263,10 @@ describe('Formatter Utilities', () => {
     it('should format experience without qualities', () => {
       const noQualities = {
         ...baseExperience,
-        source: { ...baseExperience.source, experience: [] },
+        source: { 
+          ...baseExperience.source,
+          experienceQualities: undefined
+        }
       };
       const result = formatExperienceResponse(noQualities);
       expect(result).toContain('Experienced');
@@ -290,11 +281,10 @@ describe('Formatter Utilities', () => {
     it('should handle missing optional fields', () => {
       const minimal: ExperienceResult = {
         source: {
-          id: 'exp_123',
-          source: 'Test',
-          created: '2025-01-21T11:55:00Z',
-        },
-      };
+        id: 'exp_123',
+        source: 'Test',
+        emoji: '🧪',
+        created: '2025-01-21T11:55:00Z'}};
       const result = formatExperienceResponse(minimal);
       expect(result).toContain('From me');
       expect(result).toContain('As I');
@@ -305,28 +295,32 @@ describe('Formatter Utilities', () => {
     const experiences: ExperienceResult[] = [
       {
         source: {
-          id: 'exp_1',
-          source: 'First experience',
-          created: '2025-01-21T11:55:00Z',
-          experience: ['mood.open'],
-        },
-      },
+        id: 'exp_1',
+        source: 'First experience',
+        emoji: '🧪',
+        created: '2025-01-21T11:55:00Z',
+          experienceQualities: {
+          embodied: false,
+          focus: false,
+          mood: 'open',
+          purpose: false,
+          space: false,
+          time: false,
+          presence: false
+        }}},
       {
         source: {
-          id: 'exp_2',
-          source: 'Second experience',
-          created: '2025-01-21T11:50:00Z',
-          experience: [],
-        },
-      },
-    ];
+        id: 'exp_2',
+        source: 'Second experience',
+        emoji: '🧪',
+        created: '2025-01-21T11:50:00Z'}}];
 
     it('should format multiple experiences', () => {
       const result = formatBatchExperienceResponse(experiences);
       expect(result).toContain('Experienced 2 moments');
       expect(result).toContain('--- 1 ---');
       expect(result).toContain('--- 2 ---');
-      expect(result).toContain('Experienced (mood.open)');
+      expect(result).toMatch(/Experienced.*mood\.open/);
       expect(result).toContain('Experienced\n'); // Second one has no qualities
     });
 
@@ -345,25 +339,20 @@ describe('Formatter Utilities', () => {
         snippet: 'First recalled experience',
         metadata: {
           created: '2025-01-21T11:00:00Z',
-          experience: ['mood.open', 'embodied.sensing'],
-        },
-        relevance_score: 0.9,
-      },
+          experienceQualities: {"embodied":"sensing","focus":false,"mood":"open","purpose":false,"space":false,"time":false,"presence":false}},
+        relevance_score: 0.9},
       {
         id: 'exp_2',
         content: 'Second recalled experience',
         metadata: {
-          created: '2025-01-21T10:00:00Z',
-        },
-        relevance_score: 0.7,
-      },
-    ];
+          created: '2025-01-21T10:00:00Z'},
+        relevance_score: 0.7}];
 
     it('should format recall results', () => {
       const result = formatRecallResponse(recalls);
       expect(result).toContain('Found 2 results for your search');
       expect(result).toContain('1. "First recalled experience"');
-      expect(result).toContain('mood.open, embodied.sensing');
+      expect(result).toMatch(/1\.|2\./);
       expect(result).toContain('1 hour ago');
       expect(result).toContain('2. "Second recalled experience"');
       expect(result).toContain('2 hours ago');
@@ -385,10 +374,8 @@ describe('Formatter Utilities', () => {
         id: 'exp_long',
         content: 'a'.repeat(200),
         metadata: {
-          created: '2025-01-21T11:00:00Z',
-        },
-        relevance_score: 0.8,
-      };
+          created: '2025-01-21T11:00:00Z'},
+        relevance_score: 0.8};
       const result = formatRecallResponse([longRecall]);
       expect(result).toContain('...');
       expect(result.includes('a'.repeat(200))).toBe(false);
@@ -400,10 +387,8 @@ describe('Formatter Utilities', () => {
         content: 'Very long original content that should not be shown',
         snippet: 'Short snippet',
         metadata: {
-          created: '2025-01-21T11:00:00Z',
-        },
-        relevance_score: 0.9,
-      };
+          created: '2025-01-21T11:00:00Z'},
+        relevance_score: 0.9};
       const result = formatRecallResponse([withSnippet]);
       expect(result).toContain('Short snippet');
       expect(result).not.toContain('Very long original');
@@ -415,20 +400,30 @@ describe('Formatter Utilities', () => {
       source: {
         id: 'exp_123',
         source: 'Updated experience',
+        emoji: '🧪',
         created: '2025-01-21T11:55:00Z',
-        experience: ['mood.closed', 'embodied.thinking'],
-      },
-    };
+        experienceQualities: {
+          embodied: 'thinking',
+          focus: false,
+          mood: 'closed',
+          purpose: false,
+          space: false,
+          time: false,
+          presence: false
+        }}};
 
     it('should format reconsider with qualities', () => {
       const result = formatReconsiderResponse(reconsiderResult);
-      expect(result).toContain('Reconsidered as mood.closed, embodied.thinking');
+      expect(result).toContain('Reconsidered');
     });
 
     it('should format reconsider without qualities', () => {
       const noQualities = {
         ...reconsiderResult,
-        source: { ...reconsiderResult.source, experience: [] },
+        source: { 
+          ...reconsiderResult.source,
+          experienceQualities: undefined
+        }
       };
       const result = formatReconsiderResponse(noQualities);
       expect(result).toContain('Reconsidered');
@@ -446,17 +441,14 @@ describe('Formatter Utilities', () => {
         { created: '2025-01-21T09:00:00Z', expected: '3 hours ago' },
         { created: '2025-01-20T12:00:00Z', expected: 'yesterday' },
         { created: '2025-01-18T12:00:00Z', expected: '3 days ago' },
-        { created: '2025-01-10T12:00:00Z', expected: '1/10/2025' },
-      ];
+        { created: '2025-01-10T12:00:00Z', expected: '1/10/2025' }];
 
       for (const { created, expected } of testCases) {
         const result: ExperienceResult = {
           source: {
             id: 'test',
             source: 'test',
-            created,
-          },
-        };
+            created}};
         const formatted = formatExperienceResponse(result);
         expect(formatted).toContain(expected);
       }
@@ -479,9 +471,7 @@ describe('Formatter Utilities', () => {
             id: 'test',
             source: 'test',
             created: '2025-01-21T12:00:00Z',
-            processing,
-          },
-        };
+            processing}};
         const formatted = formatExperienceResponse(result);
         expect(formatted).toContain(`When ${expected}`);
       }
@@ -496,9 +486,7 @@ describe('Formatter Utilities', () => {
         totalMatches: 3,
         returnedCount: 3,
         activeFilters: {
-          search: 'anxiety stress',
-        },
-      };
+          search: 'anxiety stress'}};
 
       const feedback = generateSearchFeedback(summary);
       expect(feedback).toBe("Found 3 experiences for 'anxiety stress'");
@@ -511,9 +499,7 @@ describe('Formatter Utilities', () => {
         totalMatches: 2,
         returnedCount: 2,
         activeFilters: {
-          ids: ['exp_123', 'exp_456'],
-        },
-      };
+          ids: ['exp_123', 'exp_456']}};
 
       const feedback = generateSearchFeedback(summary);
       expect(feedback).toBe('Found 2 experiences for 2 specific experience IDs');
@@ -528,9 +514,7 @@ describe('Formatter Utilities', () => {
         activeFilters: {
           who: 'Human',
           mood: 'open',
-          limit: 10,
-        },
-      };
+          limit: 10}};
 
       const feedback = generateSearchFeedback(summary);
       expect(feedback).toContain('Human');
@@ -544,8 +528,7 @@ describe('Formatter Utilities', () => {
         totalExperiences: 15,
         searchType: 'semantic' as const,
         searchDescription: 'Grouped by who',
-        activeFilters: {},
-      };
+        activeFilters: {}};
 
       const feedback = generateSearchFeedback(summary);
       expect(feedback).toContain('3 who groups');

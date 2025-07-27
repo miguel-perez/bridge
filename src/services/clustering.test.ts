@@ -1,5 +1,7 @@
+import { describe, it, expect } from '@jest/globals';
 import { SourceRecord } from '../core/types.js';
 import { clusterExperiences } from './clustering.js';
+import { humanQualities } from '../test-utils/format-converter.js';
 
 describe('Clustering Service', () => {
   const mockExperiences: SourceRecord[] = [
@@ -7,31 +9,31 @@ describe('Clustering Service', () => {
       id: 'exp-1',
       source: 'I feel anxious about the presentation tomorrow',
       created: '2025-01-20T10:00:00Z',
-      experience: ['embodied.sensing', 'mood.closed', 'time.future']
+      experienceQualities: humanQualities('embodied.sensing', 'mood.closed', 'time.future')
     },
     {
       id: 'exp-2', 
       source: 'I feel anxious about the meeting next week',
       created: '2025-01-20T11:00:00Z',
-      experience: ['embodied.sensing', 'mood.closed', 'time.future']
+      experienceQualities: humanQualities('embodied.sensing', 'mood.closed', 'time.future')
     },
     {
       id: 'exp-3',
       source: 'I feel excited and energized about this project',
       created: '2025-01-20T12:00:00Z',
-      experience: ['embodied.sensing', 'mood.open', 'purpose.goal']
+      experienceQualities: humanQualities('embodied.sensing', 'mood.open', 'purpose.goal')
     },
     {
       id: 'exp-4',
       source: 'I feel focused and determined to solve this problem',
       created: '2025-01-20T13:00:00Z',
-      experience: ['embodied.thinking', 'focus.narrow', 'purpose.goal']
+      experienceQualities: humanQualities('embodied.thinking', 'focus.narrow', 'purpose.goal')
     },
     {
       id: 'exp-5',
       source: 'I feel overwhelmed by all the tasks',
       created: '2025-01-20T14:00:00Z',
-      experience: ['embodied.sensing', 'mood.closed', 'focus.broad']
+      experienceQualities: humanQualities('embodied.sensing', 'mood.closed', 'focus.broad')
     }
   ];
 
@@ -53,19 +55,19 @@ describe('Clustering Service', () => {
         {
           id: 'exp-1',
           source: 'I feel anxious about the presentation',
-          experience: ['embodied.sensing', 'mood.closed', 'time.future'],
+          experienceQualities: humanQualities('embodied.sensing', 'mood.closed', 'time.future'),
           created: '2025-01-21T10:00:00Z'
         },
         {
           id: 'exp-2',
           source: 'I feel nervous about the meeting',
-          experience: ['embodied.sensing', 'mood.closed', 'time.future'],
+          experienceQualities: humanQualities('embodied.sensing', 'mood.closed', 'time.future'),
           created: '2025-01-21T11:00:00Z'
         },
         {
           id: 'exp-3',
           source: 'I feel excited about the project',
-          experience: ['mood.open', 'purpose.goal'],
+          experienceQualities: humanQualities('mood.open', 'purpose.goal'),
           created: '2025-01-21T12:00:00Z'
         }
       ];
@@ -86,13 +88,13 @@ describe('Clustering Service', () => {
         {
           id: 'exp-1',
           source: 'I feel anxious about the presentation',
-          experience: ['embodied.sensing', 'mood.closed', 'time.future'],
+          experienceQualities: humanQualities('embodied.sensing', 'mood.closed', 'time.future'),
           created: '2025-01-21T10:00:00Z'
         },
         {
           id: 'exp-2',
           source: 'I feel nervous about the meeting',
-          experience: ['embodied.sensing', 'mood.closed', 'time.future'],
+          experienceQualities: humanQualities('embodied.sensing', 'mood.closed', 'time.future'),
           created: '2025-01-21T11:00:00Z'
         }
       ];
@@ -109,7 +111,7 @@ describe('Clustering Service', () => {
         {
           id: 'exp-1',
           source: 'I feel anxious about the presentation',
-          experience: ['embodied.sensing', 'mood.closed'],
+          experienceQualities: humanQualities('embodied.sensing', 'mood.closed'),
           created: '2025-01-21T10:00:00Z'
         }
       ];
@@ -154,13 +156,13 @@ describe('Clustering Service', () => {
         {
           id: 'exp-1',
           source: 'I feel anxious about the presentation',
-          experience: ['embodied.sensing', 'mood.closed', 'time.future'],
+          experienceQualities: humanQualities('embodied.sensing', 'mood.closed', 'time.future'),
           created: '2025-01-21T10:00:00Z'
         },
         {
           id: 'exp-2',
           source: 'I feel nervous about the meeting',
-          experience: ['embodied.sensing', 'mood.closed', 'time.future'],
+          experienceQualities: humanQualities('embodied.sensing', 'mood.closed', 'time.future'),
           created: '2025-01-21T11:00:00Z'
         }
       ];

@@ -2,9 +2,11 @@
  * Tests for Embedding Search Service
  */
 
+import { describe, it, expect, beforeEach } from '@jest/globals';
 import { findSimilarByEmbedding, getSourcesByIds } from './embedding-search.js';
 import * as storage from '../core/storage.js';
 import type { Source, EmbeddingRecord } from '../core/types.js';
+import { humanQualities } from '../test-utils/format-converter.js';
 
 // Mock storage functions
 jest.mock('../core/storage.js');
@@ -206,23 +208,26 @@ describe('Embedding Search Service', () => {
       {
         id: 'id1',
         source: 'Source 1',
+        emoji: '1️⃣',
         created: '2025-01-01T00:00:00Z',
         who: 'User1',
-        experience: ['mood.open'],
+        experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
       },
       {
         id: 'id2',
         source: 'Source 2',
+        emoji: '2️⃣',
         created: '2025-01-02T00:00:00Z',
         who: 'User2',
-        experience: ['mood.closed'],
+        experienceQualities: humanQualities('mood.closed', 'embodied.sensing'),
       },
       {
         id: 'id3',
         source: 'Source 3',
+        emoji: '3️⃣',
         created: '2025-01-03T00:00:00Z',
         who: 'User3',
-        experience: ['embodied.thinking'],
+        experienceQualities: humanQualities('embodied.thinking', 'focus.narrow'),
       },
     ];
 

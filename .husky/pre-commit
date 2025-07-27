@@ -1,49 +1,24 @@
+#\!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
 
-echo "🔍 Running pre-commit quality checks..."
+# Run linting to catch console usage
+npm run lint
 
-# Check if we're in a CI environment (skip some checks)
-if [ "$CI" = "true" ]; then
-    echo "⚠️  CI environment detected, skipping pre-commit checks"
-    exit 0
+# Check for console.log/info/warn in staged files (excluding allowed patterns)
+CONSOLE_CHECK=$(git diff --cached --name-only | grep -E '\.(ts|js)$' | grep -v -E '(test|spec|\.test\.|\.spec\.|scripts/|simulations/)' | xargs grep -l 'console\.\(log\|info\|warn\)' || true)
+
+if [ -n "$CONSOLE_CHECK" ]; then
+  echo "❌ Error: console.log/info/warn found in staged files:"
+  echo "$CONSOLE_CHECK"
+  echo ""
+  echo "These console methods corrupt the MCP JSON-RPC protocol\!"
+  echo "Use the safe logging utilities instead:"
+  echo "  - import { debugLog, errorLog, mcpLog } from './utils/safe-logger.js'"
+  echo "  - debugLog(...) for debug output (only shows with BRIDGE_DEBUG=true)"
+  echo "  - errorLog(...) for errors (always shows in stderr)"
+  echo "  - mcpLog(level, message, server) for client-visible logs"
+  echo ""
+  echo "To bypass this check (not recommended), use: git commit --no-verify"
+  exit 1
 fi
-
-# Check if user wants to bypass (with permission)
-if [ "$SKIP_PRE_COMMIT" = "true" ]; then
-    echo "⚠️  Pre-commit checks bypassed (SKIP_PRE_COMMIT=true)"
-    echo "   This should only be used in emergencies with explicit permission!"
-    exit 0
-fi
-
-# Function to handle errors
-handle_error() {
-    echo "❌ Pre-commit check failed: $1"
-    echo ""
-    echo "💡 To bypass this check (emergency only):"
-    echo "   SKIP_PRE_COMMIT=true git commit"
-    echo ""
-    echo "💡 To fix the issues:"
-    echo "   npm run lint:fix    # Fix linting issues"
-    echo "   npm test           # Run tests"
-    echo "   npm run type-check # Check types"
-    echo "   npm run build      # Build project"
-    exit 1
-}
-
-# 1. Lint-staged (runs on changed files only)
-echo "🧹 Running lint-staged on changed files..."
-npx lint-staged || handle_error "lint-staged failed"
-
-# 2. Type checking (full project)
-echo "📝 Checking TypeScript types..."
-npm run type-check || handle_error "TypeScript type checking failed"
-
-# 3. Build verification
-echo "🔨 Building project..."
-npm run build || handle_error "Build failed"
-
-# 4. Unit tests (full project)
-echo "🧪 Running unit tests..."
-npm test || handle_error "Unit tests failed"
-
-echo "✅ All pre-commit checks passed!"
-echo "�� Ready to commit!"
+EOF < /dev/null

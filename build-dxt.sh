@@ -34,13 +34,14 @@ if (!manifest.dxt_version || !manifest.name || !manifest.version) {
 console.log('✅ Generated manifest validation passed');
 "
 
-# Update entry_point for DXT package (flat structure)
+# Update entry_point and args for DXT package (flat structure)
 node -e "
 const fs = require('fs');
 const manifest = require('./manifest.json');
 manifest.server.entry_point = 'index.js';
+manifest.server.mcp_config.args = ['\${__dirname}/index.js'];
 fs.writeFileSync('./dxt-build/manifest.json', JSON.stringify(manifest, null, 2) + '\\n');
-console.log('✅ Updated entry_point for DXT package');
+console.log('✅ Updated entry_point and args for DXT package');
 "
 
 # Validate the copied manifest

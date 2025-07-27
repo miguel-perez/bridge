@@ -8,6 +8,7 @@
 
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { server, initializeBridgeConfiguration } from './mcp/server.js';
+import { overrideConsole, errorLog, debugLog } from './utils/safe-logger.js';
 
 // DXT timeout configuration
 const STARTUP_TIMEOUT = 30000; // 30 seconds for startup
@@ -78,9 +79,13 @@ const startupTimeout = setTimeout(() => {
   process.exit(1);
 }, STARTUP_TIMEOUT);
 
+// Override console methods to prevent protocol corruption
+overrideConsole();
+
 // Start the MCP server
 (async (): Promise<void> => {
   try {
+    debugLog('Starting Bridge MCP server...');
     // Create transport with activity tracking
     const transport = new StdioServerTransport();
 
@@ -91,11 +96,18 @@ const startupTimeout = setTimeout(() => {
     // Connect server
     await server.connect(transport);
     mcpLog('info', 'Bridge MCP server started and connected successfully');
+    
 
     // Initialize Bridge configuration after server connection
     // This ensures MCP logging is available during initialization
-    await initializeBridgeConfiguration();
-    mcpLog('info', 'Bridge configuration initialized successfully');
+    try {
+      await initializeBridgeConfiguration();
+      mcpLog('info', 'Bridge configuration initialized successfully');
+    } catch (configError) {
+      const configErrorMsg = configError instanceof Error ? configError.message : String(configError);
+      mcpLog('error', `Failed to initialize Bridge configuration: ${configErrorMsg}`);
+      // Don't exit - let the server run even if config init fails
+    }
 
     // Clear startup timeout once initialized
     clearTimeout(startupTimeout);
