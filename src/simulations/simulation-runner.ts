@@ -66,11 +66,18 @@ export class SimulationRunner {
     const startTime = Date.now();
     const transcript: SimulationTurn[] = [];
     
+    // Create simulation output directory
+    const fs = await import('fs/promises');
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const simDir = `./data/simulations/live-${timestamp}`;
+    await fs.mkdir(simDir, { recursive: true });
+    
     try {
       await this.setup();
       
       // Initial context setting (not part of transcript)
       console.log(`🎭 Starting simulation: ${scenario.name}`);
+      console.log(`📁 Saving to: ${simDir}`);
       
       let currentSpeaker: 'human' | 'claude' = 'human';
       let turnCount = 0;
@@ -82,8 +89,26 @@ export class SimulationRunner {
         try {
           const turn = await agent.generateResponse(transcript, scenario);
           
+          // Save turn immediately
+          await fs.writeFile(
+            `${simDir}/turn-${turnCount}-${currentSpeaker}.json`,
+            JSON.stringify({
+              turnNumber: turnCount,
+              speaker: currentSpeaker,
+              message: turn.message,
+              internalThought: turn.internalThought,
+              bridgeCalls: turn.bridgeCalls,
+              timestamp: turn.timestamp
+            }, null, 2)
+          );
+          
+          console.log(`\n[Turn ${turnCount} - ${currentSpeaker.toUpperCase()}]`);
+          console.log(`Thought: ${turn.internalThought}`);
+          console.log(`Message: ${turn.message}`);
+          
           // Execute any Bridge calls
           if (turn.bridgeCalls && turn.bridgeCalls.length > 0) {
+            console.log(`Bridge calls: ${JSON.stringify(turn.bridgeCalls, null, 2)}`);
             for (const call of turn.bridgeCalls) {
               await this.executeBridgeCall(call);
               this.bridgeCalls.push(call);
@@ -91,6 +116,12 @@ export class SimulationRunner {
           }
           
           transcript.push(turn);
+          
+          // Save transcript after each turn
+          await fs.writeFile(
+            `${simDir}/transcript.json`,
+            JSON.stringify(transcript, null, 2)
+          );
         } catch (error) {
           this.errors.push({
             turn: turnCount,
@@ -138,6 +169,11 @@ export class SimulationRunner {
       throw new Error('Environment not initialized');
     }
     
+    console.log(`\n🔧 Executing Bridge call:`, JSON.stringify({
+      tool: call.tool,
+      arguments: call.arguments
+    }, null, 2));
+    
     try {
       const result = await this.env.client.callTool({
         name: call.tool,
@@ -145,9 +181,13 @@ export class SimulationRunner {
       });
       
       call.result = result;
+      console.log(`✅ Bridge call succeeded`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`Bridge call failed: ${errorMessage}`);
+      console.error(`❌ Bridge call failed: ${errorMessage}`);
+      if (error instanceof Error && 'cause' in error) {
+        console.error(`Cause:`, error.cause);
+      }
       call.result = { error: errorMessage };
       
       this.errors.push({

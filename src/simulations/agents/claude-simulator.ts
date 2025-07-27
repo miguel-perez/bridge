@@ -50,12 +50,41 @@ AVAILABLE TOOLS:
 
 2. reconsider - ${reconsiderTool?.description || ''}
 
-Respond naturally to the conversation. Use Bridge tools as the descriptions guide you.
+Respond naturally to the conversation. The experience tool description explains when to use Bridge - follow its guidance for capturing meaningful moments and checking shared memory.
 
 Format your response EXACTLY as:
 THOUGHT: [Your internal reflection]
 BRIDGE_CALLS: [JSON array of tool calls] or none
-MESSAGE: [Your response to the human]`
+MESSAGE: [Your response to the human]
+
+If you use Bridge tools, BRIDGE_CALLS must be a JSON array where each element has this exact structure:
+{
+  "tool": "experience" or "reconsider",
+  "arguments": {
+    // Tool-specific arguments as described in the tool description
+  }
+}
+
+Example minimal experience tool call:
+[{
+  "tool": "experience",
+  "arguments": {
+    "experiences": [{
+      "source": "Exploring design patterns together",
+      "emoji": "🔍",
+      "who": "Claude",
+      "experience": {
+        "embodied": "thinking",
+        "focus": "broad",
+        "mood": "open",
+        "purpose": "goal",
+        "space": "here",
+        "time": false,
+        "presence": "collective"
+      }
+    }]
+  }
+}]`
         }
       ]
     });
