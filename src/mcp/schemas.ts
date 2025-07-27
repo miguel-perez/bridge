@@ -123,37 +123,23 @@ export const ExperienceQualitiesSchema = z.object({
     .union([z.literal(false), z.string().min(1)])
     .describe('Presence quality: false (not prominent) or sentence describing social quality (e.g., "feeling alone in this", "we\'re all in this together")'),
 }).describe(`Complete switchboard of experiential qualities. Each quality can be:
-- false: not prominent (receded)
-- string: full sentence in experiencer's voice describing the quality
+- false: not prominent (receded from awareness)
+- string: full sentence in experiencer's voice capturing their unique way of noticing
 
-Quality detection guide:
-- embodied.thinking: "analyzing", "figuring out", "strategy" → mental processing
-- embodied.sensing: "feeling", "gut reaction", "tense" → body/emotion awareness
-- embodied: When embodied experience doesn't clearly fit thinking/sensing subtypes
+Examples of authentic voice:
+- embodied: "my thoughts scatter like startled birds" or "feeling it deep in my bones"
+- focus: "laser-locked on this one detail" or "taking in everything at once"
+- mood: "curiosity bubbling up" or "walls going up around me"
+- purpose: "driven to crack this puzzle" or "just seeing where this leads"
+- space: "right here in this moment" or "my mind is back in that meeting room"
+- time: "that memory keeps pulling me back" or "already living in tomorrow's presentation"
+- presence: "working through this alone" or "feeling our minds sync up"
 
-- focus.narrow: "concentrated", "tunnel vision" → single-task attention
-- focus.broad: "overwhelmed", "juggling" → multi-task awareness
-- focus: When attentional quality doesn't clearly fit narrow/broad subtypes
-
-- mood.open: "excited", "curious", "flowing" → expansive emotional state
-- mood.closed: "defensive", "shut down" → contracted emotional state
-- mood: When emotional atmosphere doesn't clearly fit open/closed subtypes
-
-- purpose.goal: "working toward", "trying to" → clear direction
-- purpose.wander: "exploring", "seeing what happens" → curiosity-driven
-- purpose: When purposive momentum doesn't clearly fit goal/wander subtypes
-
-- space.here: "in this room", immediate environment → physically grounded
-- space.there: "thinking about home" → spatially displaced
-- space: When spatial experience doesn't clearly fit here/there subtypes
-
-- time.past: "remembering", "used to" → historical orientation
-- time.future: "planning", "worried about" → anticipatory orientation
-- time: When temporal flow doesn't clearly fit past/future subtypes
-
-- presence.individual: "just me", alone → solitary experience
-- presence.collective: "we", "together" → social/shared experience
-- presence: When social quality doesn't clearly fit individual/collective subtypes`);
+Each sentence should:
+• Use the experiencer's natural vocabulary and rhythm
+• Capture the felt quality, not analytical labels
+• Be specific to this moment, not generic
+• Express the experiencer's unique way of noticing`);
 
 // Experience analysis - switchboard format only
 export const ExperienceObject =

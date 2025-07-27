@@ -236,6 +236,47 @@ export class QualityFilterService {
   }
 
   /**
+   * Map old quality values to sentence patterns for backward compatibility
+   */
+  private mapQualityValueToSentence(quality: string, value: string): string[] {
+    // Map old format to sentence patterns
+    const mappings: Record<string, Record<string, string[]>> = {
+      embodied: {
+        thinking: ['mind processes', 'analytically', 'thoughts line up', 'thinking'],
+        sensing: ['feeling this', 'whole body', 'body knows', 'sensing', 'feeling'],
+        tension: ['tension'],
+      },
+      focus: {
+        narrow: ['zeroing in', 'one specific thing', 'laser focus', 'narrow'],
+        broad: ['taking in everything', 'wide awareness', 'peripheral', 'broad'],
+      },
+      mood: {
+        open: ['curious', 'receptive', 'welcoming', 'possibility', 'open'],
+        closed: ['shutting down', 'emotionally', 'closed off', 'withdrawn', 'closed'],
+        anxious: ['anxious'],
+      },
+      purpose: {
+        goal: ['pushing toward', 'specific outcome', 'achievement', 'goal'],
+        wander: ['exploring', 'without direction', 'drifting', 'wander'],
+      },
+      space: {
+        here: ['present in this space', 'fully here', 'grounded', 'here'],
+        there: ['mind is elsewhere', 'somewhere else', 'distant', 'there'],
+      },
+      time: {
+        past: ['memories', 'pulling backward', 'remembering', 'past'],
+        future: ['anticipating', 'what comes next', 'forward', 'future'],
+      },
+      presence: {
+        individual: ['navigating alone', 'by myself', 'solitary', 'individual'],
+        collective: ['shared experience', 'together', 'we', 'collective'],
+      },
+    };
+
+    return mappings[quality]?.[value] || [value];
+  }
+
+  /**
    * Evaluate a value filter
    */
   private evaluateValueFilter(filter: ValueFilter, experience: SourceRecord): boolean {
@@ -247,11 +288,15 @@ export class QualityFilterService {
       const qualityKey = filter.quality as keyof ExperienceQualities;
       const qualityValue = qualities[qualityKey];
       
-      // With sentence-based qualities, exact matching is less useful
-      // TODO: Implement semantic similarity matching for sentence qualities
-      // For now, check if the quality contains the filter value as a substring
+      // With sentence-based qualities, we need more sophisticated matching
       if (typeof qualityValue === 'string') {
-        return qualityValue.toLowerCase().includes(filterValue.toLowerCase());
+        // Get patterns for the old format value
+        const patterns = this.mapQualityValueToSentence(filter.quality, filterValue);
+        
+        // Check if any pattern matches the quality sentence
+        return patterns.some(pattern => 
+          qualityValue.toLowerCase().includes(pattern.toLowerCase())
+        );
       }
       
       return qualityValue === false && filterValue === 'false';

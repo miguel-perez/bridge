@@ -626,7 +626,7 @@ describe('ExperienceHandler', () => {
       {
         name: 'embodied thinking subtype',
         source: 'I am thinking deeply about this problem',
-        experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
+        experienceQualities: {"embodied":"my mind dives deep into this puzzle","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
         expected: 'embodied.thinking subtype detected',
         /**
          * PHILOSOPHICAL RATIONALE: Specific Embodied Cognition
@@ -643,7 +643,7 @@ describe('ExperienceHandler', () => {
       {
         name: 'embodied sensing subtype',
         source: 'I feel the tension in my shoulders',
-        experienceQualities: {"embodied":"sensing","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
+        experienceQualities: {"embodied":"tension grips my shoulders like a vice","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
         expected: 'embodied.sensing subtype detected',
         /**
          * PHILOSOPHICAL RATIONALE: Body Awareness
@@ -814,7 +814,7 @@ describe('ExperienceHandler', () => {
       {
         name: 'mixed types and subtypes',
         source: 'I am thinking deeply while feeling open and focused',
-        experienceQualities: {"embodied":"thinking","focus":"narrow","mood":"open","purpose":false,"space":false,"time":false,"presence":false},
+        experienceQualities: {"embodied":"my thoughts sharpen to a fine point","focus":"zeroing in on the core issue","mood":"curiosity expanding outward","purpose":false,"space":false,"time":false,"presence":false},
         expected: 'mixed types and subtypes detected',
         /**
          * PHILOSOPHICAL RATIONALE: Complex Experiential Wholeness
@@ -832,7 +832,7 @@ describe('ExperienceHandler', () => {
       {
         name: 'type with subtype',
         source: 'I am embodied and thinking specifically',
-        experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
+        experienceQualities: {"embodied":"thoughts crystallizing into clear patterns","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
         expected: 'type with subtype detected',
         /**
          * PHILOSOPHICAL RATIONALE: General + Specific Awareness
@@ -881,7 +881,7 @@ describe('ExperienceHandler', () => {
       {
         name: 'all qualities present',
         source: 'Complete experiential moment with all dimensions',
-        experienceQualities: {"embodied":"sensing","focus":"broad","mood":"closed","purpose":"wander","space":"there","time":"future","presence":"collective"},
+        experienceQualities: {"embodied":"my whole body buzzes with awareness","focus":"taking in everything at once","mood":"walls closing in around me","purpose":"drifting wherever this leads","space":"my mind is elsewhere entirely","time":"already living in what comes next","presence":"feeling the group consciousness"},
         expected: 'all qualities captured',
         /**
          * PHILOSOPHICAL RATIONALE: Complete Experiential Field
@@ -900,7 +900,7 @@ describe('ExperienceHandler', () => {
       {
         name: 'duplicate qualities',
         source: 'Experience with duplicate qualities',
-        experienceQualities: {"embodied":"thinking","focus":false,"mood":"open","purpose":false,"space":false,"time":false,"presence":false},
+        experienceQualities: {"embodied":"my mind processes layers of meaning","focus":false,"mood":"feeling expansive and curious","purpose":false,"space":false,"time":false,"presence":false},
         expected: 'duplicate qualities handled',
         /**
          * PHILOSOPHICAL RATIONALE: Input Diversity Tolerance
@@ -1056,13 +1056,13 @@ describe('ExperienceHandler', () => {
          * explicitly apparent.
          */
         const allQualities = {
-          embodied: 'thinking', // Can't have both thinking and sensing, pick one
-          focus: 'narrow', // Can't have both narrow and broad, pick one
-          mood: 'open', // Can't have both open and closed, pick one
-          purpose: 'goal', // Can't have both goal and wander, pick one
-          space: 'here', // Can't have both here and there, pick one
-          time: 'past', // Can't have both past and future, pick one
-          presence: 'individual' // Can't have both individual and collective, pick one
+          embodied: 'my analytical mind races through possibilities',
+          focus: 'laser-focused on this single challenge',
+          mood: 'excitement bubbling up from within',
+          purpose: 'driven to reach a specific outcome',
+          space: 'completely grounded in this moment',
+          time: 'memories of similar moments flood back',
+          presence: 'navigating this journey alone'
         };
 
         const mockResult = {
@@ -1109,9 +1109,9 @@ describe('ExperienceHandler', () => {
          * in the same moment.
          */
         const mixedQualities = {
-          embodied: 'thinking', // Can only have one value per quality
+          embodied: 'processing this through pure logic',
           focus: false,
-          mood: 'open',
+          mood: 'feeling spacious and receptive',
           purpose: false,
           space: false,
           time: false,
@@ -1215,9 +1215,9 @@ describe('ExperienceHandler', () => {
          * and that specificity serves the moment when it genuinely fits.
          */
         const subtypeQualities = {
-          embodied: 'thinking',
-          mood: 'open',
-          focus: 'narrow',
+          embodied: 'thoughts clicking into place like puzzle pieces',
+          mood: 'curiosity spreading like ripples',
+          focus: 'zooming in on the crucial detail',
           purpose: false,
           space: false,
           time: false,

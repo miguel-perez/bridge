@@ -172,7 +172,7 @@ describe('ExperienceService', () => {
 
       expect(result.source.context).toBe('Before an important presentation');
       expect(mockEmbeddingService.generateEmbedding).toHaveBeenCalledWith(
-        'Context: Before an important presentation. "I feel anxious" [embodied.sensing, mood.closed]'
+        'Context: Before an important presentation. "I feel anxious" [embodied: "sensing", mood: "closed"]'
       );
     });
   });

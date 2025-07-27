@@ -214,7 +214,7 @@ export class ExperienceService {
       const qualitiesArray = savedSource.experienceQualities 
         ? Object.entries(savedSource.experienceQualities)
             .filter(([_, v]) => v !== false)
-            .map(([k, v]) => v === true ? k : `${k}.${v}`)
+            .map(([k, v]) => `${k}: "${v}"`)
         : [];
       const qualitiesText = qualitiesArray.length > 0
         ? `[${qualitiesArray.join(', ')}]`

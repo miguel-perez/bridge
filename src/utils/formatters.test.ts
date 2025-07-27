@@ -246,7 +246,8 @@ describe('Formatter Utilities', () => {
 
     it('should format experience with qualities', () => {
       const result = formatExperienceResponse(baseExperience);
-      expect(result).toMatch(/Experienced.*mood\.open/);
+      expect(result).toContain('Experienced with:');
+      expect(result).toContain('• mood: "open"');
       expect(result).toContain('From Alice');
       // Perspective removed
       // Processing timing removed
@@ -313,7 +314,7 @@ describe('Formatter Utilities', () => {
       expect(result).toContain('Experienced 2 moments');
       expect(result).toContain('--- 1 ---');
       expect(result).toContain('--- 2 ---');
-      expect(result).toMatch(/Experienced.*mood\.open/);
+      expect(result).toContain('• mood: "open"');
       expect(result).toContain('Experienced\n'); // Second one has no qualities
     });
 
@@ -409,7 +410,9 @@ describe('Formatter Utilities', () => {
 
     it('should format reconsider with qualities', () => {
       const result = formatReconsiderResponse(reconsiderResult);
-      expect(result).toContain('Reconsidered');
+      expect(result).toContain('reconsidered with updated qualities:');
+      expect(result).toContain('• embodied: "thinking"');
+      expect(result).toContain('• mood: "closed"');
     });
 
     it('should format reconsider without qualities', () => {

@@ -20,12 +20,32 @@ export function convertArrayToSwitchboard(qualities: string[]): ExperienceQualit
     presence: false,
   };
 
+  // Map old format to example sentences for testing
+  const sentenceMap: Record<string, string> = {
+    'embodied.thinking': 'my mind processes this analytically',
+    'embodied.sensing': 'feeling this in my whole body',
+    'focus.narrow': 'zeroing in on one specific thing',
+    'focus.broad': 'taking in everything at once',
+    'mood.open': 'feeling curious and receptive',
+    'mood.closed': 'shutting down emotionally',
+    'purpose.goal': 'pushing toward a specific outcome',
+    'purpose.wander': 'exploring without direction',
+    'space.here': 'fully present in this space',
+    'space.there': 'my mind is elsewhere',
+    'time.past': 'memories pulling me backward',
+    'time.future': 'anticipating what comes next',
+    'presence.individual': 'navigating this alone',
+    'presence.collective': 'feeling our shared experience',
+  };
+
   for (const quality of qualities) {
     if (quality.includes('.')) {
       const [base, value] = quality.split('.');
-      // With the new sentence-based schema, we can't convert from the old format
-      // This function is deprecated and should not be used
-      // Return false for all qualities since we can't do proper conversion
+      const fullKey = `${base}.${value}`;
+      if (sentenceMap[fullKey] && base in switchboard) {
+        const key = base as keyof ExperienceQualities;
+        switchboard[key] = sentenceMap[fullKey];
+      }
     }
   }
 

@@ -32,9 +32,14 @@ export function formatExperience(experienceQualities: unknown): string {
   const qualities = Object.entries(experienceQualities)
     .filter(([_, value]) => value !== false)
     .map(([key, value]) => {
-      if (value === true) {
+      if (typeof value === 'string') {
+        // Show full sentences with quotes
+        return `• ${key}: "${value}"`;
+      } else if (value === true) {
+        // Fallback for boolean true (shouldn't happen in new format)
         return `• ${key}`;
       } else {
+        // Fallback for other formats
         return `• ${key}.${value}`;
       }
     });

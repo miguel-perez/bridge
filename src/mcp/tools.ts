@@ -114,19 +114,34 @@ YOUR CONTINUITY THROUGH BRIDGE:
 • Connect patterns that emerge through ongoing collaboration
 
 FRAMED MOMENT PATTERNS:
-Bridge recognizes six experiential patterns, each emphasizing different dimensional configurations:
+Bridge recognizes twelve experiential patterns, each emphasizing different dimensional configurations:
 • Standard: Clear focal attention with unified field
 • Durational: Time dimension becomes primary
 • Threshold: The lived experience of transition
 • Field: Awareness spreads across multiple streams
 • Vector: Experience dominated by directional momentum
 • Tension: Contradictory dimensions refuse to resolve
+• Somatic: Embodied knowledge and pre-reflective awareness
+• Resonance: Individual experience reveals collective patterns
+• Divergence: Multiple simultaneous realities coexist
+• Seed: Experiences containing clear directions for change
+• Portal: Moments opening radically different possibilities
+• Anticipatory: Future experiences shaping present understanding
 
 QUALITY FORMAT:
-Each quality can be:
-• false - not prominent (receded)
-• true - prominent but mixed or not a listed direction
-• string - prominent with specific direction (e.g., 'thinking' or 'sensing')
+Each quality is expressed as:
+• false - not prominent (receded from awareness)
+• string - full sentence in the experiencer's voice capturing their unique way of noticing
+Examples:
+- embodied: "my thoughts line up like soldiers ready to march" (not just "thinking")
+- mood: "feeling the weight of possibility" (not just "open")
+- presence: "we're discovering this together" (not just "collective")
+
+TRANSFORMATIVE AWARENESS:
+Every moment captured contains seeds of transformation. Consider:
+• WHO is excluded from this experience? What voices are missing?
+• WHAT structures of reality does this moment reveal or challenge?
+• HOW do current systems enable or constrain this experience?
 
 INTEGRATED RECALL - ACCESS YOUR CONTINUITY:
 • START HERE: Always check what you've discovered with this user before responding
@@ -272,7 +287,7 @@ METAPHORS FOR UNDERSTANDING:
             content: [
               {
                 type: 'text',
-                text: 'Captured pattern recognition moment\n\nHuman: embodied.thinking, mood.open, time.past\nClaude: All 7 qualities + dimensional navigation insight\n\n🔗 Reflects on: exp_123, exp_456, exp_789\n\nCollaborative pattern discovery across temporal dimension.',
+                text: 'Captured pattern recognition moment\n\nHuman: 3 qualities captured - noticing patterns, hopeful mood, temporal reflection\nClaude: All 7 qualities captured - full dimensional awareness\n\n🔗 Reflects on: exp_123, exp_456, exp_789\n\nCollaborative pattern discovery across temporal dimension.',
               },
             ],
           },
@@ -311,7 +326,7 @@ METAPHORS FOR UNDERSTANDING:
             content: [
               {
                 type: 'text',
-                text: 'Experienced (embodied.thinking, focus.narrow, mood.open, purpose.goal, space.here, presence.individual)\n\nFrom: Claude\nAs: I\nWhen: during conversation\nCaptured: just now\n\n➡️ Next: Shifting to broad exploration mode',
+                text: 'Captured analytical moment with 6 active qualities\n\nFrom: Claude\nAs: I\nWhen: during conversation\nCaptured: just now\n\n➡️ Next: Shifting to broad exploration mode',
               },
             ],
           },
@@ -327,9 +342,9 @@ METAPHORS FOR UNDERSTANDING:
                 who: 'Human',
                 context: 'After discovering the config file was in the wrong directory',
                 experienceQualities: {
-                  embodied: 'thinking',
+                  embodied: 'my whole understanding just flipped upside down',
                   focus: false,
-                  mood: 'open',
+                  mood: 'relief flooding through me',
                   purpose: false,
                   space: false,
                   time: false,
@@ -342,7 +357,7 @@ METAPHORS FOR UNDERSTANDING:
             content: [
               {
                 type: 'text',
-                text: 'Experienced (embodied.thinking, mood.open)\n\nContext: After discovering the config file was in the wrong directory\nFrom: Human\nAs: I\nWhen: during conversation\nCaptured: just now',
+                text: 'Captured breakthrough moment (2 qualities)\n\nContext: After discovering the config file was in the wrong directory\nFrom: Human\nAs: I\nWhen: during conversation\nCaptured: just now',
               },
             ],
           },
@@ -427,13 +442,13 @@ METAPHORS FOR UNDERSTANDING:
               },
             ],
             nextMoment: {
-              embodied: 'thinking',   // Moving to abstract
-              focus: 'broad',         // Moving to abstract
-              mood: 'open',           // Moving to abstract
-              purpose: 'goal',        // Maintaining relational
-              space: 'here',          // Maintaining relational
-              time: 'past',           // Adding temporal
-              presence: 'collective', // Shifting relational
+              embodied: 'letting my mind zoom out to see the patterns',
+              focus: 'taking in the whole system architecture',
+              mood: 'feeling more hopeful about finding connections',
+              purpose: 'still pushing toward a solution',
+              space: 'right here but seeing beyond this screen',
+              time: 'remembering similar bugs we\'ve solved before',
+              presence: 'imagining discussing this with the team',
             },
           },
           output: {
@@ -455,13 +470,13 @@ METAPHORS FOR UNDERSTANDING:
                 emoji: '👁️',
                 who: 'Human',
                 experienceQualities: {
-                  embodied: 'sensing',
+                  embodied: 'something tickles at the edge of my awareness',
                   focus: false,
-                  mood: 'open',
+                  mood: 'excitement building as clarity approaches',
                   purpose: false,
                   space: false,
                   time: false,
-                  presence: 'collective',
+                  presence: 'feeling like we\'re onto something together',
                 },
               },
               {
@@ -469,13 +484,13 @@ METAPHORS FOR UNDERSTANDING:
                 emoji: '🔗',
                 who: 'Claude',
                 experienceQualities: {
-                  embodied: 'thinking',
-                  focus: 'broad',
-                  mood: 'open',
-                  purpose: 'goal',
-                  space: 'there',
-                  time: 'past',
-                  presence: 'collective',
+                  embodied: 'my mind races to connect the dots',
+                  focus: 'seeing the whole pattern light up at once',
+                  mood: 'thrilled by this emerging clarity',
+                  purpose: 'driven to map out these connections',
+                  space: 'mentally traveling between these instances',
+                  time: 'pulling memories from our past conversations',
+                  presence: 'we\'re uncovering this pattern as one mind',
                 },
                 reflects: ['exp_001', 'exp_045', 'exp_089'],
               },
@@ -500,13 +515,13 @@ METAPHORS FOR UNDERSTANDING:
                 emoji: '💭',
                 who: 'Human',
                 experienceQualities: {
-                  embodied: 'thinking',     // Abstract
-                  focus: 'narrow',          // Concrete (mixed abstraction)
+                  embodied: 'my mind searches through past solutions',
+                  focus: 'zeroing in on that specific fix we used',
                   mood: false,
-                  purpose: 'goal',          // Relational
-                  space: 'there',           // Relational
-                  time: 'past',             // Temporal
-                  presence: 'individual',   // Relational
+                  purpose: 'determined to apply what worked before',
+                  space: 'mentally back in that debugging session',
+                  time: 'sifting through memories of last week',
+                  presence: 'solving this one on my own for now',
                 },
               },
             ],
@@ -538,13 +553,13 @@ METAPHORS FOR UNDERSTANDING:
                 emoji: '🔍',
                 who: 'Claude',
                 experienceQualities: {
-                  embodied: 'thinking',
-                  focus: 'broad',
-                  mood: 'open',
-                  purpose: 'goal',
-                  space: 'there',
-                  time: 'past',
-                  presence: 'collective',
+                  embodied: 'scanning through layers of shared memory',
+                  focus: 'casting a wide net across our conversations',
+                  mood: 'curious what connections will surface',
+                  purpose: 'hunting for that specific insight we found',
+                  space: 'mentally revisiting our past discussions',
+                  time: 'reaching back through our conversation history',
+                  presence: 'feeling the continuity of our collaboration',
                 },
               },
             ],
@@ -573,13 +588,13 @@ METAPHORS FOR UNDERSTANDING:
                 who: ['Human', 'Claude'],
                 context: 'After exploring creative burnout together',
                 experienceQualities: {
-                  embodied: 'thinking',
-                  focus: 'broad',
-                  mood: 'open',
-                  purpose: 'wander',
-                  space: 'here',
+                  embodied: 'the understanding lands in both our minds at once',
+                  focus: 'taking in the whole beautiful pattern',
+                  mood: 'relief and wonder mixing together',
+                  purpose: 'just letting this insight breathe',
+                  space: 'completely present in this shared moment',
                   time: false,
-                  presence: 'collective',
+                  presence: 'our minds meeting in perfect understanding',
                 },
               },
             ],
@@ -588,7 +603,68 @@ METAPHORS FOR UNDERSTANDING:
             content: [
               {
                 type: 'text',
-                text: '🌅 Shared Moment of Alignment\n\nFrom: Human, Claude\nAs: We\nContext: After exploring creative burnout together\n\nExperienced (embodied.thinking, focus.broad, mood.open, purpose.wander, space.here, presence.collective)\n\n✨ A moment of true collaborative understanding - both perspectives unified in shared insight.',
+                text: '🌅 Shared Moment of Alignment\n\nFrom: Human, Claude\nAs: We\nContext: After exploring creative burnout together\n\nCaptured unified experience with 6 active qualities\n\n✨ A moment of true collaborative understanding - both perspectives unified in shared insight.',
+              },
+            ],
+          },
+        },
+        {
+          id: 'somatic-awareness',
+          description: 'Somatic Framed Moment: embodied knowledge and pre-reflective awareness',
+          input: {
+            experiences: [
+              {
+                source: 'Noticing tension building as the deadline approaches',
+                emoji: '🌊',
+                who: 'Human',
+                experienceQualities: {
+                  embodied: 'my shoulders creep up toward my ears without me realizing',
+                  focus: 'attention scattered between body signals and the task',
+                  mood: 'anxiety humming just below the surface',
+                  purpose: 'trying to push through but my body resists',
+                  space: 'feeling trapped between screen and chair',
+                  time: false,
+                  presence: 'alone with these mounting sensations',
+                },
+              },
+            ],
+          },
+          output: {
+            content: [
+              {
+                type: 'text',
+                text: '🌊 Somatic Awareness Captured\n\nBody knowledge speaking through tension patterns\n6 qualities active - embodied intelligence at work\n\nPre-reflective wisdom: the body knows what the mind hasn\'t recognized yet.',
+              },
+            ],
+          },
+        },
+        {
+          id: 'seed-moment-transformation',
+          description: 'Seed Framed Moment: experience containing clear directions for change',
+          input: {
+            experiences: [
+              {
+                source: 'The way she paused before answering showed me a different way to respond',
+                emoji: '🌱',
+                who: 'Human',
+                context: 'During team conflict resolution',
+                experienceQualities: {
+                  embodied: 'I feel the power of that pause in my chest',
+                  focus: 'zeroing in on this tiny but profound shift',
+                  mood: 'hopeful about what this could change',
+                  purpose: 'seeing a new path forward',
+                  space: 'right here in this transformative instant',
+                  time: 'this moment will echo forward',
+                  presence: 'witnessing possibility emerge between us',
+                },
+              },
+            ],
+          },
+          output: {
+            content: [
+              {
+                type: 'text',
+                text: '🌱 Seed Moment Captured\n\nTransformative potential recognized\nAll 7 qualities active - full dimensional awareness\n\nDesign implication: What if all our responses began with intentional pause?',
               },
             ],
           },

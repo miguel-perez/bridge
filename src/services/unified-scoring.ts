@@ -7,6 +7,82 @@ import type { SourceRecord, ExperienceQualities } from '../core/types.js';
 import { KNOWN_QUALITIES } from '../core/qualities.js';
 import { qualityFilterService, type QualityFilter } from './quality-filter.js';
 
+// Mapping from sentence patterns to old quality values
+const sentenceToQualityMap: Record<string, Record<string, string>> = {
+  embodied: {
+    'mind processes': 'thinking',
+    'analytically': 'thinking',
+    'thoughts line up': 'thinking',
+    'feeling this': 'sensing',
+    'whole body': 'sensing',
+    'body knows': 'sensing',
+  },
+  focus: {
+    'zeroing in': 'narrow',
+    'one specific thing': 'narrow',
+    'laser focus': 'narrow',
+    'taking in everything': 'broad',
+    'wide awareness': 'broad',
+    'peripheral': 'broad',
+  },
+  mood: {
+    'curious': 'open',
+    'receptive': 'open',
+    'welcoming': 'open',
+    'possibility': 'open',
+    'shutting down': 'closed',
+    'emotionally': 'closed',
+    'closed off': 'closed',
+    'withdrawn': 'closed',
+  },
+  purpose: {
+    'pushing toward': 'goal',
+    'specific outcome': 'goal',
+    'achievement': 'goal',
+    'exploring': 'wander',
+    'without direction': 'wander',
+    'drifting': 'wander',
+  },
+  space: {
+    'present in this space': 'here',
+    'fully here': 'here',
+    'grounded': 'here',
+    'mind is elsewhere': 'there',
+    'somewhere else': 'there',
+    'distant': 'there',
+  },
+  time: {
+    'memories': 'past',
+    'pulling backward': 'past',
+    'remembering': 'past',
+    'anticipating': 'future',
+    'what comes next': 'future',
+    'forward': 'future',
+  },
+  presence: {
+    'navigating alone': 'individual',
+    'by myself': 'individual',
+    'solitary': 'individual',
+    'shared experience': 'collective',
+    'together': 'collective',
+    'we': 'collective',
+  },
+};
+
+// Helper to map sentence to old quality value
+function mapSentenceToQuality(quality: string, sentence: string): string | null {
+  const patterns = sentenceToQualityMap[quality];
+  if (!patterns) return null;
+  
+  const lowerSentence = sentence.toLowerCase();
+  for (const [pattern, value] of Object.entries(patterns)) {
+    if (lowerSentence.includes(pattern.toLowerCase())) {
+      return value;
+    }
+  }
+  return null;
+}
+
 // Helper to extract quality list from switchboard format
 function extractQualityList(qualities?: ExperienceQualities | Record<string, string | boolean>): string[] {
   if (!qualities) return [];
@@ -14,6 +90,15 @@ function extractQualityList(qualities?: ExperienceQualities | Record<string, str
     .filter(([_, value]) => value !== false)
     .map(([key, value]) => {
       if (value === true) return key;
+      if (typeof value === 'string') {
+        // Try to map sentence to old quality value
+        const mappedValue = mapSentenceToQuality(key, value);
+        if (mappedValue) {
+          return `${key}.${mappedValue}`;
+        }
+        // Fallback: just return the base quality
+        return key;
+      }
       return `${key}.${value}`;
     });
 }

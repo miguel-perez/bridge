@@ -11,6 +11,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { convertArrayToSwitchboard, humanQualities, aiQualities } from './format-converter.js';
 import { randomUUID } from 'crypto';
+import type { ExperienceQualities } from '../core/types.js';
 
 /**
  * Test environment for integration tests
@@ -271,7 +272,7 @@ export async function callExperience(
   params: {
     source: string;
     emoji: string;
-    experienceQualities: Record<string, string | boolean | false>;
+    experienceQualities: ExperienceQualities | Record<string, string | boolean | false>;
     who?: string;
     perspective?: string;
     processing?: string;

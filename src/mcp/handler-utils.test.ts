@@ -35,7 +35,7 @@ describe('Handler Utilities', () => {
         time: false
       };
       const result = formatExperience(experience);
-      expect(result).toBe('• mood.open\n• embodied.sensing\n• presence.collective');
+      expect(result).toBe('• mood: "open"\n• embodied: "sensing"\n• presence: "collective"');
     });
 
     it('should handle undefined experience', () => {
@@ -59,7 +59,7 @@ describe('Handler Utilities', () => {
         time: false
       };
       const result = formatExperience(experience);
-      expect(result).toBe('• mood.open');
+      expect(result).toBe('• mood: "open"');
     });
   });
 
@@ -316,8 +316,8 @@ describe('Handler Utilities', () => {
       expect(result).toContain('Content: I feel happy today');
       expect(result).toContain('Who: Alice');
       expect(result).toMatch(/Tuesday, January 21, 2025|Just now/);
-      expect(result).toContain('• mood.open');
-      expect(result).toContain('• embodied.sensing');
+      expect(result).toContain('• mood: "feeling curious and receptive"');
+      expect(result).toContain('• embodied: "feeling this in my whole body"');
     });
 
     it('should format minimal source record', () => {

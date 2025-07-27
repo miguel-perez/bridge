@@ -163,6 +163,15 @@ export interface RecallResult {
     who?: string | string[];
     experience?: string[];
     emoji?: string;
+    experienceQualities?: {
+      embodied: string | false;
+      focus: string | false;
+      mood: string | false;
+      purpose: string | false;
+      space: string | false;
+      time: string | false;
+      presence: string | false;
+    };
   };
   relevance_score?: number;
 }
@@ -440,43 +449,23 @@ export function formatExperienceResponse(
   result: ExperienceResult,
   showId: boolean = false
 ): string {
-  // Get qualities - prefer experienceQualities if available, fall back to experience array
-  const qualities: string[] = [];
-  if (result.source.experienceQualities) {
-    // Convert qualities object to array format for display
-    for (const [quality, value] of Object.entries(result.source.experienceQualities)) {
-      if (value !== false) {
-        // For sentence-based qualities, show quality name and sentence
-        if (typeof value === 'string') {
-          // If it's a long sentence, just show the quality name
-          if (value.length > 20) {
-            qualities.push(quality);
-          } else {
-            // For short values (legacy format), show as quality.value
-            qualities.push(`${quality}.${value}`);
-          }
-        } else {
-          qualities.push(quality);
-        }
-      }
-    }
-  }
-
   const emoji = result.source.emoji;
-
-  // Include the full source text without truncation
   const sourceText = result.source.source;
   
-  // Simple response based on whether we have qualities
-  let response: string;
-  if (qualities.length > 0) {
-    response =
-      `${emoji} ${sourceText}\n` +
-      formatMessage(Messages.experience.successWithQualities, {
-        qualities: formatQualityList(qualities),
-      });
+  // Start with emoji and source
+  let response = `${emoji} ${sourceText}\n`;
+  
+  // Get quality details if available
+  if (result.source.experienceQualities) {
+    const qualityDetails = formatQualityDetails(result.source.experienceQualities);
+    
+    if (qualityDetails.length > 0) {
+      response += '\nExperienced with:\n' + qualityDetails.join('\n');
+    } else {
+      response += Messages.experience.success;
+    }
   } else {
-    response = `${emoji} ${sourceText}\n` + Messages.experience.success;
+    response += Messages.experience.success;
   }
 
   return [response, '', formatMetadata(result.source, showId)].join('\n');
@@ -518,28 +507,6 @@ export function formatBatchExperienceResponse(
   for (let i = 0; i < results.length; i++) {
     const result = results[i];
 
-    // Get qualities - prefer experienceQualities if available, fall back to experience array
-    const qualities: string[] = [];
-    if (result.source.experienceQualities) {
-      // Convert qualities object to array format for display
-      for (const [quality, value] of Object.entries(result.source.experienceQualities)) {
-        if (value !== false) {
-          // For sentence-based qualities, show quality name and sentence
-          if (typeof value === 'string') {
-            // If it's a long sentence, just show the quality name
-            if (value.length > 20) {
-              qualities.push(quality);
-            } else {
-              // For short values (legacy format), show as quality.value
-              qualities.push(`${quality}.${value}`);
-            }
-          } else {
-            qualities.push(quality);
-          }
-        }
-      }
-    }
-
     output.push(`--- ${i + 1} ---`);
 
     const emoji = result.source.emoji;
@@ -548,12 +515,16 @@ export function formatBatchExperienceResponse(
     // Include the full source text
     output.push(`${emoji} ${sourceText}`);
     
-    if (qualities.length > 0) {
-      output.push(
-        formatMessage(Messages.experience.successWithQualities, {
-          qualities: formatQualityList(qualities),
-        })
-      );
+    // Get quality details if available
+    if (result.source.experienceQualities) {
+      const qualityDetails = formatQualityDetails(result.source.experienceQualities);
+      
+      if (qualityDetails.length > 0) {
+        output.push('\nExperienced with:');
+        output.push(...qualityDetails);
+      } else {
+        output.push(Messages.experience.success);
+      }
     } else {
       output.push(Messages.experience.success);
     }
@@ -633,23 +604,15 @@ export function formatReconsiderResponse(
   result: ExperienceResult,
   showId: boolean = false
 ): string {
-  const qualities: string[] = [];
+  let response = Messages.reconsider.success;
+  
+  // Get quality details if available
   if (result.source.experienceQualities) {
-    for (const [quality, value] of Object.entries(result.source.experienceQualities)) {
-      if (value !== false) {
-        // With sentence-based qualities, just show the quality name
-        qualities.push(quality);
-      }
+    const qualityDetails = formatQualityDetails(result.source.experienceQualities);
+    
+    if (qualityDetails.length > 0) {
+      response = 'Experience reconsidered with updated qualities:\n' + qualityDetails.join('\n');
     }
-  }
-
-  let response: string;
-  if (qualities.length > 0) {
-    response = formatMessage(Messages.reconsider.successWithQualities, {
-      qualities: formatQualityList(qualities),
-    });
-  } else {
-    response = Messages.reconsider.success;
   }
 
   return [response, '', formatMetadata(result.source, showId)].join('\n');
@@ -728,25 +691,33 @@ function formatTimeAgo(timestamp: string): string {
 function formatRecallResults(results: RecallResult[], showIds: boolean = false): string {
   const formattedResults = results.map((result, index) => {
     const metadata = result.metadata || {};
-    const experience = ((metadata as Record<string, unknown>).experience as string[]) || [];
 
     // Get content (prefer snippet, fallback to content)
     const content = result.snippet || result.content || '';
     const displayContent = content.length > 600 ? content.substring(0, 600) + '...' : content;
 
     // Simple numbered format with emoji if available
-    const emoji = (metadata as Record<string, unknown>).emoji as string | undefined;
+    const emoji = (metadata as any).emoji;
     const lines = emoji
       ? [`${index + 1}. ${emoji} "${displayContent}"`]
       : [`${index + 1}. "${displayContent}"`];
 
-    // Add qualities if available
-    if (experience.length > 0) {
-      lines.push(`   ${formatQualityList(experience)}`);
+    // Add full quality details if available
+    if ((metadata as any).experienceQualities) {
+      const qualityDetails = formatQualityDetails((metadata as any).experienceQualities);
+      if (qualityDetails.length > 0) {
+        lines.push('   Qualities:');
+        qualityDetails.forEach(detail => {
+          lines.push('   ' + detail);
+        });
+      }
+    } else if ((metadata as any).experience && (metadata as any).experience.length > 0) {
+      // Fallback to old format if needed
+      lines.push(`   ${formatQualityList((metadata as any).experience)}`);
     }
 
     // Add timing
-    const timeAgo = formatTimeAgo(((metadata as Record<string, unknown>).created as string) || '');
+    const timeAgo = formatTimeAgo((metadata as any).created || '');
     lines.push(`   ${timeAgo}`);
 
     // Add relevance score in test mode

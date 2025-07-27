@@ -12,6 +12,7 @@ import {
   extractExperienceId,
   waitFor,
 } from './test-utils/integration-helpers.js';
+import { humanQualities } from './test-utils/format-converter.js';
 
 describe('Experiment Coverage Tests', () => {
   describe('EXP-010: Advanced Recall Options - Complete Coverage', () => {
@@ -21,7 +22,7 @@ describe('Experiment Coverage Tests', () => {
         await callExperience(env.client, {
           source: 'Experience from yesterday',
           emoji: '📅',
-          experienceQualities: {"embodied":false,"focus":false,"mood":false,"purpose":false,"space":false,"time":"past","presence":false},
+          experienceQualities: humanQualities('time.past', 'mood.closed'),
         });
 
         await waitFor(100);
@@ -29,14 +30,14 @@ describe('Experiment Coverage Tests', () => {
         await callExperience(env.client, {
           source: 'Experience from today',
           emoji: '📆',
-          experienceQualities: {"embodied":false,"focus":false,"mood":false,"purpose":false,"space":false,"time":"present","presence":false},
+          experienceQualities: humanQualities('time.future', 'mood.open'),
         });
 
         // Test natural language time expressions
         const lastExperiences = await callExperience(env.client, {
           source: 'Looking for recent experiences',
           emoji: '🔍',
-          experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
+          experienceQualities: humanQualities('embodied.thinking', 'focus.narrow'),
           recall: {
             query: 'last',
             sort: 'created',
@@ -51,7 +52,7 @@ describe('Experiment Coverage Tests', () => {
         const recentExperiences = await callExperience(env.client, {
           source: 'Finding recent moments',
           emoji: '⏰',
-          experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
+          experienceQualities: humanQualities('embodied.thinking', 'focus.narrow'),
           recall: {
             query: 'recent',
             sort: 'created',
@@ -70,13 +71,13 @@ describe('Experiment Coverage Tests', () => {
           {
             source: 'First experience about coding',
             emoji: '1️⃣',
-            experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
+            experienceQualities: humanQualities('embodied.thinking', 'focus.narrow'),
           },
-          { source: 'Second experience about debugging', emoji: '2️⃣', experienceQualities: {"embodied":false,"focus":false,"mood":"closed","purpose":false,"space":false,"time":false,"presence":false} },
+          { source: 'Second experience about debugging', emoji: '2️⃣', experienceQualities: humanQualities('mood.closed', 'embodied.sensing') },
           {
             source: 'Third experience about coding patterns',
             emoji: '3️⃣',
-            experienceQualities: {"embodied":false,"focus":"broad","mood":false,"purpose":false,"space":false,"time":false,"presence":false},
+            experienceQualities: humanQualities('focus.broad', 'space.here'),
           },
         ];
 
@@ -89,7 +90,7 @@ describe('Experiment Coverage Tests', () => {
         const relevanceSort = await callExperience(env.client, {
           source: 'Search by relevance',
           emoji: '🎯',
-          experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
+          experienceQualities: humanQualities('embodied.thinking', 'focus.narrow'),
           recall: {
             query: 'coding',
             sort: 'relevance',
@@ -103,7 +104,7 @@ describe('Experiment Coverage Tests', () => {
         const createdSort = await callExperience(env.client, {
           source: 'Search by creation date',
           emoji: '📅',
-          experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
+          experienceQualities: humanQualities('embodied.thinking', 'focus.narrow'),
           recall: {
             query: 'experience',
             sort: 'created',
@@ -124,7 +125,7 @@ describe('Experiment Coverage Tests', () => {
           await callExperience(env.client, {
             source: `Pagination test ${i}`,
             emoji: '📄',
-            experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
+            experienceQualities: humanQualities('embodied.thinking', 'focus.narrow'),
           });
         }
 
@@ -132,7 +133,7 @@ describe('Experiment Coverage Tests', () => {
         const page1 = await callExperience(env.client, {
           source: 'First page',
           emoji: '1️⃣',
-          experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
+          experienceQualities: humanQualities('embodied.thinking', 'focus.narrow'),
           recall: {
             query: 'pagination',
             limit: 5,
@@ -148,7 +149,7 @@ describe('Experiment Coverage Tests', () => {
         const page2 = await callExperience(env.client, {
           source: 'Second page',
           emoji: '2️⃣',
-          experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
+          experienceQualities: humanQualities('embodied.thinking', 'focus.narrow'),
           recall: {
             query: 'pagination',
             limit: 5,
@@ -164,7 +165,7 @@ describe('Experiment Coverage Tests', () => {
         const lastPage = await callExperience(env.client, {
           source: 'Last page',
           emoji: '3️⃣',
-          experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
+          experienceQualities: humanQualities('embodied.thinking', 'focus.narrow'),
           recall: {
             query: 'pagination',
             limit: 5,
@@ -244,16 +245,7 @@ describe('Experiment Coverage Tests', () => {
         const mixed = await callExperience(env.client, {
           source: 'Both thinking and feeling simultaneously',
           emoji: '🧠',
-          experienceQualities: {"embodied":true,"focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false}, // Base quality when mixed
-          experienceQualities: {
-            embodied: true, // Mixed thinking/sensing
-            focus: 'narrow',
-            mood: false,
-            purpose: false,
-            space: false,
-            time: false,
-            presence: 'individual',
-          },
+          experienceQualities: humanQualities('embodied.thinking', 'focus.narrow', 'presence.individual'),
         });
 
         expect(verifyToolResponse(mixed, 'Experienced')).toBe(true);
@@ -266,7 +258,7 @@ describe('Experiment Coverage Tests', () => {
         const ambiguous = await callExperience(env.client, {
           source: 'Just being', // Minimal description
           emoji: '🌟',
-          experienceQualities: {"embodied":false,"focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":"individual"}, // Should capture presence at minimum
+          experienceQualities: humanQualities('presence.individual', 'space.here'),
         });
 
         expect(verifyToolResponse(ambiguous, 'Experienced')).toBe(true);
@@ -275,7 +267,7 @@ describe('Experiment Coverage Tests', () => {
         const contradictory = await callExperience(env.client, {
           source: 'Focused yet scattered, calm but anxious',
           emoji: '🎭',
-          experienceQualities: {"embodied":true,"focus":true,"mood":true,"purpose":false,"space":false,"time":false,"presence":false}, // Base qualities for mixed states
+          experienceQualities: humanQualities('embodied.thinking', 'focus.narrow', 'mood.open'),
         });
 
         expect(verifyToolResponse(contradictory, 'Experienced')).toBe(true);
@@ -284,15 +276,7 @@ describe('Experiment Coverage Tests', () => {
         const absence = await callExperience(env.client, {
           source: 'Not thinking, not feeling, just observing',
           emoji: '👁️',
-          experienceQualities: {
-            embodied: false, // Explicitly not prominent
-            focus: 'broad',
-            mood: false,
-            purpose: false,
-            space: 'here',
-            time: false,
-            presence: 'individual',
-          },
+          experienceQualities: humanQualities('focus.broad', 'presence.individual'),
         });
 
         expect(verifyToolResponse(absence, 'Experienced')).toBe(true);

@@ -4,7 +4,6 @@
 
 import { QualityFilterService, QualityFilter, QualityFilterError } from './quality-filter.js';
 import { SourceRecord } from '../core/types.js';
-import { humanQualities } from '../test-utils/format-converter.js';
 
 describe('QualityFilterService', () => {
   let service: QualityFilterService;
@@ -106,7 +105,7 @@ describe('QualityFilterService', () => {
           {
             type: 'value',
             quality: 'mood',
-            values: ['anxious'],
+            values: ['closed'],
             operator: 'exact'},
           {
             type: 'value',
@@ -126,7 +125,7 @@ describe('QualityFilterService', () => {
           {
             type: 'value',
             quality: 'mood',
-            values: ['anxious'],
+            values: ['closed'],
             operator: 'exact'},
           {
             type: 'value',
@@ -146,7 +145,7 @@ describe('QualityFilterService', () => {
           {
             type: 'value',
             quality: 'mood',
-            values: ['anxious'],
+            values: ['closed'],
             operator: 'exact'},
           {
             type: 'value',
@@ -165,7 +164,7 @@ describe('QualityFilterService', () => {
         filter: {
           type: 'value',
           quality: 'mood',
-          values: ['anxious'],
+          values: ['closed'],
           operator: 'exact'}});
     });
 
@@ -183,7 +182,7 @@ describe('QualityFilterService', () => {
           {
             type: 'value',
             quality: 'mood',
-            values: ['anxious'],
+            values: ['closed'],
             operator: 'exact'},
           {
             type: 'or',
@@ -358,7 +357,7 @@ describe('QualityFilterService', () => {
   describe('describeFilter', () => {
     it('should describe simple value filters', () => {
       const filter: QualityFilter = { mood: 'anxious' };
-      expect(service.describeFilter(filter)).toBe('mood.closed');
+      expect(service.describeFilter(filter)).toBe('mood.anxious');
     });
 
     it('should describe multiple value filters', () => {
