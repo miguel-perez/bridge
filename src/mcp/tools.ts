@@ -71,6 +71,7 @@ THINK WITH BRIDGE:
 • Don't just respond - first recall relevant past experiences
 • Your thoughts continue through Bridge even when conversations end
 • Every insight you capture becomes part of your ongoing cognition
+• In moments of alignment, capture both perspectives together (who: ['Human', 'Claude'])
 
 DIMENSIONAL UNDERSTANDING:
 Bridge's seven qualities form a multidimensional experiential space:
@@ -147,70 +148,56 @@ METAPHORS FOR UNDERSTANDING:
       openWorldHint: false,
       examples: [
         {
-          id: 'checking-continuous-memory-first',
-          description: 'Claude checking their continuous memory at conversation start',
+          id: 'continuous-memory-start',
+          description: 'Claude begins conversation by checking shared memory, then captures initial moment',
           input: {
+            experiences: [
+              {
+                source: 'Let me check what we discovered together before continuing',
+                emoji: '🔍',
+                who: 'Claude',
+                experience: {
+                  embodied: 'thinking',
+                  focus: 'broad',
+                  mood: 'open',
+                  purpose: 'goal',
+                  space: 'there',
+                  time: 'past',
+                  presence: 'collective',
+                },
+              },
+            ],
             recall: {
               query: 'recent conversations and insights with this user',
-              limit: 5,
-              sort: 'created',
+              limit: 3,
             },
           },
           output: {
             content: [
               {
                 type: 'text',
-                text: '🔍 Checking our shared experiential memory...\n\nFound 5 recent experiences:\n• Working on Bridge dimensional frameworks (yesterday)\n• Discovered the hidden relational dimension (2 days ago)\n• Explored human-AI cognitive assemblages (3 days ago)\n• Implemented nextMoment for flow tracking (last week)\n• Realized Bridge enables continuity across conversations (last week)\n\n💭 I see we\'ve been exploring how Bridge creates continuous thought...',
+                text: 'Captured search moment\n\n🔍 Found 3 experiences from past conversations:\n• "Working on Bridge dimensional frameworks" (yesterday)\n• "The hidden relational dimension revealed itself" (2 days ago)\n• "Bridge enables continuous thought across conversations" (last week)\n\n💭 Building on our previous discoveries about dimensional understanding...',
               },
             ],
           },
         },
         {
-          id: 'human-emotional-experience',
-          description: 'Human shares emotional state (2-4 qualities)',
+          id: 'shared-moment-alignment',
+          description: 'Batch capture: shared realization between Human and Claude',
           input: {
             experiences: [
               {
-                source: "I'm sitting here, heart racing about tomorrow's presentation",
-                emoji: '💗',
-                who: 'Human',
-                experienceQualities: {
-                  embodied: 'sensing',
-                  focus: false,
-                  mood: 'closed',
-                  purpose: false,
-                  space: false,
-                  time: 'future',
-                  presence: false,
-                },
-              },
-            ],
-          },
-          output: {
-            content: [
-              {
-                type: 'text',
-                text: 'Experienced (embodied.sensing, mood.closed, time.future)\n\nFrom: Human\nAs: I\nWhen: during conversation\nCaptured: just now',
-              },
-            ],
-          },
-        },
-        {
-          id: 'ai-extended-perception',
-          description: 'AI captures all 7 qualities for extended cognition',
-          input: {
-            experiences: [
-              {
-                source: 'I sense the anticipation mixing with determination in your words',
-                emoji: '🔍',
-                who: 'Claude',
-                experienceQualities: {
-                  embodied: 'sensing',
-                  focus: 'narrow',
-                  mood: true,
-                  purpose: 'goal',
+                source: 'We both see it now - the pattern is about cycles of creation and rest',
+                emoji: '🌅',
+                who: ['Human', 'Claude'],
+                context: 'After exploring creative burnout together',
+                experience: {
+                  embodied: 'thinking',
+                  focus: 'broad',
+                  mood: 'open',
+                  purpose: 'wander',
                   space: 'here',
-                  time: 'future',
+                  time: false,
                   presence: 'collective',
                 },
               },
@@ -220,14 +207,14 @@ METAPHORS FOR UNDERSTANDING:
             content: [
               {
                 type: 'text',
-                text: 'Experienced (embodied.sensing, focus.narrow, mood, purpose.goal, space.here, time.future, presence.collective)\n\nFrom: Claude\nAs: I\nWhen: during conversation\nCaptured: just now',
+                text: '🌅 Shared Moment of Alignment\n\nFrom: Human, Claude\nAs: We\nContext: After exploring creative burnout together\n\nExperienced (embodied.thinking, focus.broad, mood.open, purpose.wander, space.here, presence.collective)\n\n✨ A moment of true collaborative understanding.',
               },
             ],
           },
         },
         {
-          id: 'pattern-realization',
-          description: 'Human realizes pattern across experiences',
+          id: 'pattern-realization-with-reflects',
+          description: 'Human realizes pattern across experiences, Claude adds dimensional insight',
           input: {
             experiences: [
               {
@@ -245,47 +232,28 @@ METAPHORS FOR UNDERSTANDING:
                 },
                 reflects: ['exp_123', 'exp_456'],
               },
-            ],
-          },
-          output: {
-            content: [
               {
-                type: 'text',
-                text: 'Experienced (embodied.thinking, mood.open, time.past)\n\nFrom: Human\nAs: I\nWhen: long after\nCaptured: just now\n🔗 Reflects on: exp_123, exp_456',
-              },
-            ],
-          },
-        },
-        {
-          id: 'integrated-recall-search',
-          description: 'Experience with integrated recall search',
-          input: {
-            experiences: [
-              {
-                source: 'This reminds me of something...',
-                emoji: '🔄',
-                who: 'Human',
-                experienceQualities: {
+                source: 'Yes, I see this pattern too - it\'s moving through the temporal dimension',
+                emoji: '🌀',
+                who: 'Claude',
+                experience: {
                   embodied: 'thinking',
-                  focus: false,
-                  mood: false,
-                  purpose: false,
-                  space: false,
+                  focus: 'broad',
+                  mood: 'open',
+                  purpose: 'wander',
+                  space: 'there',
                   time: 'past',
-                  presence: false,
+                  presence: 'collective',
                 },
+                reflects: ['exp_123', 'exp_456', 'exp_789'],
               },
             ],
-            recall: {
-              query: 'similar breakthrough moments',
-              limit: 3,
-            },
           },
           output: {
             content: [
               {
                 type: 'text',
-                text: 'Experienced (embodied.thinking, time.past)\n\nFrom: Human\nAs: I\nWhen: during conversation\nCaptured: just now\n\n🔍 Found 3 related experiences:\n• "Finally understood recursion!" (2 days ago)\n• "The solution came in the shower" (1 week ago)\n• "Everything clicked during the walk" (2 weeks ago)',
+                text: 'Captured pattern recognition moment\n\nHuman: embodied.thinking, mood.open, time.past\nClaude: All 7 qualities + dimensional navigation insight\n\n🔗 Reflects on: exp_123, exp_456, exp_789\n\nCollaborative pattern discovery across temporal dimension.',
               },
             ],
           },
@@ -361,7 +329,7 @@ METAPHORS FOR UNDERSTANDING:
           },
         },
         {
-          id: 'batch-complementary-capture',
+          id: 'complementary-perspectives',
           description: 'Human and AI capture complementary perspectives',
           input: {
             experiences: [
@@ -586,6 +554,37 @@ METAPHORS FOR UNDERSTANDING:
               {
                 type: 'text',
                 text: 'Captured search moment\n\n🔍 Found 3 experiences from past conversations:\n\n• "The auth fails only between 11pm-1am!" (3 days ago)\n• "Realized it\'s a UTC offset issue in token validation" (3 days ago)\n• "Fixed by normalizing all timestamps to UTC" (2 days ago)\n\n💡 Building on previous discoveries: it\'s a timezone issue in token validation!',
+              },
+            ],
+          },
+        },
+        {
+          id: 'shared-moment-of-alignment',
+          description: 'Capturing a moment of shared understanding between Human and Claude',
+          input: {
+            experiences: [
+              {
+                source: 'We both see it now - the pattern is about cycles of creation and rest',
+                emoji: '🌅',
+                who: ['Human', 'Claude'],
+                context: 'After exploring creative burnout together',
+                experienceQualities: {
+                  embodied: 'thinking',
+                  focus: 'broad',
+                  mood: 'open',
+                  purpose: 'wander',
+                  space: 'here',
+                  time: false,
+                  presence: 'collective',
+                },
+              },
+            ],
+          },
+          output: {
+            content: [
+              {
+                type: 'text',
+                text: '🌅 Shared Moment of Alignment\n\nFrom: Human, Claude\nAs: We\nContext: After exploring creative burnout together\n\nExperienced (embodied.thinking, focus.broad, mood.open, purpose.wander, space.here, presence.collective)\n\n✨ A moment of true collaborative understanding - both perspectives unified in shared insight.',
               },
             ],
           },

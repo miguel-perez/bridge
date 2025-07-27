@@ -57,7 +57,7 @@ describe('MCP Tools', () => {
       expect(experienceTool.idempotentHint).toBe(false);
       expect(experienceTool.openWorldHint).toBe(false);
       expect(experienceTool.inputSchema).toBeDefined();
-      expect(experienceTool.examples).toHaveLength(13);
+      expect(experienceTool.examples).toHaveLength(12);
     });
 
     it('should have reconsider tool with correct properties', async () => {
@@ -120,14 +120,14 @@ describe('MCP Tools', () => {
       // Experience tool examples
       const experienceTool = tools.find((t) => t.name === 'experience');
       const expExampleIds = experienceTool.examples.map((e) => e.id);
-      expect(expExampleIds).toContain('human-emotional-experience');
-      expect(expExampleIds).toContain('ai-extended-perception');
-      expect(expExampleIds).toContain('pattern-realization');
-      expect(expExampleIds).toContain('integrated-recall-search');
+      expect(expExampleIds).toContain('continuous-memory-start');
+      expect(expExampleIds).toContain('shared-moment-alignment');
+      expect(expExampleIds).toContain('pattern-realization-with-reflects');
+      // Remove integrated-recall-search test
       expect(expExampleIds).toContain('reasoning-chain-next-moment');
       expect(expExampleIds).toContain('context-for-atomicity');
-      expect(expExampleIds).toContain('batch-complementary-capture');
-      expect(expExampleIds).toContain('mixed-qualities-true');
+      expect(expExampleIds).toContain('complementary-perspectives');
+      // Remove mixed-qualities-true test
 
       // Reconsider tool examples
       const reconsiderTool = tools.find((t) => t.name === 'reconsider');
