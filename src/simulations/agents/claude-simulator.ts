@@ -7,6 +7,7 @@
 
 import OpenAI from 'openai';
 import { SimulationAgent, SimulationScenario, SimulationTurn, BridgeToolCall } from '../types.js';
+import { getTools } from '../../mcp/tools.js';
 
 export class ClaudeSimulator implements SimulationAgent {
   readonly role = 'claude' as const;
@@ -23,6 +24,11 @@ export class ClaudeSimulator implements SimulationAgent {
     const systemPrompt = this.buildSystemPrompt(scenario);
     const conversationHistory = this.formatHistory(history);
     
+    // Get actual tool descriptions from tools.ts
+    const tools = await getTools();
+    const experienceTool = tools.find(t => t.name === 'experience');
+    const reconsiderTool = tools.find(t => t.name === 'reconsider');
+    
     const response = await this.openai.chat.completions.create({
       model: 'gpt-4o-mini',
       max_tokens: 1500,
@@ -36,17 +42,15 @@ export class ClaudeSimulator implements SimulationAgent {
           role: 'user',
           content: `${conversationHistory}
 
-Continue the conversation as Claude. When you notice experiential moments, use Bridge tools to capture them.
+Continue the conversation as Claude.
 
-As an AI, you perceive all 7 experiential qualities. Sometimes you may want to:
-- Add context for self-contained understanding
-- Search for related experiences using recall
-- Declare your next experiential state with nextMoment
+AVAILABLE TOOLS:
 
-IMPORTANT: Always use the switchboard format with all 7 qualities as objects:
-{"embodied": "thinking", "focus": "narrow", "mood": "open", "purpose": "goal", "space": "here", "time": false, "presence": "collective"}
+1. experience - ${experienceTool?.description || ''}
 
-NEVER use the old array format like ["mood.closed", "embodied.sensing"]
+2. reconsider - ${reconsiderTool?.description || ''}
+
+Use tools when appropriate for the conversation.
 
 Format your response EXACTLY as:
 THOUGHT: [Your internal reflection]
@@ -80,9 +84,7 @@ Example Bridge calls (always use switchboard format with all 7 qualities):
 
 ${scenario.aiContext}
 
-Your goal: ${scenario.objectives.ai}
-
-You have access to Bridge tools for capturing experiential moments. As an AI, you naturally perceive all 7 experiential qualities, while humans typically focus on 2-4 most prominent ones.`;
+Your goal: ${scenario.objectives.ai}`;
   }
   
   private formatHistory(history: SimulationTurn[]): string {

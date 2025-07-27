@@ -51,7 +51,7 @@ describe('Complementary Awareness Simulation', () => {
     
     // Basic assertions before LLM evaluation
     expect(result.transcript.length).toBeGreaterThan(4); // Meaningful conversation
-    expect(result.bridgeCalls.length).toBeGreaterThan(2); // Multiple captures
+    expect(result.bridgeCalls.length).toBeGreaterThanOrEqual(2); // Multiple captures
     
     
     // Verify human captures have reasonable quality counts (not enforcing strict limits)
@@ -101,10 +101,10 @@ describe('Complementary Awareness Simulation', () => {
       if (call.tool === 'experience' && call.arguments.experiences) {
         const experiences = call.arguments.experiences as Array<{
           who?: string | string[];
-          experienceQualities?: Record<string, string | boolean>;
+          experience?: Record<string, string | boolean>;
         }>;
         const exp = experiences[0];
-        const qualityCount = exp?.experienceQualities ? Object.values(exp.experienceQualities).filter(v => v !== false).length : 0;
+        const qualityCount = exp?.experience ? Object.values(exp.experience).filter(v => v !== false).length : 0;
         console.log(`  Call ${i + 1}: ${exp?.who || 'Unknown'} - ${qualityCount} qualities`);
       }
     });

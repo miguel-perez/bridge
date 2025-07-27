@@ -192,11 +192,11 @@ export class SimulationRunner {
       if (call.tool === 'experience' && call.arguments.experiences) {
         const experiences = call.arguments.experiences as Array<{
           who?: string | string[];
-          experienceQualities?: Record<string, string | boolean>;
+          experience?: Record<string, string | boolean>;
         }>;
         
         for (const exp of experiences) {
-          const qualityCount = this.countQualities(exp.experienceQualities || {});
+          const qualityCount = this.countQualities(exp.experience || {});
           
           if (exp.who === 'Claude') {
             ai.push(qualityCount);

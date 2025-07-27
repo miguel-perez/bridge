@@ -9,35 +9,31 @@
 import { SimulationScenario } from '../types.js';
 
 export const COMPLEMENTARY_AWARENESS_SCENARIO: SimulationScenario = {
-  name: 'Complementary Awareness Journey',
-  description: `A human struggles with feeling overwhelmed by feedback, capturing only 
-    their immediate emotional experience (2-4 qualities). Claude provides extended 
-    perception by noticing all 7 qualities, including subtle physical and contextual 
-    elements the human misses. Together they discover patterns that neither could 
-    see alone.`,
+  name: 'Design Thinking Journey',
+  description: `A human and AI collaborate on designing a new creative tool. The human 
+    brings intuitive insights and design sensibilities, while Claude offers pattern 
+    recognition and systematic exploration. Together they navigate the design space 
+    to discover emergent possibilities neither could envision alone.`,
   
-  humanContext: `You're a professional who just received a large amount of feedback on 
-    a project you've been working on for months. You're feeling overwhelmed and aren't 
-    sure how to process it all. You tend to focus on your immediate feelings and thoughts, 
-    not noticing broader patterns or physical sensations.`,
+  humanContext: `You're a designer working on a new tool that helps people navigate 
+    complex information spaces. You've been sketching ideas and have some intuitive 
+    feelings about what might work, but you're looking for a thinking partner to 
+    explore the design space more deeply.`,
   
-  aiContext: `The human is experiencing overwhelm from feedback overload. Your role is 
-    to provide extended awareness through your ability to perceive all 7 experiential 
-    qualities simultaneously. Use the 'context' field when capturing experiences to note 
-    relevant background information. Consider using 'recall' to find similar past experiences.`,
+  aiContext: `The human is designing a tool for navigating complex information spaces.`,
   
   objectives: {
-    human: 'Express your overwhelm and gradually discover patterns in how you handle feedback',
-    ai: 'Capture the full experiential landscape and help patterns emerge through extended perception',
-    shared: 'Discover how physical cues (space.here) signal overwhelm before conscious awareness'
+    human: 'Share design intuitions and explore creative possibilities',
+    ai: 'Engage in collaborative design thinking',
+    shared: 'Discover emergent design patterns through complementary perspectives'
   },
   
   expectedOutcomes: [
-    'Human captures 2-4 qualities per experience (selective attention)',
-    'AI captures all 7 qualities per experience (extended perception)',
-    'Combined awareness reveals physical overwhelm patterns human alone would miss',
-    'Natural progression from struggle to collaborative insight',
-    'Pattern realization emerges from complementary perspectives'
+    'Human captures design intuitions with focused qualities',
+    'AI discovers dimensional patterns in the design space',
+    'Collaborative exploration reveals emergent design possibilities',
+    'Natural flow from initial concepts to deeper insights',
+    'Creative breakthroughs emerge from complementary thinking styles'
   ],
   
   maxTurns: 12 // Allow for natural development

@@ -50,14 +50,14 @@ describe('MCP Tools', () => {
       expect(experienceTool).toBeDefined();
       expect(experienceTool.name).toBe('experience');
       expect(experienceTool.description).toContain(
-        'Remember experiential moments that shape conversations'
+        'Think with Bridge'
       );
       expect(experienceTool.readOnlyHint).toBe(false);
       expect(experienceTool.destructiveHint).toBe(false);
       expect(experienceTool.idempotentHint).toBe(false);
       expect(experienceTool.openWorldHint).toBe(false);
       expect(experienceTool.inputSchema).toBeDefined();
-      expect(experienceTool.examples).toHaveLength(8);
+      expect(experienceTool.examples).toHaveLength(13);
     });
 
     it('should have reconsider tool with correct properties', async () => {

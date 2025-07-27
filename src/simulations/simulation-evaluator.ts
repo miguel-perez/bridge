@@ -158,11 +158,11 @@ Return ONLY the JSON object, no additional text or explanation.`;
       if (call.tool === 'experience' && call.arguments.experiences) {
         const experiences = call.arguments.experiences as Array<{
           who?: string | string[];
-          experienceQualities?: Record<string, string | boolean>;
+          experience?: Record<string, string | boolean>;
         }>;
         
         for (const exp of experiences) {
-          const qualityCount = this.countQualities(exp.experienceQualities || {});
+          const qualityCount = this.countQualities(exp.experience || {});
           
           const whoArray = Array.isArray(exp.who) ? exp.who : [exp.who || 'Human'];
           

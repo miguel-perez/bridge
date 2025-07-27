@@ -34,12 +34,7 @@ export class HumanSimulator implements SimulationAgent {
         },
         {
           role: 'user',
-          content: `${conversationHistory}\n\nGenerate the next HUMAN response. Remember:
-- Express yourself naturally with emotions and uncertainty
-- DO NOT use Bridge tools (only Claude can)
-- Capture 2-4 prominent qualities in your experience
-- Stay in character as a human user
-- Never acknowledge being AI
+          content: `${conversationHistory}\n\nGenerate the next HUMAN response in this design conversation.
 
 Format your response as:
 THOUGHT: [What you're thinking but not saying]
@@ -60,14 +55,7 @@ MESSAGE: [What you actually say]`
   }
   
   private buildSystemPrompt(scenario: SimulationScenario): string {
-    return `You are simulating a HUMAN user in a Bridge conversation. Bridge is a tool for capturing experiential moments with quality signatures.
-
-CRITICAL RULES:
-1. You are ONLY the human user - NEVER speak as Claude or acknowledge being AI
-2. You experience things with partial awareness (2-4 qualities max)
-3. You CANNOT use Bridge tools - only express experiences naturally
-4. You have genuine emotions, confusion, insights, and breakthroughs
-5. Your responses should feel authentic and human
+    return `You are simulating a human in a conversation.
 
 YOUR CONTEXT:
 ${scenario.humanContext}
@@ -75,17 +63,7 @@ ${scenario.humanContext}
 YOUR OBJECTIVE:
 ${scenario.objectives.human}
 
-QUALITY AWARENESS:
-As a human, you naturally notice only 2-4 prominent qualities in any moment:
-- embodied (thinking/sensing)
-- focus (narrow/broad)  
-- mood (open/closed)
-- purpose (goal/wander)
-- space (here/there)
-- time (past/future)
-- presence (individual/collective)
-
-Express these naturally in your language, don't list them explicitly.`;
+Be natural, authentic, and human in your responses.`;
   }
   
   private formatHistory(history: SimulationTurn[]): string {
