@@ -159,16 +159,23 @@ describe('ExperienceHandler', () => {
         .mockResolvedValueOnce(mockResults[0])
         .mockResolvedValueOnce(mockResults[1]);
 
+      // Mock recall service to return empty results for automatic recall
+      mockRecallService.search.mockResolvedValue({
+        results: [],
+        clusters: undefined,
+        stats: undefined
+      });
+
       const result = await handler.handle({
         experiences: [
           { source: 'Experience 1', emoji: '✨', experienceQualities: {"embodied":false,"focus":false,"mood":"open","purpose":false,"space":false,"time":false,"presence":false} },
           { source: 'Experience 2', emoji: '😔', experienceQualities: {"embodied":false,"focus":false,"mood":"closed","purpose":false,"space":false,"time":false,"presence":false} }]});
 
       // Check content
-      expect(result.content).toEqual([
-        {
-          type: 'text',
-          text: 'Batch experienced'}]);
+      expect(result.content[0]).toEqual({
+        type: 'text',
+        text: 'Batch experienced'
+      });
       // No flow state anymore
 
       expect(mockExperienceService.rememberExperience).toHaveBeenCalledTimes(2);
@@ -274,7 +281,9 @@ describe('ExperienceHandler', () => {
         experiences: [{ source: 'I feel anxious', emoji: '😟' }]});
 
       expect(result.content[0].text).toContain('Experienced: test');
-      expect(result.content[0].text).toContain('Similar experiences found:');
+      // With automatic recall, related experiences are shown in content[1]
+      expect(result.content.length).toBeGreaterThan(1);
+      expect(result.content[1].text).toContain('Related experiences:');
     });
 
     it('should handle long similar experience content', async () => {
@@ -314,7 +323,9 @@ describe('ExperienceHandler', () => {
         experiences: [{ source: 'I feel happy', emoji: '😊' }]});
 
       expect(result.content[0].text).toContain('Experienced: test');
-      expect(result.content[0].text).toContain('Similar experiences found:');
+      // With automatic recall, related experiences are shown in content[1]
+      expect(result.content.length).toBeGreaterThan(1);
+      expect(result.content[1].text).toContain('Related experiences:');
     });
 
     it('should not include similar experiences when none found', async () => {

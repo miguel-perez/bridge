@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from '@jest/globals';
 import { search, type RecallInput } from './search.js';
-import { saveSource } from '../core/storage.js';
+import { saveSource, clearTestStorage } from '../core/storage.js';
 import { Source } from '../core/types.js';
 import { humanQualities } from '../test-utils/format-converter.js';
 
@@ -8,7 +8,7 @@ import { humanQualities } from '../test-utils/format-converter.js';
 
 describe('Recall Relevance Scoring', () => {
   beforeEach(async () => {
-    // await clearTestStorage(); // This line was removed as per the new_code
+    await clearTestStorage();
   });
 
   it('should calculate text relevance correctly', async () => {
@@ -191,7 +191,7 @@ describe('Recall Relevance Scoring', () => {
 
 describe('Date Range Filtering', () => {
   beforeEach(async () => {
-    // await clearTestStorage(); // This line was removed as per the new_code
+    await clearTestStorage();
   });
 
   it('should handle same-day range filtering correctly', async () => {
@@ -403,7 +403,7 @@ describe('GroupBy Parameter Removal', () => {
   });
 
   it('should handle search without groupBy parameter', async () => {
-    // await clearTestStorage(); // This line was removed as per the new_code
+    await clearTestStorage();
 
     const record: Source = {
       id: 'groupby_test_1',
@@ -435,13 +435,13 @@ describe('GroupBy Parameter Removal', () => {
 
 describe('Group By Functionality', () => {
   beforeEach(async () => {
-    // await clearTestStorage(); // This line was removed as per the new_code
+    await clearTestStorage();
 
     // Create test data with different who values, dates, qualities, and perspectives
     const testRecords: Array<Source> = [
       {
         id: 'group_test_1',
-        source: 'Test record by Miguel on day 1',
+        source: 'Group_Test record by Miguel on day 1',
         emoji: '👤',
         who: 'Group_Test_Miguel',
         perspective: 'I',
@@ -452,7 +452,7 @@ describe('Group By Functionality', () => {
       },
       {
         id: 'group_test_2',
-        source: 'Test record by Miguel on day 2',
+        source: 'Group_Test record by Miguel on day 2',
         emoji: '👥',
         who: 'Group_Test_Miguel',
         perspective: 'we',
@@ -463,7 +463,7 @@ describe('Group By Functionality', () => {
       },
       {
         id: 'group_test_3',
-        source: 'Test record by Claude on day 1',
+        source: 'Group_Test record by Claude on day 1',
         emoji: '🤖',
         who: 'Group_Test_Claude',
         perspective: 'I',
@@ -474,7 +474,7 @@ describe('Group By Functionality', () => {
       },
       {
         id: 'group_test_4',
-        source: 'Test record by Claude on day 2',
+        source: 'Group_Test record by Claude on day 2',
         emoji: '💬',
         who: 'Group_Test_Claude',
         perspective: 'you',
@@ -493,15 +493,12 @@ describe('Group By Functionality', () => {
   it('should group by who correctly', async () => {
     const results = await search({
       group_by: 'who',
-      query: 'Group_Test',  // Filter to only test data
     });
 
     expect(results.clusters).toBeDefined();
     expect(results.clusters!.length).toBe(2); // Miguel and Claude
 
-    // Should be sorted by count (both have 2 experiences)
-    expect(results.clusters).toBeDefined();
-      const clusters = results.clusters!;
+    const clusters = results.clusters!;
     expect(clusters.some((c) => c.summary.includes('Group_Test_Miguel (2 experience'))).toBe(true);
     expect(clusters.some((c) => c.summary.includes('Group_Test_Claude (2 experience'))).toBe(true);
 
@@ -518,7 +515,6 @@ describe('Group By Functionality', () => {
   it('should group by date correctly', async () => {
     const results = await search({
       group_by: 'date',
-      query: 'Group_Test',  // Filter to only test data
     });
 
     expect(results.clusters).toBeDefined();
@@ -538,7 +534,6 @@ describe('Group By Functionality', () => {
   it('should group by qualities correctly', async () => {
     const results = await search({
       group_by: 'qualities',
-      query: 'Group_Test',  // Filter to only test data
     });
 
     expect(results.clusters).toBeDefined();
@@ -561,7 +556,6 @@ describe('Group By Functionality', () => {
   it('should group by perspective correctly', async () => {
     const results = await search({
       group_by: 'perspective',
-      query: 'Group_Test',  // Filter to only test data
     });
 
     expect(results.clusters).toBeDefined();
@@ -578,7 +572,6 @@ describe('Group By Functionality', () => {
   it('should handle group_by: none as flat results', async () => {
     const results = await search({
       group_by: 'none',
-      query: 'Group_Test',  // Filter to only test data
     });
 
     expect(results.clusters).toBeUndefined();
