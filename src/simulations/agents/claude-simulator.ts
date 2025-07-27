@@ -73,14 +73,14 @@ Example minimal experience tool call:
       "source": "Exploring design patterns together",
       "emoji": "🔍",
       "who": "Claude",
-      "experience": {
-        "embodied": "thinking",
-        "focus": "broad",
-        "mood": "open",
-        "purpose": "goal",
-        "space": "here",
+      "experienceQualities": {
+        "embodied": "exploring ideas through analysis",
+        "focus": "considering multiple design patterns",
+        "mood": "feeling open to possibilities",
+        "purpose": "working toward better understanding",
+        "space": "fully present in this exploration",
         "time": false,
-        "presence": "collective"
+        "presence": "thinking together with you"
       }
     }]
   }

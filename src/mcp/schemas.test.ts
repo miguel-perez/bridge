@@ -197,6 +197,28 @@ describe('Schema Validation', () => {
       expect(result.success).toBe(false);
     });
 
+    it('should validate with sentence-based qualities', () => {
+      const input = {
+        experiences: [
+          {
+            source: 'Working through this complex problem',
+            emoji: '🤔',
+            experienceQualities: {
+              embodied: 'my mind is racing through possibilities',
+              focus: 'narrowing down to the core issue',
+              mood: 'feeling tense but determined',
+              purpose: 'need to solve this before the deadline',
+              space: 'stuck at my desk with this problem',
+              time: 'aware of time slipping away',
+              presence: 'wrestling with this alone',
+            },
+          },
+        ],
+      };
+      const result = ExperienceInputSchema.safeParse(input);
+      expect(result.success).toBe(true);
+    });
+
     it('should reject invalid reflects field', () => {
       const input = {
         experiences: [
@@ -268,19 +290,19 @@ describe('Schema Validation', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should accept true for mixed/general prominent qualities', () => {
+    it('should accept sentence-based qualities', () => {
       const input = {
         experiences: [
           {
             source: 'Experience with mixed qualities',
             emoji: '🌊',
             experienceQualities: {
-              embodied: true, // Prominent but mixed (both thinking and sensing)
+              embodied: 'feeling both the physical tension and mental clarity', // Mixed embodied experience
               focus: false,
-              mood: true, // Prominent but mixed (both open and closed)
+              mood: 'oscillating between excitement and apprehension', // Mixed mood
               purpose: false,
               space: false,
-              time: true, // Prominent but mixed (both past and future)
+              time: 'caught between memories and possibilities', // Mixed time orientation
               presence: false,
             },
           },

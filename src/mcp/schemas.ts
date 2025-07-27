@@ -102,30 +102,29 @@ export const QualityFilterSchema = z
 // Experience qualities schema - complete switchboard
 export const ExperienceQualitiesSchema = z.object({
   embodied: z
-    .union([z.literal(false), z.literal(true), z.literal('thinking'), z.literal('sensing')])
-    .describe('Embodied experience: false (not prominent), true (mixed), thinking, or sensing'),
+    .union([z.literal(false), z.string().min(1)])
+    .describe('Embodied experience: false (not prominent) or sentence in experiencer\'s voice (e.g., "my mind races through possibilities", "feeling it in my bones")'),
   focus: z
-    .union([z.literal(false), z.literal(true), z.literal('narrow'), z.literal('broad')])
-    .describe('Focus quality: false (not prominent), true (mixed), narrow, or broad'),
+    .union([z.literal(false), z.string().min(1)])
+    .describe('Focus quality: false (not prominent) or sentence describing attention (e.g., "zeroing in on this detail", "taking in the whole scene")'),
   mood: z
-    .union([z.literal(false), z.literal(true), z.literal('open'), z.literal('closed')])
-    .describe('Mood quality: false (not prominent), true (mixed), open, or closed'),
+    .union([z.literal(false), z.string().min(1)])
+    .describe('Mood quality: false (not prominent) or sentence describing emotional atmosphere (e.g., "open to whatever emerges", "shutting down, need space")'),
   purpose: z
-    .union([z.literal(false), z.literal(true), z.literal('goal'), z.literal('wander')])
-    .describe('Purpose quality: false (not prominent), true (mixed), goal, or wander'),
+    .union([z.literal(false), z.string().min(1)])
+    .describe('Purpose quality: false (not prominent) or sentence describing directional momentum (e.g., "pushing toward the deadline", "wandering through ideas")'),
   space: z
-    .union([z.literal(false), z.literal(true), z.literal('here'), z.literal('there')])
-    .describe('Space quality: false (not prominent), true (mixed), here, or there'),
+    .union([z.literal(false), z.string().min(1)])
+    .describe('Space quality: false (not prominent) or sentence describing spatial awareness (e.g., "right here in this moment", "my mind is back home")'),
   time: z
-    .union([z.literal(false), z.literal(true), z.literal('past'), z.literal('future')])
-    .describe('Time quality: false (not prominent), true (mixed), past, or future'),
+    .union([z.literal(false), z.string().min(1)])
+    .describe('Time quality: false (not prominent) or sentence describing temporal orientation (e.g., "remembering when we first met", "worried about tomorrow\'s presentation")'),
   presence: z
-    .union([z.literal(false), z.literal(true), z.literal('individual'), z.literal('collective')])
-    .describe('Presence quality: false (not prominent), true (mixed), individual, or collective'),
+    .union([z.literal(false), z.string().min(1)])
+    .describe('Presence quality: false (not prominent) or sentence describing social quality (e.g., "feeling alone in this", "we\'re all in this together")'),
 }).describe(`Complete switchboard of experiential qualities. Each quality can be:
 - false: not prominent (receded)
-- true: prominent but general/mixed
-- string subtype: prominent with specific quality
+- string: full sentence in experiencer's voice describing the quality
 
 Quality detection guide:
 - embodied.thinking: "analyzing", "figuring out", "strategy" → mental processing
@@ -159,27 +158,29 @@ Quality detection guide:
 // Experience analysis - switchboard format only
 export const ExperienceObject =
   ExperienceQualitiesSchema.describe(`Experience qualities in switchboard format. All dimensions must be specified:
-- embodied: 'thinking' | 'sensing' | false
-- focus: 'narrow' | 'broad' | false  
-- mood: 'open' | 'closed' | false
-- purpose: 'goal' | 'wander' | false
-- space: 'here' | 'there' | false
-- time: 'past' | 'future' | false
-- presence: 'individual' | 'collective' | false
+- embodied: "my mind races through possibilities" | false
+- focus: "zeroing in on this specific detail" | false  
+- mood: "open to whatever emerges" | false
+- purpose: "pushing hard toward the deadline" | false
+- space: "right here in this moment" | false
+- time: "remembering when we first started" | false
+- presence: "feeling alone in this struggle" | false
 
+Express each quality as a full sentence in the experiencer's voice, capturing their tone and style.
 Set to false for qualities not prominently present.`);
 
 // Experience analysis (all fields optional for update)
 export const ExperienceObjectOptional = ExperienceQualitiesSchema.describe(
   `Updated experience qualities in switchboard format. All dimensions must be specified:
-- embodied: 'thinking' | 'sensing' | false
-- focus: 'narrow' | 'broad' | false  
-- mood: 'open' | 'closed' | false
-- purpose: 'goal' | 'wander' | false
-- space: 'here' | 'there' | false
-- time: 'past' | 'future' | false
-- presence: 'individual' | 'collective' | false
+- embodied: "my mind races through possibilities" | false
+- focus: "zeroing in on this specific detail" | false  
+- mood: "open to whatever emerges" | false
+- purpose: "pushing hard toward the deadline" | false
+- space: "right here in this moment" | false
+- time: "remembering when we first started" | false
+- presence: "feeling alone in this struggle" | false
 
+Express each quality as a full sentence in the experiencer's voice, capturing their tone and style.
 Set to false for qualities not prominently present.`
 ).optional();
 

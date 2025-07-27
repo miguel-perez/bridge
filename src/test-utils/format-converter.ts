@@ -23,27 +23,9 @@ export function convertArrayToSwitchboard(qualities: string[]): ExperienceQualit
   for (const quality of qualities) {
     if (quality.includes('.')) {
       const [base, value] = quality.split('.');
-      // Type-safe assignment with proper subtype handling
-      if (base === 'embodied' && (value === 'thinking' || value === 'sensing')) {
-        switchboard.embodied = value;
-      } else if (base === 'focus' && (value === 'narrow' || value === 'broad')) {
-        switchboard.focus = value;
-      } else if (base === 'mood' && (value === 'open' || value === 'closed')) {
-        switchboard.mood = value;
-      } else if (base === 'purpose' && (value === 'goal' || value === 'wander')) {
-        switchboard.purpose = value;
-      } else if (base === 'space' && (value === 'here' || value === 'there')) {
-        switchboard.space = value;
-      } else if (base === 'time' && (value === 'past' || value === 'future')) {
-        switchboard.time = value;
-      } else if (base === 'presence' && (value === 'individual' || value === 'collective')) {
-        switchboard.presence = value;
-      }
-    } else {
-      // For base qualities without subtype, set to true
-      if (quality in switchboard) {
-        (switchboard as unknown as Record<string, unknown>)[quality] = true;
-      }
+      // With the new sentence-based schema, we can't convert from the old format
+      // This function is deprecated and should not be used
+      // Return false for all qualities since we can't do proper conversion
     }
   }
 
@@ -64,13 +46,13 @@ export function humanQualities(...qualities: string[]): ExperienceQualities {
  * Convert AI format (all 7 qualities) to switchboard
  */
 export function aiQualities(
-  embodied: false | true | 'thinking' | 'sensing',
-  focus: false | true | 'narrow' | 'broad',
-  mood: false | true | 'open' | 'closed',
-  purpose: false | true | 'goal' | 'wander',
-  space: false | true | 'here' | 'there',
-  time: false | true | 'past' | 'future',
-  presence: false | true | 'individual' | 'collective'
+  embodied: string | false,
+  focus: string | false,
+  mood: string | false,
+  purpose: string | false,
+  space: string | false,
+  time: string | false,
+  presence: string | false
 ): ExperienceQualities {
   return {
     embodied,

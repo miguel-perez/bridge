@@ -57,7 +57,7 @@ describe('MCP Tools', () => {
       expect(experienceTool.idempotentHint).toBe(false);
       expect(experienceTool.openWorldHint).toBe(false);
       expect(experienceTool.inputSchema).toBeDefined();
-      expect(experienceTool.examples).toHaveLength(12);
+      expect(experienceTool.examples).toHaveLength(11);
     });
 
     it('should have reconsider tool with correct properties', async () => {

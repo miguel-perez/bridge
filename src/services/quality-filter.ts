@@ -5,7 +5,7 @@
  * Supports boolean logic, presence/absence filtering, and complex expressions.
  */
 
-import { SourceRecord } from '../core/types.js';
+import { SourceRecord, ExperienceQualities } from '../core/types.js';
 import { KNOWN_QUALITIES, KnownQuality } from '../core/qualities.js';
 
 // Core filter types
@@ -239,12 +239,22 @@ export class QualityFilterService {
    * Evaluate a value filter
    */
   private evaluateValueFilter(filter: ValueFilter, experience: SourceRecord): boolean {
-    const qualities = experience.experienceQualities || {};
+    const qualities = experience.experienceQualities;
+    if (!qualities) return false;
 
     // Check if any of the filter values match the experience quality
-    return filter.values.some((filterValue) => {
-      const qualityValue = qualities[filter.quality as keyof typeof qualities];
-      return qualityValue === filterValue;
+    return filter.values.some((filterValue: string) => {
+      const qualityKey = filter.quality as keyof ExperienceQualities;
+      const qualityValue = qualities[qualityKey];
+      
+      // With sentence-based qualities, exact matching is less useful
+      // TODO: Implement semantic similarity matching for sentence qualities
+      // For now, check if the quality contains the filter value as a substring
+      if (typeof qualityValue === 'string') {
+        return qualityValue.toLowerCase().includes(filterValue.toLowerCase());
+      }
+      
+      return qualityValue === false && filterValue === 'false';
     });
   }
 

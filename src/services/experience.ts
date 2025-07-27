@@ -79,30 +79,31 @@ export const experienceSchema = z.object({
       z.object({
         embodied: z.union([
           z.literal(false),
-          z.literal(true),
-          z.literal('thinking'),
-          z.literal('sensing'),
+          z.string().min(1),
         ]),
         focus: z.union([
           z.literal(false),
-          z.literal(true),
-          z.literal('narrow'),
-          z.literal('broad'),
+          z.string().min(1),
         ]),
-        mood: z.union([z.literal(false), z.literal(true), z.literal('open'), z.literal('closed')]),
+        mood: z.union([
+          z.literal(false),
+          z.string().min(1),
+        ]),
         purpose: z.union([
           z.literal(false),
-          z.literal(true),
-          z.literal('goal'),
-          z.literal('wander'),
+          z.string().min(1),
         ]),
-        space: z.union([z.literal(false), z.literal(true), z.literal('here'), z.literal('there')]),
-        time: z.union([z.literal(false), z.literal(true), z.literal('past'), z.literal('future')]),
+        space: z.union([
+          z.literal(false),
+          z.string().min(1),
+        ]),
+        time: z.union([
+          z.literal(false),
+          z.string().min(1),
+        ]),
         presence: z.union([
           z.literal(false),
-          z.literal(true),
-          z.literal('individual'),
-          z.literal('collective'),
+          z.string().min(1),
         ]),
       }),
     ])

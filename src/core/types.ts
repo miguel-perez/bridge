@@ -59,17 +59,20 @@ export type QualitySubtype<T extends QualityType> = (typeof QUALITY_SUBTYPES)[T]
  * Complete switchboard of experiential qualities.
  * Each quality can be:
  * - false: not prominent (receded)
- * - true: prominent but general
- * - string subtype: prominent with specific quality
+ * - string: full sentence in experiencer's voice describing the quality
+ * 
+ * Examples:
+ * - embodied: "my mind races through possibilities" | "feeling it in my bones" | false
+ * - mood: "open to whatever emerges from this" | "shutting down, need space" | false
  */
 export interface ExperienceQualities {
-  embodied: false | true | QualitySubtype<'embodied'>;
-  focus: false | true | QualitySubtype<'focus'>;
-  mood: false | true | QualitySubtype<'mood'>;
-  purpose: false | true | QualitySubtype<'purpose'>;
-  space: false | true | QualitySubtype<'space'>;
-  time: false | true | QualitySubtype<'time'>;
-  presence: false | true | QualitySubtype<'presence'>;
+  embodied: string | false;
+  focus: string | false;
+  mood: string | false;
+  purpose: string | false;
+  space: string | false;
+  time: string | false;
+  presence: string | false;
 }
 
 /** A experienceed experiential moment */

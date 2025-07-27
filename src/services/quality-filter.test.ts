@@ -18,14 +18,30 @@ describe('QualityFilterService', () => {
     id: 'test-1',
     source: 'I feel anxious about the presentation',
     created: '2025-07-21T10:00:00Z',
-    experienceQualities: humanQualities('embodied.sensing', 'mood.closed', 'time.future'),
+    experienceQualities: {
+      embodied: 'feeling the tension in my body',
+      focus: false,
+      mood: 'feeling closed off and anxious',
+      purpose: false,
+      space: false,
+      time: 'worrying about what\'s coming',
+      presence: false,
+    },
     emoji: '🤔'};
 
   const mockExperienceWithMultipleQualities: SourceRecord = {
     id: 'test-2',
     source: 'I feel focused and energized',
     created: '2025-07-21T11:00:00Z',
-    experienceQualities: humanQualities('focus.narrow', 'mood.open', 'embodied.thinking', 'purpose.goal'),
+    experienceQualities: {
+      embodied: 'thinking through the problem clearly',
+      focus: 'narrowing in on the key issue',
+      mood: 'feeling open and energized',
+      purpose: 'working toward my goal',
+      space: false,
+      time: false,
+      presence: false,
+    },
     emoji: '💪'};
 
   const mockExperienceWithoutQualities: SourceRecord = {
@@ -37,13 +53,13 @@ describe('QualityFilterService', () => {
 
   describe('parseQualityFilter', () => {
     it('should parse simple value filters', () => {
-      const filter: QualityFilter = { mood: 'closed' };
+      const filter: QualityFilter = { mood: 'anxious' };
       const result = service.parseQualityFilter(filter);
 
       expect(result).toEqual({
         type: 'value',
         quality: 'mood',
-        values: ['closed'],
+        values: ['anxious'],
         operator: 'exact'});
     });
 
@@ -90,7 +106,7 @@ describe('QualityFilterService', () => {
           {
             type: 'value',
             quality: 'mood',
-            values: ['closed'],
+            values: ['anxious'],
             operator: 'exact'},
           {
             type: 'value',
@@ -110,7 +126,7 @@ describe('QualityFilterService', () => {
           {
             type: 'value',
             quality: 'mood',
-            values: ['closed'],
+            values: ['anxious'],
             operator: 'exact'},
           {
             type: 'value',
@@ -130,7 +146,7 @@ describe('QualityFilterService', () => {
           {
             type: 'value',
             quality: 'mood',
-            values: ['closed'],
+            values: ['anxious'],
             operator: 'exact'},
           {
             type: 'value',
@@ -149,7 +165,7 @@ describe('QualityFilterService', () => {
         filter: {
           type: 'value',
           quality: 'mood',
-          values: ['closed'],
+          values: ['anxious'],
           operator: 'exact'}});
     });
 
@@ -167,7 +183,7 @@ describe('QualityFilterService', () => {
           {
             type: 'value',
             quality: 'mood',
-            values: ['closed'],
+            values: ['anxious'],
             operator: 'exact'},
           {
             type: 'or',
@@ -198,17 +214,17 @@ describe('QualityFilterService', () => {
 
   describe('evaluateFilter', () => {
     it('should evaluate simple value filters correctly', () => {
-      const filter = service.parseQualityFilter({ mood: 'closed' });
+      const filter = service.parseQualityFilter({ mood: 'anxious' }); // matches 'feeling closed off and anxious'
 
       expect(service.evaluateFilter(mockExperience, filter)).toBe(true);
       expect(service.evaluateFilter(mockExperienceWithMultipleQualities, filter)).toBe(false);
     });
 
     it('should evaluate multiple value filters (OR logic)', () => {
-      const filter = service.parseQualityFilter({ embodied: ['thinking', 'sensing'] });
+      const filter = service.parseQualityFilter({ embodied: ['thinking', 'tension'] }); // matches 'thinking through' or 'tension in my body'
 
-      expect(service.evaluateFilter(mockExperience, filter)).toBe(true); // has embodied.sensing
-      expect(service.evaluateFilter(mockExperienceWithMultipleQualities, filter)).toBe(true); // has embodied.thinking
+      expect(service.evaluateFilter(mockExperience, filter)).toBe(true); // has 'tension in my body'
+      expect(service.evaluateFilter(mockExperienceWithMultipleQualities, filter)).toBe(true); // has 'thinking through'
     });
 
     it('should evaluate presence filters correctly', () => {
@@ -223,8 +239,8 @@ describe('QualityFilterService', () => {
 
     it('should evaluate AND expressions correctly', () => {
       const filter = service.parseQualityFilter({
-        mood: 'closed',
-        embodied: 'sensing'});
+        mood: 'anxious',
+        embodied: 'tension'});
 
       expect(service.evaluateFilter(mockExperience, filter)).toBe(true); // has both
       expect(service.evaluateFilter(mockExperienceWithMultipleQualities, filter)).toBe(false); // missing mood.closed
@@ -274,7 +290,7 @@ describe('QualityFilterService', () => {
 
   describe('validateFilter', () => {
     it('should validate simple valid filters', () => {
-      const filter: QualityFilter = { mood: 'closed' };
+      const filter: QualityFilter = { mood: 'anxious' };
       const result = service.validateFilter(filter);
 
       expect(result.valid).toBe(true);
@@ -341,7 +357,7 @@ describe('QualityFilterService', () => {
 
   describe('describeFilter', () => {
     it('should describe simple value filters', () => {
-      const filter: QualityFilter = { mood: 'closed' };
+      const filter: QualityFilter = { mood: 'anxious' };
       expect(service.describeFilter(filter)).toBe('mood.closed');
     });
 

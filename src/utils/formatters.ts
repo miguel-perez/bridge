@@ -138,13 +138,13 @@ export interface ExperienceResult {
     who?: string | string[];
     created: string;
     experienceQualities?: {
-      embodied: false | true | 'thinking' | 'sensing';
-      focus: false | true | 'narrow' | 'broad';
-      mood: false | true | 'open' | 'closed';
-      purpose: false | true | 'goal' | 'wander';
-      space: false | true | 'here' | 'there';
-      time: false | true | 'past' | 'future';
-      presence: false | true | 'individual' | 'collective';
+      embodied: string | false;
+      focus: string | false;
+      mood: string | false;
+      purpose: string | false;
+      space: string | false;
+      time: string | false;
+      presence: string | false;
     };
   };
   defaultsUsed?: string[];
@@ -446,10 +446,17 @@ export function formatExperienceResponse(
     // Convert qualities object to array format for display
     for (const [quality, value] of Object.entries(result.source.experienceQualities)) {
       if (value !== false) {
-        if (value === true) {
-          qualities.push(quality);
+        // For sentence-based qualities, show quality name and sentence
+        if (typeof value === 'string') {
+          // If it's a long sentence, just show the quality name
+          if (value.length > 20) {
+            qualities.push(quality);
+          } else {
+            // For short values (legacy format), show as quality.value
+            qualities.push(`${quality}.${value}`);
+          }
         } else {
-          qualities.push(`${quality}.${value}`);
+          qualities.push(quality);
         }
       }
     }
@@ -476,6 +483,24 @@ export function formatExperienceResponse(
 }
 
 /**
+ * Format quality details showing full sentences
+ * 
+ * @param qualities - The experience qualities object
+ * @returns Formatted quality details
+ */
+function formatQualityDetails(qualities: Record<string, string | false>): string[] {
+  const details: string[] = [];
+  
+  for (const [quality, value] of Object.entries(qualities)) {
+    if (value !== false && typeof value === 'string') {
+      details.push(`• ${quality}: "${value}"`);
+    }
+  }
+  
+  return details;
+}
+
+/**
  * Format a batch experience response with natural language
  *
  * @param results - Array of experience operation results
@@ -499,10 +524,17 @@ export function formatBatchExperienceResponse(
       // Convert qualities object to array format for display
       for (const [quality, value] of Object.entries(result.source.experienceQualities)) {
         if (value !== false) {
-          if (value === true) {
-            qualities.push(quality);
+          // For sentence-based qualities, show quality name and sentence
+          if (typeof value === 'string') {
+            // If it's a long sentence, just show the quality name
+            if (value.length > 20) {
+              qualities.push(quality);
+            } else {
+              // For short values (legacy format), show as quality.value
+              qualities.push(`${quality}.${value}`);
+            }
           } else {
-            qualities.push(`${quality}.${value}`);
+            qualities.push(quality);
           }
         }
       }
@@ -605,11 +637,8 @@ export function formatReconsiderResponse(
   if (result.source.experienceQualities) {
     for (const [quality, value] of Object.entries(result.source.experienceQualities)) {
       if (value !== false) {
-        if (value === true) {
-          qualities.push(quality);
-        } else {
-          qualities.push(`${quality}.${value}`);
-        }
+        // With sentence-based qualities, just show the quality name
+        qualities.push(quality);
       }
     }
   }

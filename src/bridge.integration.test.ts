@@ -13,7 +13,6 @@ import {
   extractExperienceId,
   waitFor,
 } from './test-utils/integration-helpers.js';
-import { convertArrayToSwitchboard } from './test-utils/format-converter.js';
 
 describe('Bridge End-to-End Workflows', () => {
   test('should support a complete experiential journey', async () => {
@@ -22,29 +21,37 @@ describe('Bridge End-to-End Workflows', () => {
       const struggle = await callExperience(env.client, {
         source: "Can't figure out why the tests are failing",
         emoji: '😤',
-        experienceQualities: {"embodied":"thinking","focus":"narrow","mood":"closed","purpose":"goal","space":"here","time":false,"presence":"individual"},
+        experienceQualities: {"embodied":"my mind is stuck on this problem","focus":"completely fixated on the failing tests","mood":"feeling frustrated and blocked","purpose":"need to fix these tests","space":"stuck at my desk","time":false,"presence":"wrestling with this alone"},
         who: 'Developer',
-        perspective: 'I',
-        processing: 'during',
       });
       const struggleId = extractExperienceId(struggle);
+      if (!struggleId) {
+        console.error('Failed to capture experience. Response:', JSON.stringify(struggle, null, 2));
+      }
+      expect(struggleId).not.toBeNull();
 
       // 2. Seeking help
       const seeking = await callExperience(env.client, {
         source: 'Maybe I should ask the team for help',
         emoji: '🤔',
-        experienceQualities: {"embodied":"thinking","focus":"broad","mood":"open","purpose":"wander","space":"here","time":"future","presence":"individual"},
-        nextMoment: convertArrayToSwitchboard(['presence.collective', 'mood.open']),
+        experienceQualities: {"embodied":"shifting my mental approach","focus":"considering different perspectives","mood":"opening up to new possibilities","purpose":"exploring alternative solutions","space":"still at my desk but thinking differently","time":"imagining how this could work","presence":"thinking about reaching out"},
+        nextMoment: {
+          embodied: false,
+          focus: false,
+          mood: 'feeling open to collaboration',
+          purpose: false,
+          space: false,
+          time: false,
+          presence: 'ready to work with others',
+        },
       });
 
       // 3. Team collaboration
       const collab = await callExperience(env.client, {
         source: 'Working through the issue with Sarah',
         emoji: '👥',
-        experienceQualities: {"embodied":"thinking","focus":"narrow","mood":"open","purpose":"goal","space":"here","time":false,"presence":"collective"},
+        experienceQualities: {"embodied":"actively discussing and analyzing","focus":"zeroing in on the issue together","mood":"feeling collaborative energy","purpose":"determined to solve this","space":"virtually together in the problem space","time":false,"presence":"working as a team"},
         who: 'Dev Team',
-        perspective: 'we',
-        processing: 'during',
       });
       const collabId = extractExperienceId(collab);
 
@@ -52,10 +59,8 @@ describe('Bridge End-to-End Workflows', () => {
       const breakthrough = await callExperience(env.client, {
         source: 'Found it! The mock was returning the wrong type',
         emoji: '🎯',
-        experienceQualities: {"embodied":"thinking","focus":"narrow","mood":"open","purpose":"goal","space":"here","time":false,"presence":"collective"},
+        experienceQualities: {"embodied":"the aha moment hits","focus":"laser-focused on the solution","mood":"feeling the excitement of discovery","purpose":"finally achieving our goal","space":"right here in the moment","time":false,"presence":"celebrating together"},
         who: 'Dev Team',
-        perspective: 'we',
-        processing: 'right-after',
       });
       const breakthroughId = extractExperienceId(breakthrough);
 
@@ -63,11 +68,9 @@ describe('Bridge End-to-End Workflows', () => {
       const reflection = await callExperience(env.client, {
         source: 'I notice that collaboration often leads to breakthroughs when stuck',
         emoji: '💡',
-        experienceQualities: {"embodied":"thinking","focus":"broad","mood":"open","purpose":"wander","space":"here","time":"past","presence":"individual"},
+        experienceQualities: {"embodied":"reflecting on the pattern","focus":"seeing the bigger picture","mood":"feeling insightful","purpose":"understanding deeper patterns","space":"mentally stepping back","time":"looking back at what happened","presence":"processing this insight alone"},
         reflects: [struggleId!, collabId!, breakthroughId!],
         who: 'Developer',
-        perspective: 'I',
-        processing: 'long-after',
       });
 
       // Pattern realizations are stored but not specially marked
@@ -77,7 +80,7 @@ describe('Bridge End-to-End Workflows', () => {
       const search = await callExperience(env.client, {
         source: 'Looking for other collaboration breakthroughs',
         emoji: '🔍',
-        experienceQualities: {"embodied":"thinking","focus":"narrow","mood":false,"purpose":"goal","space":"here","time":false,"presence":"individual"},
+        experienceQualities: {"embodied":"actively searching","focus":"specifically looking for patterns","mood":false,"purpose":"finding similar experiences","space":"engaged in the search","time":false,"presence":"searching on my own"},
         recall: {
           query: 'collaboration breakthrough team',
           reflects: 'only',
@@ -97,9 +100,8 @@ describe('Bridge End-to-End Workflows', () => {
       const initial = await callExperience(env.client, {
         source: 'This new framework seems unnecessarily complex',
         emoji: '😕',
-        experienceQualities: {"embodied":"thinking","focus":"narrow","mood":"closed","purpose":"goal","space":"here","time":false,"presence":"individual"},
+        experienceQualities: {"embodied":"struggling to understand","focus":"trying to grasp the complexity","mood":"feeling overwhelmed","purpose":"wanting to understand this framework","space":"stuck with this documentation","time":false,"presence":"figuring it out alone"},
         who: 'New Developer',
-        processing: 'during',
       });
       const id = extractExperienceId(initial);
 
@@ -107,14 +109,14 @@ describe('Bridge End-to-End Workflows', () => {
       await callExperience(env.client, {
         source: 'Reading the documentation more carefully',
         emoji: '📚',
-        experienceQualities: {"embodied":"thinking","focus":"narrow","mood":"open","purpose":"goal","space":"here","time":false,"presence":"individual"},
+        experienceQualities: {"embodied":"studying the documentation","focus":"paying careful attention","mood":"becoming more receptive","purpose":"really trying to understand","space":"immersed in the docs","time":false,"presence":"learning on my own"},
         who: 'New Developer',
       });
 
       // 3. Update initial assessment
       const update = await callReconsider(env.client, {
         id: id!,
-        experienceQualities: {"embodied":"thinking","focus":"broad","mood":"open","purpose":"wander","space":"here","time":false,"presence":"individual"},
+        experienceQualities: {"embodied":"understanding dawns","focus":"seeing how it all connects","mood":"feeling enlightened","purpose":"appreciating the design","space":"mentally in a clearer place","time":false,"presence":"having this realization"},
         context: 'After understanding the design principles, the complexity makes sense',
       });
 
@@ -126,7 +128,7 @@ describe('Bridge End-to-End Workflows', () => {
       const verify = await callExperience(env.client, {
         source: 'Checking my updated understanding',
         emoji: '✅',
-        experienceQualities: {"embodied":"thinking","focus":"narrow","mood":false,"purpose":"goal","space":"here","time":false,"presence":"individual"},
+        experienceQualities: {"embodied":"double-checking my understanding","focus":"verifying specific details","mood":false,"purpose":"confirming my new perspective","space":"reviewing my notes","time":false,"presence":"checking on my own"},
         recall: {
           query: 'framework complex',
         },
@@ -146,20 +148,16 @@ describe('Bridge End-to-End Workflows', () => {
       const human = await callExperience(env.client, {
         source: 'Feeling overwhelmed by all the moving parts',
         emoji: '😰',
-        experienceQualities: {"embodied":"sensing","focus":"broad","mood":"closed","purpose":false,"space":false,"time":false,"presence":false},
+        experienceQualities: {"embodied":"my body feels tense and scattered","focus":"can't focus on any one thing","mood":"anxiety building up","purpose":false,"space":false,"time":false,"presence":false},
         who: 'Human',
-        perspective: 'I',
-        processing: 'during',
       });
 
       // AI captures all 7 qualities
       const ai = await callExperience(env.client, {
         source: 'I notice the human is experiencing cognitive overload from parallel concerns',
         emoji: '🤖',
-        experienceQualities: {"embodied":"thinking","focus":"broad","mood":"open","purpose":"goal","space":"here","time":false,"presence":"collective"},
+        experienceQualities: {"embodied":"analyzing the situation systematically","focus":"taking in the whole picture","mood":"maintaining supportive presence","purpose":"helping work through this","space":"fully present in our session","time":false,"presence":"engaged together in problem-solving"},
         who: 'Claude',
-        perspective: 'I',
-        processing: 'during',
         context: 'Observing stress patterns in our problem-solving session',
       });
 
@@ -167,7 +165,7 @@ describe('Bridge End-to-End Workflows', () => {
       const combined = await callExperience(env.client, {
         source: 'Looking at our shared experience',
         emoji: '🔄',
-        experienceQualities: {"embodied":"thinking","focus":"broad","mood":"open","purpose":"wander","space":"here","time":false,"presence":"collective"},
+        experienceQualities: {"embodied":"reviewing our shared work","focus":"examining both perspectives","mood":"appreciating our collaboration","purpose":"understanding our dynamic","space":"reflecting on our session","time":false,"presence":"considering our partnership"},
         recall: {
           query: 'overwhelmed overload',
           limit: 5,
@@ -188,7 +186,7 @@ describe('Bridge End-to-End Workflows', () => {
       const test = await callExperience(env.client, {
         source: 'Temporary test data',
         emoji: '🧪',
-        experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
+        experienceQualities: {"embodied":"just running a test","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
         who: 'Test Runner',
       });
       const id = extractExperienceId(test);
@@ -197,7 +195,7 @@ describe('Bridge End-to-End Workflows', () => {
       const search1 = await callExperience(env.client, {
         source: 'Verifying test data exists',
         emoji: '🔍',
-        experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":"goal","space":false,"time":false,"presence":false},
+        experienceQualities: {"embodied":"checking test data","focus":false,"mood":false,"purpose":"verifying it exists","space":false,"time":false,"presence":false},
         recall: {
           ids: id!,  // Use ID search instead of semantic search
         },
@@ -218,7 +216,7 @@ describe('Bridge End-to-End Workflows', () => {
       const search2 = await callExperience(env.client, {
         source: 'Verifying test data is gone',
         emoji: '🔍',
-        experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":"goal","space":false,"time":false,"presence":false},
+        experienceQualities: {"embodied":"confirming cleanup","focus":false,"mood":false,"purpose":"ensuring data is gone","space":false,"time":false,"presence":false},
         recall: {
           search: 'Temporary test data',  // Changed from 'query' to 'search'
         },

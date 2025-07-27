@@ -277,10 +277,7 @@ export class ExperienceHandler {
         
         for (const [quality, value] of Object.entries(experience.nextMoment)) {
           if (value !== false) {
-            if (value === true) {
-              // For base qualities (e.g., mood: true)
-              qualityFilter[quality] = { present: true };
-            } else {
+            if (typeof value === 'string') {
               // For specific values (e.g., mood: 'open')
               qualityFilter[quality] = value;
             }
@@ -375,7 +372,7 @@ export class ExperienceHandler {
           const targetQualities = experience.nextMoment ? 
             Object.entries(experience.nextMoment)
               .filter(([_, v]) => v !== false)
-              .map(([k, v]) => v === true ? k : `${k}.${v}`)
+              .map(([k, v]) => typeof v === 'string' ? `${k}: "${v}"` : k)
               .join(', ') : 'qualities';
           
           // Check what type of results we're showing
@@ -476,7 +473,7 @@ export class ExperienceHandler {
           const targetQualities = experience.nextMoment ? 
             Object.entries(experience.nextMoment)
               .filter(([_, v]) => v !== false)
-              .map(([k, v]) => v === true ? k : `${k}.${v}`)
+              .map(([k, v]) => typeof v === 'string' ? `${k}: "${v}"` : k)
               .join(', ') : 'qualities';
           
           // Check what type of results we're showing
@@ -569,15 +566,14 @@ export class ExperienceHandler {
       const qualities = result.source.experienceQualities;
       const hasEmotionalQualities = qualities && (
         qualities.mood !== false || 
-        qualities.embodied === 'sensing' || 
-        qualities.embodied === true
+        qualities.embodied !== false
       );
 
       if (hasEmotionalQualities) {
         const quality = qualities.mood !== false ? 
-          (qualities.mood === true ? 'mood' : `mood.${qualities.mood}`) :
+          `mood: "${qualities.mood}"` :
           qualities.embodied !== false ? 
-            (qualities.embodied === true ? 'embodied' : `embodied.${qualities.embodied}`) :
+            `embodied: "${qualities.embodied}"` :
             'experience';
         return `Captured as ${quality}`;
       }
@@ -660,7 +656,7 @@ export class ExperienceHandler {
                 const qualitiesArray = metadata.experienceQualities ? 
                   Object.entries(metadata.experienceQualities)
                     .filter(([_, v]) => v !== false)
-                    .map(([k, v]) => v === true ? k : `${k}.${v}`) : [];
+                    .map(([k, v]) => typeof v === 'string' ? `${k}: "${v}"` : k) : [];
                 
                 if (qualitiesArray.length > 0) {
                   text += `\n      (${qualitiesArray.join(', ')})`;
@@ -706,7 +702,7 @@ export class ExperienceHandler {
         // Convert qualities to array for display
         const qualitiesArray = Object.entries(experienceQualities)
           .filter(([_, v]) => v !== false)
-          .map(([k, v]) => v === true ? k : `${k}.${v}`);
+          .map(([k, v]) => typeof v === 'string' ? `${k}: "${v}"` : k);
         if (qualitiesArray.length > 0) {
           text += `\n   (${qualitiesArray.join(', ')})`;
         }
