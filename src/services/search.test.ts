@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from '@jest/globals';
-import { searchExperiences, type RecallInput } from './search.js';
+import { search, type RecallInput } from './search.js';
 import { saveSource } from '../core/storage.js';
 import { Source } from '../core/types.js';
 import { humanQualities } from '../test-utils/format-converter.js';
@@ -41,7 +41,7 @@ describe('Recall Relevance Scoring', () => {
     await saveSource(record2);
 
     // Test text relevance scoring
-    const results = await searchExperiences({
+    const results = await search({
       query: 'anxiety',
       who: 'text_test',
       sort: 'relevance',
@@ -89,7 +89,7 @@ describe('Recall Relevance Scoring', () => {
     await saveSource(record2);
 
     // Search for Alice's records
-    const results = await searchExperiences({ who: 'Alice_filter' });
+    const results = await search({ who: 'Alice_filter' });
 
     expect(results.results).toHaveLength(1);
     expect(results.results[0].id).toBe('filter_test_1');
@@ -119,7 +119,7 @@ describe('Recall Relevance Scoring', () => {
       who: 'vector_test',
     };
 
-    const results = await searchExperiences(searchInput);
+    const results = await search(searchInput);
 
     expect(results.results).toHaveLength(1);
     expect(results.results[0].relevance_score).toBeGreaterThan(0.2);
@@ -171,7 +171,7 @@ describe('Recall Relevance Scoring', () => {
     await saveSource(record3);
 
     // Test sorting by relevance
-    const results = await searchExperiences({
+    const results = await search({
       query: 'anxiety',
       who: 'sort_test',
       sort: 'relevance',
@@ -228,7 +228,7 @@ describe('Date Range Filtering', () => {
     await saveSource(record2);
 
     // Test same-day range: should return yesterday's record
-    const results = await searchExperiences({
+    const results = await search({
       created: { start: yesterday.toISOString(), end: yesterday.toISOString() },
       who: 'date_test',
     });
@@ -271,7 +271,7 @@ describe('Date Range Filtering', () => {
     await saveSource(record2);
 
     // Test single date filter: should return records from yesterday onwards
-    const results = await searchExperiences({
+    const results = await search({
       created: yesterday.toISOString(),
       who: 'single_date_test',
     });
@@ -330,7 +330,7 @@ describe('Date Range Filtering', () => {
     await saveSource(record3);
 
     // Test multi-day range: should return yesterday and today's records
-    const results = await searchExperiences({
+    const results = await search({
       created: { start: yesterday.toISOString(), end: today.toISOString() },
       who: 'range_test',
     });
@@ -376,7 +376,7 @@ describe('Date Range Filtering', () => {
     await saveSource(record2);
 
     // Test that both records are found when filtering for today (UTC)
-    const results = await searchExperiences({
+    const results = await search({
       created: { start: earlyToday.toISOString(), end: lateToday.toISOString() },
       who: 'edge_test',
     });
@@ -420,7 +420,7 @@ describe('GroupBy Parameter Removal', () => {
     await saveSource(record);
 
     // Search should work without groupBy parameter
-    const results = await searchExperiences({
+    const results = await search({
       who: 'groupby_test',
     });
 
@@ -443,7 +443,7 @@ describe('Group By Functionality', () => {
         id: 'group_test_1',
         source: 'Test record by Miguel on day 1',
         emoji: '👤',
-        who: 'Miguel',
+        who: 'Group_Test_Miguel',
         perspective: 'I',
         processing: 'during',
         created: '2025-01-15T10:00:00.000Z',
@@ -454,7 +454,7 @@ describe('Group By Functionality', () => {
         id: 'group_test_2',
         source: 'Test record by Miguel on day 2',
         emoji: '👥',
-        who: 'Miguel',
+        who: 'Group_Test_Miguel',
         perspective: 'we',
         processing: 'during',
         created: '2025-01-16T10:00:00.000Z',
@@ -465,7 +465,7 @@ describe('Group By Functionality', () => {
         id: 'group_test_3',
         source: 'Test record by Claude on day 1',
         emoji: '🤖',
-        who: 'Claude',
+        who: 'Group_Test_Claude',
         perspective: 'I',
         processing: 'right-after',
         created: '2025-01-15T14:00:00.000Z',
@@ -476,7 +476,7 @@ describe('Group By Functionality', () => {
         id: 'group_test_4',
         source: 'Test record by Claude on day 2',
         emoji: '💬',
-        who: 'Claude',
+        who: 'Group_Test_Claude',
         perspective: 'you',
         processing: 'during',
         created: '2025-01-16T14:00:00.000Z',
@@ -491,8 +491,9 @@ describe('Group By Functionality', () => {
   });
 
   it('should group by who correctly', async () => {
-    const results = await searchExperiences({
+    const results = await search({
       group_by: 'who',
+      query: 'Group_Test',  // Filter to only test data
     });
 
     expect(results.clusters).toBeDefined();
@@ -501,12 +502,12 @@ describe('Group By Functionality', () => {
     // Should be sorted by count (both have 2 experiences)
     expect(results.clusters).toBeDefined();
       const clusters = results.clusters!;
-    expect(clusters.some((c) => c.summary.includes('Miguel (2 experience'))).toBe(true);
-    expect(clusters.some((c) => c.summary.includes('Claude (2 experience'))).toBe(true);
+    expect(clusters.some((c) => c.summary.includes('Group_Test_Miguel (2 experience'))).toBe(true);
+    expect(clusters.some((c) => c.summary.includes('Group_Test_Claude (2 experience'))).toBe(true);
 
     // Check that each group has correct experience IDs
-    const miguelCluster = clusters.find((c) => c.summary.includes('Miguel'));
-    const claudeCluster = clusters.find((c) => c.summary.includes('Claude'));
+    const miguelCluster = clusters.find((c) => c.summary.includes('Group_Test_Miguel'));
+    const claudeCluster = clusters.find((c) => c.summary.includes('Group_Test_Claude'));
 
     expect(miguelCluster?.experienceIds).toContain('group_test_1');
     expect(miguelCluster?.experienceIds).toContain('group_test_2');
@@ -515,14 +516,17 @@ describe('Group By Functionality', () => {
   });
 
   it('should group by date correctly', async () => {
-    const results = await searchExperiences({
+    const results = await search({
       group_by: 'date',
+      query: 'Group_Test',  // Filter to only test data
     });
 
     expect(results.clusters).toBeDefined();
     expect(results.clusters!.length).toBe(2); // 2025-01-15 and 2025-01-16
 
     const clusters = results.clusters!;
+    // Debug: log cluster summaries to see what we're getting
+    // console.log('Date clusters:', clusters.map(c => c.summary));
     expect(clusters.some((c) => c.summary.includes('2025-01-15 (2 experience'))).toBe(true);
     expect(clusters.some((c) => c.summary.includes('2025-01-16 (2 experience'))).toBe(true);
 
@@ -532,8 +536,9 @@ describe('Group By Functionality', () => {
   });
 
   it('should group by qualities correctly', async () => {
-    const results = await searchExperiences({
+    const results = await search({
       group_by: 'qualities',
+      query: 'Group_Test',  // Filter to only test data
     });
 
     expect(results.clusters).toBeDefined();
@@ -554,8 +559,9 @@ describe('Group By Functionality', () => {
   });
 
   it('should group by perspective correctly', async () => {
-    const results = await searchExperiences({
+    const results = await search({
       group_by: 'perspective',
+      query: 'Group_Test',  // Filter to only test data
     });
 
     expect(results.clusters).toBeDefined();
@@ -570,8 +576,9 @@ describe('Group By Functionality', () => {
   });
 
   it('should handle group_by: none as flat results', async () => {
-    const results = await searchExperiences({
+    const results = await search({
       group_by: 'none',
+      query: 'Group_Test',  // Filter to only test data
     });
 
     expect(results.clusters).toBeUndefined();

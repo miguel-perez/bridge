@@ -7,6 +7,7 @@ import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 describe('safe-logger', () => {
   let originalEnv: string | undefined;
   let consoleErrorSpy: jest.SpyInstance;
+  let stderrSpy: jest.SpyInstance;
   let originalLog: unknown;
   let originalInfo: unknown;
   let originalWarn: unknown;
@@ -23,6 +24,9 @@ describe('safe-logger', () => {
     
     // Mock console.error
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    
+    // Mock process.stderr.write
+    stderrSpy = jest.spyOn(process.stderr, 'write').mockImplementation(() => true);
   });
 
   afterEach(() => {
@@ -32,6 +36,7 @@ describe('safe-logger', () => {
     console.info = originalInfo as typeof console.info;
     console.warn = originalWarn as typeof console.warn;
     consoleErrorSpy.mockRestore();
+    stderrSpy.mockRestore();
   });
 
   describe('debugLog', () => {
@@ -49,14 +54,14 @@ describe('safe-logger', () => {
       
       freshDebugLog('test message', { data: 123 });
       
-      expect(consoleErrorSpy).toHaveBeenCalledWith('[Bridge Debug]', 'test message', { data: 123 });
+      expect(stderrSpy).toHaveBeenCalledWith('[Bridge Debug] test message [object Object]\n');
     });
 
     it('should not log when BRIDGE_DEBUG is false', () => {
       process.env.BRIDGE_DEBUG = 'false';
       debugLog('test message');
       
-      expect(consoleErrorSpy).not.toHaveBeenCalled();
+      expect(stderrSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -64,7 +69,7 @@ describe('safe-logger', () => {
     it('should always log to stderr', () => {
       errorLog('error message', new Error('test error'));
       
-      expect(consoleErrorSpy).toHaveBeenCalledWith('[Bridge Error]', 'error message', expect.any(Error));
+      expect(stderrSpy).toHaveBeenCalledWith(expect.stringContaining('[Bridge Error] error message Error: test error'));
     });
   });
 
@@ -91,7 +96,7 @@ describe('safe-logger', () => {
       
       freshMcpLog('warn', 'warning message');
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith('[Bridge WARN]', 'warning message');
+      expect(stderrSpy).toHaveBeenCalledWith('[Bridge WARN] warning message\n');
     });
   });
 
@@ -110,10 +115,8 @@ describe('safe-logger', () => {
 
       // Test that calling them triggers error logging
       console.log('test');
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        '[Bridge Error]',
-        'WARNING: console.log() called in MCP server - this breaks JSON-RPC!',
-        'test'
+      expect(stderrSpy).toHaveBeenCalledWith(
+        '[Bridge Error] WARNING: console.log() called in MCP server - this breaks JSON-RPC! test\n'
       );
 
       // Restore for other tests

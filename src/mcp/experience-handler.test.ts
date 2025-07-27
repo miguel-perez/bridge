@@ -547,9 +547,9 @@ describe('ExperienceHandler', () => {
      *
      * 3. **Type vs Subtype Logic**:
      * - **Types** (e.g., 'embodied') are used when quality is present but doesn't fit
-     *   into a specific subtype - capturing the general presence without forcing specificity
+     * into a specific subtype - capturing the general presence without forcing specificity
      * - **Subtypes** (e.g., 'embodied.thinking') are used when the quality is obvious
-     *   and specific - honoring the phenomenological precision of the moment
+     * and specific - honoring the phenomenological precision of the moment
      *
      * 4. **Edge Case Philosophy**: Following the "Accepting Diverse Sources" principle
      * (Philosophy.md), the system must handle moments from multiple contexts without

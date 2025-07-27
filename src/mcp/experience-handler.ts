@@ -179,64 +179,81 @@ export class ExperienceHandler {
         results.push(result);
       }
 
-      // Handle integrated recall if requested
+      // Handle integrated recall if requested or if we should do automatic recall
       let recallResults = null;
-      if (experience.recall) {
+      const shouldAutoRecall = !experience.recall && results.length > 0 && 
+        (experience.experiences?.[0]?.source || experience.nextMoment);
+      
+      if (experience.recall || shouldAutoRecall) {
         const searchParams: RecallInput = {
-          limit: experience.recall.limit || 5,
+          limit: experience.recall?.limit || 5,
         };
+        
+        // For automatic recall, use the content as the search query
+        if (shouldAutoRecall && !experience.recall) {
+          searchParams.semantic_query = experience.experiences[0].source;
+          // Note: We'll filter out the just-captured experience later
+        }
 
         // ID lookup
-        if (experience.recall.ids) {
+        if (experience.recall?.ids) {
           searchParams.id = Array.isArray(experience.recall.ids)
             ? experience.recall.ids[0] // RecallInput takes single ID
             : experience.recall.ids;
         }
         // Semantic search
-        if (experience.recall.search) {
+        if (experience.recall?.search) {
           searchParams.semantic_query = Array.isArray(experience.recall.search)
             ? experience.recall.search[0] // RecallInput takes single query
             : experience.recall.search;
         }
         // Quality filtering
-        if (experience.recall.qualities) {
+        if (experience.recall?.qualities) {
           searchParams.qualities = experience.recall.qualities;
         }
         // Pagination
-        if (experience.recall.offset !== undefined) {
+        if (experience.recall?.offset !== undefined) {
           searchParams.offset = experience.recall.offset;
         }
         // Filters
-        if (experience.recall.who) {
+        if (experience.recall?.who) {
           searchParams.who = experience.recall.who;
         }
-        if (experience.recall.perspective) {
+        if (experience.recall?.perspective) {
           searchParams.perspective = experience.recall.perspective;
         }
-        if (experience.recall.processing) {
+        if (experience.recall?.processing) {
           searchParams.processing = experience.recall.processing;
         }
-        if (experience.recall.crafted !== undefined) {
+        if (experience.recall?.crafted !== undefined) {
           searchParams.crafted = experience.recall.crafted;
         }
         // Pattern filters
-        if (experience.recall.reflects === 'only') {
+        if (experience.recall?.reflects === 'only') {
           searchParams.reflects = 'only';
         }
         // Note: reflected_by is not in RecallInput interface
         // Date filtering
-        if (experience.recall.created) {
+        if (experience.recall?.created) {
           searchParams.created = experience.recall.created;
         }
         // Sorting and grouping
-        if (experience.recall.sort) {
+        if (experience.recall?.sort) {
           searchParams.sort = experience.recall.sort;
         }
-        if (experience.recall.group_by) {
+        if (experience.recall?.group_by) {
           searchParams.group_by = experience.recall.group_by;
         }
 
         recallResults = await this.recallService.search(searchParams);
+        
+        // Filter out the just-captured experiences from automatic recall
+        if (shouldAutoRecall && results.length > 0) {
+          const capturedIds = new Set(results.map(r => r.source.id));
+          if (recallResults.results) {
+            recallResults.results = recallResults.results.filter(r => !capturedIds.has(r.id));
+          }
+        }
       }
 
       // Format response based on number of experiences
@@ -266,12 +283,22 @@ export class ExperienceHandler {
         ];
 
         // Add recall results if we have them
-        if (recallResults && recallResults.results.length > 0) {
-          const recallText = this.formatRecallResults(recallResults.results);
-          content.push({
-            type: 'text',
-            text: `\n🔍 Related experiences:\n${recallText}`,
-          });
+        if (recallResults) {
+          if (recallResults.clusters && recallResults.clusters.length > 0) {
+            // Format grouped results
+            const groupedText = this.formatGroupedResults(recallResults.clusters, recallResults.results);
+            content.push({
+              type: 'text',
+              text: `\n🔍 Related experiences (grouped):\n${groupedText}`,
+            });
+          } else if (recallResults.results.length > 0) {
+            // Format flat results
+            const recallText = this.formatRecallResults(recallResults.results);
+            content.push({
+              type: 'text',
+              text: `\n🔍 Related experiences:\n${recallText}`,
+            });
+          }
         }
 
         // Add contextual guidance based on simple triggers
@@ -305,12 +332,22 @@ export class ExperienceHandler {
         ];
 
         // Add recall results if we have them
-        if (recallResults && recallResults.results.length > 0) {
-          const recallText = this.formatRecallResults(recallResults.results);
-          content.push({
-            type: 'text',
-            text: `\n🔍 Related experiences:\n${recallText}`,
-          });
+        if (recallResults) {
+          if (recallResults.clusters && recallResults.clusters.length > 0) {
+            // Format grouped results
+            const groupedText = this.formatGroupedResults(recallResults.clusters, recallResults.results);
+            content.push({
+              type: 'text',
+              text: `\n🔍 Related experiences (grouped):\n${groupedText}`,
+            });
+          } else if (recallResults.results.length > 0) {
+            // Format flat results
+            const recallText = this.formatRecallResults(recallResults.results);
+            content.push({
+              type: 'text',
+              text: `\n🔍 Related experiences:\n${recallText}`,
+            });
+          }
         }
 
         // Add nextMoment if provided
@@ -432,6 +469,78 @@ export class ExperienceHandler {
       // Silently fail - similarity is nice to have but not critical
       return null;
     }
+  }
+
+  /**
+   * Format grouped results for display
+   */
+  private formatGroupedResults(clusters: Array<{
+    id: string;
+    summary: string;
+    experienceIds: string[];
+    commonQualities: string[];
+    size: number;
+  }>, results?: RecallServiceResult[]): string {
+    return clusters
+      .map((cluster) => {
+        let text = `\n📁 ${cluster.summary}`;
+        
+        // Add common qualities if present
+        if (cluster.commonQualities && cluster.commonQualities.length > 0) {
+          text += `\n   Common: ${cluster.commonQualities.join(', ')}`;
+        }
+        
+        // If we have results, show actual experiences instead of just IDs
+        if (results && results.length > 0) {
+          // Find experiences that belong to this cluster
+          const clusterExperiences = results.filter(r => 
+            cluster.experienceIds.includes(r.id)
+          ).slice(0, 3); // Show first 3
+          
+          if (clusterExperiences.length > 0) {
+            text += '\n';
+            clusterExperiences.forEach((exp, idx) => {
+              const snippet = exp.snippet || exp.content || '';
+              const truncated = snippet.length > 80 ? snippet.substring(0, 77) + '...' : snippet;
+              text += `\n   ${idx + 1}. "${truncated}"`;
+              
+              // Add metadata if available
+              if (exp.metadata) {
+                const metadata = exp.metadata as Record<string, unknown>;
+                const qualitiesArray = metadata.experienceQualities ? 
+                  Object.entries(metadata.experienceQualities)
+                    .filter(([_, v]) => v !== false)
+                    .map(([k, v]) => v === true ? k : `${k}.${v}`) : [];
+                
+                if (qualitiesArray.length > 0) {
+                  text += `\n      (${qualitiesArray.join(', ')})`;
+                }
+                
+                if (metadata.created) {
+                  const timeAgo = this.formatTimeAgo(metadata.created as string);
+                  text += `\n      ${timeAgo}`;
+                }
+              }
+            });
+            
+            if (cluster.experienceIds.length > 3) {
+              text += `\n   ... and ${cluster.experienceIds.length - 3} more`;
+            }
+          }
+        } else {
+          // Fallback to showing IDs if no results available
+          if (cluster.experienceIds.length > 0) {
+            const idsToShow = cluster.experienceIds.slice(0, 3);
+            text += `\n   IDs: ${idsToShow.join(', ')}`;
+            if (cluster.experienceIds.length > 3) {
+              text += ` ... and ${cluster.experienceIds.length - 3} more`;
+            }
+          }
+        }
+        
+        return text;
+      })
+      .join('\n');
   }
 
   /**

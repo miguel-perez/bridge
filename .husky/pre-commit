@@ -21,4 +21,3 @@ if [ -n "$CONSOLE_CHECK" ]; then
   echo "To bypass this check (not recommended), use: git commit --no-verify"
   exit 1
 fi
-EOF < /dev/null
