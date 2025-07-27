@@ -179,29 +179,6 @@ function findDominantQuality(qualities: string[]): string {
   return qualities[0];
 }
 
-/**
- * Groups experiences by perspective
- */
-export function groupByPerspective(experiences: SourceRecord[]): GroupedResult[] {
-  const groups = new Map<string, SourceRecord[]>();
-
-  experiences.forEach((experience) => {
-    const perspective = experience.perspective || 'Unknown';
-    if (!groups.has(perspective)) {
-      groups.set(perspective, []);
-    }
-    groups.get(perspective)!.push(experience);
-  });
-
-  return Array.from(groups.entries())
-    .map(([perspective, expList]) => ({
-      key: perspective,
-      label: `${formatPerspectiveLabel(perspective)} (${expList.length} experience${expList.length === 1 ? '' : 's'})`,
-      count: expList.length,
-      experiences: expList,
-    }))
-    .sort((a, b) => b.count - a.count); // Sort by count descending
-}
 
 /**
  * Groups experiences by similarity (clustering)
@@ -232,17 +209,3 @@ function _formatQualityLabel(qualities: string[]): string {
   return `${qualities.length} qualities: ${qualities.join(', ')}`;
 }
 
-/**
- * Formats perspective into a human-readable label
- */
-function formatPerspectiveLabel(perspective: string): string {
-  const labels: Record<string, string> = {
-    I: 'First person (I)',
-    we: 'Collective (we)',
-    you: 'Second person (you)',
-    they: 'Third person (they)',
-    Unknown: 'Unknown perspective',
-  };
-
-  return labels[perspective] || perspective;
-}

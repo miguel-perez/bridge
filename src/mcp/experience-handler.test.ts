@@ -73,8 +73,6 @@ describe('ExperienceHandler', () => {
           emoji: '😊',
           created: '2025-01-21T12:00:00Z',
           who: 'Human',
-          perspective: 'I',
-          processing: 'during' as const,
           experienceQualities: {"embodied":false,"focus":false,"mood":"open","purpose":false,"space":false,"time":false,"presence":false}},
         defaultsUsed: []};
 
@@ -90,8 +88,6 @@ describe('ExperienceHandler', () => {
             source: 'I feel happy',
             emoji: '😊',
             who: 'Human',
-            perspective: 'I',
-            processing: 'during',
             experienceQualities: {"embodied":false,"focus":false,"mood":"open","purpose":false,"space":false,"time":false,"presence":false}}]});
 
       expect(result.content.length).toBeGreaterThanOrEqual(2); // Main + at least one view section
@@ -104,9 +100,6 @@ describe('ExperienceHandler', () => {
         source: 'I feel happy',
         emoji: '😊',
         who: 'Human',
-        perspective: 'I',
-        processing: 'during',
-        crafted: undefined,
         experience: {"embodied":false,"focus":false,"mood":"open","purpose":false,"space":false,"time":false,"presence":false},
         reflects: undefined,
         context: undefined});
@@ -451,10 +444,7 @@ describe('ExperienceHandler', () => {
       expect(mockExperienceService.rememberExperience).toHaveBeenCalledWith({
         source: 'Test',
         emoji: '📝',
-        perspective: undefined,
         who: undefined,
-        processing: undefined,
-        crafted: undefined,
         reflects: undefined,
         context: undefined});
     });
@@ -473,41 +463,13 @@ describe('ExperienceHandler', () => {
             text: 'Unknown error'}]});
     });
 
-    it('should handle crafted flag', async () => {
-      const mockResult = {
-        source: {
-          id: 'exp_123',
-          source: 'Crafted content',
-          created: '2025-01-21T12:00:00Z',
-          crafted: true},
-        defaultsUsed: []};
-
-      mockExperienceService.rememberExperience.mockResolvedValue(mockResult);
-      mockRecallService.search.mockResolvedValue({
-        results: []});
-
-      await handler.handle({
-        experiences: [
-          {
-            source: 'Crafted content',
-            emoji: '📢',
-            crafted: true}]});
-
-      expect(mockExperienceService.rememberExperience).toHaveBeenCalledWith(
-        expect.objectContaining({
-          emoji: '📢',
-          crafted: true})
-      );
-    });
+    // Test removed: crafted field no longer exists in the data model
 
     it('should handle all optional fields', async () => {
       const fullInput = {
         source: 'Full experience',
         emoji: '🎉',
         who: 'Test User',
-        perspective: 'we',
-        processing: 'long-after' as const,
-        crafted: false,
         experienceQualities: {"embodied":false,"focus":false,"mood":"open","purpose":false,"space":false,"time":false,"presence":"collective"}};
 
       const mockResult = {
@@ -528,9 +490,6 @@ describe('ExperienceHandler', () => {
         source: 'Full experience',
         emoji: '🎉',
         who: 'Test User',
-        perspective: 'we',
-        processing: 'long-after',
-        crafted: false,
         experience: {"embodied":false,"focus":false,"mood":"open","purpose":false,"space":false,"time":false,"presence":"collective"},
         reflects: undefined,
         context: undefined});
@@ -1008,8 +967,6 @@ describe('ExperienceHandler', () => {
             emoji: '🤔',
             created: '2025-01-21T12:00:00Z',
             who: 'Human',
-            perspective: 'I',
-            processing: 'during' as const,
             experienceQualities: experienceQualities},
           defaultsUsed: []};
 
@@ -1021,8 +978,6 @@ describe('ExperienceHandler', () => {
               source,
               emoji: '🤔',
               who: 'Human',
-              perspective: 'I',
-              processing: 'during',
               experienceQualities: experienceQualities}]});
 
         // Verify the service was called with correct experience data
@@ -1062,8 +1017,7 @@ describe('ExperienceHandler', () => {
             emoji: '📝',
             created: '2025-01-21T12:00:00Z',
             who: 'Human',
-            perspective: 'I',
-            processing: 'during' as const},
+                processing: 'during' as const},
           defaultsUsed: []};
 
         mockExperienceService.rememberExperience.mockResolvedValue(mockResult);
@@ -1074,8 +1028,6 @@ describe('ExperienceHandler', () => {
               source: 'Plain experience',
               emoji: '📝',
               who: 'Human',
-              perspective: 'I',
-              processing: 'during',
               // No experience field
             }]});
 
@@ -1120,8 +1072,6 @@ describe('ExperienceHandler', () => {
             emoji: '🌍',
             created: '2025-01-21T12:00:00Z',
             who: 'Human',
-            perspective: 'I',
-            processing: 'during' as const,
             experienceQualities: allQualities},
           defaultsUsed: []};
 
@@ -1133,8 +1083,6 @@ describe('ExperienceHandler', () => {
               source: 'Complete experiential moment',
               emoji: '🌍',
               who: 'Human',
-              perspective: 'I',
-              processing: 'during',
               experienceQualities: allQualities}]});
 
         expect(mockExperienceService.rememberExperience).toHaveBeenCalledWith(
@@ -1177,8 +1125,6 @@ describe('ExperienceHandler', () => {
             emoji: '🔀',
             created: '2025-01-21T12:00:00Z',
             who: 'Human',
-            perspective: 'I',
-            processing: 'during' as const,
             experienceQualities: mixedQualities},
           defaultsUsed: []};
 
@@ -1190,8 +1136,6 @@ describe('ExperienceHandler', () => {
               source: 'Mixed type and subtype experience',
               emoji: '🔀',
               who: 'Human',
-              perspective: 'I',
-              processing: 'during',
               experienceQualities: mixedQualities}]});
 
         expect(mockExperienceService.rememberExperience).toHaveBeenCalledWith(
@@ -1236,8 +1180,6 @@ describe('ExperienceHandler', () => {
             emoji: '🎯',
             created: '2025-01-21T12:00:00Z',
             who: 'Human',
-            perspective: 'I',
-            processing: 'during' as const,
             experienceQualities: typeOnlyQualities},
           defaultsUsed: []};
 
@@ -1249,8 +1191,6 @@ describe('ExperienceHandler', () => {
               source: 'Type-only experience',
               emoji: '🎯',
               who: 'Human',
-              perspective: 'I',
-              processing: 'during',
               experienceQualities: typeOnlyQualities}]});
 
         expect(mockExperienceService.rememberExperience).toHaveBeenCalledWith(
@@ -1291,8 +1231,6 @@ describe('ExperienceHandler', () => {
             emoji: '🎙️',
             created: '2025-01-21T12:00:00Z',
             who: 'Human',
-            perspective: 'I',
-            processing: 'during' as const,
             experienceQualities: subtypeQualities},
           defaultsUsed: []};
 
@@ -1304,8 +1242,6 @@ describe('ExperienceHandler', () => {
               source: 'Subtype-specific experience',
               emoji: '🎙️',
               who: 'Human',
-              perspective: 'I',
-              processing: 'during',
               experienceQualities: subtypeQualities}]});
 
         expect(mockExperienceService.rememberExperience).toHaveBeenCalledWith(
@@ -1386,8 +1322,7 @@ describe('ExperienceHandler', () => {
           qualities: {
             mood: 'open',
             embodied: { present: true }},
-          perspective: 'I',
-          limit: 10,
+            limit: 10,
           sort: 'relevance'}});
 
       expect(mockRecallService.search).toHaveBeenCalledWith({
@@ -1396,7 +1331,6 @@ describe('ExperienceHandler', () => {
         qualities: {
           mood: 'open',
           embodied: { present: true }},
-        perspective: 'I',
         limit: 10,
         sort: 'relevance'});
     });

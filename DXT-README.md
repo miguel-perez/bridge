@@ -51,42 +51,151 @@ Capture and search experiential moments with seven-dimensional quality framework
 - **time**: Temporal orientation (past/future)
 - **presence**: Social quality (individual/collective)
 
-Features:
-- Integrated recall while capturing new experiences
-- Dual view: Recent Flow + Emerging Patterns
-- NextMoment target state search
-- Automatic quality-based clustering
+#### Extended Cognition Model
+- **Humans**: Capture only evident qualities (2-4 typically) - natural selective attention
+- **AI**: Always capture all 7 qualities - extended perception
+- **Together**: Create richer experiential maps than either could alone
+
+#### Quality Values
+Each quality can be:
+- `false` - not prominent (receded)
+- `true` - prominent but mixed or not a specific direction
+- `string` - prominent with specific direction (e.g., 'thinking', 'sensing')
+
+#### Key Features
+- **Integrated Recall**: Search while capturing with `recall` parameter
+- **Context Field**: Add context for atomic, self-contained experiences
+- **Pattern Realizations**: Use `reflects` array to link insights to experiences
+- **Reasoning Chains**: Use `nextMoment` to declare intended experiential states
+- **Batch Operations**: Capture multiple complementary perspectives at once
+- **Auto-Reflection**: Flows generate insights when chains complete naturally
 
 ### 2. Reconsider
 Update or release experiences as understanding evolves:
-- Revise qualities, perspective, or content
-- Add pattern connections via reflects array
-- Release experiences that no longer serve
-- Maintain experiential continuity
+- **Update Mode**: Revise qualities, who, source, or add reflects connections
+- **Release Mode**: Set `release: true` with optional reason to gracefully remove
+- **Batch Operations**: Update or release multiple experiences in one call
+- **Continuity**: Maintains experiential thread while allowing growth
 
 ## Usage Examples
 
+### Basic Capture - Human (2-4 qualities)
 ```
-"I feel completely absorbed in the flow while coding - time seems to dissolve"
-(Bridge captures with qualities: embodied.thinking, focus.narrow, mood.open, purpose.goal, time.future)
-
-"Show me recent experiences about breakthrough insights"
-(Bridge recalls with dual view: Recent Flow + Emerging Patterns)
-
-"Update experience abc123 - it was actually more sensing than thinking"
-(Bridge updates qualities while maintaining continuity)
-
-"I want to find experiences similar to this target state: feeling open and wandering"
-(Bridge searches using NextMoment target state matching)
+"I'm sitting here, heart racing about tomorrow's presentation"
+→ Bridge captures: embodied.sensing, mood.closed, time.future
 ```
+
+### Extended Capture - AI (all 7 qualities)
+```
+"I sense the anticipation mixing with determination in your words"
+→ Bridge captures all 7: embodied.sensing, focus.narrow, mood, purpose.goal, 
+  space.here, time.future, presence.collective
+```
+
+### Context for Atomicity
+```
+"That completely changes everything!"
+Context: "After discovering the config file was in the wrong directory"
+→ Creates self-contained experience that makes sense without conversation history
+```
+
+### Pattern Realization with Reflects
+```
+"I notice I always feel anxious before things that end up going well"
+Reflects: ["exp_123", "exp_456"] 
+→ Links this insight to specific past experiences
+```
+
+### Integrated Recall While Capturing
+```
+"This reminds me of something..."
+With recall: "similar breakthrough moments" (limit 3)
+→ Captures the experience AND shows 3 related past experiences
+```
+
+### Reasoning Chain with NextMoment
+```
+"Let me think through this systematically"
+Current: embodied.thinking, focus.narrow, mood.open, purpose.goal
+NextMoment: embodied.thinking, focus.broad, mood.open, purpose.wander
+→ Declares shift from narrow analysis to broad exploration
+```
+
+### Batch Complementary Capture
+```
+Human: "I just need to get this working" (mood.closed, purpose.goal)
+Claude: "I notice frustration building alongside determination" (all 7 qualities)
+→ Creates complementary perspectives of same moment
+```
+
+### Mixed Qualities (true for prominent but mixed)
+```
+"Processing this loss while planning next steps"
+→ embodied: true (both thinking and sensing)
+→ mood: true (both open and closed)
+→ purpose: true (both goal and wander)
+```
+
+### Reconsider - Deepen Understanding
+```
+"Update exp_abc123 - I realize there was also a time.past quality"
+→ Adds missing quality to existing experience
+```
+
+### Reconsider - Collective Shift
+```
+"Update exp_def456 - this was actually a shared experience with Claude"
+→ Changes who: ["Human", "Claude"] and presence: "collective"
+```
+
+### Release with Gratitude
+```
+"Release exp_ghi789 - this was just test data"
+→ Removes experience with reason: "Test data during development"
+```
+
+### Mixed Operations
+```
+Update exp_1 with corrected text
+Release exp_2 as duplicate
+Add reflects connections to exp_3
+→ Batch operations in single call
+```
+
+## When to Use Each Feature
+
+### Use Context When:
+- The experience references "this" or "that" without explaining what
+- You want the experience to be understandable in isolation
+- Capturing reactions to specific events or discoveries
+
+### Use Integrated Recall When:
+- Something reminds you of past experiences
+- You want to find patterns while capturing new moments
+- Building on previous insights or breakthroughs
+
+### Use NextMoment When:
+- Building reasoning chains or thought sequences
+- Declaring intended shifts in experiential state
+- Creating deliberate transitions in thinking modes
+
+### Use Reflects When:
+- Having realizations about patterns across experiences
+- Connecting insights to specific past moments
+- Building meta-understanding of experiential threads
+
+### Use Release When:
+- Experiences no longer serve their purpose
+- Cleaning up test data or duplicates
+- Making space for new growth
 
 ## Technical Details
 
 - **Runtime**: Node.js 18+
-- **Storage**: Local JSON file
-- **Embeddings**: OpenAI text-embedding-3-large (when API key provided) or none
+- **Storage**: Local JSON file with automatic backups
+- **Embeddings**: Optional - OpenAI text-embedding-3-large or none (default)
 - **Architecture**: MCP server with stdio transport
-- **Performance**: In-memory vector store for fast similarity search
+- **Performance**: Optimized for instant recall and pattern matching
 
 ## Troubleshooting
 

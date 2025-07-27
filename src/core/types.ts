@@ -10,11 +10,7 @@ import { z } from 'zod';
 // CONSTANTS
 // ============================================================================
 
-/** Valid perspective values for experiential data */
-export const PERSPECTIVES = ['I', 'we', 'you', 'they'] as const;
-
-/** Valid processing levels for experiential data */
-export const PROCESSING_LEVELS = ['during', 'right-after', 'long-after'] as const;
+// Perspective and processing constants removed for streamlining
 
 /** Valid content types for experiential data */
 export const CONTENT_TYPES = ['text', 'audio'] as const;
@@ -43,22 +39,15 @@ export const QUALITY_SUBTYPES = {
 
 /** Default values for experiential data */
 export const DEFAULTS = {
-  PERSPECTIVE: 'I' as const,
   EXPERIENCER: 'self',
-  PROCESSING: 'during' as const,
   CONTENT_TYPE: 'text' as const,
-  CRAFTED: false,
 } as const;
 
 // ============================================================================
 // TYPE DEFINITIONS
 // ============================================================================
 
-/** Perspective from which experience is experienceed */
-export type Perspective = (typeof PERSPECTIVES)[number] | string;
-
-/** When the processing occurred relative to the experience */
-export type ProcessingLevel = (typeof PROCESSING_LEVELS)[number];
+// Perspective and ProcessingLevel types removed for streamlining
 
 /** Experiential quality types */
 export type QualityType = (typeof QUALITY_TYPES)[number];
@@ -95,14 +84,8 @@ export interface Source {
   created: string;
 
   // Context fields
-  /** Perspective from which experience is experienceed */
-  perspective?: Perspective;
   /** Who experienced this (single person or array for shared experiences) */
   who?: string | string[];
-  /** When processing occurred relative to experience */
-  processing?: ProcessingLevel;
-  /** Whether this is crafted content (blog) vs raw experience (journal) */
-  crafted?: boolean;
 
   // Analysis fields
   /** Experience analysis results (prominent qualities as array) */
@@ -212,16 +195,10 @@ export const SourceSchema = z.object({
     )
     .describe('Visual/memory anchor for this experience'),
   created: z.string().describe('When the experience was experienceed (auto-generated)'),
-  perspective: z.string().optional().describe('Perspective from which experience is experienceed'),
   who: z
     .union([z.string(), z.array(z.string())])
     .optional()
     .describe('Who experienced this'),
-  processing: z
-    .enum(PROCESSING_LEVELS)
-    .optional()
-    .describe('When processing occurred relative to experience'),
-  crafted: z.boolean().optional().describe('Whether this is crafted content vs raw experience'),
   // experience array field removed - use experienceQualities only
   reflects: z
     .array(z.string())
@@ -263,22 +240,7 @@ export function isValidQualityType(value: string): boolean {
   return QUALITY_TYPES.includes(baseQuality as QualityType);
 }
 
-/**
- * Validates if a value is a valid perspective
- */
-export function isValidPerspective(value: string): value is Perspective {
-  return (
-    PERSPECTIVES.includes(value as (typeof PERSPECTIVES)[number]) ||
-    (typeof value === 'string' && value.length > 0)
-  );
-}
-
-/**
- * Validates if a value is a valid processing level
- */
-export function isValidProcessingLevel(value: string): value is ProcessingLevel {
-  return PROCESSING_LEVELS.includes(value as ProcessingLevel);
-}
+// Perspective and processing validation functions removed for streamlining
 
 /**
  * Type guard to check if an object is a valid Source
@@ -298,10 +260,6 @@ export function isValidSource(source: unknown): source is Source {
     typeof src.created === 'string' &&
     (src.experienceQualities === undefined ||
       (typeof src.experienceQualities === 'object' && src.experienceQualities !== null)) &&
-    (src.perspective === undefined ||
-      (typeof src.perspective === 'string' && isValidPerspective(src.perspective))) &&
-    (src.processing === undefined ||
-      (typeof src.processing === 'string' && isValidProcessingLevel(src.processing))) &&
     (src.reflects === undefined ||
       (Array.isArray(src.reflects) &&
         src.reflects.every((item: unknown) => typeof item === 'string'))) &&
@@ -327,25 +285,7 @@ export function validateStorageData(data: unknown): StorageData {
 // HELPER FUNCTIONS
 // ============================================================================
 
-/**
- * Generates perspective based on who experienced it
- * @param who - Single person or array of people
- * @param providedPerspective - Optional perspective override
- * @returns Generated or provided perspective
- */
-export function generatePerspective(who: string | string[], providedPerspective?: string): string {
-  if (providedPerspective) {
-    return providedPerspective;
-  }
-
-  if (Array.isArray(who)) {
-    // Multiple people = "we"
-    return who.length > 1 ? 'we' : 'I';
-  }
-
-  // Single person = "I"
-  return 'I';
-}
+// generatePerspective function removed for streamlining
 
 /**
  * Converts old experience array format to new qualities switchboard
@@ -403,10 +343,7 @@ export function createSource(source: string, emoji: string, id?: string): Source
     source,
     emoji,
     created: new Date().toISOString(),
-    perspective: DEFAULTS.PERSPECTIVE,
     who: DEFAULTS.EXPERIENCER,
-    processing: DEFAULTS.PROCESSING,
-    crafted: DEFAULTS.CRAFTED,
   };
 }
 

@@ -26,7 +26,6 @@ function makeSource(overrides: Partial<Source> = {}): Source {
     perspective: overrides.perspective || 'I',
     who: overrides.who || 'self',
     processing: overrides.processing || 'during',
-    crafted: overrides.crafted ?? false,
     experienceQualities: overrides.experienceQualities || {
       mood: 'open',
       embodied: 'thinking',
@@ -64,10 +63,10 @@ describe('EnrichService', () => {
   test('partial update: only updates provided fields', async () => {
     const result = await enrichService.enrichSource({
       id: baseSource.id,
-      perspective: 'we',
+      who: 'Team',
     });
-    expect(result.source.perspective).toBe('we');
-    expect(result.updatedFields).toContain('perspective');
+    expect(result.source.who).toBe('Team');
+    expect(result.updatedFields).toContain('who');
     expect(result.source.source).toBe(baseSource.source);
   });
 

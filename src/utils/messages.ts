@@ -13,8 +13,6 @@ export const Messages = {
     batch: 'Experienced {count} experiences',
     similar: 'Similar: {content}',
     from: 'From: {experiencer}',
-    as: 'As: {perspective}',
-    when: 'When: {processing}',
     captured: 'Captured: {timeAgo}',
   },
 
@@ -42,13 +40,6 @@ export const Messages = {
     oneHourAgo: '1 hour ago',
     yesterday: 'yesterday',
     daysAgo: '{days} days ago',
-  },
-
-  // Processing timing
-  processing: {
-    during: 'during conversation',
-    rightAfter: 'right after',
-    longAfter: 'long after',
   },
 
   // Quality types - full labels preserved

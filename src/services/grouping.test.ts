@@ -3,7 +3,6 @@ import {
   groupByWho,
   groupByDate,
   groupByQualitySignature,
-  groupByPerspective,
   groupBySimilarity,
 } from './grouping.js';
 import { SourceRecord } from '../core/types.js';
@@ -16,11 +15,8 @@ describe('Grouping Service', () => {
       source: 'I feel anxious about the presentation',
       emoji: '😰',
       who: 'Alice',
-      perspective: 'I',
-      processing: 'during',
       created: '2025-01-15T10:00:00Z',
       experienceQualities: humanQualities('embodied.sensing', 'mood.closed'),
-      crafted: false,
       reflects: [],
     },
     {
@@ -28,11 +24,8 @@ describe('Grouping Service', () => {
       source: 'I feel anxious about the meeting',
       emoji: '😰',
       who: 'Bob',
-      perspective: 'I',
-      processing: 'during',
       created: '2025-01-15T11:00:00Z',
       experienceQualities: humanQualities('embodied.sensing', 'mood.closed'),
-      crafted: false,
       reflects: [],
     },
     {
@@ -40,11 +33,8 @@ describe('Grouping Service', () => {
       source: 'I am thinking deeply about this problem',
       emoji: '🤔',
       who: 'Alice',
-      perspective: 'I',
-      processing: 'during',
       created: '2025-01-16T09:00:00Z',
       experienceQualities: humanQualities('embodied.thinking', 'focus.narrow'),
-      crafted: false,
       reflects: [],
     },
     {
@@ -52,11 +42,8 @@ describe('Grouping Service', () => {
       source: 'We are working together on this project',
       emoji: '👥',
       who: 'Team',
-      perspective: 'we',
-      processing: 'during',
       created: '2025-01-16T14:00:00Z',
       experienceQualities: humanQualities('presence.collective', 'purpose.goal'),
-      crafted: false,
       reflects: [],
     },
   ];
@@ -178,49 +165,7 @@ describe('Grouping Service', () => {
     });
   });
 
-  describe('groupByPerspective', () => {
-    it('should group experiences by perspective', () => {
-      const result = groupByPerspective(mockExperiences);
-
-      expect(result).toHaveLength(2);
-
-      const firstPersonGroup = result.find((group) => group.key === 'I');
-      expect(firstPersonGroup).toBeDefined();
-      expect(firstPersonGroup?.count).toBe(3);
-
-      const collectiveGroup = result.find((group) => group.key === 'we');
-      expect(collectiveGroup).toBeDefined();
-      expect(collectiveGroup?.count).toBe(1);
-    });
-
-    it('should handle experiences with no perspective', () => {
-      const experiencesWithUnknown = [
-        { ...mockExperiences[0], perspective: undefined },
-        { ...mockExperiences[1], perspective: 'I' },
-      ];
-
-      const result = groupByPerspective(experiencesWithUnknown);
-
-      expect(result).toHaveLength(2);
-      // Sort by count descending, so I (count 1) comes before Unknown (count 1)
-      // But since they have the same count, the order might vary
-      const iGroup = result.find((group) => group.key === 'I');
-      const unknownGroup = result.find((group) => group.key === 'Unknown');
-
-      expect(iGroup).toEqual({
-        key: 'I',
-        label: 'First person (I) (1 experience)',
-        count: 1,
-        experiences: [experiencesWithUnknown[1]],
-      });
-      expect(unknownGroup).toEqual({
-        key: 'Unknown',
-        label: 'Unknown perspective (1 experience)',
-        count: 1,
-        experiences: [experiencesWithUnknown[0]],
-      });
-    });
-  });
+  // groupByPerspective removed - perspective field no longer in source structure
 
   describe('groupBySimilarity', () => {
     it('should group experiences by similarity using clustering', async () => {

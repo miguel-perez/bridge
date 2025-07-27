@@ -87,10 +87,7 @@ export class ReconsiderHandler {
           const result = await this.reconsiderService.enrichSource({
             id: item.id,
             source: item.source,
-            perspective: item.perspective,
             who: item.who,
-            processing: item.processing,
-            crafted: item.crafted,
             experienceQualities: item.experienceQualities,
             reflects: item.reflects,
             context: item.context,

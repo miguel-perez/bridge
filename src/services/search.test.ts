@@ -21,7 +21,6 @@ describe('Recall Relevance Scoring', () => {
       perspective: 'I',
       processing: 'during',
       created: new Date().toISOString(),
-      crafted: false,
       experienceQualities: humanQualities('mood.closed', 'embodied.sensing'),
     };
 
@@ -33,7 +32,6 @@ describe('Recall Relevance Scoring', () => {
       perspective: 'I',
       processing: 'during',
       created: new Date().toISOString(),
-      crafted: false,
       experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
     };
 
@@ -69,7 +67,6 @@ describe('Recall Relevance Scoring', () => {
       perspective: 'I',
       processing: 'during',
       created: new Date().toISOString(),
-      crafted: false,
       experienceQualities: humanQualities('mood.open', 'presence.individual'),
     };
 
@@ -81,7 +78,6 @@ describe('Recall Relevance Scoring', () => {
       perspective: 'I',
       processing: 'during',
       created: new Date().toISOString(),
-      crafted: false,
       experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
     };
 
@@ -107,7 +103,6 @@ describe('Recall Relevance Scoring', () => {
       perspective: 'I',
       processing: 'during',
       created: new Date().toISOString(),
-      crafted: false,
       experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
     };
 
@@ -138,7 +133,6 @@ describe('Recall Relevance Scoring', () => {
       perspective: 'I',
       processing: 'during',
       created: new Date().toISOString(),
-      crafted: false,
       experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
     };
 
@@ -150,7 +144,6 @@ describe('Recall Relevance Scoring', () => {
       perspective: 'I',
       processing: 'during',
       created: new Date().toISOString(),
-      crafted: false,
       experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
     };
 
@@ -162,7 +155,6 @@ describe('Recall Relevance Scoring', () => {
       perspective: 'I',
       processing: 'during',
       created: new Date().toISOString(),
-      crafted: false,
       experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
     };
 
@@ -208,7 +200,6 @@ describe('Date Range Filtering', () => {
       perspective: 'I',
       processing: 'during',
       created: today.toISOString(),
-      crafted: false,
       experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
     };
 
@@ -220,7 +211,6 @@ describe('Date Range Filtering', () => {
       perspective: 'I',
       processing: 'during',
       created: yesterday.toISOString(),
-      crafted: false,
       experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
     };
 
@@ -251,7 +241,6 @@ describe('Date Range Filtering', () => {
       perspective: 'I',
       processing: 'during',
       created: today.toISOString(),
-      crafted: false,
       experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
     };
 
@@ -263,7 +252,6 @@ describe('Date Range Filtering', () => {
       perspective: 'I',
       processing: 'during',
       created: yesterday.toISOString(),
-      crafted: false,
       experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
     };
 
@@ -297,7 +285,6 @@ describe('Date Range Filtering', () => {
       perspective: 'I',
       processing: 'during',
       created: today.toISOString(),
-      crafted: false,
       experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
     };
 
@@ -309,7 +296,6 @@ describe('Date Range Filtering', () => {
       perspective: 'I',
       processing: 'during',
       created: yesterday.toISOString(),
-      crafted: false,
       experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
     };
 
@@ -321,7 +307,6 @@ describe('Date Range Filtering', () => {
       perspective: 'I',
       processing: 'during',
       created: twoDaysAgo.toISOString(),
-      crafted: false,
       experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
     };
 
@@ -356,7 +341,6 @@ describe('Date Range Filtering', () => {
       perspective: 'I',
       processing: 'during',
       created: earlyToday.toISOString(),
-      crafted: false,
       experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
     };
 
@@ -368,7 +352,6 @@ describe('Date Range Filtering', () => {
       perspective: 'I',
       processing: 'during',
       created: lateToday.toISOString(),
-      crafted: false,
       experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
     };
 
@@ -413,7 +396,6 @@ describe('GroupBy Parameter Removal', () => {
       perspective: 'I',
       processing: 'during',
       created: new Date().toISOString(),
-      crafted: false,
       experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
     };
 
@@ -447,7 +429,6 @@ describe('Group By Functionality', () => {
         perspective: 'I',
         processing: 'during',
         created: '2025-01-15T10:00:00.000Z',
-        crafted: false,
         experienceQualities: {"embodied":"thinking","focus":false,"mood":"open","purpose":false,"space":false,"time":false,"presence":false},
       },
       {
@@ -458,7 +439,6 @@ describe('Group By Functionality', () => {
         perspective: 'we',
         processing: 'during',
         created: '2025-01-16T10:00:00.000Z',
-        crafted: true,
         experienceQualities: {"embodied":false,"focus":"narrow","mood":false,"purpose":"goal","space":false,"time":false,"presence":false},
       },
       {
@@ -469,7 +449,6 @@ describe('Group By Functionality', () => {
         perspective: 'I',
         processing: 'right-after',
         created: '2025-01-15T14:00:00.000Z',
-        crafted: false,
         experienceQualities: {"embodied":"thinking","focus":false,"mood":"open","purpose":false,"space":false,"time":false,"presence":false},
       },
       {
@@ -480,7 +459,6 @@ describe('Group By Functionality', () => {
         perspective: 'you',
         processing: 'during',
         created: '2025-01-16T14:00:00.000Z',
-        crafted: false,
         experienceQualities: {"embodied":false,"focus":"narrow","mood":false,"purpose":"goal","space":false,"time":false,"presence":false},
       },
     ];
@@ -566,20 +544,14 @@ describe('Group By Functionality', () => {
     expect(hasPurposeGroup).toBe(true);
   });
 
-  it('should group by perspective correctly', async () => {
+  // Group by perspective removed - test grouping by who instead
+  it('should group by who correctly', async () => {
     const results = await search({
-      group_by: 'perspective',
+      group_by: 'who',
     });
 
     expect(results.clusters).toBeDefined();
-    expect(results.clusters!.length).toBe(3); // I, we, you perspectives
-
-    const clusters = results.clusters!;
-    expect(clusters.some((c) => c.summary.includes('First person (I) (2 experience'))).toBe(true);
-    expect(clusters.some((c) => c.summary.includes('Collective (we) (1 experience'))).toBe(true);
-    expect(clusters.some((c) => c.summary.includes('Second person (you) (1 experience'))).toBe(
-      true
-    );
+    expect(results.clusters!.length).toBeGreaterThan(0);
   });
 
   it('should handle group_by: none as flat results', async () => {

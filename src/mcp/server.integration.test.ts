@@ -177,42 +177,7 @@ describe('MCP Server Protocol Compliance', () => {
       );
     }, 30000);
 
-    test('should accept custom perspective values', async () => {
-      transport = new StdioClientTransport({
-        command: 'node',
-        args: [distPath],
-        env: {
-          ...process.env,
-          NODE_ENV: 'test',
-          BRIDGE_FILE_PATH: join(tempDir, 'bridge.json'),
-        },
-      });
-
-      await client.connect(transport);
-
-      const result = await client.callTool({
-        name: 'experience',
-        arguments: {
-          experiences: [
-            {
-              source: 'Test content',
-              emoji: '🧪',
-              who: 'Test User',
-              perspective: 'custom_perspective', // Custom perspectives are now accepted
-              processing: 'during',
-            },
-          ],
-        },
-      });
-
-      expect(result.content).toBeDefined();
-      expect(Array.isArray(result.content)).toBe(true);
-      // Should successfully process with custom perspective
-      expect((result.content as Array<{ text: string }>)[0].text).toContain('Experienced');
-      expect((result.content as Array<{ text: string }>)[0].text).toContain(
-        'As: custom_perspective'
-      );
-    }, 30000);
+    // Removed perspective test - field no longer exists
 
     test('should handle unknown tool gracefully', async () => {
       transport = new StdioClientTransport({

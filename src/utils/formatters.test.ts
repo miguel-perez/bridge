@@ -24,8 +24,6 @@ jest.mock('./messages.js', () => ({
       successWithQualities: 'Experienced ({qualities})',
       batch: 'Experienced {count} moments',
       from: 'From {experiencer}',
-      as: 'As {perspective}',
-      when: 'When {processing}',
       captured: 'Captured {timeAgo}'},
     recall: {
       none: 'No experiences found',
@@ -33,10 +31,6 @@ jest.mock('./messages.js', () => ({
     reconsider: {
       success: 'Reconsidered',
       successWithQualities: 'Reconsidered as {qualities}'},
-    processing: {
-      during: 'in the moment',
-      rightAfter: 'right after',
-      longAfter: 'looking back'},
     time: {
       justNow: 'just now',
       oneMinuteAgo: '1 minute ago',
@@ -154,7 +148,7 @@ describe('Formatter Utilities', () => {
   });
 
   describe('formatDetailedSearchResult', () => {
-    it('should include perspective and processing for source type', () => {
+    it('should format source type without perspective/processing fields', () => {
       const sourceResult: SearchResult = {
         type: 'source',
         id: 'test_123',
@@ -164,13 +158,13 @@ describe('Formatter Utilities', () => {
           id: 'test_123',
           source: 'Original text',
           created: '2025-01-21T12:00:00Z',
-          perspective: 'I',
-          processing: 'during'}};
+}};
 
       const result = formatDetailedSearchResult(sourceResult, 0);
       expect(result).toContain('1. [SOURCE] Test snippet');
-      expect(result).toContain('Perspective: I');
-      expect(result).toContain('Processing: during');
+      // Perspective and processing removed from source structure
+      expect(result).not.toContain('Perspective:');
+      expect(result).not.toContain('Processing:');
     });
 
     it('should format without details for non-source types', () => {
@@ -184,7 +178,7 @@ describe('Formatter Utilities', () => {
       expect(result).toBe('1. [OTHER] Test snippet');
     });
 
-    it('should handle missing perspective and processing', () => {
+    it('should format source results consistently', () => {
       const sourceResult: SearchResult = {
         type: 'source',
         id: 'test_123',
@@ -240,8 +234,6 @@ describe('Formatter Utilities', () => {
         emoji: '🧪',
         created: '2025-01-21T11:55:00Z',
         who: 'Alice',
-        perspective: 'I',
-        processing: 'during',
         experienceQualities: {
           embodied: false,
           focus: false,
@@ -256,8 +248,8 @@ describe('Formatter Utilities', () => {
       const result = formatExperienceResponse(baseExperience);
       expect(result).toMatch(/Experienced.*mood\.open/);
       expect(result).toContain('From Alice');
-      expect(result).toContain('As I');
-      expect(result).toContain('When in the moment');
+      // Perspective removed
+      // Processing timing removed
       expect(result).toContain('Captured 5 minutes ago');
     });
 
@@ -288,7 +280,7 @@ describe('Formatter Utilities', () => {
         created: '2025-01-21T11:55:00Z'}};
       const result = formatExperienceResponse(minimal);
       expect(result).toContain('From me');
-      expect(result).toContain('As I');
+      // Perspective removed
     });
   });
 
@@ -458,28 +450,7 @@ describe('Formatter Utilities', () => {
     });
   });
 
-  describe('Processing formatting', () => {
-    it('should format processing levels correctly', () => {
-      const testCases = [
-        { processing: 'during', expected: 'in the moment' },
-        { processing: 'right-after', expected: 'right after' },
-        { processing: 'long-after', expected: 'looking back' },
-        { processing: undefined, expected: 'in the moment' }, // default
-        { processing: 'unknown', expected: 'in the moment' }, // default
-      ];
-
-      for (const { processing, expected } of testCases) {
-        const result: ExperienceResult = {
-          source: {
-            id: 'test',
-            source: 'test',
-            created: '2025-01-21T12:00:00Z',
-            processing}};
-        const formatted = formatExperienceResponse(result);
-        expect(formatted).toContain(`When ${expected}`);
-      }
-    });
-  });
+  // Processing formatting removed - field no longer in source structure
 
   describe('generateSearchFeedback', () => {
     it('should generate feedback for semantic search', () => {

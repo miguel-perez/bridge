@@ -10,7 +10,6 @@ import {
   groupByWho as groupingByWho,
   groupByDate as groupingByDate,
   groupByQualitySignature,
-  groupByPerspective as groupingByPerspective,
   type GroupedResult,
 } from './grouping.js';
 
@@ -41,7 +40,7 @@ function convertToExperienceCluster(group: GroupedResult): ExperienceCluster {
  */
 async function groupExperiences(
   experiences: SourceRecord[],
-  groupBy: 'who' | 'date' | 'qualities' | 'perspective'
+  groupBy: 'who' | 'date' | 'qualities'
 ): Promise<ExperienceCluster[]> {
   switch (groupBy) {
     case 'who': {
@@ -54,10 +53,6 @@ async function groupExperiences(
     }
     case 'qualities': {
       const groups = groupByQualitySignature(experiences);
-      return groups.map(convertToExperienceCluster);
-    }
-    case 'perspective': {
-      const groups = groupingByPerspective(experiences);
       return groups.map(convertToExperienceCluster);
     }
     default:
@@ -109,9 +104,6 @@ export interface RecallInput {
   offset?: number;
   type?: string[];
   who?: string;
-  perspective?: string;
-  processing?: string;
-  crafted?: boolean;
   created?: string | { start: string; end: string };
   sort?: 'relevance' | 'created';
   // Semantic recall
@@ -122,7 +114,7 @@ export interface RecallInput {
   // Display options
   show_ids?: boolean;
   // Grouping options
-  group_by?: 'similarity' | 'who' | 'date' | 'qualities' | 'perspective' | 'none';
+  group_by?: 'similarity' | 'who' | 'date' | 'qualities' | 'none';
   // Sophisticated quality filtering
   qualities?: QualityFilter;
   // Pattern realization filters
@@ -178,9 +170,6 @@ export interface RecallServiceResponse {
     filter_breakdown?: {
       type_filter?: number;
       who_filter?: number;
-      perspective_filter?: number;
-      processing_filter?: number;
-      crafted_filter?: number;
       temporal_filter?: number;
       qualities_filter?: number;
       semantic_threshold_filter?: number;
@@ -291,31 +280,7 @@ export async function search(input: RecallInput): Promise<RecallServiceResponse>
       addDebugLog(`Who filter applied: ${beforeCount} -> ${afterCount} records`);
     }
 
-    if (input.perspective) {
-      const beforeCount = filteredRecords.length;
-      filteredRecords = filteredRecords.filter(
-        (record) => record.perspective === input.perspective
-      );
-      const afterCount = filteredRecords.length;
-      debugInfo.filter_breakdown!.perspective_filter = beforeCount - afterCount;
-      addDebugLog(`Perspective filter applied: ${beforeCount} -> ${afterCount} records`);
-    }
 
-    if (input.processing) {
-      const beforeCount = filteredRecords.length;
-      filteredRecords = filteredRecords.filter((record) => record.processing === input.processing);
-      const afterCount = filteredRecords.length;
-      debugInfo.filter_breakdown!.processing_filter = beforeCount - afterCount;
-      addDebugLog(`Processing filter applied: ${beforeCount} -> ${afterCount} records`);
-    }
-
-    if (input.crafted !== undefined) {
-      const beforeCount = filteredRecords.length;
-      filteredRecords = filteredRecords.filter((record) => record.crafted === input.crafted);
-      const afterCount = filteredRecords.length;
-      debugInfo.filter_breakdown!.crafted_filter = beforeCount - afterCount;
-      addDebugLog(`Crafted filter applied: ${beforeCount} -> ${afterCount} records`);
-    }
 
     // Apply temporal filters
     if (input.created) {
@@ -403,8 +368,6 @@ export async function search(input: RecallInput): Promise<RecallServiceResponse>
       input.query || input.semantic_query || '',
       {
         who: input.who,
-        perspective: input.perspective,
-        processing: input.processing,
         qualities: input.qualities, // Pass sophisticated quality filters
       },
       semanticScoresMap
@@ -487,9 +450,7 @@ export async function search(input: RecallInput): Promise<RecallServiceResponse>
       snippet: record.source.length > 600 ? record.source.substring(0, 600) + '...' : record.source,
       metadata: {
         created: record.created,
-        perspective: record.perspective,
         who: record.who,
-        processing: record.processing,
         experienceQualities: record.experienceQualities,
       },
       relevance_score: record._relevance.score,

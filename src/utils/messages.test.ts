@@ -12,8 +12,7 @@ describe('Messages Utility', () => {
       expect(Messages.experience.batch).toBe('Experienced {count} experiences');
       expect(Messages.experience.similar).toBe('Similar: {content}');
       expect(Messages.experience.from).toBe('From: {experiencer}');
-      expect(Messages.experience.as).toBe('As: {perspective}');
-      expect(Messages.experience.when).toBe('When: {processing}');
+      // Perspective and processing removed
       expect(Messages.experience.captured).toBe('Captured: {timeAgo}');
     });
 
@@ -40,11 +39,7 @@ describe('Messages Utility', () => {
       expect(Messages.time.daysAgo).toBe('{days} days ago');
     });
 
-    it('should have all processing messages', () => {
-      expect(Messages.processing.during).toBe('during conversation');
-      expect(Messages.processing.rightAfter).toBe('right after');
-      expect(Messages.processing.longAfter).toBe('long after');
-    });
+    // Processing messages removed from Messages object
 
     it('should have all quality type messages', () => {
       // Base qualities

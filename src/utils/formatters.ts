@@ -96,20 +96,8 @@ export function formatDetailedSearchResult(
 ): string {
   const baseFormat = formatSearchResult(result, index, showId);
 
-  // Add additional context based on record type
-  let details = '';
-
-  if (result.type === 'source' && result.source) {
-    const source = result.source;
-    if (source.perspective) {
-      details += `\n   Perspective: ${source.perspective}`;
-    }
-    if (source.processing) {
-      details += `\n   Processing: ${source.processing}`;
-    }
-  }
-
-  return baseFormat + details;
+  // Additional context removed with perspective/processing fields
+  return baseFormat;
 }
 
 /**
@@ -148,8 +136,6 @@ export interface ExperienceResult {
     source: string;
     emoji: string;
     who?: string | string[];
-    perspective?: string;
-    processing?: string;
     created: string;
     experienceQualities?: {
       embodied: false | true | 'thinking' | 'sensing';
@@ -174,9 +160,7 @@ export interface RecallResult {
   snippet?: string;
   metadata?: {
     created: string;
-    perspective?: string;
     who?: string | string[];
-    processing?: string;
     experience?: string[];
     emoji?: string;
   };
@@ -198,17 +182,14 @@ export interface RecallSearchParams {
   search?: string;
 
   // Grouping behavior (replacing 'as')
-  group_by?: 'similarity' | 'who' | 'date' | 'qualities' | 'perspective' | 'none';
+  group_by?: 'similarity' | 'who' | 'date' | 'qualities' | 'none';
 
   // Existing filters
   who?: string;
-  perspective?: string;
   qualities?: unknown; // QualityFilters type
   created?: string | { start: string; end: string };
   reflects?: 'only';
   reflected_by?: string | string[];
-  processing?: 'during' | 'right-after' | 'long-after';
-  crafted?: boolean;
 
   // Individual quality dimensions
   embodied?: string;
@@ -266,7 +247,7 @@ export interface GroupedRecallResponse {
   }>;
   summary: {
     // Grouping metadata
-    groupType: 'similarity' | 'who' | 'date' | 'qualities' | 'perspective';
+    groupType: 'similarity' | 'who' | 'date' | 'qualities';
     groupCount: number;
     totalExperiences: number;
 
@@ -327,9 +308,6 @@ export function generateSearchFeedback(
     feedback += ` by ${summary.activeFilters.who}`;
   }
 
-  if (summary.activeFilters.perspective) {
-    feedback += ` from '${summary.activeFilters.perspective}' perspective`;
-  }
 
   if (summary.activeFilters.reflects === 'only') {
     feedback += ' (pattern realizations only)';
@@ -368,16 +346,6 @@ export function generateSearchFeedback(
 
   if (summary.activeFilters.created) {
     feedback += ' ' + formatDateFilter(summary.activeFilters.created);
-  }
-
-  if (summary.activeFilters.processing) {
-    feedback += ` processed ${summary.activeFilters.processing}`;
-  }
-
-  if (summary.activeFilters.crafted === true) {
-    feedback += ' (crafted content)';
-  } else if (summary.activeFilters.crafted === false) {
-    feedback += ' (raw experiences)';
   }
 
   // 4. Add sort if not default
@@ -685,10 +653,6 @@ function formatMetadata(source: Record<string, unknown>, showId: boolean = false
     formatMessage(Messages.experience.from, {
       experiencer: whoStr,
     }),
-    formatMessage(Messages.experience.as, { perspective: (source.perspective as string) || 'I' }),
-    formatMessage(Messages.experience.when, {
-      processing: formatProcessing(source.processing as string),
-    }),
     formatMessage(Messages.experience.captured, {
       timeAgo: formatTimeAgo(source.created as string),
     })
@@ -697,21 +661,6 @@ function formatMetadata(source: Record<string, unknown>, showId: boolean = false
   return lines.join('\n');
 }
 
-/**
- * Format processing timing in natural language
- */
-function formatProcessing(processing?: string): string {
-  switch (processing) {
-    case 'during':
-      return Messages.processing.during;
-    case 'right-after':
-      return Messages.processing.rightAfter;
-    case 'long-after':
-      return Messages.processing.longAfter;
-    default:
-      return Messages.processing.during;
-  }
-}
 
 /**
  * Format timestamp as human-readable time ago

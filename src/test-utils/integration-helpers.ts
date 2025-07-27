@@ -276,7 +276,6 @@ export async function callExperience(
     perspective?: string;
     processing?: string;
     context?: string;
-    crafted?: boolean;
     reflects?: string[];
     recall?: {
       query?: string;
@@ -285,8 +284,7 @@ export async function callExperience(
       offset?: number;
       qualities?: Record<string, unknown>;
       who?: string;
-      crafted?: boolean;
-      processing?: string;
+        processing?: string;
       created?: string | { start: string; end: string };
       perspective?: string;
       reflects?: 'only';
@@ -341,7 +339,6 @@ export async function callReconsider(
     perspective?: string;
     processing?: string;
     context?: string;
-    crafted?: boolean;
     reflects?: string[];
     release?: boolean;
     reason?: string;

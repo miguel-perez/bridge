@@ -11,7 +11,7 @@ import {
   saveEmbedding,
   deleteEmbedding,
 } from '../core/storage.js';
-import { Source, ProcessingLevel, EmbeddingRecord, ExperienceQualities } from '../core/types.js';
+import { Source, EmbeddingRecord, ExperienceQualities } from '../core/types.js';
 import { embeddingService } from './embeddings.js';
 
 // ============================================================================
@@ -20,8 +20,6 @@ import { embeddingService } from './embeddings.js';
 
 /** Default values for enrichment fields */
 export const ENRICH_DEFAULTS = {
-  PERSPECTIVE: 'I',
-  PROCESSING: 'during',
   WHO: 'Human',
 };
 
@@ -36,7 +34,6 @@ export const ENRICH_DEFAULTS = {
 export const enrichSchema = z.object({
   id: z.string().describe('ID of the source to enrich'),
   source: z.string().optional().describe('Updated source text'),
-  perspective: z.string().optional().describe('Updated perspective'),
   who: z
     .union([
       z.string().describe('Single person who experienced this'),
@@ -44,8 +41,6 @@ export const enrichSchema = z.object({
     ])
     .optional()
     .describe('Updated who experienced this'),
-  processing: z.string().optional().describe('Updated processing level'),
-  crafted: z.boolean().optional().describe('Updated crafted flag'),
   experience: z.object({
     embodied: z.union([z.literal(false), z.literal(true), z.literal('thinking'), z.literal('sensing')]),
     focus: z.union([z.literal(false), z.literal(true), z.literal('narrow'), z.literal('broad')]),
@@ -68,10 +63,7 @@ export const enrichSchema = z.object({
 export interface EnrichInput {
   id: string;
   source?: string;
-  perspective?: string;
   who?: string | string[];
-  processing?: ProcessingLevel;
-  crafted?: boolean;
   experienceQualities?: ExperienceQualities;
   reflects?: string[];
   context?: string;
@@ -152,10 +144,7 @@ export class EnrichService {
     const updatedSource = {
       ...existingSource,
       source: input.source ?? existingSource.source,
-      perspective: input.perspective ?? existingSource.perspective,
       who: input.who ?? existingSource.who,
-      processing: input.processing ?? existingSource.processing,
-      crafted: input.crafted ?? existingSource.crafted,
       experienceQualities: input.experienceQualities ?? existingSource.experienceQualities,
       reflects: input.reflects ?? existingSource.reflects,
       context: input.context ?? existingSource.context,
@@ -202,10 +191,7 @@ export class EnrichService {
   private getUpdatedFields(original: Source, updated: Source): string[] {
     const fields: string[] = [];
     if (original.source !== updated.source) fields.push('source');
-    if (original.perspective !== updated.perspective) fields.push('perspective');
     if (JSON.stringify(original.who) !== JSON.stringify(updated.who)) fields.push('who');
-    if (original.processing !== updated.processing) fields.push('processing');
-    if (original.crafted !== updated.crafted) fields.push('crafted');
     if (JSON.stringify(original.experienceQualities) !== JSON.stringify(updated.experienceQualities)) {
       fields.push('experience');
     }

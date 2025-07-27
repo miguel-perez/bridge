@@ -1,18 +1,7 @@
 import { z } from 'zod';
 
 // Enums
-export const PerspectiveEnum = z
-  .enum(['I', 'we', 'you', 'they'])
-  .describe(
-    'Perspective from which experience is experienceed: I (first person), we (collective), you (second person), they (third person)'
-  );
-export const ProcessingEnum = z
-  .enum(['during', 'right-after', 'long-after'])
-  .describe(
-    'When processing occurred: during (real-time), right-after (immediate), long-after (retrospective)'
-  );
-// Remove 'crafted' from ProcessingEnumWithCrafted
-export const ProcessingEnumWithCrafted = ProcessingEnum; // For compatibility, but no 'crafted'
+// Perspective and Processing enums removed for streamlining
 // Simplified quality types for experiential qualities
 export const QualityTypeEnum = z.enum([
   'embodied',
@@ -108,13 +97,7 @@ export const QualityFilterSchema = z
     'Sophisticated quality filtering with presence/absence filtering and OR logic within qualities'
   );
 
-// Perspective field - avoid union to prevent anyOf with $ref issues
-export const PerspectiveField = z
-  .string()
-  .min(1)
-  .describe(
-    'Perspective from which experience is experienceed (e.g., I, we, you, they, or custom perspectives)'
-  );
+// Perspective field removed for streamlining
 
 // Experience qualities schema - complete switchboard
 export const ExperienceQualitiesSchema = z.object({
@@ -255,7 +238,6 @@ const ExperienceItemSchema = z
       .describe(
         'Single emoji that serves as a visual/memory anchor for this experience. Choose one that captures the essence or feeling.'
       ),
-    perspective: PerspectiveField.optional(),
     who: z
       .union([
         z.string().describe('Single person who experienced this'),
@@ -263,13 +245,6 @@ const ExperienceItemSchema = z
       ])
       .describe(
         'Who experienced this moment - single string for individual ("Human", "Claude", or name), array for shared experience (["Human", "Claude"])'
-      )
-      .optional(),
-    processing: ProcessingEnum.optional(),
-    crafted: z
-      .boolean()
-      .describe(
-        'Whether this is crafted content (blog/refined for an audience) vs raw experience (journal/immediate)'
       )
       .optional(),
     experienceQualities: ExperienceObject,
@@ -314,9 +289,6 @@ export const ExperienceInputSchema = z
         offset: z.number().describe('Number of results to skip').optional(),
         // Filters
         who: z.string().describe('Filter by who experienced').optional(),
-        perspective: PerspectiveField.optional(),
-        processing: ProcessingEnum.optional(),
-        crafted: z.boolean().describe('Filter by crafted status').optional(),
         // Pattern filters
         reflects: z.enum(['only']).describe('Filter for pattern realizations only').optional(),
         reflected_by: z
@@ -340,7 +312,7 @@ export const ExperienceInputSchema = z
         // Sorting and grouping
         sort: SortEnum.optional(),
         group_by: z
-          .enum(['similarity', 'who', 'date', 'qualities', 'perspective', 'none'])
+          .enum(['similarity', 'who', 'date', 'qualities', 'none'])
           .describe('Group results by criteria')
           .optional(),
       })
@@ -378,14 +350,6 @@ const SearchItemSchema = z
     limit: z.number().describe('Maximum number of results to return').optional(),
     offset: z.number().describe('Number of results to skip for pagination').optional(),
     who: z.string().describe('Filter by who experienced').optional(),
-    perspective: PerspectiveField.optional(),
-    processing: ProcessingEnum.optional(),
-    crafted: z
-      .boolean()
-      .describe(
-        'Filter by crafted status (true for blog/refined content, false for raw experience)'
-      )
-      .optional(),
     reflects: z
       .enum(['only'])
       .describe('Filter for pattern realizations only (experiences with reflects field)')
@@ -413,9 +377,9 @@ const SearchItemSchema = z
       .optional(),
     sort: SortEnum.optional(),
     group_by: z
-      .enum(['similarity', 'who', 'date', 'qualities', 'perspective', 'none'])
+      .enum(['similarity', 'who', 'date', 'qualities', 'none'])
       .describe(
-        'Group results by specified criteria: similarity (clusters), who, date, qualities, perspective, or none for flat results'
+        'Group results by specified criteria: similarity (clusters), who, date, qualities, or none for flat results'
       )
       .optional(),
   })
@@ -433,7 +397,6 @@ const ReconsiderItemSchema = z
   .object({
     id: z.string().describe('ID of the experience to reconsider'),
     source: z.string().min(1).describe('Updated source (optional)').optional(),
-    perspective: PerspectiveField.optional(),
     who: z
       .union([
         z.string().describe('Single person who experienced this'),
@@ -443,8 +406,6 @@ const ReconsiderItemSchema = z
         'Who experienced this moment - single string for individual ("Human", "Claude", or name), array for shared experience (["Human", "Claude"])'
       )
       .optional(),
-    processing: ProcessingEnum.optional(),
-    crafted: z.boolean().describe('Updated crafted status (optional)').optional(),
     experienceQualities: ExperienceObjectOptional.optional(),
     reflects: z
       .array(z.string())
@@ -510,10 +471,7 @@ export function generateExperienceExample(): ExperienceInput {
         source:
           "I'm sitting at my desk, the afternoon light streaming through the window. My fingers hover over the keyboard, that familiar mix of excitement and uncertainty bubbling up. This project feels like it could be something special, but I'm not quite sure how to start.",
         emoji: '✨',
-        perspective: 'I',
         who: 'Alex',
-        processing: 'during',
-        crafted: false,
         experienceQualities: {
           embodied: 'sensing',
           focus: false,
@@ -541,8 +499,6 @@ export function generateSearchExample(): SearchInput {
         search: 'creative breakthrough moments',
         limit: 5,
         who: 'Alex',
-        perspective: 'I',
-        processing: 'during',
         sort: 'relevance',
       },
     ],
@@ -587,10 +543,7 @@ export function generateBatchExperienceExample(): ExperienceInput {
       {
         source: 'The first moment of clarity when the solution finally clicks into place.',
         emoji: '💡',
-        perspective: 'I',
         who: 'Alex',
-        processing: 'right-after',
-        crafted: false,
         experienceQualities: {
           embodied: false,
           focus: 'narrow', // Base quality 'focus' defaults to narrow
@@ -605,10 +558,7 @@ export function generateBatchExperienceExample(): ExperienceInput {
         source:
           'Walking through the park, the autumn leaves crunching underfoot, feeling grateful for this moment of peace.',
         emoji: '🍂',
-        perspective: 'I',
         who: 'Alex',
-        processing: 'during',
-        crafted: false,
         experienceQualities: {
           embodied: 'thinking',
           focus: false,

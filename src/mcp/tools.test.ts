@@ -133,7 +133,7 @@ describe('MCP Tools', () => {
       const reconsiderTool = tools.find((t) => t.name === 'reconsider');
       const reconsiderExampleIds = reconsiderTool.examples.map((e) => e.id);
       expect(reconsiderExampleIds).toContain('deepen-understanding');
-      expect(reconsiderExampleIds).toContain('perspective-shift');
+      expect(reconsiderExampleIds).toContain('collective-shift');
       expect(reconsiderExampleIds).toContain('release-single');
       expect(reconsiderExampleIds).toContain('mixed-operations');
     });

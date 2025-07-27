@@ -41,7 +41,6 @@ describe('Schema Validation', () => {
 
     it('should reject input without experiences array', () => {
       const input = {
-        perspective: 'I',
         who: 'Alex',
       };
       const result = ExperienceInputSchema.safeParse(input);
@@ -62,7 +61,6 @@ describe('Schema Validation', () => {
           {
             source: 'Test experience',
             emoji: '🧪',
-            perspective: 'I',
             experienceQualities: {
               embodied: false,
               focus: false,
@@ -85,7 +83,6 @@ describe('Schema Validation', () => {
           {
             source: 'Pattern realization',
             emoji: '💡',
-            perspective: 'I',
             experienceQualities: {
               embodied: false,
               focus: false,
@@ -109,7 +106,6 @@ describe('Schema Validation', () => {
           {
             source: 'Experience with empty reflects',
             emoji: '🧪',
-            perspective: 'I',
             experienceQualities: {
               embodied: false,
               focus: false,
@@ -133,10 +129,7 @@ describe('Schema Validation', () => {
           {
             source: 'Complete experience',
             emoji: '✨',
-            perspective: 'I',
             who: 'test',
-            processing: 'during',
-            crafted: false,
             experienceQualities: {
               embodied: 'sensing',
               focus: false,
@@ -154,13 +147,13 @@ describe('Schema Validation', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should accept any non-empty perspective string', () => {
+    // Perspective validation removed - field no longer exists
+    it('should validate with complete experienceQualities', () => {
       const input = {
         experiences: [
           {
             source: 'Test experience',
             emoji: '🧪',
-            perspective: 'custom-perspective',
             experienceQualities: {
               embodied: false,
               focus: false,
@@ -177,12 +170,12 @@ describe('Schema Validation', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should reject invalid processing', () => {
+    // Processing validation removed - field no longer exists
+    it('should reject invalid experience qualities', () => {
       const input = {
         experiences: [
           {
             source: 'Test experience',
-            processing: 'invalid',
             experienceQualities: ['mood.open'],
           },
         ],
@@ -390,7 +383,6 @@ describe('Schema Validation', () => {
         searches: [
           {
             who: 'Alex',
-            perspective: 'I',
           },
         ],
       };
@@ -404,7 +396,6 @@ describe('Schema Validation', () => {
           {
             search: 'test query',
             who: 'Alex',
-            perspective: 'I',
             limit: 10,
             offset: 5,
             sort: 'relevance',
@@ -561,8 +552,6 @@ describe('Schema Validation', () => {
               time: false,
               presence: false,
             },
-            perspective: 'we',
-            processing: 'long-after',
           },
         ],
       };
@@ -759,7 +748,7 @@ describe('Example Generation', () => {
     expect(example).toHaveProperty('experiences');
     expect(Array.isArray(example.experiences)).toBe(true);
     expect(example.experiences![0]).toHaveProperty('source');
-    expect(example.experiences![0]).toHaveProperty('perspective');
+    // Perspective removed from source structure
     expect(example.experiences![0]).toHaveProperty('experienceQualities');
   });
 

@@ -154,14 +154,12 @@ describe('Handler Utilities', () => {
         id: 'test',
         source: 'content',
         who: 'Alice',
-        perspective: 'I',
-        processing: 'during',
         created: '2025-01-21T12:00:00Z',
       };
 
       const result = formatMetadata(source);
       // The date is in the past, so it will show full date not "Just now"
-      expect(result).toMatch(/^Alice \| I \| during \| .+/);
+      expect(result).toMatch(/^Alice \| .+/);
     });
 
     it('should use defaults for missing fields', () => {
@@ -173,7 +171,7 @@ describe('Handler Utilities', () => {
 
       const result = formatMetadata(source);
       // The date is in the past, so it will show full date not "Just now"
-      expect(result).toMatch(/^Unknown \| Unknown perspective \| Unknown processing \| .+/);
+      expect(result).toMatch(/^Unknown \| .+/);
     });
 
     it('should handle missing created date', () => {
@@ -181,12 +179,10 @@ describe('Handler Utilities', () => {
         id: 'test',
         source: 'content',
         who: 'Bob',
-        perspective: 'we',
-        processing: 'long-after',
       } as SourceRecord;
 
       const result = formatMetadata(source);
-      expect(result).toBe('Bob | we | long-after');
+      expect(result).toBe('Bob');
     });
   });
 
@@ -310,10 +306,7 @@ describe('Handler Utilities', () => {
       const source: SourceRecord = {
         id: 'exp_123',
         source: 'I feel happy today',
-        perspective: 'I',
         who: 'Alice',
-        processing: 'during',
-        crafted: false,
         created: '2025-01-21T12:00:00Z',
         experienceQualities: humanQualities('mood.open', 'embodied.sensing'),
       };
@@ -321,10 +314,7 @@ describe('Handler Utilities', () => {
       const result = formatSource(source);
       expect(result).toContain('ID: exp_123');
       expect(result).toContain('Content: I feel happy today');
-      expect(result).toContain('Perspective: I');
       expect(result).toContain('Who: Alice');
-      expect(result).toContain('Processing: during');
-      expect(result).toContain('Crafted: false');
       expect(result).toMatch(/Tuesday, January 21, 2025|Just now/);
       expect(result).toContain('• mood.open');
       expect(result).toContain('• embodied.sensing');
@@ -347,27 +337,7 @@ describe('Handler Utilities', () => {
       expect(result).not.toContain('Crafted:');
     });
 
-    it('should handle crafted field', () => {
-      const source1: SourceRecord = {
-        id: 'exp_1',
-        source: 'content',
-        crafted: true,
-        created: '2025-01-21T12:00:00Z',
-      };
-
-      const result1 = formatSource(source1);
-      expect(result1).toContain('Crafted: true');
-
-      const source2: SourceRecord = {
-        id: 'exp_2',
-        source: 'content',
-        crafted: false,
-        created: '2025-01-21T12:00:00Z',
-      };
-
-      const result2 = formatSource(source2);
-      expect(result2).toContain('Crafted: false');
-    });
+    // Test removed: crafted field no longer exists in the data model
 
     it('should handle missing created date', () => {
       const source: SourceRecord = {
@@ -387,7 +357,6 @@ describe('Handler Utilities', () => {
       const source: SourceRecord = {
         id: 'exp_123',
         source: 'content',
-        perspective: 'I',
         who: 'Bob',
         created: '2025-01-21T12:00:00Z',
       };
@@ -396,7 +365,7 @@ describe('Handler Utilities', () => {
       const lines = result.split('\n');
       expect(lines).toContain('ID: exp_123');
       expect(lines).toContain('Content: content');
-      expect(lines).toContain('Perspective: I');
+      // Removed perspective check
       expect(lines).toContain('Who: Bob');
     });
   });

@@ -171,7 +171,7 @@ _No active experiments currently running._
 **Key Outcomes**: ✅ All success criteria met
 
 - Advanced recall options with sorting, pagination, and result metadata
-- Complete search schema coverage with `crafted` field support
+- Complete search schema coverage
 - Performance optimization for large datasets
 - Natural language time filtering integration
 - Backward compatibility maintained with existing queries
@@ -182,7 +182,7 @@ _No active experiments currently running._
 - Enhanced recall handler with sorting options (`sort: "relevance" | "created" | "updated"`)
 - Implemented pagination with `limit` and `offset` parameters
 - Added result metadata (total count, hasMore indicators)
-- Complete search schema coverage including missing `crafted` field
+- Complete search schema coverage
 - Performance optimization for large result sets
 - Natural language time parsing integration
 - Comprehensive test coverage for all new features
@@ -199,8 +199,8 @@ _No active experiments currently running._
 **Example Successful Implementations**:
 
 - `experience({ recall: { query: "last", sort: "created" } })` - Chronological sorting
-- `experience({ recall: { who: "Human", crafted: true, sort: "created" } })` - Content type filtering
-- `experience({ recall: { who: "Human", crafted: false, limit: 5, sort: "created" } })` - Pagination with limits
+- `experience({ recall: { who: "Human", sort: "created" } })` - Experiencer filtering
+- `experience({ recall: { who: "Human", limit: 5, sort: "created" } })` - Pagination with limits
 - Complex quality filtering with presence/absence logic
 - Natural language time expressions parsing
 

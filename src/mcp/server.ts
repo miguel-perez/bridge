@@ -36,7 +36,7 @@ const SERVER_VERSION = '0.1.0';
 
 /**
  * Sends log messages to the MCP client using log/message notifications
- * This is the proper way to log in MCP servers - never use console.log/console.error
+ * This is the proper way to log in MCP servers - only use MCP protocol logging
  * @deprecated Use mcpLog from safe-logger.ts instead
  */
 function mcpLog(level: 'info' | 'warn' | 'error', message: string, serverInstance?: Server): void {
@@ -287,7 +287,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             return `Invalid perspective`;
           }
           if (field === 'processing') {
-            return `Invalid processing level. Must be one of: during, right-after, long-after, crafted`;
+            return `Invalid processing level. Must be one of: during, right-after, long-after`;
           }
           if (field === 'content') {
             return `Required: Content is required and cannot be empty.`;

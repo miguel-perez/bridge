@@ -53,13 +53,8 @@ describe('ExperienceService', () => {
 
       const result = await experienceService.rememberExperience(input);
 
-      expect(result.source.perspective).toBe('I');
       expect(result.source.who).toBe('self');
-      expect(result.source.processing).toBe('during');
-      expect(result.source.crafted).toBe(false);
-      expect(result.defaultsUsed).toContain('perspective="auto-generated"');
       expect(result.defaultsUsed).toContain('who="self"');
-      expect(result.defaultsUsed).toContain('processing="during"');
     });
 
     it('should use default source when not provided', async () => {
@@ -148,8 +143,6 @@ describe('ExperienceService', () => {
       expect(result.source.source).toBe('Test experience with embedding failure');
       expect(result.source.who).toBe('test_user');
       expect(result.source.id).toBeDefined();
-      expect(result.defaultsUsed).toContain('perspective="auto-generated"');
-      expect(result.defaultsUsed).toContain('processing="during"');
 
       // Verify embedding was attempted but saveEmbedding was not called
       expect(mockEmbeddingService.initialize).toHaveBeenCalled();
@@ -190,9 +183,6 @@ describe('ExperienceService', () => {
         source: 'Test experience',
         emoji: '🧪',
         who: 'test_user',
-        perspective: 'I',
-        processing: 'during',
-        crafted: false,
         experience: {"embodied":"thinking","focus":false,"mood":"open","purpose":false,"space":false,"time":false,"presence":false},
       };
 

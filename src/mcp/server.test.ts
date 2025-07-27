@@ -185,7 +185,7 @@ describe('MCP Server - Utility Functions', () => {
           return 'Invalid perspective';
         }
         if (field === 'processing') {
-          return 'Invalid processing level. Must be one of: during, right-after, long-after, crafted';
+          return 'Invalid processing level. Must be one of: during, right-after, long-after';
         }
         if (field === 'content') {
           return 'Required: Content is required and cannot be empty.';
@@ -197,7 +197,7 @@ describe('MCP Server - Utility Functions', () => {
       });
 
       expect(formatted).toContain('Invalid perspective');
-      expect(formatted).toContain('Invalid processing level. Must be one of: during, right-after, long-after, crafted');
+      expect(formatted).toContain('Invalid processing level. Must be one of: during, right-after, long-after');
       expect(formatted).toContain('Required: Content is required and cannot be empty.');
       expect(formatted).toContain('Required: Experiencer is required. Specify who experienced this.');
     });

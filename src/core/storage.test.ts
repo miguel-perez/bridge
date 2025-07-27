@@ -184,7 +184,6 @@ describe('Storage Layer', () => {
         perspective: 'I',
         who: 'test',
         processing: 'long-after',
-        crafted: false,
         experienceQualities: humanQualities('embodied.sensing', 'mood.closed', 'time.future'),
         reflects: ['exp-123', 'exp-456'],
       };
@@ -201,7 +200,6 @@ describe('Storage Layer', () => {
         perspective: 'I',
         who: 'test',
         processing: 'during',
-        crafted: false,
         experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
       };
 
@@ -224,7 +222,6 @@ describe('Storage Layer', () => {
         perspective: 'I',
         who: 'test',
         processing: 'during',
-        crafted: false,
         experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
         reflects: [],
       };
@@ -243,7 +240,6 @@ describe('Storage Layer', () => {
         perspective: 'I',
         who: 'test',
         processing: 'during',
-        crafted: false,
         experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
       };
 
@@ -267,7 +263,6 @@ describe('Storage Layer', () => {
         perspective: 'I',
         who: 'test',
         processing: 'during',
-        crafted: false,
         experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
       };
 
@@ -290,7 +285,6 @@ describe('Storage Layer', () => {
         perspective: 'I',
         who: 'test',
         processing: 'during',
-        crafted: false,
         experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
       };
 
@@ -309,7 +303,6 @@ describe('Storage Layer', () => {
         perspective: 'I',
         who: 'test',
         processing: 'during',
-        crafted: false,
         experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
       };
 
@@ -320,7 +313,6 @@ describe('Storage Layer', () => {
         perspective: 'I',
         who: 'test',
         processing: 'during',
-        crafted: false,
         experienceQualities: humanQualities('mood.closed', 'embodied.sensing'),
       };
 
@@ -400,7 +392,6 @@ describe('Storage Layer', () => {
         perspective: 'I',
         who: 'test',
         processing: 'during',
-        crafted: false,
         experienceQualities: humanQualities('embodied.sensing', 'mood.closed'),
       };
 
@@ -416,7 +407,6 @@ describe('Storage Layer', () => {
         perspective: 'I',
         who: 'test',
         processing: 'long-after',
-        crafted: false,
         experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
         reflects: ['exp-123', 'exp-456'],
       };
@@ -465,7 +455,6 @@ describe('Storage Layer', () => {
         perspective: 'I',
         who: 'test',
         processing: 'during',
-        crafted: false,
         experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
       };
 

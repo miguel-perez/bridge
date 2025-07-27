@@ -153,9 +153,7 @@ describe('ReconsiderHandler', () => {
       expect(mockEnrichService.enrichSource).toHaveBeenCalledWith({
         id: 'exp_123',
         source: 'Updated text',
-        perspective: 'we',
         who: 'Team',
-        processing: 'long-after',
         experienceQualities: {
           embodied: false,
           focus: false,
@@ -167,7 +165,7 @@ describe('ReconsiderHandler', () => {
         },
         reflects: undefined,
         context: undefined,
-        crafted: undefined});
+      });
       expect(result.isError).toBeUndefined();
     });
 
@@ -350,10 +348,7 @@ describe('ReconsiderHandler', () => {
       expect(mockEnrichService.enrichSource).toHaveBeenCalledWith({
         id: 'exp_123',
         source: 'Updated text',
-        perspective: undefined,
         experiencer: undefined,
-        processing: undefined,
-        crafted: undefined,
         experience: undefined,
         reflects: undefined});
     });
@@ -380,10 +375,7 @@ describe('ReconsiderHandler', () => {
       expect(mockEnrichService.enrichSource).toHaveBeenCalledWith({
         id: 'exp_123',
         source: 'Updated text',
-        perspective: undefined,
         experiencer: undefined,
-        processing: undefined,
-        crafted: undefined,
         reflects: undefined});
     });
   });

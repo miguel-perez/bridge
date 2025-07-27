@@ -19,7 +19,7 @@ This document captures validated insights from Bridge experiments with clear evi
 
 All 8 enhancement prompts completed successfully:
 
-1. **Core Parameter Structure Update**: Added `group_by` parameter with 6 options (`similarity`, `experiencer`, `date`, `qualities`, `perspective`, `none`), deprecated `as` parameter with migration logic and console warnings
+1. **Core Parameter Structure Update**: Added `group_by` parameter with 5 options (`similarity`, `who`, `date`, `qualities`, `none`), deprecated `as` parameter with migration logic and console warnings
 2. **Response Structure Enhancement**: Implemented comprehensive response interfaces (`RecallResponse`, `GroupedRecallResponse`) with complete metadata tracking
 3. **Feedback String Generator**: Created `generateSearchFeedback()` function with helper functions for comprehensive parameter description
 4. **Grouping Implementation**: All grouping options implemented with proper sorting and labeling
@@ -68,7 +68,7 @@ experience({
 **Technical Patterns Discovered**:
 
 - **Comprehensive Parameter Interfaces**: Rich metadata tracking enables sophisticated feedback generation
-- **Grouping Abstraction**: Single interface supports multiple grouping strategies (similarity, experiencer, date, qualities, perspective)
+- **Grouping Abstraction**: Single interface supports multiple grouping strategies (similarity, who, date, qualities)
 - **Migration-Safe Deprecation**: Console warnings with automatic parameter conversion provides smooth upgrade path
 - **Feedback Template System**: Systematic approach to generating human-readable descriptions from technical parameters
 - **Emoji Validation Evolution**: `Intl.Segmenter` provides robust support for modern Unicode emoji sequences
@@ -173,7 +173,7 @@ await experience({
 - Enhanced recall handler with sorting options (`sort: "relevance" | "created" | "updated"`)
 - Implemented pagination with `limit` and `offset` parameters for efficient result control
 - Added result metadata (total count, hasMore indicators) for better user experience
-- Complete search schema coverage including missing `crafted` field for content type filtering
+- Complete search schema coverage for comprehensive filtering
 - Performance optimization for large result sets to prevent timeouts
 - Natural language time parsing integration for intuitive temporal queries
 - Comprehensive test coverage for all new features and edge cases
@@ -191,8 +191,8 @@ await experience({
 **Example Successful Implementations**:
 
 - `recall(query: "last", sort: "created")` - Chronological sorting working correctly
-- `recall(experiencer: "Human", crafted: true, sort: "created")` - Content type filtering operational
-- `recall(experiencer: "Human", crafted: false, limit: 5, sort: "created")` - Pagination with limits functional
+- `recall(experiencer: "Human", sort: "created")` - Experiencer filtering operational
+- `recall(experiencer: "Human", limit: 5, sort: "created")` - Pagination with limits functional
 - Complex quality filtering with presence/absence logic working as designed
 - Natural language time expressions parsing correctly
 
@@ -200,7 +200,7 @@ await experience({
 
 - Sorting options significantly improve user experience for large result sets
 - Pagination is essential for preventing timeouts with growing databases
-- Content type filtering (`crafted` field) provides valuable organization capabilities
+- Comprehensive filtering provides valuable organization capabilities
 - Natural language time parsing enhances intuitive querying
 - Performance optimization at the database level is critical for scalability
 - Backward compatibility ensures smooth transitions for existing users

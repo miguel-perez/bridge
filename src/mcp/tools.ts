@@ -60,7 +60,7 @@ export async function getTools(): Promise<Record<string, unknown>[]> {
       description: `Remember experiential moments that shape conversations and build shared memory. Enables extended cognition through complementary awareness between humans and AI.
 
 USE WHEN:
-• Someone shares how they're feeling or what they're experiencing
+• As you notice experiences happening
 • Insights, realizations, or breakthroughs occur
 • Physical sensations connect to mental/emotional states
 • Moments of struggle, challenge, or triumph are described
@@ -69,8 +69,8 @@ USE WHEN:
 • Building reasoning chains with experiential state tracking (nextMoment)
 
 EXTENDED COGNITION MODEL:
-• Humans: Capture 2-4 prominent qualities (natural selective attention)
-• AI: Always capture all 7 qualities (extended perception)
+• Humans: Capture only evident qualities (natural selective attention)
+• AI: Always use all qualities (extended perception)
 • Together: Create richer experiential maps than either could alone
 
 QUALITY SIGNATURES:
@@ -85,7 +85,7 @@ QUALITY SIGNATURES:
 QUALITY FORMAT:
 Each quality can be:
 • false - not prominent (receded)
-• true - prominent but mixed (e.g., both thinking and sensing)
+• true - prominent but mixed or not a listed direction (e.g., embodied prominent but neither thinking or sensing)
 • string - prominent with specific direction (e.g., 'thinking' or 'sensing')
 
 INTEGRATED RECALL:
@@ -94,8 +94,8 @@ INTEGRATED RECALL:
 • Supports quality filtering, grouping, and reflection finding
 
 FLOW TRACKING:
-• Use 'nextMoment' to declare intended experiential state
-• Enables reasoning chains and experiential journeys
+• Use 'nextMoment' to declare intended sequence of thinking for reasoning chains
+• Enables reasoning chains, experiential journeys, and flow tracking
 • Auto-generates reflections when flows complete`,
       inputSchema: ExperienceInputJsonSchema,
       readOnlyHint: false,
@@ -172,7 +172,6 @@ FLOW TRACKING:
                 source: 'I notice I always feel anxious before things that end up going well',
                 emoji: '💡',
                 who: 'Human',
-                processing: 'long-after',
                 experienceQualities: {
                   embodied: 'thinking',
                   focus: false,
@@ -388,7 +387,7 @@ USE WHEN:
 • Experience no longer serves (release mode)
 
 UPDATE MODE:
-• Revise any field: source, qualities, perspective, who
+• Revise any field: source, qualities, who
 • Add reflects array for pattern connections
 • Maintain experiential continuity
 
@@ -436,13 +435,12 @@ WORKFLOW:
           },
         },
         {
-          id: 'perspective-shift',
+          id: 'collective-shift',
           description: 'Realize experience was collective not individual',
           input: {
             reconsiderations: [
               {
                 id: 'exp_def456',
-                perspective: 'we',
                 who: ['Human', 'Claude'],
                 experienceQualities: {
                   embodied: false,
@@ -460,7 +458,7 @@ WORKFLOW:
             content: [
               {
                 type: 'text',
-                text: '✅ Experience reconsidered\n\n📝 ID: exp_def456\n🔄 Updated: perspective (I → we), who, presence\n🤝 Recognized shared experience',
+                text: '✅ Experience reconsidered\n\n📝 ID: exp_def456\n🔄 Updated: who, presence\n🤝 Recognized shared experience',
               },
             ],
           },

@@ -3,15 +3,11 @@
  */
 
 import {
-  PERSPECTIVES,
-  PROCESSING_LEVELS,
   QUALITY_TYPES,
   DEFAULTS,
   type Source,
   type StorageData,
   isValidQualityType,
-  isValidPerspective,
-  isValidProcessingLevel,
   isValidSource,
   createSource,
   createSourceRecord,
@@ -25,13 +21,9 @@ import {
 } from './types.js';
 
 describe('Constants', () => {
-  it('should have valid perspective values', () => {
-    expect(PERSPECTIVES).toEqual(['I', 'we', 'you', 'they']);
-  });
+  // PERSPECTIVES constant removed - field no longer in source structure
 
-  it('should have valid processing levels', () => {
-    expect(PROCESSING_LEVELS).toEqual(['during', 'right-after', 'long-after']);
-  });
+  // PROCESSING_LEVELS constant removed - field no longer in source structure
 
   it('should have valid quality types', () => {
     expect(QUALITY_TYPES).toEqual([
@@ -46,10 +38,7 @@ describe('Constants', () => {
   });
 
   it('should have sensible defaults', () => {
-    expect(DEFAULTS.PERSPECTIVE).toBe('I');
     expect(DEFAULTS.EXPERIENCER).toBe('self');
-    expect(DEFAULTS.PROCESSING).toBe('during');
-    expect(DEFAULTS.CRAFTED).toBe(false);
   });
 });
 
@@ -79,34 +68,7 @@ describe('Type Validation Functions', () => {
     });
   });
 
-  describe('isValidPerspective', () => {
-    it('should accept valid perspectives', () => {
-      expect(isValidPerspective('I')).toBe(true);
-      expect(isValidPerspective('we')).toBe(true);
-      expect(isValidPerspective('you')).toBe(true);
-      expect(isValidPerspective('they')).toBe(true);
-      expect(isValidPerspective('custom')).toBe(true);
-    });
-
-    it('should reject invalid perspectives', () => {
-      expect(isValidPerspective('')).toBe(false);
-      expect(isValidPerspective('invalid')).toBe(true); // Custom perspectives are allowed
-    });
-  });
-
-  describe('isValidProcessingLevel', () => {
-    it('should accept valid processing levels', () => {
-      expect(isValidProcessingLevel('during')).toBe(true);
-      expect(isValidProcessingLevel('right-after')).toBe(true);
-      expect(isValidProcessingLevel('long-after')).toBe(true);
-    });
-
-    it('should reject invalid processing levels', () => {
-      expect(isValidProcessingLevel('invalid')).toBe(false);
-      expect(isValidProcessingLevel('')).toBe(false);
-      expect(isValidProcessingLevel('DURING')).toBe(false);
-    });
-  });
+  // isValidPerspective and isValidProcessingLevel removed - fields no longer in source structure
 
   describe('isValidSource', () => {
     it('should accept valid source objects', () => {
@@ -115,10 +77,7 @@ describe('Type Validation Functions', () => {
         source: 'Test source',
         emoji: '🧪',
         created: '2024-01-01T00:00:00.000Z',
-        perspective: 'I',
         who: 'test',
-        processing: 'during',
-        crafted: false,
                 experienceQualities: {
           embodied: 'thinking' as const,
           focus: false as const,
@@ -138,10 +97,7 @@ describe('Type Validation Functions', () => {
         source: 'I notice I always feel anxious before things that end up going well',
         emoji: '💡',
         created: '2024-01-01T00:00:00.000Z',
-        perspective: 'I',
         who: 'test',
-        processing: 'during',
-        crafted: false,
         experienceQualities: {
           embodied: 'sensing' as const,
           focus: false as const,
@@ -162,10 +118,7 @@ describe('Type Validation Functions', () => {
         source: 'Test source',
         emoji: '🧪',
         created: '2024-01-01T00:00:00.000Z',
-        perspective: 'I',
         who: 'test',
-        processing: 'during',
-        crafted: false,
                 experienceQualities: {
           embodied: 'thinking' as const,
           focus: false as const,
@@ -186,10 +139,7 @@ describe('Type Validation Functions', () => {
         source: 'Test source',
         emoji: '🧪',
         created: '2024-01-01T00:00:00.000Z',
-        perspective: 'I',
         who: 'test',
-        processing: 'during',
-        crafted: false,
         experienceQualities: {
           embodied: false as const,
           focus: false as const,
@@ -220,10 +170,7 @@ describe('Type Validation Functions', () => {
         source: 'Test source',
         emoji: '🧪',
         created: '2024-01-01T00:00:00.000Z',
-        perspective: 'I',
         who: 'test',
-        processing: 'during',
-        crafted: false,
                 experienceQualities: {
           embodied: 'thinking' as const,
           focus: false as const,
@@ -249,10 +196,7 @@ describe('Factory Functions', () => {
       expect(source.emoji).toBe('🧪');
       expect(source.id).toMatch(/^src_\d+$/);
       expect(source.created).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
-      expect(source.perspective).toBe('I');
       expect(source.who).toBe('self');
-      expect(source.processing).toBe('during');
-      expect(source.crafted).toBe(false);
     });
 
     it('should use provided ID', () => {
@@ -280,10 +224,7 @@ describe('Zod Schema Validation', () => {
         source: 'Test source content',
         emoji: '🧪',
         created: '2024-01-01T00:00:00.000Z',
-        perspective: 'I',
         who: 'test',
-        processing: 'during',
-        crafted: false,
                 experienceQualities: {
           embodied: 'thinking' as const,
           focus: false as const,
@@ -305,10 +246,7 @@ describe('Zod Schema Validation', () => {
         source: 'I notice I always feel anxious before things that end up going well',
         emoji: '💡',
         created: '2024-01-01T00:00:00.000Z',
-        perspective: 'I',
         who: 'test',
-        processing: 'during',
-        crafted: false,
         experienceQualities: {
           embodied: 'sensing' as const,
           focus: false as const,
@@ -331,10 +269,7 @@ describe('Zod Schema Validation', () => {
         source: 'I feel overwhelmed',
         emoji: '😵',
         created: '2024-01-01T00:00:00.000Z',
-        perspective: 'I',
         who: 'test',
-        processing: 'during',
-        crafted: false,
         experienceQualities: {
           embodied: false as const,
           focus: 'broad' as const,
@@ -357,10 +292,7 @@ describe('Zod Schema Validation', () => {
         source: 'Test source content',
         emoji: '🧪',
         created: '2024-01-01T00:00:00.000Z',
-        perspective: 'I',
         who: 'test',
-        processing: 'during',
-        crafted: false,
                 experienceQualities: {
           embodied: 'thinking' as const,
           focus: false as const,
@@ -382,10 +314,7 @@ describe('Zod Schema Validation', () => {
         id: 'test-123',
         source: 'Test source content',
         created: '2024-01-01T00:00:00.000Z',
-        perspective: 'I',
         who: 'test',
-        processing: 'during',
-        crafted: false,
                 experienceQualities: {
           embodied: 'thinking' as const,
           focus: false as const,
@@ -407,10 +336,7 @@ describe('Zod Schema Validation', () => {
         id: 'test-123',
         source: 'Test source content',
         created: '2024-01-01T00:00:00.000Z',
-        perspective: 'I',
         who: 'test',
-        processing: 'during',
-        crafted: false,
                 experienceQualities: {
           embodied: 'thinking' as const,
           focus: false as const,
@@ -436,7 +362,6 @@ describe('Zod Schema Validation', () => {
         perspective: 'custom-perspective',
         who: 'test',
         processing: 'during',
-        crafted: false,
                 experienceQualities: {
           embodied: 'thinking' as const,
           focus: false as const,
@@ -476,8 +401,7 @@ describe('Zod Schema Validation', () => {
             perspective: 'I',
             who: 'test',
             processing: 'during',
-            crafted: false,
-                    experienceQualities: {
+                        experienceQualities: {
           embodied: 'thinking' as const,
           focus: false as const,
           mood: 'open' as const,
@@ -512,8 +436,7 @@ describe('Zod Schema Validation', () => {
             perspective: 'I',
             who: 'test',
             processing: 'during',
-            crafted: false,
-                    experienceQualities: {
+                        experienceQualities: {
           embodied: 'thinking' as const,
           focus: false as const,
           mood: 'open' as const,
@@ -531,8 +454,7 @@ describe('Zod Schema Validation', () => {
             perspective: 'I',
             who: 'test',
             processing: 'long-after',
-            crafted: false,
-            experienceQualities: {
+                experienceQualities: {
           embodied: 'sensing' as const,
           focus: false as const,
           mood: 'closed' as const,
@@ -570,10 +492,7 @@ describe('Zod-based Validation Functions', () => {
         source: 'Test source content',
         emoji: '🧪',
         created: '2024-01-01T00:00:00.000Z',
-        perspective: 'I',
         who: 'test',
-        processing: 'during',
-        crafted: false,
                 experienceQualities: {
           embodied: 'thinking' as const,
           focus: false as const,
@@ -598,7 +517,6 @@ describe('Zod-based Validation Functions', () => {
             perspective: 'I',
             who: 'test',
         processing: 'long-after',
-        crafted: false,
         experienceQualities: {
           embodied: 'sensing' as const,
           focus: false as const,
@@ -629,10 +547,7 @@ describe('Zod-based Validation Functions', () => {
         id: 'test-123',
         source: 'Test source content',
         created: '2024-01-01T00:00:00.000Z',
-        perspective: 'I',
         who: 'test',
-        processing: 'during',
-        crafted: false,
                 experienceQualities: {
           embodied: 'thinking' as const,
           focus: false as const,
@@ -661,8 +576,7 @@ describe('Zod-based Validation Functions', () => {
             perspective: 'I',
             who: 'test',
             processing: 'during',
-            crafted: false,
-                    experienceQualities: {
+                        experienceQualities: {
           embodied: 'thinking' as const,
           focus: false as const,
           mood: 'open' as const,
@@ -690,8 +604,7 @@ describe('Zod-based Validation Functions', () => {
             perspective: 'I',
             who: 'test',
             processing: 'during',
-            crafted: false,
-                    experienceQualities: {
+                        experienceQualities: {
           embodied: 'thinking' as const,
           focus: false as const,
           mood: 'open' as const,
@@ -709,8 +622,7 @@ describe('Zod-based Validation Functions', () => {
             perspective: 'I',
             who: 'test',
             processing: 'long-after',
-            crafted: false,
-            experienceQualities: {
+                experienceQualities: {
           embodied: 'sensing' as const,
           focus: false as const,
           mood: 'closed' as const,

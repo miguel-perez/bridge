@@ -253,8 +253,6 @@ export function applyFiltersAndScore(
   query: string | string[],
   filters: {
     who?: string;
-    perspective?: string;
-    processing?: string;
     reflects?: 'only';
     reflected_by?: string | string[];
     qualities?: QualityFilter; // New sophisticated quality filtering
@@ -266,12 +264,6 @@ export function applyFiltersAndScore(
   // Hard filters (binary)
   if (filters.who) {
     filtered = filtered.filter((exp) => exp.who === filters.who);
-  }
-  if (filters.perspective) {
-    filtered = filtered.filter((exp) => exp.perspective === filters.perspective);
-  }
-  if (filters.processing) {
-    filtered = filtered.filter((exp) => exp.processing === filters.processing);
   }
   if (filters.reflects === 'only') {
     // Filter for pattern realizations only (experiences with reflects field)

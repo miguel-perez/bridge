@@ -7,7 +7,6 @@ import { z } from 'zod';
 import { saveSource, saveEmbedding } from '../core/storage.js';
 import { generateId } from '../core/storage.js';
 import type { Source, EmbeddingRecord, ExperienceQualities } from '../core/types.js';
-import { generatePerspective } from '../core/types.js';
 import { embeddingService } from './embeddings.js';
 
 // ============================================================================
@@ -17,8 +16,6 @@ import { embeddingService } from './embeddings.js';
 /** Default values for experience fields */
 export const EXPERIENCE_DEFAULTS = {
   CONTENT_TYPE: 'text',
-  PERSPECTIVE: 'I',
-  PROCESSING: 'during',
   EXPERIENCER: 'self',
 };
 
@@ -73,10 +70,7 @@ export const experienceSchema = z.object({
         'Must be a single emoji (including compound emojis with modifiers, skin tones, and sequences)',
     }
   ),
-  perspective: z.string().optional(),
   who: z.union([z.string(), z.array(z.string())]).optional(),
-  processing: z.enum(['during', 'right-after', 'long-after']).optional(),
-  crafted: z.boolean().optional(),
 
   // Experience analysis - can be array or complete qualities object
   experience: z
@@ -127,10 +121,7 @@ export const experienceSchema = z.object({
 export interface ExperienceInput {
   source?: string;
   emoji: string;
-  perspective?: string;
   who?: string | string[];
-  processing?: string;
-  crafted?: boolean;
   experience?: ExperienceQualities;
   reflects?: string[];
   context?: string;
@@ -185,9 +176,6 @@ export class ExperienceService {
     // Handle who field
     const who = validatedInput.who || 'self';
 
-    // Generate perspective if not provided
-    const perspective = generatePerspective(who, validatedInput.perspective);
-
     // Handle experience qualities - only accept switchboard format
     let experienceQualities: ExperienceQualities | undefined;
 
@@ -208,10 +196,7 @@ export class ExperienceService {
       source,
       emoji: validatedInput.emoji,
       created,
-      perspective,
       who,
-      processing: validatedInput.processing || 'during',
-      crafted: validatedInput.crafted || false,
       experienceQualities,
       reflects: validatedInput.reflects,
       context: validatedInput.context,
@@ -265,9 +250,7 @@ export class ExperienceService {
    */
   private getDefaultsUsed(originalInput: ExperienceInput): string[] {
     const defaultsUsed = [];
-    if (!originalInput.perspective) defaultsUsed.push('perspective="auto-generated"');
     if (!originalInput.who) defaultsUsed.push('who="self"');
-    if (!originalInput.processing) defaultsUsed.push('processing="during"');
     if (!originalInput.source) defaultsUsed.push('source="Experience experienced"');
     return defaultsUsed;
   }

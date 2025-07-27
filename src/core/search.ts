@@ -209,23 +209,7 @@ export function advancedFilters(
     stats.afterWho = filtered.length;
   }
 
-  // Perspectives filter
-  if (filters.perspectives && filters.perspectives.length > 0) {
-    filtered = filtered.filter((result) => {
-      const perspective = result.source.perspective || FIELD_DEFAULTS.PERSPECTIVE;
-      return filters.perspectives!.includes(perspective);
-    });
-    stats.afterPerspectives = filtered.length;
-  }
-
-  // Processing filter
-  if (filters.processing && filters.processing.length > 0) {
-    filtered = filtered.filter((result) => {
-      const processing = result.source.processing || FIELD_DEFAULTS.PROCESSING;
-      return filters.processing!.includes(processing);
-    });
-    stats.afterProcessing = filtered.length;
-  }
+  // Removed perspective and processing filters
 
   stats.final = filtered.length;
   return { filtered, stats };

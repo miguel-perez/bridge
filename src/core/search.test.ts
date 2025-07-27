@@ -13,7 +13,6 @@ describe('Search Module', () => {
       perspective: 'I',
       who: 'self',
       processing: 'during',
-      crafted: false,
     },
     {
       type: 'source',
@@ -23,7 +22,6 @@ describe('Search Module', () => {
       perspective: 'we',
       who: 'team',
       processing: 'right-after',
-      crafted: true,
     },
     {
       type: 'source',
@@ -33,7 +31,6 @@ describe('Search Module', () => {
       perspective: 'I',
       who: 'self',
       processing: 'during',
-      crafted: false,
     },
     {
       type: 'source',
@@ -43,7 +40,6 @@ describe('Search Module', () => {
       perspective: 'you',
       who: 'other',
       processing: 'long-after',
-      crafted: false,
     },
   ];
 
@@ -73,31 +69,7 @@ describe('Search Module', () => {
       expect(filtered.every((result) => result.source.who === 'self')).toBe(true);
     });
 
-    test('should filter by perspectives', () => {
-      const filters: FilterOptions = {
-        perspectives: ['I', 'we'],
-      };
-
-      const { filtered } = advancedFilters(mockSearchResults, filters);
-
-      expect(filtered).toHaveLength(3);
-      expect(
-        filtered.every(
-          (result) => result.source.perspective === 'I' || result.source.perspective === 'we'
-        )
-      ).toBe(true);
-    });
-
-    test('should filter by processing levels', () => {
-      const filters: FilterOptions = {
-        processing: ['during'],
-      };
-
-      const { filtered } = advancedFilters(mockSearchResults, filters);
-
-      expect(filtered).toHaveLength(2);
-      expect(filtered.every((result) => result.source.processing === 'during')).toBe(true);
-    });
+    // Removed perspective and processing tests - fields no longer exist
 
     test('should filter by created time range', () => {
       const filters: FilterOptions = {

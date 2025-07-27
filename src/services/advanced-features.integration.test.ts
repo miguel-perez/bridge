@@ -87,49 +87,7 @@ describe('Advanced Features Integration', () => {
     });
   }, 30000);
 
-  test('should handle crafted vs raw experiences', async () => {
-    await withTestEnvironment(async (env) => {
-      // Create crafted content
-      await callExperience(env.client, {
-        source: 'A carefully written reflection on the project',
-        emoji: '✍️',
-        experienceQualities: {"embodied":"thinking","focus":false,"mood":"open","purpose":false,"space":false,"time":false,"presence":false},
-        crafted: true,
-      });
-
-      // Create raw experience
-      await callExperience(env.client, {
-        source: 'ugh this bug is driving me crazy',
-        emoji: '😤',
-        experienceQualities: {"embodied":"sensing","focus":false,"mood":"closed","purpose":false,"space":false,"time":false,"presence":false},
-        crafted: false,
-      });
-
-      // Search for crafted content only
-      const crafted = await callExperience(env.client, {
-        source: 'Looking for polished thoughts',
-        emoji: '📝',
-        experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
-        recall: {
-          crafted: true,
-        },
-      });
-
-      expect(crafted.content).toBeDefined();
-
-      // Search for raw experiences only
-      const raw = await callExperience(env.client, {
-        source: 'Looking for authentic moments',
-        emoji: '💭',
-        experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
-        recall: {
-          crafted: false,
-        },
-      });
-
-      expect(raw.content).toBeDefined();
-    });
-  }, 30000);
+  // Test removed: crafted field no longer exists in the data model
 
   test('should handle reflected_by queries', async () => {
     await withTestEnvironment(async (env) => {

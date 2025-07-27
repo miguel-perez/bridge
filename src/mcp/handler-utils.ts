@@ -124,11 +124,7 @@ export function formatMetadata(source: SourceRecord): string {
   // Handle both string and array of who
   const whoStr = Array.isArray(who) ? who.join(' & ') : who;
 
-  const parts = [
-    whoStr,
-    source.perspective || 'Unknown perspective',
-    source.processing || 'Unknown processing',
-  ];
+  const parts = [whoStr];
 
   if (source.created) {
     parts.push(formatDate(source.created));
@@ -224,13 +220,10 @@ export function formatSource(source: SourceRecord): string {
   parts.push(`Content: ${source.source}`);
 
   // Context fields
-  if (source.perspective) parts.push(`Perspective: ${source.perspective}`);
   if (source.who) {
     const whoStr = Array.isArray(source.who) ? source.who.join(' & ') : source.who;
     parts.push(`Who: ${whoStr}`);
   }
-  if (source.processing) parts.push(`Processing: ${source.processing}`);
-  if (source.crafted !== undefined) parts.push(`Crafted: ${source.crafted}`);
 
   // Timestamps
   if (source.created) {

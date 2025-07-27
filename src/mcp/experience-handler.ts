@@ -176,10 +176,7 @@ export class ExperienceHandler {
         const result = await this.experienceService.rememberExperience({
           source: item.source,
           emoji: item.emoji,
-          perspective: item.perspective,
           who: item.who,
-          processing: item.processing,
-          crafted: item.crafted,
           experience: item.experienceQualities || undefined,
           reflects: item.reflects,
           context: item.context,
@@ -230,15 +227,6 @@ export class ExperienceHandler {
         // Filters
         if (experience.recall?.who) {
           searchParams.who = experience.recall.who;
-        }
-        if (experience.recall?.perspective) {
-          searchParams.perspective = experience.recall.perspective;
-        }
-        if (experience.recall?.processing) {
-          searchParams.processing = experience.recall.processing;
-        }
-        if (experience.recall?.crafted !== undefined) {
-          searchParams.crafted = experience.recall.crafted;
         }
         // Pattern filters
         if (experience.recall?.reflects === 'only') {

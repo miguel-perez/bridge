@@ -190,7 +190,6 @@ describe('Bridge End-to-End Workflows', () => {
         emoji: '🧪',
         experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
         who: 'Test Runner',
-        crafted: false,
       });
       const id = extractExperienceId(test);
 
