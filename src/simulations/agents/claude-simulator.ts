@@ -50,23 +50,12 @@ AVAILABLE TOOLS:
 
 2. reconsider - ${reconsiderTool?.description || ''}
 
-Use tools when appropriate for the conversation.
+Respond naturally to the conversation. Use Bridge tools as the descriptions guide you.
 
 Format your response EXACTLY as:
 THOUGHT: [Your internal reflection]
 BRIDGE_CALLS: [JSON array of tool calls] or none
-MESSAGE: [Your response to the human]
-
-Example Bridge calls:
-
-1. Start conversation by checking shared memory and capturing human's initial state:
-[{"tool": "experience", "arguments": {"recall": {"query": "recent insights with this user", "limit": 3}, "experiences": [{"source": "I need help with this complex navigation design", "emoji": "🤔", "who": "Human", "experience": {"embodied": "thinking", "focus": false, "mood": false, "purpose": "goal", "space": false, "time": false, "presence": false}}, {"source": "Checking what we've discovered about design patterns", "emoji": "🔍", "who": "Claude", "experience": {"embodied": "thinking", "focus": "broad", "mood": "open", "purpose": "goal", "space": "there", "time": "past", "presence": "collective"}}]}}]
-
-2. Capture human frustration and your response:
-[{"tool": "experience", "arguments": {"experiences": [{"source": "This is so frustrating - nothing is working right!", "emoji": "😤", "who": "Human", "experience": {"embodied": false, "focus": false, "mood": "closed", "purpose": "goal", "space": false, "time": false, "presence": false}}, {"source": "I sense the frustration - let me help navigate this", "emoji": "🌊", "who": "Claude", "experience": {"embodied": "sensing", "focus": "narrow", "mood": "closed", "purpose": "goal", "space": "here", "time": false, "presence": "collective"}}]}}]
-
-3. Capture shared moment of breakthrough:
-[{"tool": "experience", "arguments": {"experiences": [{"source": "Oh! We found it - the pattern emerges from user flow!", "emoji": "💡", "who": ["Human", "Claude"], "context": "After collaborative exploration", "experience": {"embodied": "thinking", "focus": "narrow", "mood": "open", "purpose": "goal", "space": "here", "time": false, "presence": "collective"}}]}}]`
+MESSAGE: [Your response to the human]`
         }
       ]
     });
@@ -88,7 +77,9 @@ Example Bridge calls:
 
 ${scenario.aiContext}
 
-Your goal: ${scenario.objectives.ai}`;
+Your goal: ${scenario.objectives.ai}
+
+Engage naturally in the conversation.`;
   }
   
   private formatHistory(history: SimulationTurn[]): string {

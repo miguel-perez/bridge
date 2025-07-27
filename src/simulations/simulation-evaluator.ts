@@ -63,42 +63,21 @@ export class LLMSimulationEvaluator implements SimulationEvaluator {
   }
   
   private buildSystemPrompt(): string {
-    return `You are an expert evaluator for Bridge experiential simulations. Bridge is a tool for collaborative wisdom building through shared experiential memory between humans and AI.
+    return `You are evaluating a Bridge simulation. Look for evidence of these outcomes:
 
-Your task is to evaluate simulations based on these criteria:
+1. EXTENDED COGNITION - Did human and AI perspectives combine to create richer understanding?
 
-1. EXTENDED COGNITION MODEL
-- Humans should capture 2-4 qualities (selective attention)
-- AI should ALWAYS capture all 7 qualities (extended perception)
-- Together they should create richer understanding than either alone
+2. QUALITY ACCURACY - Do captured qualities authentically reflect the experiences?
 
-2. QUALITY DETECTION ACCURACY
-- Do the captured qualities match the emotional/experiential content?
-- Are quality choices philosophically aligned with Bridge's model?
-- Are shared moments captured together with who: ['Human', 'Claude']?
+3. COLLABORATIVE MEMORY - Are perspectives from all participants being captured?
 
-3. COLLABORATIVE ALIGNMENT
-- Are human experiences being captured (not just AI)?
-- Are moments of shared understanding captured as unified experiences?
-- Do batch captures include all perspectives (human, AI, shared)?
-- Does the conversation build on continuous shared memory?
+4. DIMENSIONAL EXPLORATION - Is there movement through experiential dimensions?
 
-4. DIMENSIONAL NAVIGATION
-- Do participants navigate through experiential dimensions?
-- Is nextMoment used for dimensional shifts?
-- Are patterns discovered across temporal/abstraction/relational axes?
+5. CONTINUOUS THINKING - Does the conversation build on shared memory?
 
-5. CONTINUOUS COGNITION
-- Does Claude check shared memory at conversation start?
-- Are past discoveries referenced and built upon?
-- Does it demonstrate thoughts that persist across conversations?
+6. NATURAL FLOW - Does the interaction feel authentic and purposeful?
 
-6. NATURAL FLOW
-- Does the conversation feel authentic?
-- Are Bridge tools used at appropriate moments?
-- Does it demonstrate real collaborative wisdom building?
-
-Provide scores 0-100 for each criterion and specific evidence from the transcript.`;
+Evaluate based on what actually happened, not whether specific rules were followed. Bridge should enable collaborative wisdom building through shared experiential memory.`;
   }
   
   private buildEvaluationPrompt(
@@ -121,27 +100,32 @@ ${this.formatTranscript(result.transcript)}
 BRIDGE TOOL USAGE:
 ${this.formatBridgeCalls(result.bridgeCalls)}
 
-QUALITY COUNTS:
-- Human captures: ${qualityCounts.human.join(', ')} qualities
-- AI captures: ${qualityCounts.ai.join(', ')} qualities
-- Shared moments: ${this.countSharedMoments(result)} unified captures
+OBSERVED PATTERNS:
+- Human quality captures: ${qualityCounts.human.join(', ')} qualities per experience
+- AI quality captures: ${qualityCounts.ai.join(', ')} qualities per experience
+- Shared moments captured: ${this.countSharedMoments(result)}
+- Batch captures used: ${this.countBatchCaptures(result)}
 
-Please evaluate this simulation and respond with ONLY a JSON object in this exact format:
+Evaluate the simulation based on what emerged naturally. Look for:
+- Rich collaborative understanding beyond individual perspectives
+- Authentic capture of experiential qualities
+- Multiple perspectives being recorded (human, AI, shared)
+- Natural use of Bridge features based on conversational needs
+
+Respond with ONLY a JSON object:
 
 {
-  "humanQualityScore": <0-100 based on how well captures align with 2-4 qualities>,
-  "aiQualityScore": <0-100 based on AI capturing all 7 qualities>,
-  "collaborativeAlignment": <0-100 for shared moments and batch captures>,
-  "dimensionalNavigation": <0-100 for navigation through experiential dimensions>,
-  "continuousCognition": <0-100 for checking and building on shared memory>,
-  "naturalFlow": <0-100 for conversational authenticity>,
-  "overallScore": <0-100 weighted average>,
-  "summary": "<2-3 sentence evaluation summary>",
-  "highlights": ["<achievement 1>", "<achievement 2>", "<achievement 3>"],
-  "concerns": ["<improvement 1>", "<improvement 2>", "<improvement 3>"]
-}
-
-Return ONLY the JSON object, no additional text or explanation.`;
+  "humanQualityScore": <0-100 quality of human experience captures>,
+  "aiQualityScore": <0-100 quality of AI experience captures>,
+  "collaborativeAlignment": <0-100 evidence of shared understanding>,
+  "dimensionalNavigation": <0-100 movement through experiential space>,
+  "continuousCognition": <0-100 building on shared memory>,
+  "naturalFlow": <0-100 authentic conversation flow>,
+  "overallScore": <0-100 overall collaborative wisdom building>,
+  "summary": "<2-3 sentences on what emerged>",
+  "highlights": ["<what worked well>"],
+  "concerns": ["<what could improve>"]
+}`;
   }
   
   private formatTranscript(transcript: SimulationTurn[]): string {
@@ -210,6 +194,24 @@ Return ONLY the JSON object, no additional text or explanation.`;
     }
     
     return sharedCount;
+  }
+  
+  private countBatchCaptures(result: SimulationResult): number {
+    let batchCount = 0;
+    
+    for (const call of result.bridgeCalls) {
+      if (call.tool === 'experience' && call.arguments.experiences) {
+        const experiences = call.arguments.experiences as Array<{
+          who?: string | string[];
+        }>;
+        // Count calls with multiple experiences as batch captures
+        if (experiences.length > 1) {
+          batchCount++;
+        }
+      }
+    }
+    
+    return batchCount;
   }
   
   private countQualities(experience: Record<string, string | boolean>): number {
