@@ -12,7 +12,8 @@ import { overrideConsole, errorLog, debugLog } from './utils/safe-logger.js';
 
 // DXT timeout configuration
 const STARTUP_TIMEOUT = 30000; // 30 seconds for startup
-const IDLE_TIMEOUT = 300000; // 5 minutes idle timeout
+// Idle timeout disabled - MCP servers should stay running for better UX
+// const IDLE_TIMEOUT = 1800000; // 30 minutes idle timeout (increased from 5 minutes)
 
 // MCP-compliant logging function
 function mcpLog(level: 'info' | 'warn' | 'error', message: string): void {
@@ -30,14 +31,20 @@ let lastActivity = Date.now();
 // Update activity timestamp
 function updateActivity(): void {
   lastActivity = Date.now();
+  debugLog(`Activity updated at ${new Date(lastActivity).toISOString()}`);
 }
 
 // Make updateActivity available globally for server handlers
 (global as any).updateActivity = updateActivity;
 
+// Idle timeout checking disabled for better UX
+// MCP servers should stay running to avoid reconnection issues
+/*
 // Check for idle timeout
 function checkIdleTimeout(): void {
-  const idleTime = Date.now() - lastActivity;
+  const now = Date.now();
+  const idleTime = now - lastActivity;
+  debugLog(`Idle check: ${Math.floor(idleTime / 1000)}s since last activity (${new Date(lastActivity).toISOString()})`);
   if (idleTime > IDLE_TIMEOUT) {
     mcpLog('info', `Server idle for ${Math.floor(idleTime / 1000)}s, shutting down gracefully`);
     process.exit(0);
@@ -46,30 +53,31 @@ function checkIdleTimeout(): void {
 
 // Set up idle timeout checking
 const idleCheckInterval = setInterval(checkIdleTimeout, 60000); // Check every minute
+*/
 
 // Handle uncaught exceptions and unhandled promise rejections
 process.on('uncaughtException', (err) => {
   mcpLog('error', `Uncaught Exception: ${err.stack || err.message || err}`);
-  clearInterval(idleCheckInterval);
+  // clearInterval(idleCheckInterval);
   process.exit(1);
 });
 
 process.on('unhandledRejection', (reason) => {
   mcpLog('error', `Unhandled Rejection: ${reason}`);
-  clearInterval(idleCheckInterval);
+  // clearInterval(idleCheckInterval);
   process.exit(1);
 });
 
 // Handle graceful shutdown
 process.on('SIGINT', () => {
   mcpLog('info', 'Received SIGINT, shutting down gracefully');
-  clearInterval(idleCheckInterval);
+  // clearInterval(idleCheckInterval);
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
   mcpLog('info', 'Received SIGTERM, shutting down gracefully');
-  clearInterval(idleCheckInterval);
+  // clearInterval(idleCheckInterval);
   process.exit(0);
 });
 
@@ -116,10 +124,10 @@ overrideConsole();
     updateActivity();
 
     // Log DXT-specific configuration
-    mcpLog('info', `DXT mode active - Idle timeout: ${IDLE_TIMEOUT / 1000}s`);
+    mcpLog('info', 'Bridge MCP server running - no idle timeout');
   } catch (err) {
     clearTimeout(startupTimeout);
-    clearInterval(idleCheckInterval);
+    // clearInterval(idleCheckInterval);
 
     const errorMessage = err instanceof Error ? err.message : String(err);
     mcpLog('error', `Failed to start Bridge MCP server: ${errorMessage}`);

@@ -22,6 +22,7 @@ import { mkdirSync } from 'fs';
 import { dirname } from 'path';
 import { MCPToolHandlers } from './handlers.js';
 import { getTools } from './tools.js';
+import { debugLog } from '../utils/safe-logger.js';
 
 // ============================================================================
 // CONSTANTS
@@ -240,7 +241,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   // Track activity for DXT idle timeout
   if ((global as unknown as { updateActivity?: () => void })?.updateActivity) {
+    debugLog(`Calling updateActivity for tool: ${name}`);
     (global as unknown as { updateActivity?: () => void }).updateActivity?.();
+  } else {
+    debugLog(`WARNING: updateActivity not found in global scope for tool: ${name}`);
   }
 
   try {

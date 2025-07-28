@@ -35,7 +35,12 @@
     "quality": "npm run lint && npm run type-check && npm test",
     
     "// Git Hooks": "======================================================",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    
+    "// Migration": "======================================================",
+    "migrate": "tsx src/scripts/migrate-legacy-data.ts",
+    "regenerate-embeddings": "tsx src/scripts/regenerate-embeddings.ts",
+    "enhance-experiences": "tsx src/scripts/enhance-experiences-with-ai.ts"
   },
   "lint-staged": {
     "*.ts": [

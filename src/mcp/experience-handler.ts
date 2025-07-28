@@ -11,6 +11,7 @@ import { SEMANTIC_CONFIG } from '../core/config.js';
 // Temporary config values until circular dependency is resolved
 const RECALL_CONFIG = {
   DEFAULT_AUTO_RECALL_LIMIT: 20,
+  DEFAULT_RECENT_LIMIT: 5,  // Reduced from 10 for lighter default
   RECENT_FLOW_LIMIT: 10,
   EMERGING_PATTERNS_LIMIT: 100,
   TEXT_TRUNCATION_LENGTH: 600,
@@ -184,91 +185,71 @@ export class ExperienceHandler {
         results.push(result);
       }
 
-      // Handle integrated recall if requested or if we should do automatic recall
+      // Handle integrated recall if requested
       let recallResults = null;
       let targetStateResults = null;
-      let recentFlowResults = null;
-      let emergingPatterns = null;
+      let defaultRecentResults = null;
       
-      const shouldAutoRecall = !experience.recall && results.length > 0 && 
-        (experience.experiences?.[0]?.source || experience.nextMoment);
+      // Only show default recent experiences if no explicit recall requested
+      const showDefaultRecent = !experience.recall;
       
-      if (experience.recall || shouldAutoRecall) {
+      if (experience.recall) {
         const searchParams: RecallInput = {
-          limit: experience.recall?.limit || RECALL_CONFIG.DEFAULT_AUTO_RECALL_LIMIT,
+          limit: experience.recall.limit || RECALL_CONFIG.DEFAULT_AUTO_RECALL_LIMIT,
         };
-        
-        // For automatic recall, use the content as the search query
-        if (shouldAutoRecall && !experience.recall) {
-          searchParams.semantic_query = experience.experiences[0].source;
-          // Note: We'll filter out the just-captured experience later
-        }
 
         // ID lookup
-        if (experience.recall?.ids) {
+        if (experience.recall.ids) {
           searchParams.id = Array.isArray(experience.recall.ids)
             ? experience.recall.ids[0] // RecallInput takes single ID
             : experience.recall.ids;
         }
         // Semantic search
-        if (experience.recall?.search) {
+        if (experience.recall.search) {
           searchParams.semantic_query = Array.isArray(experience.recall.search)
             ? experience.recall.search[0] // RecallInput takes single query
             : experience.recall.search;
         }
         // Quality filtering
-        if (experience.recall?.qualities) {
+        if (experience.recall.qualities) {
           searchParams.qualities = experience.recall.qualities;
         }
         // Pagination
-        if (experience.recall?.offset !== undefined) {
+        if (experience.recall.offset !== undefined) {
           searchParams.offset = experience.recall.offset;
         }
         // Filters
-        if (experience.recall?.who) {
+        if (experience.recall.who) {
           searchParams.who = experience.recall.who;
         }
         // Pattern filters
-        if (experience.recall?.reflects === 'only') {
+        if (experience.recall.reflects === 'only') {
           searchParams.reflects = 'only';
         }
         // Note: reflected_by is not in RecallInput interface
         // Date filtering
-        if (experience.recall?.created) {
+        if (experience.recall.created) {
           searchParams.created = experience.recall.created;
         }
         // Sorting and grouping
-        if (experience.recall?.sort) {
+        if (experience.recall.sort) {
           searchParams.sort = experience.recall.sort;
         }
-        if (experience.recall?.group_by) {
+        if (experience.recall.group_by) {
           searchParams.group_by = experience.recall.group_by;
         }
 
         recallResults = await this.recallService.search(searchParams);
-        
-        // Filter out the just-captured experiences from automatic recall
-        if (shouldAutoRecall && results.length > 0) {
-          const capturedIds = new Set(results.map(r => r.source.id));
-          if (recallResults.results) {
-            recallResults.results = recallResults.results.filter(r => !capturedIds.has(r.id));
-          }
-        }
       }
       
-      // DUAL VIEW: Always get recent flow (last N chronological)
-      const recentFlowParams: RecallInput = {
-        limit: RECALL_CONFIG.RECENT_FLOW_LIMIT,
-        sort: 'created'
-      };
-      recentFlowResults = await this.recallService.search(recentFlowParams);
-      
-      // DUAL VIEW: Always get emerging patterns (grouped by qualities)
-      const patternsParams: RecallInput = {
-        limit: RECALL_CONFIG.EMERGING_PATTERNS_LIMIT,
-        group_by: 'qualities'
-      };
-      emergingPatterns = await this.recallService.search(patternsParams);
+      // Only get default recent experiences if no explicit recall requested
+      if (showDefaultRecent) {
+        const recentParams: RecallInput = {
+          limit: RECALL_CONFIG.DEFAULT_RECENT_LIMIT,
+          sort: 'created'
+        };
+        defaultRecentResults = await this.recallService.search(recentParams);
+      }
       
       // TARGET STATE SEARCH: If nextMoment specified, search for matching experiences
       if (experience.nextMoment) {
@@ -305,10 +286,11 @@ export class ExperienceHandler {
         const result = results[0];
         const showId = process.env.BRIDGE_SHOW_IDS === 'true' || process.env.NODE_ENV === 'test';
         let response = formatExperienceResponse(result, showId);
+        let similarText: string | null = null;
 
         // Find similar experience if any (unless we already did recall)
         if (!recallResults) {
-          const similarText = await this.findSimilarExperience(
+          similarText = await this.findSimilarExperience(
             result.source.source,
             result.source.id
           );
@@ -325,28 +307,9 @@ export class ExperienceHandler {
           },
         ];
 
-        // DUAL VIEW: Always show recent flow and emerging patterns
-        
-        // 1. Recent Flow
-        if (recentFlowResults && recentFlowResults.results.length > 0) {
-          const recentText = this.formatRecallResults(recentFlowResults.results);
-          content.push({
-            type: 'text',
-            text: `\n🕐 Recent Flow (last ${recentFlowResults.results.length} experiences):\n${recentText}`,
-          });
-        }
-        
-        // 2. Emerging Patterns
-        if (emergingPatterns && emergingPatterns.clusters && emergingPatterns.clusters.length > 0) {
-          const patternsText = this.formatGroupedResults(emergingPatterns.clusters, emergingPatterns.results);
-          content.push({
-            type: 'text',
-            text: `\n🌊 Emerging Patterns (grouped by qualities):\n${patternsText}`,
-          });
-        }
-        
-        // 3. Related experiences (if explicit recall was requested)
-        if (recallResults && experience.recall) {
+        // Show either recall results OR default recent experiences
+        if (recallResults) {
+          // User explicitly requested recall - show those results
           if (recallResults.clusters && recallResults.clusters.length > 0) {
             // Format grouped results
             const groupedText = this.formatGroupedResults(recallResults.clusters, recallResults.results);
@@ -362,9 +325,16 @@ export class ExperienceHandler {
               text: `\n🔍 Search results:\n${recallText}`,
             });
           }
+        } else if (defaultRecentResults && defaultRecentResults.results.length > 0) {
+          // No explicit recall requested - show lightweight recent experiences
+          const recentText = this.formatRecallResults(defaultRecentResults.results);
+          content.push({
+            type: 'text',
+            text: `\n📌 Recent experiences:\n${recentText}`,
+          });
         }
         
-        // 4. Target State Examples (if nextMoment specified)
+        // Target State Examples (if nextMoment specified)
         if (targetStateResults && targetStateResults.results.length > 0) {
           const targetText = this.formatRecallResults(targetStateResults.results);
           const hasQualityFilter = experience.nextMoment && 
@@ -397,7 +367,8 @@ export class ExperienceHandler {
         }
 
         // Add contextual guidance based on simple triggers
-        const guidance = await this.selectGuidance(result, recallResults !== null || false);
+        // Don't count explicit recall as "hasSimilar" - only count automatic similarity detection
+        const guidance = await this.selectGuidance(result, !recallResults && similarText !== null);
         if (guidance) {
           content.push({
             type: 'text',
@@ -426,28 +397,9 @@ export class ExperienceHandler {
           },
         ];
 
-        // DUAL VIEW: Always show recent flow and emerging patterns
-        
-        // 1. Recent Flow
-        if (recentFlowResults && recentFlowResults.results.length > 0) {
-          const recentText = this.formatRecallResults(recentFlowResults.results);
-          content.push({
-            type: 'text',
-            text: `\n🕐 Recent Flow (last ${recentFlowResults.results.length} experiences):\n${recentText}`,
-          });
-        }
-        
-        // 2. Emerging Patterns
-        if (emergingPatterns && emergingPatterns.clusters && emergingPatterns.clusters.length > 0) {
-          const patternsText = this.formatGroupedResults(emergingPatterns.clusters, emergingPatterns.results);
-          content.push({
-            type: 'text',
-            text: `\n🌊 Emerging Patterns (grouped by qualities):\n${patternsText}`,
-          });
-        }
-        
-        // 3. Related experiences (if explicit recall was requested)
-        if (recallResults && experience.recall) {
+        // Show either recall results OR default recent experiences
+        if (recallResults) {
+          // User explicitly requested recall - show those results
           if (recallResults.clusters && recallResults.clusters.length > 0) {
             // Format grouped results
             const groupedText = this.formatGroupedResults(recallResults.clusters, recallResults.results);
@@ -463,9 +415,16 @@ export class ExperienceHandler {
               text: `\n🔍 Search results:\n${recallText}`,
             });
           }
+        } else if (defaultRecentResults && defaultRecentResults.results.length > 0) {
+          // No explicit recall requested - show lightweight recent experiences
+          const recentText = this.formatRecallResults(defaultRecentResults.results);
+          content.push({
+            type: 'text',
+            text: `\n📌 Recent experiences:\n${recentText}`,
+          });
         }
         
-        // 4. Target State Examples (if nextMoment specified)
+        // Target State Examples (if nextMoment specified)
         if (targetStateResults && targetStateResults.results.length > 0) {
           const targetText = this.formatRecallResults(targetStateResults.results);
           const hasQualityFilter = experience.nextMoment && 

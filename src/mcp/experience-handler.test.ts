@@ -295,13 +295,11 @@ describe('ExperienceHandler', () => {
 
       expect(result.content[0].text).toContain('I feel happy');
       expect(result.content[0].text).toContain('Experienced');
-      // With dual view and automatic recall
-      expect(result.content.length).toBeGreaterThan(1);
-      // Check for truncated content in sections
-      const hasTruncated = result.content.some(c => 
-        c.text?.includes('...')
-      );
-      expect(hasTruncated).toBe(true);
+      // Should show default recent experiences
+      expect(result.content.length).toBeGreaterThanOrEqual(2);
+      // Check that we found similar experiences in the first section
+      expect(result.content[0].text).toContain('Similar experiences found');
+      expect(result.content[0].text).toContain('...');
     });
 
     it('should not include similar experiences when none found', async () => {
@@ -1293,8 +1291,8 @@ describe('ExperienceHandler', () => {
 
       expect(result.content.length).toBeGreaterThanOrEqual(2);
       // Check that recall results are formatted properly
-      // Dual view: content[1] is Recent Flow, content[2] is Emerging Patterns, content[3] is Search results
-      expect(result.content.length).toBeGreaterThanOrEqual(3);
+      // With new logic: when recall is requested, we only show recall results
+      expect(result.content.length).toBeGreaterThanOrEqual(2);
       
       // Find the search results section
       const searchResults = result.content.find(c => c.text?.includes('🔍 Search results'));
@@ -1352,8 +1350,8 @@ describe('ExperienceHandler', () => {
         recall: {
           ids: ['exp_001', 'exp_002']}});
 
-      // The handler now makes 4 calls: user's recall request + recent flow + emerging patterns + auto recall
-      expect(mockRecallService.search).toHaveBeenCalledTimes(4);
+      // The handler now only makes 1 call when explicit recall is requested
+      expect(mockRecallService.search).toHaveBeenCalledTimes(1);
       
       // Find the call with ID lookup
       const callsWithId = mockRecallService.search.mock.calls.filter(
