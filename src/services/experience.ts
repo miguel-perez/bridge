@@ -1,135 +1,78 @@
 /**
- * Experience service for Bridge experiential data.
- * Handles validation, narrative embedding, and storage of experiential sources.
+ * Streamlined Experience service for Bridge.
+ * Handles the new flat Experience structure where qualities ARE the experience.
  */
 
 import { z } from 'zod';
 import { saveSource, saveEmbedding } from '../core/storage.js';
-import { generateId } from '../core/storage.js';
-import type { Source, EmbeddingRecord, ExperienceQualities } from '../core/types.js';
+import type { Experience, EmbeddingRecord } from '../core/types.js';
+import { generateExperienceId, AI_IDENTITIES } from '../core/types.js';
 import { embeddingService } from './embeddings.js';
-
-// ============================================================================
-// CONSTANTS
-// ============================================================================
-
-/** Default values for experience fields */
-export const EXPERIENCE_DEFAULTS = {
-  CONTENT_TYPE: 'text',
-  EXPERIENCER: 'self',
-};
 
 // ============================================================================
 // SCHEMA & TYPES
 // ============================================================================
 
+// Helper for emoji validation
+const validateEmoji = (val: string) => {
+  if (!val || val.length === 0) return false;
+
+  if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+    const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
+    const segments = Array.from(segmenter.segment(val));
+    if (segments.length !== 1) return false;
+    const segment = segments[0].segment;
+    return /\p{Emoji}/u.test(segment);
+  }
+
+  const comprehensiveEmojiRegex =
+    /^(?:\p{Emoji}(?:\p{Emoji_Modifier}|\uFE0F|\u200D(?:\p{Emoji}(?:\p{Emoji_Modifier}|\uFE0F)?))*)+$/u;
+
+  const trimmed = val.trim();
+  if (trimmed !== val) return false;
+  if (/\s/.test(val)) return false;
+
+  return comprehensiveEmojiRegex.test(val);
+};
+
 /**
- * Zod schema for validating experience input.
- * Source is optional - if not provided, a default will be used.
+ * Zod schema for validating experience input - NEW FLAT STRUCTURE.
  */
 export const experienceSchema = z.object({
-  source: z.string().optional(),
-  emoji: z.string().refine(
-    (val) => {
-      // Comprehensive emoji validation for composite emojis
-      if (!val || val.length === 0) return false;
-
-      // Use Intl.Segmenter if available (modern browsers/Node.js)
-      if (typeof Intl !== 'undefined' && Intl.Segmenter) {
-        const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
-        const segments = Array.from(segmenter.segment(val));
-
-        // Must be exactly one grapheme cluster (visual character)
-        if (segments.length !== 1) return false;
-
-        // Check if the single grapheme contains emoji characters
-        const segment = segments[0].segment;
-        return /\p{Emoji}/u.test(segment);
-      }
-
-      // Fallback for older environments - comprehensive emoji regex
-      // This pattern matches:
-      // - Basic emojis: \p{Emoji}
-      // - Variation selectors: \uFE0F
-      // - Zero-width joiners: \u200D
-      // - Skin tone modifiers: \p{Emoji_Modifier}
-      // - Regional indicators: \p{Regional_Indicator}
-      const comprehensiveEmojiRegex =
-        /^(?:\p{Emoji}(?:\p{Emoji_Modifier}|\uFE0F|\u200D(?:\p{Emoji}(?:\p{Emoji_Modifier}|\uFE0F)?))*)+$/u;
-
-      // Additional check: ensure it's not multiple separate emojis
-      // Split by common emoji boundaries (space, etc) and check we only have one "unit"
-      const trimmed = val.trim();
-      if (trimmed !== val) return false; // No leading/trailing whitespace
-      if (/\s/.test(val)) return false; // No internal whitespace
-
-      return comprehensiveEmojiRegex.test(val);
-    },
-    {
-      message:
-        'Must be a single emoji (including compound emojis with modifiers, skin tones, and sequences)',
-    }
-  ),
-  who: z.union([z.string(), z.array(z.string())]).optional(),
-
-  // Experience analysis - can be array or complete qualities object
-  experience: z
-    .union([
-      z.array(z.string()),
-      z.object({
-        embodied: z.union([
-          z.literal(false),
-          z.string().min(1),
-        ]),
-        focus: z.union([
-          z.literal(false),
-          z.string().min(1),
-        ]),
-        mood: z.union([
-          z.literal(false),
-          z.string().min(1),
-        ]),
-        purpose: z.union([
-          z.literal(false),
-          z.string().min(1),
-        ]),
-        space: z.union([
-          z.literal(false),
-          z.string().min(1),
-        ]),
-        time: z.union([
-          z.literal(false),
-          z.string().min(1),
-        ]),
-        presence: z.union([
-          z.literal(false),
-          z.string().min(1),
-        ]),
-      }),
-    ])
-    .optional(),
-
-  // Pattern realizations - experiences that reflect on other experiences
-  reflects: z.array(z.string()).optional(),
+  // The eight qualities that ARE the experience
+  embodied: z.string().min(1),
+  focus: z.string().min(1),
+  mood: z.string().min(1),
+  purpose: z.string().min(1),
+  space: z.string().min(1),
+  time: z.string().min(1),
+  presence: z.string().min(1),
+  
+  anchor: z.string().refine(validateEmoji, {
+    message: 'Must be a single emoji',
+  }),
+  
+  who: z
+    .array(z.string())
+    .min(1, 'Who array cannot be empty')
+    .refine((who) => who.some(w => AI_IDENTITIES.includes(w as any)), {
+      message: 'Who array must include at least one AI identity (Claude, GPT-4, etc.)'
+    }),
+    
+  citation: z.string().optional(),
 });
 
 /**
- * Input type for experienceing experiential data.
+ * Input type for capturing experiential data - NEW FLAT STRUCTURE.
  */
-export interface ExperienceInput {
-  source?: string;
-  emoji: string;
-  who?: string | string[];
-  experience?: ExperienceQualities;
-  reflects?: string[];
-}
+export type ExperienceInput = z.infer<typeof experienceSchema>;
 
 /**
- * Result of a experience operation.
+ * Result of an experience capture operation.
  */
 export interface ExperienceResult {
-  source: Source;
-  defaultsUsed: string[];
+  experience: Experience;
+  embedding?: boolean; // Whether embedding was generated
 }
 
 // ============================================================================
@@ -137,116 +80,122 @@ export interface ExperienceResult {
 // ============================================================================
 
 /**
- * Service for experienceing and storing experiential sources.
+ * Service for capturing and storing experiences.
  */
 export class ExperienceService {
-  // private enhancedEmbeddingService: EnhancedEmbeddingService;
-
   /**
-   * Initializes the ExperienceService
-   * @remarks
-   * Sets up the service for experience capture and storage operations.
-   */
-  constructor() {
-    // this.enhancedEmbeddingService = new EnhancedEmbeddingService();
-  }
-
-  /**
-   * Experiences a new experiential source, validates input, generates embeddings, and stores it.
+   * Captures a new experience, validates input, generates embeddings, and stores it.
    * @param input - Experience input data
-   * @returns Experience result with source record and defaults used
-   * @throws Error if validation fails or required fields are missing
+   * @returns Experience result
+   * @throws Error if validation fails
    */
-  async rememberExperience(input: ExperienceInput): Promise<ExperienceResult> {
+  async captureExperience(input: ExperienceInput): Promise<ExperienceResult> {
     // Validate input
     const validatedInput = experienceSchema.parse(input);
 
-    // Generate unique ID
-    const id = await generateId();
+    // Generate unique ID with exp_ prefix
+    const id = generateExperienceId();
 
     // Auto-generate created timestamp
     const created = new Date().toISOString();
 
-    // Use source or default
-    const source = validatedInput.source || 'Experience experienced';
-
-    // Handle who field
-    const who = validatedInput.who || 'self';
-
-    // Handle experience qualities - only accept switchboard format
-    let experienceQualities: ExperienceQualities | undefined;
-
-    if (validatedInput.experience) {
-      if (Array.isArray(validatedInput.experience)) {
-        // Array format is no longer supported
-        throw new Error('Array format for experience is deprecated. Please use the switchboard format with all 7 qualities specified.');
-      }
-      
-      // Switchboard format - the only accepted format
-      experienceQualities = validatedInput.experience;
-      
-    }
-
-    // Create source record with both old and new fields for migration period
-    const sourceRecord: Source = {
+    // Create experience record
+    const experience: Experience = {
       id,
-      source,
-      emoji: validatedInput.emoji,
       created,
-      who,
-      experienceQualities,
-      reflects: validatedInput.reflects,
+      ...validatedInput,
     };
 
-    // Save the source record
-    const savedSource = await saveSource(sourceRecord);
+    // Save the experience record
+    // Note: During migration, we'll need to adapt this to work with existing storage
+    await this.saveExperience(experience);
 
     // Generate and save embedding
+    let embeddingGenerated = false;
     try {
       await embeddingService.initialize();
 
-      // Create simple embedding text with prominent qualities and context
-      const qualitiesArray = savedSource.experienceQualities 
-        ? Object.entries(savedSource.experienceQualities)
-            .filter(([_, v]) => v !== false)
-            .map(([k, v]) => `${k}: "${v}"`)
-        : [];
-      const qualitiesText = qualitiesArray.length > 0
-        ? `[${qualitiesArray.join(', ')}]`
-        : '[]';
+      // Create unified embedding text - all qualities concatenated
+      const embeddingText = [
+        experience.embodied,
+        experience.focus,
+        experience.mood,
+        experience.purpose,
+        experience.space,
+        experience.time,
+        experience.presence,
+        experience.citation || ''
+      ].filter(Boolean).join(' ');
 
-      // Context is now embedded within experienceQualities
-      const embeddingText = `"${savedSource.source}" ${qualitiesText}`;
       const embedding = await embeddingService.generateEmbedding(embeddingText);
 
       // Save embedding to storage
       const embeddingRecord: EmbeddingRecord = {
-        sourceId: savedSource.id,
+        sourceId: experience.id,
         vector: embedding,
         generated: new Date().toISOString(),
       };
 
       await saveEmbedding(embeddingRecord);
-
-      const defaultsUsed = this.getDefaultsUsed(input);
-      return { source: savedSource, defaultsUsed };
+      embeddingGenerated = true;
     } catch (error) {
-      // Don't fail experience if embedding generation fails
-      // Embedding generation failed - continue without embedding
-      const defaultsUsed = this.getDefaultsUsed(input);
-      return { source: savedSource, defaultsUsed };
+      // Don't fail experience capture if embedding generation fails
+      // Just continue without embedding
     }
+
+    return { 
+      experience,
+      embedding: embeddingGenerated
+    };
   }
 
   /**
-   * Returns a list of which defaults were used for the experience input.
-   * @param originalInput - Original input data
-   * @returns Array of default field descriptions
+   * Saves an experience to storage.
+   * During migration, this will adapt to existing storage format.
+   * @param experience - Experience to save
    */
-  private getDefaultsUsed(originalInput: ExperienceInput): string[] {
-    const defaultsUsed = [];
-    if (!originalInput.who) defaultsUsed.push('who="self"');
-    if (!originalInput.source) defaultsUsed.push('source="Experience experienced"');
-    return defaultsUsed;
+  private async saveExperience(experience: Experience): Promise<void> {
+    // During migration, we need to save as Source format for backward compatibility
+    // This will be updated once storage is migrated
+    const sourceFormat = {
+      id: experience.id,
+      source: experience.citation || 'Experience captured', // Temporary mapping
+      emoji: experience.anchor,
+      created: experience.created,
+      who: experience.who,
+      experienceQualities: {
+        embodied: experience.embodied,
+        focus: experience.focus,
+        mood: experience.mood,
+        purpose: experience.purpose,
+        space: experience.space,
+        time: experience.time,
+        presence: experience.presence,
+      }
+    };
+    
+    await saveSource(sourceFormat);
+  }
+
+  /**
+   * Builds searchable text from an experience.
+   * Used for both search and recall features.
+   * @param experience - Experience to convert to searchable text
+   * @returns Concatenated searchable text
+   */
+  buildSearchableText(experience: Experience): string {
+    return [
+      experience.embodied,
+      experience.focus,
+      experience.mood,
+      experience.purpose,
+      experience.space,
+      experience.time,
+      experience.presence,
+      experience.citation || ''
+    ].filter(Boolean).join(' ');
   }
 }
+
+// Export singleton instance
+export const experienceService = new ExperienceService();

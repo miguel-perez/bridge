@@ -39,6 +39,7 @@
     
     "// Migration": "======================================================",
     "migrate": "tsx src/scripts/migrate-legacy-data.ts",
+    "migrate:streamlined": "tsx scripts/migrate-to-streamlined.ts",
     "regenerate-embeddings": "tsx src/scripts/regenerate-embeddings.ts",
     "enhance-experiences": "tsx src/scripts/enhance-experiences-with-ai.ts"
   },

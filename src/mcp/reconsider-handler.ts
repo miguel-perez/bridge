@@ -1,195 +1,194 @@
 /**
- * MCP Reconsider Tool Handler
- *
- * Handles reconsider tool requests for correcting or updating existing experiences.
- * Supports partial updates to any field including content, experience analysis, metadata,
- * and experiential qualities. Useful for refining how we remember shared moments.
+ * Streamlined Reconsider Handler for Bridge MCP
+ * Handles updates to existing experiences in the new flat structure
  */
 
-import { EnrichService } from '../services/enrich.js';
-import { ReconsiderInput, type ToolResult } from './schemas.js';
-import { formatReconsiderResponse, type ExperienceResult } from '../utils/formatters.js';
+import { getAllRecords, saveSource } from '../core/storage.js';
+import { saveEmbedding } from '../core/storage.js';
+import { embeddingService } from '../services/embeddings.js';
+import type { ReconsiderInput, ToolResult } from './schemas.js';
+import type { EmbeddingRecord } from '../core/types.js';
+import { ToolResultSchema } from './schemas.js';
 import { incrementCallCount } from './call-counter.js';
 
 /**
- * Handles reconsider requests from MCP clients
- * @remarks
- * Provides capability to update and refine existing experiences.
- * Supports both single and batch reconsideration operations.
+ * Handler for the streamlined reconsider tool
  */
 export class ReconsiderHandler {
-  private reconsiderService: EnrichService; // Keeping enrich service but calling it reconsider
-
   /**
-   * Initializes the ReconsiderHandler with required services
-   * @remarks
-   * Creates instance of EnrichService for experience update capabilities.
-   */
-  constructor() {
-    this.reconsiderService = new EnrichService();
-  }
-
-  /**
-   * Handles reconsider requests
-   *
-   * @param args - The reconsider arguments containing updates to existing experiences
-   * @returns Formatted reconsider result
+   * Processes reconsider requests
+   * @param args - Reconsider input data from MCP client
+   * @returns Formatted tool result compliant with MCP protocol
    */
   async handle(args: ReconsiderInput): Promise<ToolResult> {
     try {
       incrementCallCount();
-      const result = await this.handleRegularReconsider(args);
-      return result;
-    } catch (err) {
-      return {
-        isError: true,
-        content: [{ type: 'text', text: 'Internal error: Output validation failed.' }],
-      };
-    }
-  }
-
-  /**
-   * Processes reconsider requests for updating existing experiences
-   * @remarks
-   * Handles reconsideration operations using array format only.
-   * Validates required fields and processes updates through EnrichService.
-   * @param reconsider - Reconsider input containing ID and update data
-   * @returns Formatted reconsider results with update confirmation
-   */
-  private async handleRegularReconsider(reconsider: ReconsiderInput): Promise<ToolResult> {
-    try {
-      // Validate required fields - only accept array format
-      if (!reconsider.reconsiderations || reconsider.reconsiderations.length === 0) {
+      
+      // Validate input
+      if (!args.reconsiderations || args.reconsiderations.length === 0) {
         throw new Error('Reconsiderations array is required');
       }
-
-      // Validate each item in the array
-      for (const item of reconsider.reconsiderations) {
+      
+      const results: string[] = [];
+      
+      for (const item of args.reconsiderations) {
         if (!item.id) {
-          throw new Error('Each reconsideration item must have an ID');
+          throw new Error('Each reconsideration must have an ID');
         }
+        
+        // Handle release mode
+        if ('release' in item && item.release) {
+          const releaseResult = await this.releaseExperience(item.id, item.releaseReason);
+          results.push(releaseResult);
+          continue;
+        }
+        
+        // Update the experience
+        const updateResult = await this.updateExperience(item);
+        results.push(updateResult);
       }
-
-      // Process reconsideration items
-      const updateResults: ExperienceResult[] = [];
-      const releaseResults: { id: string; reason?: string }[] = [];
-
-      for (const item of reconsider.reconsiderations) {
-        if (item.release) {
-          // Handle release mode
-          const { deleteSource } = await import('../core/storage.js');
-          await deleteSource(item.id);
-          releaseResults.push({ id: item.id, reason: item.releaseReason });
-        } else {
-          // Handle update mode
-          
-
-          const result = await this.reconsiderService.enrichSource({
-            id: item.id,
-            source: item.source,
-            who: item.who,
-            experienceQualities: item.experienceQualities,
-            reflects: item.reflects,
-          });
-          updateResults.push(result);
-        }
-      }
-
-      // Format response based on operations performed
-      const totalOperations = updateResults.length + releaseResults.length;
-
-      if (totalOperations === 1) {
-        // Single operation
-        if (updateResults.length === 1) {
-          // Single update
-          const result = updateResults[0];
-          const response = formatReconsiderResponse(result);
-
-          // Build multi-content response
-          const content: Array<{ type: 'text'; text: string }> = [
-            {
-              type: 'text',
-              text: response,
-            },
-          ];
-
-          // Add guidance for next steps
-          const guidance = this.selectReconsiderGuidance(result);
-          if (guidance) {
-            content.push({
-              type: 'text',
-              text: guidance,
-            });
-          }
-
-          return { content };
-        } else {
-          // Single release
-          const release = releaseResults[0];
-          const content = `🙏 Experience released with gratitude\n\n📝 ID: ${release.id}\n💭 Reason: ${release.reason || 'No reason provided'}\n🕐 Released: ${new Date().toLocaleString()}\n\nThank you for the insights this moment provided.`;
-
-          return {
-            content: [
-              {
-                type: 'text',
-                text: content,
-              },
-            ],
-          };
-        }
-      } else {
-        // Multiple operations - batch formatting
-        let output = '';
-
-        if (updateResults.length > 0) {
-          output += `✅ ${updateResults.length} experiences updated successfully!\n\n`;
-          for (let i = 0; i < updateResults.length; i++) {
-            const result = updateResults[i];
-            output += `📝 Updated: ${result.source.id}\n`;
-          }
-        }
-
-        if (releaseResults.length > 0) {
-          if (output) output += '\n';
-          output += `🙏 ${releaseResults.length} experiences released with gratitude\n\n`;
-          for (const release of releaseResults) {
-            output += `📝 Released: ${release.id}${release.reason ? ` (${release.reason})` : ''}\n`;
-          }
-        }
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: output,
-            },
-          ],
-        };
-      }
+      
+      // Format response
+      const responseText = this.formatResponse(results);
+      
+      const toolResult: ToolResult = {
+        isError: false,
+        content: [{
+          type: 'text',
+          text: responseText
+        }]
+      };
+      
+      // Validate output
+      ToolResultSchema.parse(toolResult);
+      return toolResult;
+      
     } catch (error) {
       return {
         isError: true,
-        content: [
-          {
-            type: 'text',
-            text: error instanceof Error ? error.message : 'Unknown error',
-          },
-        ],
+        content: [{
+          type: 'text',
+          text: `Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`
+        }]
       };
     }
   }
-
+  
   /**
-   * Select appropriate guidance after reconsideration
+   * Release (delete) an experience
    */
-  private selectReconsiderGuidance(result: ExperienceResult): string | null {
-    // Check what was updated
-    const hasQualityUpdate = result.source.experienceQualities && Object.values(result.source.experienceQualities).some(v => v !== false);
-
-    if (hasQualityUpdate) {
-      return 'Updated. See connections with recall';
+  private async releaseExperience(id: string, reason?: string): Promise<string> {
+    const { deleteSource } = await import('../core/storage.js');
+    
+    try {
+      await deleteSource(id);
+      
+      let message = `🙏 Experience released with gratitude\n   ID: ${id}`;
+      if (reason) {
+        message += `\n   Reason: ${reason}`;
+      }
+      message += '\n   🌱 Space created for new growth';
+      
+      return message;
+    } catch (error) {
+      return `❌ Failed to release experience: ${id}`;
     }
-
-    return null;
+  }
+  
+  /**
+   * Update an existing experience
+   */
+  private async updateExperience(update: any): Promise<string> {
+    // Get the existing record
+    const records = await getAllRecords();
+    const existing = records.find(r => r.id === update.id);
+    
+    if (!existing) {
+      return `❌ Experience not found: ${update.id}`;
+    }
+    
+    // During migration, we work with Source format
+    const updated = { ...existing };
+    const changedFields: string[] = [];
+    
+    // Handle who update
+    if (update.who) {
+      updated.who = update.who;
+      changedFields.push('who');
+    }
+    
+    // Handle source/citation update
+    if (update.source) {
+      updated.source = update.source;
+      changedFields.push('citation');
+    }
+    
+    // Handle quality updates
+    if (update.experienceQualities) {
+      // Merge qualities
+      updated.experienceQualities = {
+        ...existing.experienceQualities,
+        ...update.experienceQualities
+      };
+      
+      // Track which qualities changed
+      const qualityKeys = Object.keys(update.experienceQualities);
+      changedFields.push(...qualityKeys.map(k => `quality.${k}`));
+      
+      // Regenerate embedding if qualities changed
+      try {
+        await embeddingService.initialize();
+        
+        // Build embedding text from all qualities
+        const qualities = updated.experienceQualities || {};
+        const embeddingText = Object.entries(qualities)
+          .filter(([_, v]) => v && v !== false)
+          .map(([_, v]) => v)
+          .join(' ');
+          
+        if (embeddingText) {
+          const embedding = await embeddingService.generateEmbedding(embeddingText);
+          
+          const embeddingRecord: EmbeddingRecord = {
+            sourceId: updated.id,
+            vector: embedding,
+            generated: new Date().toISOString(),
+          };
+          
+          await saveEmbedding(embeddingRecord);
+          changedFields.push('embedding');
+        }
+      } catch (error) {
+        // Continue without embedding
+      }
+    }
+    
+    // Save the updated record
+    await saveSource(updated);
+    
+    if (changedFields.length === 0) {
+      return `✅ No changes needed for: ${update.id}`;
+    }
+    
+    return `✅ Updated ${update.id}\n   Changed: ${changedFields.join(', ')}`;
+  }
+  
+  /**
+   * Format the response for reconsiderations
+   */
+  private formatResponse(results: string[]): string {
+    if (results.length === 1) {
+      return results[0];
+    }
+    
+    let output = `Processed ${results.length} reconsiderations:\n\n`;
+    results.forEach(result => {
+      output += result + '\n';
+    });
+    
+    return output.trim();
   }
 }
+
+// Export singleton instance
+export const reconsiderHandler = new ReconsiderHandler();
