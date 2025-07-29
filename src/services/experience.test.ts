@@ -1,3 +1,7 @@
+/**
+ * Tests for Streamlined Experience Service
+ */
+
 import { ExperienceService, experienceSchema, type ExperienceInput } from './experience.js';
 import { embeddingService } from './embeddings.js';
 import { saveEmbedding, saveSource } from '../core/storage.js';
@@ -8,6 +12,7 @@ jest.mock('../core/storage.js', () => ({
   ...jest.requireActual('../core/storage.js'),
   saveEmbedding: jest.fn(),
   saveSource: jest.fn(),
+  generateExperienceId: jest.fn(() => 'exp_test123'),
 }));
 
 // Type the mocks
@@ -16,11 +21,11 @@ const mockSaveEmbedding = saveEmbedding as jest.MockedFunction<typeof saveEmbedd
 const mockEmbeddingService = embeddingService as jest.Mocked<typeof embeddingService>;
 
 describe('ExperienceService', () => {
-  let experienceService: ExperienceService;
+  let service: ExperienceService;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    experienceService = new ExperienceService();
+    service = new ExperienceService();
 
     // Setup default mock behavior
     mockSaveSource.mockImplementation(async (source) => source);
@@ -29,191 +34,217 @@ describe('ExperienceService', () => {
     mockEmbeddingService.generateEmbedding.mockResolvedValue(new Array(384).fill(0));
   });
 
-  describe('rememberExperience', () => {
-    it('should experience a basic experience successfully', async () => {
-      const input = {
-        source: 'Test experience',
+  describe('captureExperience', () => {
+    it('should capture a complete experience successfully', async () => {
+      const input: ExperienceInput = {
+        anchor: '🧪',
+        embodied: 'feeling energized and focused',
+        focus: 'on writing these tests',
+        mood: 'determined and methodical',
+        purpose: 'ensuring code quality',
+        space: 'at my desk in the office',
+        time: 'this Tuesday afternoon',
+        presence: 'working alongside Claude',
+        who: ['Human', 'Claude'],
+        citation: 'Testing the streamlined experience capture'
+      };
+
+      const result = await service.captureExperience(input);
+
+      expect(result.experience).toMatchObject({
+        id: expect.stringMatching(/^exp_/),
+        created: expect.any(String),
+        ...input
+      });
+      expect(result.embedding).toBe(true);
+
+      // Verify storage was called with correct format
+      expect(mockSaveSource).toHaveBeenCalledWith({
+        id: result.experience.id,
+        source: 'Testing the streamlined experience capture',
         emoji: '🧪',
-        who: 'test_user',
-      };
+        created: result.experience.created,
+        who: ['Human', 'Claude'],
+        experienceQualities: {
+          embodied: 'feeling energized and focused',
+          focus: 'on writing these tests',
+          mood: 'determined and methodical',
+          purpose: 'ensuring code quality',
+          space: 'at my desk in the office',
+          time: 'this Tuesday afternoon',
+          presence: 'working alongside Claude'
+        }
+      });
 
-      const result = await experienceService.rememberExperience(input);
-
-      expect(result.source.source).toBe('Test experience');
-      expect(result.source.who).toBe('test_user');
-      expect(result.source.id).toBeDefined();
-      expect(result.source.created).toBeDefined();
+      // Verify embedding was generated from concatenated qualities
+      expect(mockEmbeddingService.generateEmbedding).toHaveBeenCalledWith(
+        expect.stringContaining('feeling energized and focused')
+      );
     });
 
-    it('should use defaults when optional fields are not provided', async () => {
-      const experienceService = new ExperienceService();
-      const input = {
-        emoji: '💭',
+    it('should capture experience without citation', async () => {
+      const input: ExperienceInput = {
+        anchor: '💭',
+        embodied: 'mind wandering freely',
+        focus: 'drifting between ideas',
+        mood: 'open and curious',
+        purpose: 'exploring possibilities',
+        space: 'in a quiet corner',
+        time: 'early morning',
+        presence: 'thinking with Claude',
+        who: ['Alex', 'Claude']
       };
 
-      const result = await experienceService.rememberExperience(input);
+      const result = await service.captureExperience(input);
 
-      expect(result.source.who).toBe('self');
-      expect(result.defaultsUsed).toContain('who="self"');
-    });
-
-    it('should use default source when not provided', async () => {
-      const input = {
-        emoji: '💭',
-        who: 'test_user',
-      };
-
-      const result = await experienceService.rememberExperience(input);
-
-      expect(result.source.source).toBe('Experience experienced');
-      expect(result.defaultsUsed).toContain('source="Experience experienced"');
-    });
-
-    it('should generate embeddings for experienceed experiences', async () => {
-      const input = {
-        source: 'Test experience for embedding',
-        emoji: '🔤',
-        who: 'test_user',
-      };
-
-      const result = await experienceService.rememberExperience(input);
-
-      expect(result.source.id).toBeDefined();
-      // Note: Embedding generation is tested separately
-    });
-
-    it('should handle experience qualities when provided', async () => {
-      const input = {
-        source: 'Test experience',
-        emoji: '✨',
-        who: 'test_user',
-        experience: {
-          embodied: 'sensing',
-          focus: false,
-          mood: 'open',
-          purpose: 'goal',
-          space: false,
-          time: false,
-          presence: false
-        },
-      };
-
-      const result = await experienceService.rememberExperience(input);
-
-      // Check that experienceQualities matches the input
-      expect(result.source.experienceQualities).toEqual(input.experience);
-    });
-
-    it('should handle all false experience qualities', async () => {
-      const input = {
-        source: 'Test experience',
-        emoji: '💭',
-        who: 'test_user',
-        experience: {
-          embodied: false,
-          focus: false,
-          mood: false,
-          purpose: false,
-          space: false,
-          time: false,
-          presence: false
-        },
-      };
-
-      const result = await experienceService.rememberExperience(input);
-
-      expect(result.source.experienceQualities).toEqual(input.experience);
+      expect(result.experience.citation).toBeUndefined();
+      
+      // Storage should use default source text
+      expect(mockSaveSource).toHaveBeenCalledWith(
+        expect.objectContaining({
+          source: 'Experience captured'
+        })
+      );
     });
 
     it('should handle embedding generation failure gracefully', async () => {
-      // Mock embedding service to throw an error
-      mockEmbeddingService.generateEmbedding.mockRejectedValue(
-        new Error('Embedding generation failed')
-      );
-
-      const input = {
-        source: 'Test experience with embedding failure',
-        emoji: '🆘',
-        who: 'test_user',
-      };
-
-      // Should not throw error even if embedding fails
-      const result = await experienceService.rememberExperience(input);
-
-      expect(result.source.source).toBe('Test experience with embedding failure');
-      expect(result.source.who).toBe('test_user');
-      expect(result.source.id).toBeDefined();
-
-      // Verify embedding was attempted but saveEmbedding was not called
-      expect(mockEmbeddingService.initialize).toHaveBeenCalled();
-      expect(mockEmbeddingService.generateEmbedding).toHaveBeenCalled();
-      expect(saveEmbedding).not.toHaveBeenCalled();
-    });
-
-    it('should embed context within experienceQualities', async () => {
-      // Use the already configured mocks
+      mockEmbeddingService.generateEmbedding.mockRejectedValue(new Error('API error'));
 
       const input: ExperienceInput = {
-        source: 'I feel anxious',
-        emoji: '😰',
-        experience: {
-          embodied: 'my hands shake before the important presentation',
-          focus: false,
-          mood: 'anxiety building as I wait to present',
-          purpose: false,
-          space: false,
-          time: false,
-          presence: false
-        },
+        anchor: '❌',
+        embodied: 'feeling frustrated',
+        focus: 'on the error',
+        mood: 'annoyed but persistent',
+        purpose: 'debugging the issue',
+        space: 'same desk same problems',
+        time: 'late at night',
+        presence: 'troubleshooting with Claude',
+        who: ['Developer', 'Claude']
       };
 
-      const result = await experienceService.rememberExperience(input);
+      const result = await service.captureExperience(input);
 
-      expect(result.source.experienceQualities?.embodied).toBe('my hands shake before the important presentation');
-      expect(result.source.experienceQualities?.mood).toBe('anxiety building as I wait to present');
-      expect(mockEmbeddingService.generateEmbedding).toHaveBeenCalledWith(
-        '"I feel anxious" [embodied: "my hands shake before the important presentation", mood: "anxiety building as I wait to present"]'
-      );
+      expect(result.experience).toBeDefined();
+      expect(result.embedding).toBe(false);
+      expect(mockSaveSource).toHaveBeenCalled();
+    });
+
+    it('should validate who array includes AI identity', async () => {
+      const input: ExperienceInput = {
+        anchor: '🚫',
+        embodied: 'testing validation',
+        focus: 'on requirements',
+        mood: 'methodical',
+        purpose: 'ensuring correctness',
+        space: 'in test environment',
+        time: 'during testing',
+        presence: 'with the system',
+        who: ['Human'] // Missing AI identity
+      };
+
+      await expect(service.captureExperience(input)).rejects.toThrow();
+    });
+
+    it('should validate anchor is a single emoji', async () => {
+      const input: ExperienceInput = {
+        anchor: 'not-an-emoji',
+        embodied: 'testing validation',
+        focus: 'on emoji requirement',
+        mood: 'careful',
+        purpose: 'checking constraints',
+        space: 'in validation land',
+        time: 'during checks',
+        presence: 'with Claude',
+        who: ['Tester', 'Claude']
+      };
+
+      await expect(service.captureExperience(input)).rejects.toThrow();
+    });
+
+    it('should reject empty qualities', async () => {
+      const input: ExperienceInput = {
+        anchor: '🔍',
+        embodied: '', // Empty string
+        focus: 'on validation',
+        mood: 'checking carefully',
+        purpose: 'finding edge cases',
+        space: 'in testing',
+        time: 'right now',
+        presence: 'with Claude',
+        who: ['QA', 'Claude']
+      };
+
+      await expect(service.captureExperience(input)).rejects.toThrow();
     });
   });
 
   describe('experienceSchema', () => {
-    it('should validate valid input', () => {
+    it('should validate correct experience input', () => {
       const input = {
-        source: 'Test experience',
-        emoji: '🧪',
-        who: 'test_user',
-        experience: {"embodied":"thinking","focus":false,"mood":"open","purpose":false,"space":false,"time":false,"presence":false},
+        anchor: '✅',
+        embodied: 'feeling validated',
+        focus: 'on schema correctness',
+        mood: 'satisfied',
+        purpose: 'confirming structure',
+        space: 'in the codebase',
+        time: 'during development',
+        presence: 'pair programming with Claude',
+        who: ['Developer', 'Claude'],
+        citation: 'Optional citation text'
       };
 
-      expect(() => experienceSchema.parse(input)).not.toThrow();
+      const result = experienceSchema.safeParse(input);
+      expect(result.success).toBe(true);
     });
 
-    it('should validate input with contextual qualities', () => {
+    it('should reject missing required fields', () => {
       const input = {
-        source: 'Test experience',
-        emoji: '🧪',
-        experience: {
-          embodied: 'discussing project milestones with the team',
-          focus: false,
-          mood: false,
-          purpose: false,
-          space: 'in the team meeting room',
-          time: false,
-          presence: 'engaged with the whole team'
-        }
+        anchor: '❌',
+        embodied: 'incomplete',
+        // Missing other required fields
+        who: ['Human', 'Claude']
       };
 
-      expect(() => experienceSchema.parse(input)).not.toThrow();
+      const result = experienceSchema.safeParse(input);
+      expect(result.success).toBe(false);
     });
 
-    it('should validate input with optional fields', () => {
+    it('should accept multiple AI identities', () => {
       const input = {
-        source: 'Test experience',
-        emoji: '🧪',
+        anchor: '🤖',
+        embodied: 'multi-AI collaboration',
+        focus: 'on teamwork',
+        mood: 'collaborative',
+        purpose: 'working together',
+        space: 'in digital space',
+        time: 'during session',
+        presence: 'with multiple AIs',
+        who: ['Human', 'Claude', 'GPT-4']
       };
 
-      expect(() => experienceSchema.parse(input)).not.toThrow();
+      const result = experienceSchema.safeParse(input);
+      expect(result.success).toBe(true);
+    });
+
+    it('should accept compound emojis', () => {
+      const validEmojis = ['👨‍💻', '🏳️‍🌈', '👨‍👩‍👧‍👦', '🧑🏽‍🦱'];
+      
+      for (const emoji of validEmojis) {
+        const input = {
+          anchor: emoji,
+          embodied: 'testing compound emojis',
+          focus: 'on Unicode support',
+          mood: 'thorough',
+          purpose: 'ensuring compatibility',
+          space: 'in emoji land',
+          time: 'during validation',
+          presence: 'with Claude',
+          who: ['Tester', 'Claude']
+        };
+
+        const result = experienceSchema.safeParse(input);
+        expect(result.success).toBe(true);
+      }
     });
   });
 });

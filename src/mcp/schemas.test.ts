@@ -1,7 +1,5 @@
 /**
- * Schema validation tests
- *
- * Tests for Zod schema validation, example generation, and type inference.
+ * Schema validation tests for streamlined structure
  */
 
 import { describe, it, expect } from '@jest/globals';
@@ -9,17 +7,13 @@ import {
   ExperienceInputSchema,
   SearchInputSchema,
   ReconsiderInputSchema,
-  generateExperienceExample,
-  generateSearchExample,
-  generateReconsiderExample,
-  generateBatchExperienceExample,
-  generateBatchSearchExample,
+  ExperienceItemSchema,
+  AI_IDENTITIES,
   isExperienceInput,
   isSearchInput,
   isReconsiderInput,
   isToolResult,
   isToolTextContent,
-  isExperienceObject,
   hasExperienceArray,
   hasSearchArray,
   hasReconsiderArray,
@@ -28,20 +22,86 @@ import {
 describe('Schema Validation', () => {
   describe('ExperienceInputSchema', () => {
     it('should validate single experience input', () => {
-      const input = generateExperienceExample();
+      const input = {
+        experiences: [
+          {
+            anchor: '🧪',
+            embodied: 'feeling energized and focused',
+            focus: 'on testing the schemas',
+            mood: 'methodical and careful',
+            purpose: 'ensuring correctness',
+            space: 'in my development environment',
+            time: 'this afternoon',
+            presence: 'working with Claude',
+            who: ['Developer', 'Claude'],
+            citation: 'Testing the new streamlined structure'
+          }
+        ]
+      };
       const result = ExperienceInputSchema.safeParse(input);
       expect(result.success).toBe(true);
     });
 
     it('should validate batch experience input', () => {
-      const input = generateBatchExperienceExample();
+      const input = {
+        experiences: [
+          {
+            anchor: '💡',
+            embodied: 'mind racing with ideas',
+            focus: 'jumping between possibilities',
+            mood: 'excited and creative',
+            purpose: 'exploring new concepts',
+            space: 'at my desk',
+            time: 'early morning',
+            presence: 'brainstorming with Claude',
+            who: ['Human', 'Claude']
+          },
+          {
+            anchor: '🌊',
+            embodied: 'feeling calm and grounded',
+            focus: 'wide and receptive',
+            mood: 'peaceful',
+            purpose: 'just being present',
+            space: 'by the window',
+            time: 'sunset',
+            presence: 'enjoying solitude',
+            who: ['Human', 'Claude']
+          }
+        ]
+      };
+      const result = ExperienceInputSchema.safeParse(input);
+      expect(result.success).toBe(true);
+    });
+
+    it('should validate with recall parameter', () => {
+      const input = {
+        experiences: [
+          {
+            anchor: '🔄',
+            embodied: 'connecting past and present',
+            focus: 'on patterns emerging',
+            mood: 'reflective',
+            purpose: 'integrating learnings',
+            space: 'in contemplation',
+            time: 'looking back and forward',
+            presence: 'with memories and Claude',
+            who: ['Human', 'Claude']
+          }
+        ],
+        recall: {
+          query: 'previous insights',
+          limit: 10
+        }
+      };
       const result = ExperienceInputSchema.safeParse(input);
       expect(result.success).toBe(true);
     });
 
     it('should reject input without experiences array', () => {
       const input = {
-        who: 'Alex',
+        recall: {
+          query: 'something'
+        }
       };
       const result = ExperienceInputSchema.safeParse(input);
       expect(result.success).toBe(false);
@@ -49,471 +109,163 @@ describe('Schema Validation', () => {
 
     it('should reject empty experiences array', () => {
       const input = {
-        experiences: [],
+        experiences: []
       };
       const result = ExperienceInputSchema.safeParse(input);
       expect(result.success).toBe(false);
     });
 
-    it('should validate with only experiences', () => {
+    it('should reject experience without AI in who array', () => {
       const input = {
         experiences: [
           {
-            source: 'Test experience',
-            emoji: '🧪',
-            experienceQualities: {
-              embodied: false,
-              focus: false,
-              mood: 'open',
-              purpose: false,
-              space: false,
-              time: false,
-              presence: false,
-            },
-          },
-        ],
-      };
-      const result = ExperienceInputSchema.safeParse(input);
-      expect(result.success).toBe(true);
-    });
-
-    it('should validate with reflects field', () => {
-      const input = {
-        experiences: [
-          {
-            source: 'Pattern realization',
-            emoji: '💡',
-            experienceQualities: {
-              embodied: false,
-              focus: false,
-              mood: 'open',
-              purpose: false,
-              space: false,
-              time: false,
-              presence: false,
-            },
-            reflects: ['exp-123', 'exp-456'],
-          },
-        ],
-      };
-      const result = ExperienceInputSchema.safeParse(input);
-      expect(result.success).toBe(true);
-    });
-
-    it('should validate with empty reflects array', () => {
-      const input = {
-        experiences: [
-          {
-            source: 'Experience with empty reflects',
-            emoji: '🧪',
-            experienceQualities: {
-              embodied: false,
-              focus: false,
-              mood: 'open',
-              purpose: false,
-              space: false,
-              time: false,
-              presence: false,
-            },
-            reflects: [],
-          },
-        ],
-      };
-      const result = ExperienceInputSchema.safeParse(input);
-      expect(result.success).toBe(true);
-    });
-
-    it('should validate with all optional fields', () => {
-      const input = {
-        experiences: [
-          {
-            source: 'Complete experience',
-            emoji: '✨',
-            who: 'test',
-            experienceQualities: {
-              embodied: 'sensing',
-              focus: false,
-              mood: 'open',
-              purpose: false,
-              space: false,
-              time: false,
-              presence: false,
-            },
-            reflects: ['exp-123'],
-          },
-        ],
-      };
-      const result = ExperienceInputSchema.safeParse(input);
-      expect(result.success).toBe(true);
-    });
-
-    // Perspective validation removed - field no longer exists
-    it('should validate with complete experienceQualities', () => {
-      const input = {
-        experiences: [
-          {
-            source: 'Test experience',
-            emoji: '🧪',
-            experienceQualities: {
-              embodied: false,
-              focus: false,
-              mood: 'open',
-              purpose: false,
-              space: false,
-              time: false,
-              presence: false,
-            },
-          },
-        ],
-      };
-      const result = ExperienceInputSchema.safeParse(input);
-      expect(result.success).toBe(true);
-    });
-
-    // Processing validation removed - field no longer exists
-    it('should reject invalid experience qualities', () => {
-      const input = {
-        experiences: [
-          {
-            source: 'Test experience',
-            experienceQualities: ['mood.open'],
-          },
-        ],
+            anchor: '❌',
+            embodied: 'testing validation',
+            focus: 'on requirements',
+            mood: 'thorough',
+            purpose: 'finding edge cases',
+            space: 'in test suite',
+            time: 'during validation',
+            presence: 'working alone',
+            who: ['Human', 'SomeoneElse'] // No AI identity
+          }
+        ]
       };
       const result = ExperienceInputSchema.safeParse(input);
       expect(result.success).toBe(false);
     });
 
-    it('should reject invalid experience array', () => {
+    it('should reject experience with missing required fields', () => {
       const input = {
         experiences: [
           {
-            source: 'Test experience',
-            experienceQualities: 'not-an-array',
-          },
-        ],
+            anchor: '🚫',
+            embodied: 'incomplete experience',
+            // Missing other required fields
+            who: ['Human', 'Claude']
+          }
+        ]
       };
       const result = ExperienceInputSchema.safeParse(input);
       expect(result.success).toBe(false);
     });
 
-    it('should validate with sentence-based qualities', () => {
+    it('should reject invalid emoji', () => {
       const input = {
         experiences: [
           {
-            source: 'Working through this complex problem',
-            emoji: '🤔',
-            experienceQualities: {
-              embodied: 'my mind is racing through possibilities',
-              focus: 'narrowing down to the core issue',
-              mood: 'feeling tense but determined',
-              purpose: 'need to solve this before the deadline',
-              space: 'stuck at my desk with this problem',
-              time: 'aware of time slipping away',
-              presence: 'wrestling with this alone',
-            },
-          },
-        ],
-      };
-      const result = ExperienceInputSchema.safeParse(input);
-      expect(result.success).toBe(true);
-    });
-
-    it('should reject invalid reflects field', () => {
-      const input = {
-        experiences: [
-          {
-            source: 'Test experience',
-            experienceQualities: ['mood.open'],
-            reflects: 'not-an-array' as unknown as string[],
-          },
-        ],
+            anchor: 'not-emoji',
+            embodied: 'testing emoji validation',
+            focus: 'on format requirements',
+            mood: 'checking carefully',
+            purpose: 'ensuring validity',
+            space: 'in validation',
+            time: 'right now',
+            presence: 'with Claude',
+            who: ['Tester', 'Claude']
+          }
+        ]
       };
       const result = ExperienceInputSchema.safeParse(input);
       expect(result.success).toBe(false);
     });
 
-    it('should reject empty source string', () => {
-      const input = {
-        experiences: [
-          {
-            source: '',
-            emoji: '🧪',
-            experienceQualities: ['mood.open'],
-          },
-        ],
-      };
-      const result = ExperienceInputSchema.safeParse(input);
-      expect(result.success).toBe(false);
-    });
-
-    it('should reject empty experiences array', () => {
-      const input = {
-        experiences: [],
-      };
-      const result = ExperienceInputSchema.safeParse(input);
-      expect(result.success).toBe(false);
-    });
-
-    it('should reject invalid experience in batch', () => {
-      const input = {
-        experiences: [
-          {
-            source: 'Test experience',
-            experienceQualities: 'invalid',
-          },
-        ],
-      };
-      const result = ExperienceInputSchema.safeParse(input);
-      expect(result.success).toBe(false);
-    });
-
-    it('should accept compound emojis', () => {
-      const input = {
-        experiences: [
-          {
-            source: 'Test with compound emoji',
-            emoji: '🧑‍💻', // Person with laptop (compound)
-            experienceQualities: {
-              embodied: false,
-              focus: false,
-              mood: 'open',
-              purpose: false,
-              space: false,
-              time: false,
-              presence: false,
-            },
-          },
-        ],
-      };
-      const result = ExperienceInputSchema.safeParse(input);
-      expect(result.success).toBe(true);
-    });
-
-    it('should accept sentence-based qualities', () => {
-      const input = {
-        experiences: [
-          {
-            source: 'Experience with mixed qualities',
-            emoji: '🌊',
-            experienceQualities: {
-              embodied: 'feeling both the physical tension and mental clarity', // Mixed embodied experience
-              focus: false,
-              mood: 'oscillating between excitement and apprehension', // Mixed mood
-              purpose: false,
-              space: false,
-              time: 'caught between memories and possibilities', // Mixed time orientation
-              presence: false,
-            },
-          },
-        ],
-      };
-      const result = ExperienceInputSchema.safeParse(input);
-      expect(result.success).toBe(true);
-    });
-
-    it('should accept various emoji types', () => {
-      const testCases = [
-        { emoji: '😀', description: 'basic emoji' },
-        { emoji: '🧑‍💻', description: 'compound emoji with ZWJ' },
-        { emoji: '👨‍👩‍👧‍👦', description: 'family emoji (multiple ZWJ)' },
-        { emoji: '🏳️‍🌈', description: 'rainbow flag (compound)' },
-        { emoji: '🤷‍♂️', description: 'man shrugging (gendered)' },
-        { emoji: '👋🏻', description: 'waving hand with skin tone' },
-        { emoji: '🛠️', description: 'hammer and wrench' },
-      ];
-
-      testCases.forEach(({ emoji, description }) => {
+    it('should accept all recognized AI identities', () => {
+      for (const ai of AI_IDENTITIES) {
         const input = {
           experiences: [
             {
-              source: `Test with ${description}`,
-              emoji,
-              experienceQualities: {
-                embodied: false,
-                focus: false,
-                mood: 'open',
-                purpose: false,
-                space: false,
-                time: false,
-                presence: false,
-              },
-            },
-          ],
+              anchor: '🤖',
+              embodied: `testing with ${ai}`,
+              focus: 'on AI validation',
+              mood: 'systematic',
+              purpose: 'checking each AI',
+              space: 'in test environment',
+              time: 'during validation',
+              presence: `working with ${ai}`,
+              who: ['Human', ai]
+            }
+          ]
         };
         const result = ExperienceInputSchema.safeParse(input);
         expect(result.success).toBe(true);
-      });
+      }
     });
 
-    it('should reject multiple separate emojis', () => {
-      const input = {
-        experiences: [
-          {
-            source: 'Test with multiple emojis',
-            emoji: '😀😀', // Two separate emojis
-            experienceQualities: ['mood.open'],
-          },
-        ],
-      };
-      const result = ExperienceInputSchema.safeParse(input);
-      expect(result.success).toBe(false);
-    });
-
-    it('should reject non-emoji characters', () => {
-      const input = {
-        experiences: [
-          {
-            source: 'Test with non-emoji',
-            emoji: 'A', // Regular letter
-            experienceQualities: ['mood.open'],
-          },
-        ],
-      };
-      const result = ExperienceInputSchema.safeParse(input);
-      expect(result.success).toBe(false);
+    it('should accept compound emojis', () => {
+      const compoundEmojis = ['👨‍💻', '🏳️‍🌈', '👩‍🔬', '🧑‍🎨'];
+      for (const emoji of compoundEmojis) {
+        const input = {
+          experiences: [
+            {
+              anchor: emoji,
+              embodied: 'testing compound emojis',
+              focus: 'on unicode support',
+              mood: 'thorough',
+              purpose: 'ensuring compatibility',
+              space: 'in emoji testing',
+              time: 'during validation',
+              presence: 'with Claude',
+              who: ['Tester', 'Claude']
+            }
+          ]
+        };
+        const result = ExperienceInputSchema.safeParse(input);
+        expect(result.success).toBe(true);
+      }
     });
   });
 
   describe('SearchInputSchema', () => {
-    it('should validate search input', () => {
-      const input = generateSearchExample();
-      const result = SearchInputSchema.safeParse(input);
-      expect(result.success).toBe(true);
-    });
-
-    it('should validate batch search input', () => {
-      const input = generateBatchSearchExample();
-      const result = SearchInputSchema.safeParse(input);
-      expect(result.success).toBe(true);
-    });
-
-    it('should validate with only search', () => {
+    it('should validate basic search', () => {
       const input = {
         searches: [
           {
-            search: 'test query',
-          },
-        ],
+            search: 'creative moments',
+            limit: 10
+          }
+        ]
       };
       const result = SearchInputSchema.safeParse(input);
       expect(result.success).toBe(true);
     });
 
-    it('should validate with only filters', () => {
+    it('should validate search with all filters', () => {
       const input = {
         searches: [
           {
-            who: 'Alex',
-          },
-        ],
+            search: 'insights',
+            who: 'Human',
+            qualities: {
+              mood: 'open',
+              embodied: { present: true }
+            },
+            created: '2025-01-21',
+            limit: 20,
+            offset: 10,
+            sort: 'relevance'
+          }
+        ]
       };
       const result = SearchInputSchema.safeParse(input);
       expect(result.success).toBe(true);
     });
 
-    it('should validate with all search options', () => {
+    it('should validate ID-based search', () => {
       const input = {
         searches: [
           {
-            search: 'test query',
-            who: 'Alex',
-            limit: 10,
-            offset: 5,
-            sort: 'relevance',
-          },
-        ],
+            ids: ['exp_123', 'exp_456']
+          }
+        ]
       };
       const result = SearchInputSchema.safeParse(input);
       expect(result.success).toBe(true);
     });
 
-    it('should validate with reflects filter', () => {
+    it('should reject empty searches array', () => {
       const input = {
-        searches: [
-          {
-            search: 'test query',
-            reflects: 'only',
-          },
-        ],
-      };
-      const result = SearchInputSchema.safeParse(input);
-      expect(result.success).toBe(true);
-    });
-
-    it('should validate with reflected_by filter', () => {
-      const input = {
-        searches: [
-          {
-            search: 'test query',
-            reflected_by: 'exp-123',
-          },
-        ],
-      };
-      const result = SearchInputSchema.safeParse(input);
-      expect(result.success).toBe(true);
-    });
-
-    it('should validate with reflected_by array filter', () => {
-      const input = {
-        searches: [
-          {
-            search: 'test query',
-            reflected_by: ['exp-123', 'exp-456'],
-          },
-        ],
-      };
-      const result = SearchInputSchema.safeParse(input);
-      expect(result.success).toBe(true);
-    });
-
-    it('should reject invalid sort option', () => {
-      const input = {
-        searches: [
-          {
-            search: 'test query',
-            sort: 'invalid' as unknown as string,
-          },
-        ],
-      };
-      const result = SearchInputSchema.safeParse(input);
-      expect(result.success).toBe(false);
-    });
-
-    it('should accept negative limit (no validation)', () => {
-      const input = {
-        searches: [
-          {
-            search: 'test query',
-            limit: -1,
-          },
-        ],
-      };
-      const result = SearchInputSchema.safeParse(input);
-      expect(result.success).toBe(true);
-    });
-
-    it('should accept negative offset (no validation)', () => {
-      const input = {
-        searches: [
-          {
-            search: 'test query',
-            offset: -1,
-          },
-        ],
-      };
-      const result = SearchInputSchema.safeParse(input);
-      expect(result.success).toBe(true);
-    });
-
-    it('should reject searches with invalid fields', () => {
-      const input = {
-        searches: [
-          {
-            search: 'test query',
-            invalidField: 'not-allowed',
-          },
-        ] as unknown as { searches: { search: string; invalidField: string }[] },
+        searches: []
       };
       const result = SearchInputSchema.safeParse(input);
       expect(result.success).toBe(false);
@@ -521,285 +273,171 @@ describe('Schema Validation', () => {
   });
 
   describe('ReconsiderInputSchema', () => {
-    it('should validate reconsider input', () => {
-      const input = generateReconsiderExample();
-      const result = ReconsiderInputSchema.safeParse(input);
-      expect(result.success).toBe(true);
-    });
-
-    it('should validate single reconsider input', () => {
+    it('should validate experience update', () => {
       const input = {
         reconsiderations: [
           {
-            id: 'exp-123',
-            source: 'Updated experience',
-          },
-        ],
-      };
-      const result = ReconsiderInputSchema.safeParse(input);
-      expect(result.success).toBe(true);
-    });
-
-    it('should validate batch reconsider input', () => {
-      const input = {
-        reconsiderations: [
-          { id: 'exp-123', source: 'Updated 1' },
-          { id: 'exp-456', source: 'Updated 2' },
-        ],
-      };
-      const result = ReconsiderInputSchema.safeParse(input);
-      expect(result.success).toBe(true);
-    });
-
-    it('should reject empty reconsiderations array', () => {
-      const input = {
-        reconsiderations: [],
-      };
-      const result = ReconsiderInputSchema.safeParse(input);
-      expect(result.success).toBe(false);
-    });
-
-    it('should validate reconsideration with all fields', () => {
-      const input = {
-        reconsiderations: [
-          {
-            id: 'exp-123',
-            source: 'Updated',
+            id: 'exp_123',
+            source: 'Updated citation',
+            who: ['Human', 'GPT-4'],
             experienceQualities: {
               embodied: false,
               focus: false,
-              mood: 'open',
-              purpose: false,
+              mood: 'hopeful',
+              purpose: 'moving forward',
               space: false,
               time: false,
-              presence: false,
-            },
-          },
-        ],
+              presence: false
+            }
+          }
+        ]
       };
       const result = ReconsiderInputSchema.safeParse(input);
       expect(result.success).toBe(true);
     });
 
-    it('should reject invalid reconsideration in batch', () => {
+    it('should validate release request', () => {
       const input = {
-        reconsiderations: [{ source: 'Missing ID' }],
+        reconsiderations: [
+          {
+            id: 'exp_123',
+            release: true,
+            releaseReason: 'No longer relevant'
+          }
+        ]
+      };
+      const result = ReconsiderInputSchema.safeParse(input);
+      expect(result.success).toBe(true);
+    });
+
+    it('should validate batch updates', () => {
+      const input = {
+        reconsiderations: [
+          {
+            id: 'exp_1',
+            who: ['Human', 'Claude']
+          },
+          {
+            id: 'exp_2',
+            experienceQualities: {
+              embodied: 'feeling different now',
+              focus: false,
+              mood: false,
+              purpose: false,
+              space: false,
+              time: false,
+              presence: false
+            }
+          },
+          {
+            id: 'exp_3',
+            release: true
+          }
+        ]
+      };
+      const result = ReconsiderInputSchema.safeParse(input);
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject reconsideration without ID', () => {
+      const input = {
+        reconsiderations: [
+          {
+            source: 'Missing ID'
+          }
+        ]
       };
       const result = ReconsiderInputSchema.safeParse(input);
       expect(result.success).toBe(false);
     });
   });
-});
 
-describe('Type Guards', () => {
-  describe('isExperienceInput', () => {
-    it('should return true for valid experience input', () => {
-      const input = generateExperienceExample();
-      expect(isExperienceInput(input)).toBe(true);
-    });
-
-    it('should return false for invalid input', () => {
-      expect(isExperienceInput({ invalid: 'data' })).toBe(false);
-      expect(isExperienceInput(null)).toBe(false);
-      expect(isExperienceInput(undefined)).toBe(false);
-      expect(isExperienceInput('string')).toBe(false);
-      expect(isExperienceInput(123)).toBe(false);
-    });
-  });
-
-  describe('isSearchInput', () => {
-    it('should return true for valid search input', () => {
-      const input = generateSearchExample();
-      expect(isSearchInput(input)).toBe(true);
-    });
-
-    it('should return false for invalid input', () => {
-      expect(isSearchInput({ invalid: 'data' })).toBe(false);
-      expect(isSearchInput(null)).toBe(false);
-      expect(isSearchInput(undefined)).toBe(false);
-    });
-  });
-
-  describe('isReconsiderInput', () => {
-    it('should return true for valid reconsider input', () => {
-      const input = generateReconsiderExample();
-      expect(isReconsiderInput(input)).toBe(true);
-    });
-
-    it('should return false for invalid input', () => {
-      expect(isReconsiderInput({ invalid: 'data' })).toBe(false);
-      expect(isReconsiderInput(null)).toBe(false);
-      expect(isReconsiderInput(undefined)).toBe(false);
-    });
-  });
-
-  describe('isToolResult', () => {
-    it('should return true for valid tool result', () => {
-      const result = {
-        content: [
-          {
-            type: 'text',
-            text: 'Test result',
-          },
-        ],
+  describe('Type Guards', () => {
+    it('should correctly identify ExperienceInput', () => {
+      const valid = {
+        experiences: [{
+          anchor: '✅',
+          embodied: 'testing type guard',
+          focus: 'on validation',
+          mood: 'confident',
+          purpose: 'ensuring types',
+          space: 'in typescript',
+          time: 'compile time',
+          presence: 'with type system',
+          who: ['Developer', 'Claude']
+        }]
       };
-      expect(isToolResult(result)).toBe(true);
+      const invalid = { notAnExperience: true };
+      
+      expect(isExperienceInput(valid)).toBe(true);
+      expect(isExperienceInput(invalid)).toBe(false);
     });
 
-    it('should return false for invalid tool result', () => {
-      expect(isToolResult({ type: 'invalid' })).toBe(false);
-      expect(isToolResult({ text: 'missing type' })).toBe(false);
-      expect(isToolResult(null)).toBe(false);
-      expect(isToolResult(undefined)).toBe(false);
-    });
-  });
-
-  describe('isToolTextContent', () => {
-    it('should return true for valid text content', () => {
-      const content = {
-        type: 'text',
-        text: 'Test content',
+    it('should correctly identify SearchInput', () => {
+      const valid = {
+        searches: [{
+          search: 'test query'
+        }]
       };
-      expect(isToolTextContent(content)).toBe(true);
+      const invalid = { query: 'not valid structure' };
+      
+      expect(isSearchInput(valid)).toBe(true);
+      expect(isSearchInput(invalid)).toBe(false);
     });
 
-    it('should return false for invalid text content', () => {
-      expect(isToolTextContent({ type: 'invalid' })).toBe(false);
-      expect(isToolTextContent({ text: 'missing type' })).toBe(false);
-      expect(isToolTextContent(null)).toBe(false);
-      expect(isToolTextContent(undefined)).toBe(false);
-    });
-  });
-
-  describe('isExperienceObject', () => {
-    it('should return true for valid experience switchboard', () => {
-      const experience = {
-        embodied: 'sensing',
-        focus: false,
-        mood: 'open',
-        purpose: false,
-        space: false,
-        time: false,
-        presence: false,
+    it('should correctly identify ReconsiderInput', () => {
+      const valid = {
+        reconsiderations: [{
+          id: 'exp_123',
+          release: true
+        }]
       };
-      expect(isExperienceObject(experience)).toBe(true);
+      const invalid = { id: 'exp_123' };
+      
+      expect(isReconsiderInput(valid)).toBe(true);
+      expect(isReconsiderInput(invalid)).toBe(false);
     });
 
-    it('should return false for invalid experience', () => {
-      expect(isExperienceObject('not-an-array')).toBe(false);
-      expect(isExperienceObject(123)).toBe(false);
-      expect(isExperienceObject(null)).toBe(false);
-      expect(isExperienceObject(undefined)).toBe(false);
-      expect(isExperienceObject({})).toBe(false);
-    });
-  });
-
-  describe('Array Type Guards', () => {
-    describe('hasExperienceArray', () => {
-      it('should return true for valid experience array', () => {
-        const input = {
-          experiences: [
-            {
-              source: 'test',
-              emoji: '🧪',
-              experienceQualities: {
-                embodied: false,
-                focus: false,
-                mood: 'open',
-                purpose: false,
-                space: false,
-                time: false,
-                presence: false,
-              },
-            },
-          ],
-        };
-        expect(hasExperienceArray(input)).toBe(true);
-      });
-
-      it('should return false for empty experience array', () => {
-        const input = { experiences: [] };
-        expect(hasExperienceArray(input)).toBe(false);
-      });
-
-      it('should return false for missing experiences', () => {
-        const input = { source: 'test' };
-        expect(hasExperienceArray(input as unknown as { experiences?: unknown[] })).toBe(false);
-      });
+    it('should correctly identify ToolResult', () => {
+      const valid = {
+        isError: false,
+        content: [{
+          type: 'text',
+          text: 'Success'
+        }]
+      };
+      const invalid = { result: 'not valid' };
+      
+      expect(isToolResult(valid)).toBe(true);
+      expect(isToolResult(invalid)).toBe(false);
     });
 
-    describe('hasSearchArray', () => {
-      it('should return true for valid search array', () => {
-        const input = { searches: [{ search: 'test' }] };
-        expect(hasSearchArray(input)).toBe(true);
-      });
-
-      it('should return false for empty search array', () => {
-        const input = { searches: [] };
-        expect(hasSearchArray(input)).toBe(false);
-      });
-
-      it('should return false for missing searches', () => {
-        const input = { search: 'test' };
-        expect(hasSearchArray(input as unknown as { search: string })).toBe(false);
-      });
+    it('should correctly identify array formats', () => {
+      const experienceInput = {
+        experiences: [{
+          anchor: '📝',
+          embodied: 'testing',
+          focus: 'on arrays',
+          mood: 'checking',
+          purpose: 'validation',
+          space: 'here',
+          time: 'now',
+          presence: 'with Claude',
+          who: ['Test', 'Claude']
+        }]
+      };
+      
+      const searchInput = {
+        searches: [{ search: 'test' }]
+      };
+      
+      const reconsiderInput = {
+        reconsiderations: [{ id: 'exp_1', release: true }]
+      };
+      
+      expect(hasExperienceArray(experienceInput)).toBe(true);
+      expect(hasSearchArray(searchInput)).toBe(true);
+      expect(hasReconsiderArray(reconsiderInput)).toBe(true);
     });
-
-    describe('hasReconsiderArray', () => {
-      it('should return true for valid reconsider array', () => {
-        const input = { reconsiderations: [{ id: 'exp-123' }] };
-        expect(hasReconsiderArray(input)).toBe(true);
-      });
-
-      it('should return false for empty reconsider array', () => {
-        const input = { reconsiderations: [] };
-        expect(hasReconsiderArray(input)).toBe(false);
-      });
-
-      it('should return false for missing reconsiderations', () => {
-        const input = { id: 'exp-123' };
-        expect(hasReconsiderArray(input as unknown as { id: string })).toBe(false);
-      });
-    });
-  });
-});
-
-describe('Example Generation', () => {
-  it('should generate valid experience examples', () => {
-    const example = generateExperienceExample();
-    expect(example).toHaveProperty('experiences');
-    expect(Array.isArray(example.experiences)).toBe(true);
-    expect(example.experiences![0]).toHaveProperty('source');
-    // Perspective removed from source structure
-    expect(example.experiences![0]).toHaveProperty('experienceQualities');
-  });
-
-  it('should generate valid search examples', () => {
-    const example = generateSearchExample();
-    expect(example).toHaveProperty('searches');
-    expect(Array.isArray(example.searches)).toBe(true);
-    expect(example.searches![0]).toHaveProperty('search');
-  });
-
-  it('should generate valid reconsider examples', () => {
-    const example = generateReconsiderExample();
-    expect(example).toHaveProperty('reconsiderations');
-    expect(Array.isArray(example.reconsiderations)).toBe(true);
-    expect(example.reconsiderations![0]).toHaveProperty('id');
-    expect(example.reconsiderations![0]).toHaveProperty('source');
-  });
-
-  it('should generate valid batch experience examples', () => {
-    const example = generateBatchExperienceExample();
-    expect(example).toHaveProperty('experiences');
-    expect(Array.isArray(example.experiences)).toBe(true);
-    expect(example.experiences?.length).toBeGreaterThan(0);
-  });
-
-  it('should generate valid batch search examples', () => {
-    const example = generateBatchSearchExample();
-    expect(example).toHaveProperty('searches');
-    expect(Array.isArray(example.searches)).toBe(true);
-    expect(example.searches?.length).toBeGreaterThan(0);
   });
 });

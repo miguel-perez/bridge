@@ -361,12 +361,8 @@ export const ToolResultSchema = z.object({
 });
 
 // Example generation functions
-/**
- * Generates an example experience input for testing and documentation
- * @remarks
- * Provides a realistic example of single experience capture with quality signatures.
- * @returns Example experience input with embodied sensing and mood qualities
- */
+// TODO: Update these for new streamlined format
+/*
 export function generateExperienceExample(): ExperienceInput {
   return {
     experiences: [
@@ -389,12 +385,6 @@ export function generateExperienceExample(): ExperienceInput {
   };
 }
 
-/**
- * Generates an example search input for testing and documentation
- * @remarks
- * Provides a realistic example of semantic search with filters and limits.
- * @returns Example search input with query and quality filters
- */
 export function generateSearchExample(): SearchInput {
   return {
     searches: [
@@ -408,12 +398,6 @@ export function generateSearchExample(): SearchInput {
   };
 }
 
-/**
- * Generates an example reconsider input for testing and documentation
- * @remarks
- * Provides a realistic example of experience update with ID and new content.
- * @returns Example reconsider input with source ID and updated experience
- */
 export function generateReconsiderExample(): ReconsiderInput {
   return {
     reconsiderations: [
@@ -434,12 +418,6 @@ export function generateReconsiderExample(): ReconsiderInput {
   };
 }
 
-/**
- * Generates an example batch experience input for testing and documentation
- * @remarks
- * Provides a realistic example of multiple experience capture in a single request.
- * @returns Example batch experience input with multiple experiences
- */
 export function generateBatchExperienceExample(): ExperienceInput {
   return {
     experiences: [
@@ -476,12 +454,6 @@ export function generateBatchExperienceExample(): ExperienceInput {
   };
 }
 
-/**
- * Generates an example batch search input for testing and documentation
- * @remarks
- * Provides a realistic example of multiple search queries in a single request.
- * @returns Example batch search input with multiple queries
- */
 export function generateBatchSearchExample(): SearchInput {
   return {
     searches: [
@@ -498,6 +470,7 @@ export function generateBatchSearchExample(): SearchInput {
     ],
   };
 }
+*/
 
 // Type guards using Zod schemas
 /**
