@@ -23,11 +23,11 @@ npm run quality-check:full    # Full quality check (pre-push)
 
 ### Testing
 ```bash
-npm test                      # Unit tests with coverage (705 tests)
-npm run test:integration      # Integration tests with real MCP (63 tests)
+npm test                      # Unit tests with coverage (544 tests)
+npm run test:integration      # Integration tests with real MCP
 npm run test:simulation       # LLM-powered simulation tests (1 test, requires OPENAI_API_KEY)
-npm run test:all             # Unit + integration tests (768 tests)
-npm run test:complete        # All tests including simulations (769 total)
+npm run test:all             # Unit + integration tests
+npm run test:complete        # All tests including simulations
 
 # Run a single test file
 npm test -- src/services/experience.test.ts
@@ -36,7 +36,7 @@ npm test -- --testNamePattern="should capture experience"
 
 ## Architecture Overview
 Focus on defensive programming, clear error messages, and following the exact MCP and DXT specifications to ensure compatibility with the ecosystem.
-Bridge is an MCP (Model Context Protocol) server for capturing and analyzing experiential data, enabling shared memory between humans and AI through an extended cognition model.
+Bridge is an MCP (Model Context Protocol) server for capturing and analyzing experiential data, enabling shared memory between humans and AI through an extended cognition model. The core insight: the 8 qualities ARE the experience itself - they don't describe an experience, they contain it.
 
 ### Core Architecture
 
@@ -47,14 +47,14 @@ Bridge is an MCP (Model Context Protocol) server for capturing and analyzing exp
    - Handlers use Zod schemas for validation
 
 2. **Service Layer** (`src/services/`)
-   - `experience.ts`: Core experience capture with integrated recall
-   - `search.ts`: Semantic search with quality filtering
+   - `experience.ts`: Core experience capture with automatic recall
+   - `search.ts`: Unified search supporting keyword, semantic, and quality-based queries
    - `embeddings.ts`: Provider abstraction (OpenAI or none)
    - `clustering.ts`: Pattern discovery through DBSCAN
    - `grouping.ts`: Experience organization by various criteria
 
 3. **Core Types** (`src/core/`)
-   - `types.ts`: Experience data structures with 7 quality dimensions
+   - `types.ts`: Experience data structures with 8 qualities (7 dimensions + anchor emoji)
    - `storage.ts`: JSON-based persistence with atomic writes
    - `config.ts`: Environment-based configuration
 
@@ -62,17 +62,18 @@ Bridge is an MCP (Model Context Protocol) server for capturing and analyzing exp
 
 Bridge implements complementary awareness where:
 - Humans naturally capture 2-4 prominent qualities (selective attention)
-- AI always captures all 7 qualities (extended perception)
+- AI always captures all 8 qualities (extended perception)
 - Together they create richer experiential maps
 
-Quality dimensions:
-- `embodied`: thinking/sensing
-- `focus`: narrow/broad
-- `mood`: open/closed
-- `purpose`: goal/wander
-- `space`: here/there
-- `time`: past/future
-- `presence`: individual/collective
+The 8 qualities (each a complete sentence containing context):
+- `embodied`: Body-mind unity in this moment
+- `focus`: Attention's direction and quality
+- `mood`: Emotional atmosphere
+- `purpose`: Direction or drift
+- `space`: Where I am
+- `time`: Temporal orientation
+- `presence`: Social field
+- `anchor`: Single emoji that captures the essence
 
 ### Critical Implementation Notes
 
@@ -80,6 +81,7 @@ Quality dimensions:
    - Use `debugLog()` for debug output (only with BRIDGE_DEBUG=true)
    - Use `errorLog()` for errors (stderr)
    - Use `mcpLog()` for client-visible logs
+   - All logging utilities are in `src/utils/safe-logger.ts`
 
 2. **Manifest Generation**: The `manifest.json` is auto-generated from `src/mcp/tools.ts`
    - Run `npm run generate:manifest` after tool changes
@@ -94,7 +96,7 @@ Quality dimensions:
 4. **Quality Gates**:
    - Pre-commit: ESLint, TypeScript, build, unit tests
    - Pre-push: Full test suite + learning loop analysis
-   - Target: 80%+ coverage (currently 81.64% line coverage)
+   - Target: 80%+ coverage (currently 66.55% line coverage)
 
 5. **Development Workflow**:
    - Follow LOOP.md methodology (VISION → OPPORTUNITIES → EXPERIMENTS → LEARNINGS)
@@ -117,11 +119,11 @@ Quality dimensions:
 
 ### Common Development Tasks
 
-#### Adding a New Quality Dimension
-1. Update `QUALITY_TYPES` and `QUALITY_SUBTYPES` in `src/core/types.ts`
-2. Update schemas in `src/mcp/schemas.ts`
-3. Update quality filtering in `src/services/quality-filter.ts`
-4. Add tests for the new dimension
+#### Understanding the Streamlined Architecture
+1. Experiences are self-contained - the 8 qualities ARE the experience
+2. No separate context field - context is embedded in quality sentences
+3. Automatic recall happens on every capture (up to 25 related experiences)
+4. Search is unified - handles keyword, semantic, and quality-based queries
 
 #### Modifying MCP Tools
 1. Update Zod schemas in `src/mcp/schemas.ts`

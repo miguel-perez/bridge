@@ -62,7 +62,7 @@ We use a continuous learning loop to evolve from vision to reality:
 5. **Review results**: Check test output and error details
 6. **Update docs**: Keep README.md current with implementation
 
-**Current Quality Status**: See **README.md** for current test coverage metrics (81.64% lines, 69.26% branches, 769 total tests)
+**Current Quality Status**: See **README.md** for current test coverage metrics (66.55% lines, 55% branches, 544 unit tests)
 
 ### Key Commands
 
@@ -75,11 +75,11 @@ npm run lint:fix                  # Auto-fix linting issues
 npm run type-check                # Type check without building
 
 # Testing
-npm test                          # Run unit tests with Jest (705 tests)
-npm run test:integration          # Run integration tests with real MCP (63 tests)
+npm test                          # Run unit tests with Jest (544 tests)
+npm run test:integration          # Run integration tests with real MCP
 npm run test:simulation           # Run simulation tests with LLM (1 test)
-npm run test:all                  # Run unit + integration tests (768 tests)
-npm run test:complete             # Run all tests including simulations (769 total)
+npm run test:all                  # Run unit + integration tests
+npm run test:complete             # Run all tests including simulations
 npm run test:bridge               # Run Bridge scenario tests
 npm run loop                      # Run learning loop analysis
 npm run quality-check:full        # Run comprehensive quality checks

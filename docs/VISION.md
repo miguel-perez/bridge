@@ -30,9 +30,9 @@ This living architecture means:
 
 ## How Bridge Thinks
 
-### The Seven Qualities
+### The Eight Qualities
 
-Bridge recognizes that experience doesn't come in categories but in qualities—dimensions that emerge and recede like weather. Every moment contains all seven, though only some prominently surface. Each quality is captured as a complete sentence in the experiencer's voice:
+Bridge recognizes that experience doesn't come in categories but in qualities—dimensions that emerge and recede like weather. Every moment contains all eight, though only some prominently surface. Each quality is captured as a complete sentence in the experiencer's voice:
 
 **embodied** - How consciousness textures through body and mind  
 "My thoughts race through possibilities" or "I feel it settling into my bones"—capturing whether you're mentally processing or somatically knowing.
@@ -54,6 +54,9 @@ Bridge recognizes that experience doesn't come in categories but in qualities—
 
 **presence** - The social dimension  
 "Feeling alone in this struggle" or "We're all in this together"—recognizing how others exist even in aloneness.
+
+**anchor** - The visual/emotional essence  
+A single emoji that captures the heart of the moment—providing immediate recognition and emotional resonance for memory navigation.
 
 ### Living Operations
 
