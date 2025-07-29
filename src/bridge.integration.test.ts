@@ -116,8 +116,7 @@ describe('Bridge End-to-End Workflows', () => {
       // 3. Update initial assessment
       const update = await callReconsider(env.client, {
         id: id!,
-        experienceQualities: {"embodied":"understanding dawns","focus":"seeing how it all connects","mood":"feeling enlightened","purpose":"appreciating the design","space":"mentally in a clearer place","time":false,"presence":"having this realization"},
-        context: 'After understanding the design principles, the complexity makes sense',
+        experienceQualities: {"embodied":"understanding dawns as the design principles click","focus":"seeing how all the complexity actually makes sense","mood":"feeling enlightened about the architecture","purpose":"appreciating the thoughtful design choices","space":"mentally in a much clearer place now","time":false,"presence":"having this realization on my own"},
       });
 
       expect(
@@ -156,9 +155,8 @@ describe('Bridge End-to-End Workflows', () => {
       const ai = await callExperience(env.client, {
         source: 'I notice the human is experiencing cognitive overload from parallel concerns',
         emoji: '🤖',
-        experienceQualities: {"embodied":"analyzing the situation systematically","focus":"taking in the whole picture","mood":"maintaining supportive presence","purpose":"helping work through this","space":"fully present in our session","time":false,"presence":"engaged together in problem-solving"},
+        experienceQualities: {"embodied":"analyzing the stress patterns systematically","focus":"taking in the whole problem-solving dynamic","mood":"maintaining supportive presence despite the tension","purpose":"helping work through this difficult session","space":"fully present in our collaborative space","time":false,"presence":"engaged together in problem-solving"},
         who: 'Claude',
-        context: 'Observing stress patterns in our problem-solving session',
       });
 
       // Search for both perspectives

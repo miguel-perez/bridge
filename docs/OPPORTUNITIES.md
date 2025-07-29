@@ -1,13 +1,12 @@
+Learning Loop: VISION → **OPPORTUNITIES** → EXPERIMENTS → LEARNINGS → VISION
+
 # Bridge Opportunities
 
-**Document Purpose**: This is the prioritized roadmap of features not yet implemented in Bridge. Each opportunity is
-scored systematically to guide development decisions. These are future possibilities, not current capabilities.
+**Document Purpose**: This is the prioritized roadmap of features not yet implemented in Bridge. Each opportunity is scored systematically to guide development decisions. These are future possibilities, not current capabilities.
 
 **For Developers**: Use this to understand what's coming next and contribute to high-priority features.
 
-This document comprehensively lists all potential features and improvements for Bridge, organized by priority based on
-systematic scoring. All opportunities have been evaluated for compatibility with MCP (Model Context Protocol)
-constraints.
+This document comprehensively lists all potential features and improvements for Bridge, organized by priority based on systematic scoring. All opportunities have been evaluated for compatibility with MCP (Model Context Protocol) constraints.
 
 ## Scoring Methodology
 
@@ -61,10 +60,6 @@ Bridge uses a barbell strategy to balance stability with growth potential:
 - Items that could fail without significant upside
 - Fragile middle ground that doesn't contribute to antifragility
 
-## Barbell Strategy Priority Order
-
-Bridge prioritizes using a barbell strategy for antifragility - balancing high-certainty wins with high-impact experiments while avoiding fragile middle ground.
-
 ## High-Priority Opportunities
 
 ### Progressive Vector Enhancement Architecture
@@ -79,7 +74,6 @@ Bridge prioritizes using a barbell strategy for antifragility - balancing high-c
 Layer 1: Embedding Providers (how we create vectors)
   → None (quality-only search - default)
   → TensorFlow.js (local, 25MB)
-  → OpenAI (cloud, good quality)
   → OpenAI (cloud, good quality)
 
 Layer 2: Vector Stores (how we search vectors)
@@ -126,90 +120,6 @@ interface VectorStore {
 
 **Related Experiment**: EXP-014 in EXPERIMENTS.md tests this architecture.
 
----
-
-**Score: 378** (Impact: 9, Certainty: 6, Urgency: 7) - **COMPLETED 2025-07-24**
-
-**Description**: Implement Bridge.flow() as a new MCP tool that orchestrates existing Bridge operations into learning loops, replacing sequential thinking with experiential problem-solving through iterative understanding evolution.
-
-**Core Concept**: Problem-solving as spiral learning where understanding deepens through each iteration:
-
-```
-Loop 1: "Debug auth error" → [experience frustration] → [recall similar bugs] → [try permission fix]
-Loop 2: "Debug auth timezone issue" → [experience insight] → [recall timezone bugs] → [check server time]
-Loop 3: "Fix UTC handling" → [implement fix] → [test solution] → [document learning]
-```
-
-**Key Features**:
-
-- **Self-defining API**: `understanding` parameter naturally guides users to articulate current grasp
-- **Natural evolution**: Understanding deepens through iteration ("Fix auth" → "Fix timezone issue" → "Implement UTC fix")
-- **Bridge integration**: Leverages existing tools (experience, recall, reconsider, release)
-- **Transparent state**: Complete visibility into learning journey with moment tracking
-- **Dynamic estimates**: Adjustable total moment expectations as understanding evolves
-
-**Technical Implementation**:
-
-```typescript
-flow({
-  understanding: "Current grasp of problem",
-  tool: "experience|recall|reconsider|release",
-  params: any[], // Array format for Bridge tools
-  estimates?: number // Total moments expected
-}): FlowResponse
-
-interface FlowResponse {
-  moment: string; // "3/7"
-  understanding: string; // Current (echoed)
-  totalMoments: number; // Running total
-  lastResult?: any[]; // Tool results
-  understandingHistory?: string[]; // Evolution trail
-  recentMoments?: FlowMoment[]; // Context
-}
-```
-
-**State Management Requirements**:
-
-- Persistent flow state across multiple MCP calls
-- Understanding evolution tracking (simple string history)
-- Moment history with loop attribution
-- Integration with existing Bridge storage
-
-**Benefits**:
-
-- **Transformative UX**: Replaces sequential thinking with experiential learning
-- **Natural problem-solving**: Models how humans actually solve problems
-- **Bridge enhancement**: Adds orchestration layer to existing tools
-- **Transparent learning**: Complete visibility into understanding evolution
-- **Self-guiding**: API naturally encourages articulation of current understanding
-
-**Implementation Challenges**:
-
-- State persistence across MCP tool calls
-- Simple understanding evolution tracking (no complex revision/branching)
-- Integration with existing Bridge tool structure
-- Moment history management and cleanup
-- Flow completion detection and cleanup
-
-**Success Criteria**:
-
-- Users can start flows with initial understanding
-- Understanding evolves naturally through tool usage (no complex revision logic)
-- Complete state visibility in responses
-- Seamless integration with existing Bridge tools
-- Flow state persists across conversation turns
-
-**MCP Compatibility**: Fully compatible with existing Bridge tool structure, adds orchestration layer without breaking changes.
-
-**Priority Rationale**: High impact (transforms problem-solving approach), medium certainty (clear concept with simple state management), medium urgency (significant UX enhancement but not blocking).
-
-**Key Insight**: Bridge.flow() focuses on orchestration, not duplication. It leverages existing Bridge tools:
-
-- **reconsider** handles revisions (no need for complex revision logic)
-- **recall** handles branching exploration (no need for branching state)
-- **experience** captures insights (no need for complex thought tracking)
-- **release** handles cleanup (no need for complex state management)
-
 ## Medium-Priority Opportunities
 
 ### Extensible Recall
@@ -245,30 +155,6 @@ interface RecallStrategy {
 
 ---
 
-### Natural Language Time Filters
-
-**Score: 216** (Impact: 8, Certainty: 9, Urgency: 3)
-
-**Description**: Enable natural language time expressions in recall queries like "last week", "yesterday", "past month".
-
-**Examples**:
-
-```javascript
-experience({ recall: { created: 'last week' } });
-experience({ recall: { created: 'yesterday' } });
-experience({ recall: { created: 'past 3 days' } });
-```
-
-**Technical Notes**:
-
-- Use existing date parsing libraries
-- Clear fallback for ambiguous expressions
-- Timezone awareness from user context
-
-**MCP Compatibility**: Simple parameter enhancement, fully compatible.
-
----
-
 ### Natural Language Quality Parsing
 
 **Score: 189** (Impact: 7, Certainty: 9, Urgency: 3)
@@ -280,14 +166,26 @@ experience({ recall: { created: 'past 3 days' } });
 ```javascript
 // Instead of:
 experience({
-  source: 'feeling anxious and focused',
-  experience: ['embodied.sensing', 'mood.closed', 'focus.narrow'],
+  experiences: [{
+    source: 'feeling anxious and focused',
+    experienceQualities: {
+      embodied: "my body tenses with worry",
+      mood: "anxious about the outcome",
+      focus: "laser-focused on the problem",
+      purpose: false,
+      space: false,
+      time: false,
+      presence: false
+    }
+  }]
 });
 
 // Allow:
 experience({
-  source: 'feeling anxious and focused',
-  // Qualities auto-detected from content
+  experiences: [{
+    source: 'feeling anxious and focused',
+    // Qualities auto-detected from content
+  }]
 });
 ```
 
@@ -311,21 +209,21 @@ experience({
 **API Examples**:
 
 ```javascript
-// Batch experience
+// Batch experience (already partially supported)
 experience({
   experiences: [
-    { source: 'Morning meditation', experience: ['embodied.sensing'] },
-    { source: 'Coffee thoughts', experience: ['embodied.thinking'] },
-    { source: 'Team standup energy', experience: ['presence.collective'] },
-  ],
+    { source: 'Morning meditation', experienceQualities: {...} },
+    { source: 'Coffee thoughts', experienceQualities: {...} },
+    { source: 'Team standup energy', experienceQualities: {...} }
+  ]
 });
 
 // Batch reconsider
 reconsider({
-  updates: [
-    { id: 'exp_123', experience: ['mood.open'] },
-    { id: 'exp_456', experience: ['purpose.goal'] },
-  ],
+  reconsiderations: [
+    { id: 'exp_123', experienceQualities: {...} },
+    { id: 'exp_456', experienceQualities: {...} }
+  ]
 });
 ```
 
@@ -349,7 +247,11 @@ reconsider({
 **Core Features**:
 
 ```javascript
-experience({ recall: { group_by: 'sequence' } });
+experience({ 
+  recall: { 
+    group_by: 'sequence' 
+  } 
+});
 // Returns: Temporal patterns, OODA loops, recurring rhythms
 
 // Example output:
@@ -358,9 +260,9 @@ experience({ recall: { group_by: 'sequence' } });
     {
       pattern: 'anxiety → exploration → insight → integration',
       frequency: 'weekly',
-      instances: 3,
-    },
-  ];
+      instances: 3
+    }
+  ]
 }
 ```
 
@@ -373,6 +275,56 @@ experience({ recall: { group_by: 'sequence' } });
 
 **MCP Compatibility**: New recall option, fully compatible.
 
-### Completed Features
+## Low-Priority Opportunities
 
-For completed features and their learnings, see [LEARNINGS.md](./LEARNINGS.md).
+### Advanced Pattern Recognition
+
+**Score: 120** (Impact: 6, Certainty: 4, Urgency: 5)
+
+**Description**: Machine learning models to identify complex experiential patterns beyond current clustering.
+
+### Visual Timeline Interface
+
+**Score: 96** (Impact: 8, Certainty: 4, Urgency: 3)
+
+**Description**: Web-based visualization of experiential journeys over time.
+
+### Multi-User Collaboration
+
+**Score: 84** (Impact: 7, Certainty: 3, Urgency: 4)
+
+**Description**: Shared experiential repositories with permission systems.
+
+## Completed Features
+
+The following features have been successfully implemented and moved to LEARNINGS.md:
+
+### Recently Completed (2025-07-24 to 2025-07-26)
+
+- **nextMoment Pattern** (replaced Bridge.flow()) - Experiential reasoning chains with auto-reflection
+- **API Consolidation** - Simplified from 4 tools to 2 (experience + reconsider)
+- **Progressive Vector Enhancement** (EXP-014) - Solved Claude Desktop compatibility
+
+### Previously Completed (2025-07-21 to 2025-07-22)
+
+- **Advanced Recall Options** (EXP-010) - Sorting, pagination, natural language time filtering
+- **Comprehensive Quality Detection** (EXP-011) - Natural language validation
+- **Continuous Quality Monitoring** (EXP-009) - 80/20 approach to quality gates
+- **Sophisticated Quality Filtering** (EXP-008) - Boolean logic, presence/absence
+- **Enhanced Learning Loop** (EXP-007) - Rich test evidence extraction
+- **Clustering Analysis** (EXP-006) - Automatic experience grouping
+- **Pattern Realizations** (EXP-005) - reflects field implementation
+
+For details on completed features, see LEARNINGS.md.
+
+## Contributing New Opportunities
+
+When adding new opportunities:
+
+1. Frame as "How Might We" questions
+2. Score using the methodology above
+3. Consider MCP constraints
+4. Check if it fits the barbell strategy
+5. Add implementation notes if approach is known
+
+Remember: Focus on features that enable collaborative wisdom building while maintaining backward compatibility.

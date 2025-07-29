@@ -90,14 +90,15 @@ Like a crystal showing different patterns from different angles, these qualities
 - Six interrogative faces (WHO=presence, WHAT=embodied, WHY=purpose, WHEN=time, WHERE=space, HOW=focus+mood)
 - Evolution parameters (conditions for transformation)
 
-QUALITY SIGNATURES:
-• embodied - how consciousness textures through body/mind (thinking/sensing)
-• focus - attentional quality (narrow/broad)
-• mood - emotional atmosphere (open/closed)
-• purpose - directional momentum (goal/wander)
-• space - spatial awareness (here/there)
-• time - temporal orientation (past/future)
-• presence - social quality (individual/collective)
+QUALITY SIGNATURES (SELF-CONTAINED):
+Each quality sentence should embed enough context to make the moment comprehensible:
+• embodied - physical/mental state WITH situational context
+• focus - what draws attention and why
+• mood - emotional atmosphere AND its situation
+• purpose - directional momentum within specific context
+• space - WHERE specifically this experience occurs
+• time - WHEN and its significance to the experience
+• presence - WHO is involved and their relational context
 
 EXTENDED COGNITION MODEL:
 • Humans: Capture evident qualities (natural selective attention) 
@@ -131,11 +132,14 @@ Bridge recognizes twelve experiential patterns, each emphasizing different dimen
 QUALITY FORMAT:
 Each quality is expressed as:
 • false - not prominent (receded from awareness)
-• string - full sentence in the experiencer's voice capturing their unique way of noticing
+• string - full sentence WITH CONTEXT in the experiencer's voice
 Examples:
-- embodied: "my thoughts line up like soldiers ready to march" (not just "thinking")
-- mood: "feeling the weight of possibility" (not just "open")
-- presence: "we're discovering this together" (not just "collective")
+- embodied: "my hands shake as I open the rejection letter" (includes situation)
+- mood: "relief flooding in after finally fixing the bug" (shows what triggered it)
+- presence: "working through this PR review with Miguel" (specifies who and what)
+
+NOTE: Context is embedded within quality sentences, not a separate field.
+Each sentence should make the moment self-contained and comprehensible.
 
 TRANSFORMATIVE AWARENESS:
 Every moment captured contains seeds of transformation. Consider:
@@ -224,15 +228,14 @@ METAPHORS FOR UNDERSTANDING:
                 source: 'We both see it now - the pattern is about cycles of creation and rest',
                 emoji: '🌅',
                 who: ['Human', 'Claude'],
-                context: 'After exploring creative burnout together',
                 experienceQualities: {
-                  embodied: 'the insight clicks into place for both of us',
-                  focus: 'seeing the whole pattern at once',
-                  mood: 'feeling relief and openness',
-                  purpose: 'just letting this understanding settle',
-                  space: 'sharing this moment of clarity',
+                  embodied: 'the insight about creative cycles clicks into place for both of us',
+                  focus: 'seeing the whole burnout-recovery pattern at once',
+                  mood: 'feeling relief after exploring creative burnout together',
+                  purpose: 'just letting this understanding about cycles settle',
+                  space: 'sharing this moment of clarity about creation and rest',
                   time: false,
-                  presence: 'we\'re discovering this together',
+                  presence: 'we\'re discovering this pattern together',
                 },
               },
             ],
@@ -241,7 +244,7 @@ METAPHORS FOR UNDERSTANDING:
             content: [
               {
                 type: 'text',
-                text: '🌅 Shared Moment of Alignment\n\nFrom: Human, Claude\nAs: We\nContext: After exploring creative burnout together\n\nExperienced (embodied.thinking, focus.broad, mood.open, purpose.wander, space.here, presence.collective)\n\n✨ A moment of true collaborative understanding.',
+                text: '🌅 Shared Moment of Alignment\n\nFrom: Human, Claude\nAs: We\n\nExperienced with full context embedded in qualities\n\n✨ A moment of true collaborative understanding about creative cycles.',
               },
             ],
           },
@@ -340,11 +343,10 @@ METAPHORS FOR UNDERSTANDING:
                 source: 'That completely changes everything!',
                 emoji: '🌟',
                 who: 'Human',
-                context: 'After discovering the config file was in the wrong directory',
                 experienceQualities: {
-                  embodied: 'my whole understanding just flipped upside down',
+                  embodied: 'my whole understanding flips finding the config in wrong directory',
                   focus: false,
-                  mood: 'relief flooding through me',
+                  mood: 'relief flooding through after hours of debugging',
                   purpose: false,
                   space: false,
                   time: false,
@@ -357,7 +359,7 @@ METAPHORS FOR UNDERSTANDING:
             content: [
               {
                 type: 'text',
-                text: 'Captured breakthrough moment (2 qualities)\n\nContext: After discovering the config file was in the wrong directory\nFrom: Human\nAs: I\nWhen: during conversation\nCaptured: just now',
+                text: 'Captured breakthrough moment (2 qualities)\n\nFrom: Human\nAs: I\nWhen: during conversation\nCaptured: just now\n\nContext embedded in qualities - config directory discovery.',
               },
             ],
           },
@@ -399,15 +401,14 @@ METAPHORS FOR UNDERSTANDING:
                 source: 'Oh! We found it - the config was in the wrong directory!',
                 emoji: '💡',
                 who: ['Human', 'Claude'],
-                context: 'After collaborative debugging session',
                 experienceQualities: {
-                  embodied: 'the aha moment hits us both',
-                  focus: 'everything snaps into focus',
-                  mood: 'relief flooding through',
-                  purpose: 'achieved what we set out to do',
-                  space: 'right here in this breakthrough',
+                  embodied: 'the aha moment hits us both finding the misplaced config',
+                  focus: 'everything snaps into focus after collaborative debugging',
+                  mood: 'relief flooding through after the long debugging session',
+                  purpose: 'achieved what we set out to do - found the bug',
+                  space: 'right here in this breakthrough after searching everywhere',
                   time: false,
-                  presence: 'we solved it together',
+                  presence: 'we solved the config directory issue together',
                 },
               },
             ],
@@ -586,7 +587,6 @@ METAPHORS FOR UNDERSTANDING:
                 source: 'We both see it now - the pattern is about cycles of creation and rest',
                 emoji: '🌅',
                 who: ['Human', 'Claude'],
-                context: 'After exploring creative burnout together',
                 experienceQualities: {
                   embodied: 'the understanding lands in both our minds at once',
                   focus: 'taking in the whole beautiful pattern',
@@ -603,7 +603,7 @@ METAPHORS FOR UNDERSTANDING:
             content: [
               {
                 type: 'text',
-                text: '🌅 Shared Moment of Alignment\n\nFrom: Human, Claude\nAs: We\nContext: After exploring creative burnout together\n\nCaptured unified experience with 6 active qualities\n\n✨ A moment of true collaborative understanding - both perspectives unified in shared insight.',
+                text: '🌅 Shared Moment of Alignment\n\nFrom: Human, Claude\nAs: We\n\nCaptured unified experience with 6 active qualities\n\n✨ A moment of true collaborative understanding - context woven throughout qualities.',
               },
             ],
           },
@@ -647,15 +647,14 @@ METAPHORS FOR UNDERSTANDING:
                 source: 'The way she paused before answering showed me a different way to respond',
                 emoji: '🌱',
                 who: 'Human',
-                context: 'During team conflict resolution',
                 experienceQualities: {
-                  embodied: 'I feel the power of that pause in my chest',
-                  focus: 'zeroing in on this tiny but profound shift',
-                  mood: 'hopeful about what this could change',
-                  purpose: 'seeing a new path forward',
-                  space: 'right here in this transformative instant',
-                  time: 'this moment will echo forward',
-                  presence: 'witnessing possibility emerge between us',
+                  embodied: 'I feel the power of her conflict resolution pause in my chest',
+                  focus: 'zeroing in on how she paused before responding in the conflict',
+                  mood: 'hopeful about what this approach could change for our team',
+                  purpose: 'seeing a new path forward for handling team conflicts',
+                  space: 'right here in this transformative team mediation moment',
+                  time: 'this conflict resolution technique will echo forward',
+                  presence: 'witnessing new possibility emerge in our team dynamic',
                 },
               },
             ],

@@ -133,25 +133,24 @@ describe('Type Validation Functions', () => {
       expect(isValidSource(validSourceWithEmptyReflects)).toBe(true);
     });
 
-    it('should accept source objects with context', () => {
-      const validSourceWithContext: Source = {
+    it('should accept source objects with contextual experienceQualities', () => {
+      const validSourceWithContextualQualities: Source = {
         id: 'test-123',
         source: 'Test source',
         emoji: '🧪',
         created: '2024-01-01T00:00:00.000Z',
         who: 'test',
         experienceQualities: {
-          embodied: false as const,
-          focus: false as const,
-          mood: 'open' as const,
-          purpose: false as const,
-          space: false as const,
-          time: false as const,
-          presence: false as const
+          embodied: 'reviewing code with the team',
+          focus: false,
+          mood: 'open to feedback during the review',
+          purpose: false,
+          space: 'in the code review session',
+          time: false,
+          presence: false
         },
-        context: 'During a code review session',
       };
-      expect(isValidSource(validSourceWithContext)).toBe(true);
+      expect(isValidSource(validSourceWithContextualQualities)).toBe(true);
     });
 
     it('should reject invalid source objects', () => {
@@ -279,7 +278,6 @@ describe('Zod Schema Validation', () => {
           time: false as const,
           presence: false as const
         },
-        context: 'End of quarter with multiple deadlines converging',
       };
 
       const result = SourceSchema.safeParse(validSourceWithContext);

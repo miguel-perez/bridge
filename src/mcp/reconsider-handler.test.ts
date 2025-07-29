@@ -164,7 +164,6 @@ describe('ReconsiderHandler', () => {
           presence: 'collective'
         },
         reflects: undefined,
-        context: undefined,
       });
       expect(result.isError).toBeUndefined();
     });

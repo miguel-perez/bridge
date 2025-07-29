@@ -111,9 +111,6 @@ export const experienceSchema = z.object({
 
   // Pattern realizations - experiences that reflect on other experiences
   reflects: z.array(z.string()).optional(),
-
-  // Optional context for self-containment
-  context: z.string().optional(),
 });
 
 /**
@@ -125,7 +122,6 @@ export interface ExperienceInput {
   who?: string | string[];
   experience?: ExperienceQualities;
   reflects?: string[];
-  context?: string;
 }
 
 /**
@@ -200,7 +196,6 @@ export class ExperienceService {
       who,
       experienceQualities,
       reflects: validatedInput.reflects,
-      context: validatedInput.context,
     };
 
     // Save the source record
@@ -220,9 +215,8 @@ export class ExperienceService {
         ? `[${qualitiesArray.join(', ')}]`
         : '[]';
 
-      // Include context in embedding if present
-      const contextPrefix = savedSource.context ? `Context: ${savedSource.context}. ` : '';
-      const embeddingText = `${contextPrefix}"${savedSource.source}" ${qualitiesText}`;
+      // Context is now embedded within experienceQualities
+      const embeddingText = `"${savedSource.source}" ${qualitiesText}`;
       const embedding = await embeddingService.generateEmbedding(embeddingText);
 
       // Save embedding to storage

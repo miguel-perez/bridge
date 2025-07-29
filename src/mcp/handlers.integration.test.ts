@@ -236,8 +236,7 @@ describe('MCP Handlers Integration', () => {
       const result = await callExperience(env.client, {
         source: specialContent,
         emoji: '🔤',
-        experienceQualities: {"embodied":"thinking","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
-        context: 'Testing special character handling: <>&',
+        experienceQualities: {"embodied":"thinking about special character handling: <>&","focus":false,"mood":false,"purpose":false,"space":false,"time":false,"presence":false},
       });
 
       expect(verifyToolResponse(result, 'Experienced')).toBe(true);

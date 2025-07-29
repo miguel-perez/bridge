@@ -1,9 +1,8 @@
-VISION → OPPORTUNITIES → EXPERIMENTS → LEARNINGS → VISION
+**Learning Loop:** VISION → OPPORTUNITIES → EXPERIMENTS → LEARNINGS → VISION
 
 # The Bridge Learning Loop
 
-**Document Purpose**: This explains Bridge's development methodology - how we systematically evolve from vision to
-implementation through experimentation and learning. This is our process for continuous improvement.
+**Document Purpose**: This explains Bridge's development methodology - how we systematically evolve from vision to implementation through experimentation and learning. This is our process for continuous improvement.
 
 **For Contributors**: Follow this loop when proposing new features or improvements.
 
@@ -22,7 +21,7 @@ We use a continuous learning loop to evolve from vision to reality:
 - Identify gaps between vision and current implementation
 - Frame as "How Might We" (HMW) questions in OPPORTUNITIES.md
 - Score using methodology in OPPORTUNITIES.md (Impact × Certainty × Urgency)
-- Current highest priority: Clustering (Score: 378)
+- Current highest priority: Progressive Vector Enhancement (Score: 432)
 
 ### 2. Opportunities Become Experiments
 
@@ -84,20 +83,16 @@ npm run test:complete             # Run all tests including simulations (769 tot
 npm run test:bridge               # Run Bridge scenario tests
 npm run loop                      # Run learning loop analysis
 npm run quality-check:full        # Run comprehensive quality checks
-```
 
 # Quality Gates
-
-npm run quality-check # Quick quality check (pre-commit level)
-npm run quality-check:full # Full quality check (pre-push level)
+npm run quality-check             # Quick quality check (pre-commit level)
+npm run quality-check:full        # Full quality check (pre-push level)
 
 # Build & Deploy
-
-npm run build:all # Build and bundle for production
-npm run dxt:build # Build Desktop Extension (macOS/Linux)
-npm run dxt:build:windows # Build Desktop Extension (Windows)
-
-````
+npm run build:all                 # Build and bundle for production
+npm run dxt:build                 # Build Desktop Extension (macOS/Linux)
+npm run dxt:build:windows         # Build Desktop Extension (Windows)
+```
 
 ### Quality Gates
 
@@ -124,7 +119,7 @@ Bridge uses automated quality gates to maintain high code quality:
 ```bash
 SKIP_PRE_COMMIT=true git commit  # Bypass pre-commit
 SKIP_PRE_PUSH=true git push      # Bypass pre-push
-````
+```
 
 **Quality Standards**:
 
@@ -132,7 +127,7 @@ SKIP_PRE_PUSH=true git push      # Bypass pre-push
 - Zero ESLint errors
 - Zero TypeScript errors
 - All 769 tests passing (705 unit + 63 integration + 1 simulation)
-- All 14 completed experiments proven by tests
+- All 15 completed experiments proven by tests
 
 ### Test Coverage
 
@@ -169,21 +164,78 @@ Bridge uses a three-layer testing pyramid:
 
 ### Streamlined Bridge Design
 
-Bridge has been transformed from CRUD-like operations to conscious memory work:
+Bridge has been transformed from CRUD-like operations to conscious memory work with just two integrated tools:
 
-- **Experience Tool**: Now includes integrated recall functionality and nextMoment tracking
-- **Reconsider Tool**: Now supports both update and release modes
-- **Flow State Management**: Tracks experiential journeys and generates auto-reflections
-- **Quality Signatures**: Complete switchboard with 7 dimensions for capturing experiential moments
+#### **experience()**
+A unified tool for both capture and exploration:
+- **Capture**: Document new experiences with full quality signatures
+- **Recall**: Search memories with sophisticated filtering, sorting, and grouping
+- **Journey Tracking**: Use nextMoment to declare experiential states in reasoning chains
+- **Batch Operations**: Capture multiple perspectives in one call
+- **Pattern Discovery**: Find clusters, sequences, and connections
+
+Example with integrated recall:
+```javascript
+experience({
+  experiences: [{
+    source: "Feeling stuck on this design problem",
+    experienceQualities: {
+      embodied: "my mind keeps circling the same ideas",
+      mood: "frustrated with the lack of progress",
+      focus: "narrowing in on what's blocking me",
+      purpose: false,
+      space: false,
+      time: false,
+      presence: false
+    }
+  }],
+  recall: {
+    query: "design stuck blocked",
+    limit: 5
+  }
+})
+```
+
+#### **reconsider()**
+Transform and evolve captured experiences:
+- **Update Mode**: Revise any aspect as understanding deepens
+- **Release Mode**: Gracefully remove experiences that no longer serve
+- **Pattern Connections**: Add reflects arrays to link insights
+- **Batch Processing**: Update multiple experiences at once
+
+Example with release mode:
+```javascript
+reconsider({
+  reconsiderations: [{
+    id: "exp_123",
+    release: true,
+    releaseReason: "This anxiety pattern no longer defines me"
+  }]
+})
+```
+
+### Quality Signatures
+
+All seven experiential dimensions use free-text sentences in the experiencer's voice:
+
+- **embodied**: "my mind races through possibilities" or "feeling it in my bones"
+- **focus**: "zeroing in on this detail" or "taking in the whole scene"  
+- **mood**: "open to whatever emerges" or "shutting down, need space"
+- **purpose**: "pushing toward the deadline" or "wandering through ideas"
+- **space**: "right here in this moment" or "my mind is back home"
+- **time**: "remembering when we first met" or "worried about tomorrow"
+- **presence**: "feeling alone in this" or "we're all in this together"
+
+Use `false` for qualities not prominently present in the experience.
 
 ## How to Generate Opportunities from Gaps
 
 1. **Compare** VISION.md features with README.md implementation
 2. **Identify gaps** between vision and current state
 3. **Frame as HMW questions**:
-   - "HMW enable Bridge to reveal patterns through clustering?"
-   - "HMW capture pattern realizations as linkable experiences?"
-   - "HMW track temporal sequences to reveal rhythms?"
+   - "HMW enable natural language quality parsing?"
+   - "HMW support temporal pattern analysis?"
+   - "HMW create extensible recall strategies?"
 4. **Include implementation notes** for each opportunity
 
 ## How to Score Opportunities
@@ -196,24 +248,4 @@ See **OPPORTUNITIES.md** for the complete scoring methodology (Impact × Certain
 - Focus on features that enable collaborative wisdom building
 - Maintain backward compatibility while extending capabilities
 - Prioritize experiential reasoning chains with nextMoment tracking
-- Enhance tools with integrated functionality (e.g., recall within experience)
-
-## Documentation Structure
-
-### Core Learning Loop (4 files)
-
-- **VISION.md** - What we're building
-- **OPPORTUNITIES.md** - Questions to test
-- **EXPERIMENTS.md** - Active tests and progress
-- **LEARNINGS.md** - Validated insights
-
-Each document has one clear purpose and can be read in under 2 minutes.
-
-### Evidence Traceability
-
-The enhanced loop creates clear evidence trails:
-
-- Each learning links to specific experiments and test files
-- Confidence levels (Low/Medium/High) based on sample size
-- Raw data references (e.g., "4/5 users in test-2025-07-18.json")
-- Experiment status tracking (complete, in-progress, pending)
+- Enhance tools with integrated functionality

@@ -90,7 +90,6 @@ export class ReconsiderHandler {
             who: item.who,
             experienceQualities: item.experienceQualities,
             reflects: item.reflects,
-            context: item.context,
           });
           updateResults.push(result);
         }

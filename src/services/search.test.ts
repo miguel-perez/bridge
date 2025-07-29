@@ -1,10 +1,13 @@
 import { describe, it, expect, beforeEach } from '@jest/globals';
 import { search, type RecallInput } from './search.js';
-import { saveSource, clearTestStorage } from '../core/storage.js';
+import { saveSource, clearTestStorage, setupTestStorage } from '../core/storage.js';
 import { Source } from '../core/types.js';
 import { humanQualities } from '../test-utils/format-converter.js';
 
 // Use test storage
+beforeEach(() => {
+  setupTestStorage('search-test');
+});
 
 describe('Recall Relevance Scoring', () => {
   beforeEach(async () => {

@@ -150,29 +150,29 @@ describe('ExperienceService', () => {
       expect(saveEmbedding).not.toHaveBeenCalled();
     });
 
-    it('should include context in source and embedding when provided', async () => {
+    it('should embed context within experienceQualities', async () => {
       // Use the already configured mocks
 
       const input: ExperienceInput = {
         source: 'I feel anxious',
         emoji: '😰',
         experience: {
-          embodied: 'sensing',
+          embodied: 'my hands shake before the important presentation',
           focus: false,
-          mood: 'closed',
+          mood: 'anxiety building as I wait to present',
           purpose: false,
           space: false,
           time: false,
           presence: false
         },
-        context: 'Before an important presentation',
       };
 
       const result = await experienceService.rememberExperience(input);
 
-      expect(result.source.context).toBe('Before an important presentation');
+      expect(result.source.experienceQualities?.embodied).toBe('my hands shake before the important presentation');
+      expect(result.source.experienceQualities?.mood).toBe('anxiety building as I wait to present');
       expect(mockEmbeddingService.generateEmbedding).toHaveBeenCalledWith(
-        'Context: Before an important presentation. "I feel anxious" [embodied: "sensing", mood: "closed"]'
+        '"I feel anxious" [embodied: "my hands shake before the important presentation", mood: "anxiety building as I wait to present"]'
       );
     });
   });
@@ -189,11 +189,19 @@ describe('ExperienceService', () => {
       expect(() => experienceSchema.parse(input)).not.toThrow();
     });
 
-    it('should validate input with context field', () => {
+    it('should validate input with contextual qualities', () => {
       const input = {
         source: 'Test experience',
         emoji: '🧪',
-        context: 'During a team meeting discussing project milestones',
+        experience: {
+          embodied: 'discussing project milestones with the team',
+          focus: false,
+          mood: false,
+          purpose: false,
+          space: 'in the team meeting room',
+          time: false,
+          presence: 'engaged with the whole team'
+        }
       };
 
       expect(() => experienceSchema.parse(input)).not.toThrow();

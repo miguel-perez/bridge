@@ -180,7 +180,6 @@ export class ExperienceHandler {
           who: item.who,
           experience: item.experienceQualities || undefined,
           reflects: item.reflects,
-          context: item.context,
         });
         results.push(result);
       }

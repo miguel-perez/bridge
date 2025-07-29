@@ -130,16 +130,23 @@ describe('ExperienceService Integration', () => {
     });
   }, 30000);
 
-  test('should handle experience with context', async () => {
+  test('should handle experience with context embedded in qualities', async () => {
     await withTestEnvironment(async (env) => {
       const result = await callExperience(env.client, {
         source: 'That was intense',
         emoji: '😮',
-        experienceQualities: humanQualities('embodied.sensing', 'mood.closed', 'focus.narrow'),
-        context: 'After a difficult code review where multiple issues were found',
+        experienceQualities: {
+          embodied: 'feeling the weight of all those code review issues',
+          focus: 'narrowing in on each piece of critical feedback',
+          mood: 'shutting down after the difficult review',
+          purpose: false,
+          space: false,
+          time: false,
+          presence: false
+        },
       });
 
-      // Context is stored with the experience but not shown in the basic response
+      // Context is embedded within the experienceQualities
       expect(verifyToolResponse(result, 'Experienced')).toBe(true);
       const id = extractExperienceId(result);
       expect(id).toBeTruthy();

@@ -101,8 +101,7 @@ describe('ExperienceHandler', () => {
         emoji: '😊',
         who: 'Human',
         experience: {"embodied":false,"focus":false,"mood":"open","purpose":false,"space":false,"time":false,"presence":false},
-        reflects: undefined,
-        context: undefined});
+        reflects: undefined});
     });
 
     it('should handle batch experiences', async () => {
@@ -444,7 +443,7 @@ describe('ExperienceHandler', () => {
         emoji: '📝',
         who: undefined,
         reflects: undefined,
-        context: undefined});
+        });
     });
 
     it('should handle non-Error thrown values', async () => {
@@ -490,7 +489,7 @@ describe('ExperienceHandler', () => {
         who: 'Test User',
         experience: {"embodied":false,"focus":false,"mood":"open","purpose":false,"space":false,"time":false,"presence":"collective"},
         reflects: undefined,
-        context: undefined});
+        });
     });
   });
 

@@ -99,10 +99,6 @@ export interface Source {
   // Pattern realization fields
   /** Array of experience IDs that this experience reflects on/connects to */
   reflects?: string[];
-
-  // Self-containment field
-  /** Optional background context to make this experience self-contained and comprehensible */
-  context?: string;
 }
 
 /**
@@ -207,12 +203,6 @@ export const SourceSchema = z.object({
     .array(z.string())
     .optional()
     .describe('Array of experience IDs that this experience reflects on/connects to'),
-  context: z
-    .string()
-    .optional()
-    .describe(
-      'Optional background context to make this experience self-contained and comprehensible'
-    ),
 });
 
 /** Zod schema for StorageData */
@@ -265,8 +255,7 @@ export function isValidSource(source: unknown): source is Source {
       (typeof src.experienceQualities === 'object' && src.experienceQualities !== null)) &&
     (src.reflects === undefined ||
       (Array.isArray(src.reflects) &&
-        src.reflects.every((item: unknown) => typeof item === 'string'))) &&
-    (src.context === undefined || typeof src.context === 'string')
+        src.reflects.every((item: unknown) => typeof item === 'string')))
   );
 }
 

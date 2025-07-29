@@ -1,3 +1,5 @@
+Learning Loop: VISION → OPPORTUNITIES → EXPERIMENTS → **LEARNINGS** → VISION
+
 # Bridge Learnings
 
 **Document Purpose**: This captures validated insights from experiments and real-world usage. Each learning includes

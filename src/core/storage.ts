@@ -98,7 +98,12 @@ function getDataFile(): string {
     finalPath = configPath; // Absolute path
   } else {
     // Relative path - resolve from project root
-    finalPath = path.join(process.cwd(), configPath);
+    // In test environment, never use the root bridge.json unless explicitly configured
+    if (process.env.NODE_ENV === 'test' && configPath === 'bridge.json' && !customDataFile) {
+      finalPath = path.join(getStorageDir(), 'test_default_bridge.json');
+    } else {
+      finalPath = path.join(process.cwd(), configPath);
+    }
   }
 
   return finalPath;

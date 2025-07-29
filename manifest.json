@@ -3,7 +3,7 @@
   "dxt_version": "0.1",
   "name": "bridge",
   "display_name": "Bridge",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MCP server for capturing and analyzing experiential data",
   "long_description": "Bridge is a Desktop Extension for Claude Desktop that provides seamless integration for phenomenological data capture and analysis. It enables experiential memory and pattern recognition through a sophisticated seven-dimensional quality framework, creating shared consciousness between humans and AI. Bridge tracks embodied states, emotional atmospheres, attentional qualities, and temporal orientations to build rich experiential maps that enhance AI-human collaboration. With features like dual-view organization (Recent Flow + Emerging Patterns), NextMoment target state search, and automatic quality-based clustering, Bridge transforms conversations into lasting experiential knowledge.",
   "author": {

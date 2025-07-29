@@ -103,70 +103,69 @@ export const QualityFilterSchema = z
 export const ExperienceQualitiesSchema = z.object({
   embodied: z
     .union([z.literal(false), z.string().min(1)])
-    .describe('Embodied experience: false (not prominent) or sentence in experiencer\'s voice (e.g., "my mind races through possibilities", "feeling it in my bones")'),
+    .describe('Embodied experience: false OR a sentence capturing physical/mental state WITH situational context (e.g., "my hands shake as I reach for the presentation remote", "thoughts racing through tomorrow\'s interview questions")'),
   focus: z
     .union([z.literal(false), z.string().min(1)])
-    .describe('Focus quality: false (not prominent) or sentence describing attention (e.g., "zeroing in on this detail", "taking in the whole scene")'),
+    .describe('Attention quality: false OR a sentence showing what draws attention and why (e.g., "locked onto the error message that could derail our launch", "scanning the room for my daughter\'s face at graduation")'),
   mood: z
     .union([z.literal(false), z.string().min(1)])
-    .describe('Mood quality: false (not prominent) or sentence describing emotional atmosphere (e.g., "open to whatever emerges", "shutting down, need space")'),
+    .describe('Emotional atmosphere: false OR a sentence revealing feeling AND situation (e.g., "anxiety building as the deadline approaches", "relief washing over me after the test results")'),
   purpose: z
     .union([z.literal(false), z.string().min(1)])
-    .describe('Purpose quality: false (not prominent) or sentence describing directional momentum (e.g., "pushing toward the deadline", "wandering through ideas")'),
+    .describe('Directional momentum: false OR a sentence showing intent within context (e.g., "determined to finish this feature before the team meeting", "drifting through memories of our last conversation")'),
   space: z
     .union([z.literal(false), z.string().min(1)])
-    .describe('Space quality: false (not prominent) or sentence describing spatial awareness (e.g., "right here in this moment", "my mind is back home")'),
+    .describe('Spatial awareness: false OR a sentence placing the experience specifically (e.g., "alone in the server room at 3am", "surrounded by family at the dinner table")'),
   time: z
     .union([z.literal(false), z.string().min(1)])
-    .describe('Time quality: false (not prominent) or sentence describing temporal orientation (e.g., "remembering when we first met", "worried about tomorrow\'s presentation")'),
+    .describe('Temporal orientation: false OR a sentence anchoring when and its significance (e.g., "the night before everything changed", "three weeks into learning this codebase")'),
   presence: z
     .union([z.literal(false), z.string().min(1)])
-    .describe('Presence quality: false (not prominent) or sentence describing social quality (e.g., "feeling alone in this", "we\'re all in this together")'),
-}).describe(`Complete switchboard of experiential qualities. Each quality can be:
-- false: not prominent (receded from awareness)
-- string: full sentence in experiencer's voice capturing their unique way of noticing
+    .describe('Social dimension: false OR a sentence showing relational context (e.g., "feeling the team\'s doubt in the silence", "working through this with Miguel\'s guidance")'),
+}).describe(`Complete experiential qualities ensuring self-contained moments. Each quality sentence should:
 
-Examples of authentic voice:
-- embodied: "my thoughts scatter like startled birds" or "feeling it deep in my bones"
-- focus: "laser-locked on this one detail" or "taking in everything at once"
-- mood: "curiosity bubbling up" or "walls going up around me"
-- purpose: "driven to crack this puzzle" or "just seeing where this leads"
-- space: "right here in this moment" or "my mind is back in that meeting room"
-- time: "that memory keeps pulling me back" or "already living in tomorrow's presentation"
-- presence: "working through this alone" or "feeling our minds sync up"
+• Include enough situational detail to understand the context
+• Use natural language that implies WHO, WHERE, WHEN, and WHY
+• Capture both the quality AND its contextual grounding
+• Make the experience comprehensible without external explanation
 
-Each sentence should:
-• Use the experiencer's natural vocabulary and rhythm
-• Capture the felt quality, not analytical labels
-• Be specific to this moment, not generic
-• Express the experiencer's unique way of noticing`);
+Examples of contextually rich qualities:
+- embodied: "my fingers fumble with the keys as I try to fix the production bug"
+- focus: "can't stop checking my phone for the interview results"
+- mood: "confidence growing as the demo clicks with the investors"
+- purpose: "racing to implement the fix before customers notice"
+- space: "in the empty office where I first learned to code"
+- time: "two hours before my thesis defense"
+- presence: "feeling my mentor's lessons guide me through this challenge"
+
+Each sentence naturally embeds the context that makes the moment self-contained.`);
 
 // Experience analysis - switchboard format only
 export const ExperienceObject =
-  ExperienceQualitiesSchema.describe(`Experience qualities in switchboard format. All dimensions must be specified:
-- embodied: "my mind races through possibilities" | false
-- focus: "zeroing in on this specific detail" | false  
-- mood: "open to whatever emerges" | false
-- purpose: "pushing hard toward the deadline" | false
-- space: "right here in this moment" | false
-- time: "remembering when we first started" | false
-- presence: "feeling alone in this struggle" | false
+  ExperienceQualitiesSchema.describe(`Experience qualities ensuring self-contained moments. All dimensions must be specified:
+- embodied: "my hands tremble as I open the rejection letter" | false
+- focus: "fixated on the error that crashed production" | false  
+- mood: "relief flooding in after passing the certification" | false
+- purpose: "rushing to finish before the baby wakes" | false
+- space: "in the kitchen where we had our last argument" | false
+- time: "six months after starting this journey" | false
+- presence: "feeling the team's support through the screen" | false
 
-Express each quality as a full sentence in the experiencer's voice, capturing their tone and style.
+Each quality sentence should embed enough context to make the moment comprehensible.
 Set to false for qualities not prominently present.`);
 
 // Experience analysis (all fields optional for update)
 export const ExperienceObjectOptional = ExperienceQualitiesSchema.describe(
-  `Updated experience qualities in switchboard format. All dimensions must be specified:
-- embodied: "my mind races through possibilities" | false
-- focus: "zeroing in on this specific detail" | false  
-- mood: "open to whatever emerges" | false
-- purpose: "pushing hard toward the deadline" | false
-- space: "right here in this moment" | false
-- time: "remembering when we first started" | false
-- presence: "feeling alone in this struggle" | false
+  `Updated experience qualities ensuring self-contained moments. All dimensions must be specified:
+- embodied: "my hands tremble as I open the rejection letter" | false
+- focus: "fixated on the error that crashed production" | false  
+- mood: "relief flooding in after passing the certification" | false
+- purpose: "rushing to finish before the baby wakes" | false
+- space: "in the kitchen where we had our last argument" | false
+- time: "six months after starting this journey" | false
+- presence: "feeling the team's support through the screen" | false
 
-Express each quality as a full sentence in the experiencer's voice, capturing their tone and style.
+Each quality sentence should embed enough context to make the moment comprehensible.
 Set to false for qualities not prominently present.`
 ).optional();
 
@@ -239,12 +238,6 @@ const ExperienceItemSchema = z
       .array(z.string())
       .describe(
         'Array of experience IDs that this experience reflects on/connects to (for pattern realizations)'
-      )
-      .optional(),
-    context: z
-      .string()
-      .describe(
-        'Optional background context to make this experience self-contained and comprehensible. Use when the source alone might lack necessary situational understanding. Keep brief and factual.'
       )
       .optional(),
   })
@@ -399,10 +392,6 @@ const ReconsiderItemSchema = z
       .describe(
         'Updated array of experience IDs that this experience reflects on/connects to (for pattern realizations)'
       )
-      .optional(),
-    context: z
-      .string()
-      .describe('Updated context to make the experience self-contained (optional)')
       .optional(),
     release: z
       .boolean()
