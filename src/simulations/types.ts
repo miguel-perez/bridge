@@ -46,6 +46,24 @@ export interface SimulationResult {
   }>;
 }
 
+export interface ReconstructionScore {
+  // Simple 3-point scale
+  fidelity: 'low' | 'medium' | 'high';  // How much was reconstructed
+  
+  // Qualitative observations
+  observations: {
+    whatWasPreserved: string[];      // What details made it through
+    whatWasLost: string[];           // What important details were missing
+    surprisingFindings: string[];    // Unexpected discoveries
+  };
+  
+  // Open-ended reasoning
+  reasoning: string;                 // Why this fidelity level was assigned
+  
+  // Optional style comparison for concrete capture tests
+  styleComparison?: string;            // Insights about abstract vs concrete captures
+}
+
 export interface SimulationEvaluation {
   // Core metrics (0-100)
   humanQualityCount: {
@@ -70,9 +88,18 @@ export interface SimulationEvaluation {
   highlights: string[];
   concerns: string[];
   
-  // New experiential authenticity fields
+  // Legacy experiential authenticity fields
   reconstructionTest?: number;     // Can you reconstruct the conversation?
   reconstructedContent?: string;   // What can be inferred from captures
+  
+  // New empirical reconstruction analysis
+  reconstructionAnalysis?: {
+    enabled: boolean;
+    score: ReconstructionScore;
+    actualTranscript: string;
+    reconstructedTranscript: string;
+    gaps: string[];
+  };
 }
 
 export interface SimulationAgent {
@@ -83,8 +110,15 @@ export interface SimulationAgent {
   ): Promise<SimulationTurn>;
 }
 
+export interface EvaluatorOptions {
+  enableReconstructionTest?: boolean;  // Optional to save LLM calls
+  documentationPath?: string;          // Path to /docs for context
+  captureStyle?: 'abstract' | 'concrete' | 'comparison';  // Which style to evaluate for
+}
+
 export interface SimulationEvaluator {
   evaluate(
-    result: SimulationResult
+    result: SimulationResult,
+    options?: EvaluatorOptions
   ): Promise<SimulationEvaluation>;
 }

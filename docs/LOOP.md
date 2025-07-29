@@ -35,6 +35,11 @@ We use a continuous learning loop to evolve from vision to reality:
 - Run unit tests with `npm test` to validate functionality
 - Run integration tests with `npm run test:integration` for end-to-end validation
 - Run simulation tests with `npm run test:simulation` for experiential validation
+- **NEW**: Run reconstruction tests with `ENABLE_RECONSTRUCTION_TEST=true npm run test:simulation`
+  - Empirically measures how much information is preserved in captures
+  - Compares actual conversation/events with LLM reconstruction from captures alone
+  - Scores fidelity across multiple dimensions (conversation, thoughts, technical details, etc.)
+  - Helps determine optimal balance between poetic and concrete capture styles
 - Review test coverage and performance metrics
 - Analyze implementation gaps and areas for improvement
 
@@ -56,9 +61,13 @@ We use a continuous learning loop to evolve from vision to reality:
    - `npm test` for unit tests and coverage
    - `npm run test:integration` for MCP protocol tests
    - `npm run test:simulation` for experiential validation (requires OPENAI_API_KEY)
+   - `ENABLE_RECONSTRUCTION_TEST=true npm run test:simulation` for reconstruction fidelity analysis
    - `npm run test:all` for unit + integration tests
    - `npm run test:complete` for all tests including simulations
-4. **Analyze results**: Review test coverage and performance metrics
+4. **Analyze results**: 
+   - Review test coverage and performance metrics
+   - For experiments on capture styles, use reconstruction test to measure information preservation
+   - Compare abstract vs concrete captures using empirical fidelity scores
 5. **Review results**: Check test output and error details
 6. **Update docs**: Keep README.md current with implementation
 

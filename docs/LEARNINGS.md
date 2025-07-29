@@ -11,6 +11,50 @@ This document captures validated insights from Bridge experiments with clear evi
 
 ## Core Behavioral Insights
 
+### 2025-07-29 - The Abstraction Problem: When Poetry Obscures Practice
+
+**Key Discovery**: Bridge captures are emotionally rich but practically opaque. Reading bridge.json, you can feel what happened but not understand what actually occurred.
+
+**Evidence**: 
+- User feedback: "I can barely tell what's happening despite having full quality access"
+- Example captures like "excitement bubbling up as I prepare to test our completely refactored system" provide no concrete information about what system or what refactoring
+- Search effectiveness is limited because poetic language doesn't match technical queries
+
+**Root Cause Analysis**:
+- The philosophy "qualities ARE the experience" has been interpreted as pure poetry
+- Concrete details are seen as "metadata" rather than essential parts of experience
+- The desire for experiential richness has overshadowed practical utility
+
+**Proposed Solution**: Embed concrete details within quality sentences (Option 2)
+- Maintain poetic language while adding specific anchors
+- Reference actual file names, branch names, function names, numbers
+- Example: "tension building as I trace through Promise.all in user-service.ts"
+
+**New Understanding - The Reconstruction Test Evolution**:
+- Initially misunderstood: Thought it meant captures should hide conversational content
+- Clarification: The test should measure if we can reconstruct WHAT HAPPENED (not just feelings)
+- Key insight: We WANT high reconstruction fidelity - captures should preserve all the juicy details
+- Privacy is a separate concern to handle later with proper IP/privacy controls
+
+**Empirical Reconstruction Test Implemented**:
+- Compares actual conversation/events with LLM reconstruction from captures alone
+- Measures gaps to identify what information is lost
+- Scores multiple dimensions: conversation, thoughts, technical details, sequence, emotions
+- Works universally across all contexts without hardcoded cases
+- Optional feature to save LLM costs when not needed
+
+**Implications**:
+- No schema changes needed - work within existing 8-quality structure
+- Requires cultural shift in how we guide capture practices
+- Success measured empirically: Can an LLM reconstruct what happened from captures?
+- The goal: High fidelity reconstruction while maintaining experiential richness
+
+**Related**: 
+- Opportunity: "Concrete Quality Capture" (Score: 360)
+- Experiment: EXP-016 testing this approach with new reconstruction methodology
+- Simulation test updated with optional reconstruction analysis
+- This addresses a fundamental usability issue that could determine Bridge's practical adoption
+
 ### 2025-07-25 - Comprehensive Bridge Recall Tool Enhancement Implementation
 
 **Note**: This work was completed before the API consolidation from 4 tools to 2. Recall functionality is now integrated into the experience tool.

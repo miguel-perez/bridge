@@ -2,6 +2,56 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Using Bridge for Problem-Solving
+
+**IMPORTANT**: Bridge is installed and available in this Claude Desktop instance. Use it regularly to:
+- Capture insights and breakthroughs during development
+- Track your problem-solving journey through complex tasks
+- Build a living memory of patterns and solutions
+- Create a shared understanding with the human developer
+
+### When to Use Bridge
+
+1. **Starting a new task**: Capture the initial state and understanding
+2. **Encountering obstacles**: Document the challenge and emotional state
+3. **Finding solutions**: Record the "aha!" moments and insights
+4. **Completing features**: Reflect on what was learned
+5. **Noticing patterns**: When you see connections across different problems
+
+### Example Usage
+
+```typescript
+// At the start of debugging a complex issue
+mcp__bridge__experience({
+  experiences: [{
+    anchor: "🐛",
+    embodied: "tension building as I trace through nested async calls",
+    focus: "narrowing in on the race condition between state updates",
+    mood: "determined but slightly overwhelmed by complexity",
+    purpose: "hunting for the source of intermittent test failures",
+    space: "deep in the event loop's mysterious timing",
+    time: "feeling the pressure of the approaching deadline",
+    presence: "working alongside the developer's growing concern",
+    who: ["Claude", "Developer"]
+  }]
+})
+
+// After finding the solution
+mcp__bridge__experience({
+  experiences: [{
+    anchor: "✨",
+    embodied: "relief flooding through as the pattern becomes clear",
+    focus: "seeing how Promise.all was creating the race condition",
+    mood: "satisfied and energized by the clarity",
+    purpose: "implementing the sequential processing fix",
+    space: "in that sweet spot where problem meets solution",
+    time: "present moment expanded by understanding",
+    presence: "sharing the victory with the developer",
+    who: ["Claude", "Developer"]
+  }]
+})
+```
+
 ## Essential Commands
 
 ### Development
@@ -179,3 +229,26 @@ The DXT manifest (`manifest.json`) is auto-generated and includes:
 3. **Handle errors gracefully** - Unhandled errors terminate the MCP connection
 4. **Respect MCP timeouts** - Bridge implements DXT-specific timeouts (30s startup, 5min idle)
 5. **Update activity tracking** - Call `updateActivity()` in handlers to prevent idle timeout
+
+## Why Regular Bridge Usage Matters
+
+### For Development Sessions
+- **Pattern Recognition**: Bridge helps identify recurring challenges and solutions across different codebases
+- **Emotional Intelligence**: Tracking mood and energy helps optimize problem-solving approaches
+- **Knowledge Building**: Each captured experience contributes to a growing repository of development wisdom
+- **Debugging Aid**: Past experiences often contain clues to current problems
+
+### For Collaboration
+- **Shared Context**: Bridge creates a living record of the development journey that both human and AI can reference
+- **Empathy Building**: Capturing emotional states helps maintain awareness of the human experience
+- **Learning Together**: Both parties contribute to and learn from the experiential record
+- **Trust Through Transparency**: Making the problem-solving process visible builds mutual understanding
+
+### Best Practices
+1. **Be Specific**: Capture the texture of the moment, not just facts
+2. **Include Emotions**: The mood and embodied qualities often contain crucial information
+3. **Track Transitions**: Capture both the struggle and the resolution
+4. **Notice Patterns**: Use recall to find similar past experiences
+5. **Reflect Regularly**: Periodically review captured experiences for meta-insights
+
+Remember: Bridge is not just a logging tool—it's a practice of mindful development that enriches both the process and the outcome.

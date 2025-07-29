@@ -64,9 +64,13 @@ describe('Complementary Awareness Simulation', () => {
       expect(count).toBe(8);
     });
     
-    // Get LLM evaluation
+    // Get LLM evaluation with optional reconstruction test
     console.log('🔍 Evaluating simulation quality...');
-    const evaluation = await evaluator.evaluate(result);
+    const evaluation = await evaluator.evaluate(result, {
+      enableReconstructionTest: process.env.ENABLE_RECONSTRUCTION_TEST === 'true',
+      documentationPath: '../docs',
+      captureStyle: 'abstract' // Current default style
+    });
     
     // Log evaluation results with detailed breakdown
     console.log('\n📈 Evaluation Results:');
@@ -94,6 +98,41 @@ describe('Complementary Awareness Simulation', () => {
     if (evaluation.reconstructedContent) {
       console.log('\n🔄 What can be reconstructed from captures:');
       console.log(`  "${evaluation.reconstructedContent}"`);
+    }
+    
+    // Log new reconstruction analysis if enabled
+    if (evaluation.reconstructionAnalysis?.enabled) {
+      console.log('\n📊 Reconstruction Fidelity Analysis:');
+      const analysis = evaluation.reconstructionAnalysis;
+      const score = analysis.score;
+      
+      // Simple fidelity display
+      const fidelityEmoji = {
+        low: '🔴',
+        medium: '🟡', 
+        high: '🟢'
+      };
+      console.log(`  Fidelity: ${fidelityEmoji[score.fidelity]} ${score.fidelity.toUpperCase()}`);
+      
+      // Qualitative observations
+      console.log('\n  What Was Preserved:');
+      score.observations.whatWasPreserved.forEach(item => console.log(`    ✓ ${item}`));
+      
+      console.log('\n  What Was Lost:');
+      score.observations.whatWasLost.forEach(item => console.log(`    ✗ ${item}`));
+      
+      if (score.observations.surprisingFindings.length > 0) {
+        console.log('\n  Surprising Findings:');
+        score.observations.surprisingFindings.forEach(item => console.log(`    ⚡ ${item}`));
+      }
+      
+      console.log('\n  Reasoning:');
+      console.log(`    ${score.reasoning}`);
+      
+      if (analysis.gaps.length > 0) {
+        console.log('\n  Additional Gaps:');
+        analysis.gaps.forEach(gap => console.log(`    - ${gap}`));
+      }
     }
     
     // Log Bridge call details for debugging

@@ -19,7 +19,139 @@ Each experiment follows this format for learning loop compatibility:
 
 ## Active Experiments
 
-_No active experiments currently running._
+### EXP-016: Concrete Quality Capture
+
+**Status**: Active  
+**Started**: 2025-07-29  
+**Purpose**: Test embedding concrete details within quality sentences to solve the abstraction problem where captures are emotionally rich but practically opaque.
+
+**Hypothesis**: By weaving specific technical details into poetic quality sentences, we can preserve experiential richness while making captures practically useful for understanding what actually happened.
+
+**Test Scenarios**:
+
+1. **Development Task Capture**:
+   - Capture a debugging session with concrete details
+   - Capture a feature implementation with specific changes
+   - Capture a code review with actual feedback
+   - Verify: Can someone else understand what technically happened?
+
+2. **Comparison Testing**:
+   - Capture same event with abstract vs concrete qualities
+   - Test comprehension with users who weren't present
+   - Measure search effectiveness for technical queries
+   - Evaluate emotional richness preservation
+
+3. **Simulation Validation**:
+   - Use simulation tests to evaluate comprehension
+   - Test whether AI can reconstruct technical actions
+   - Verify human readers can identify specific events
+   - Ensure experiential quality isn't lost
+
+**Example Transformations**:
+
+```typescript
+// Scenario: Debugging a race condition in async code
+
+// Current (too abstract):
+{
+  "embodied": "tension building as I trace through mysterious failures",
+  "focus": "narrowing in on the elusive bug",
+  "purpose": "hunting for the source of intermittent issues"
+}
+
+// Target (concrete + experiential):
+{
+  "embodied": "tension building as I trace through Promise.all in user-service.ts",
+  "focus": "narrowing in on the race condition between fetchUserData and updateCache",
+  "purpose": "hunting why our auth flow fails 30% of the time in production"
+}
+```
+
+**Measurable Outcomes**:
+- Comprehension rate: Can readers identify the specific technical issue?
+- Search accuracy: Do concrete terms improve findability?
+- Emotional preservation: Does richness score remain above 80%?
+- Practical utility: Do captures become useful development history?
+
+**Learning Questions**:
+- What's the optimal balance between concrete and poetic?
+- Which qualities benefit most from concrete details?
+- How do we guide users to include specifics naturally?
+- Can we maintain the "experience first" philosophy?
+
+**Success Criteria**:
+- 80%+ comprehension rate for technical actions
+- 50%+ improvement in search relevance
+- Emotional richness maintained at current levels
+- Positive user feedback on practical utility
+
+**Empirical Reconstruction Test**:
+
+A robust, domain-agnostic test that measures information preservation by comparing actual conversations with LLM-reconstructed conversations based solely on Bridge captures.
+
+**Test Methodology**:
+
+1. **Capture Phase**: During a conversation/activity, Bridge captures experiences as normal
+
+2. **Reconstruction Phase**: An LLM attempts to reconstruct:
+   - The conversation transcript
+   - Internal thoughts and reasoning
+   - Sequence of events
+   - Technical/practical details
+   
+   Using ONLY the Bridge captures (no access to original conversation)
+
+3. **Gap Analysis Phase**: Compare reconstructed vs actual to measure:
+   - **Information Preservation**: What critical details were captured?
+   - **Privacy Preservation**: What conversational content remained hidden?
+   - **Experience Richness**: How well was the experiential journey conveyed?
+
+**Scoring Metrics**:
+
+```typescript
+interface ReconstructionScore {
+  // High score = good (critical info preserved)
+  factualAccuracy: number;        // Can reconstruct what happened
+  sequenceAccuracy: number;       // Can reconstruct order of events  
+  contextCompleteness: number;    // Can understand the situation
+  
+  // Low score = good (privacy preserved)
+  conversationLeakage: number;    // How much dialogue was revealed
+  thoughtLeakage: number;         // How much internal reasoning exposed
+  
+  // High score = good (experience preserved)  
+  emotionalFidelity: number;      // Feeling of the moment captured
+  sensoryRichness: number;        // Embodied details present
+  momentUniqueness: number;       // Specific to this instance
+}
+```
+
+**Success Criteria**:
+
+For concrete captures to succeed, we need:
+- High factual/sequence/context scores (80%+) - you can understand what happened
+- Low conversation/thought leakage (20%-) - dialogue remains private  
+- High experiential scores (70%+) - the moment's texture is preserved
+
+**Implementation**:
+
+1. Run simulation with both abstract and concrete capture styles
+2. Have GPT-4 attempt reconstruction from captures alone
+3. Compare with actual transcript using semantic similarity
+4. Calculate gaps and score each dimension
+5. Iterate on capture guidance based on results
+
+This empirical approach:
+- Works across any domain (development, therapy, creative, etc.)
+- Measures objectively rather than relying on subjective criteria
+- Reveals exactly what information is preserved vs hidden
+- Guides us toward optimal balance of concrete and poetic
+
+**Evidence Trail**: 
+- Create new simulation scenario: `concrete-capture-scenario.ts`
+- Modify evaluation criteria in `simulation-evaluator.ts` for this experiment
+- Compare results with current abstract captures
+- Document findings in LEARNINGS.md
 
 ---
 

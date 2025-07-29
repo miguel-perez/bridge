@@ -122,6 +122,54 @@ interface VectorStore {
 
 ## Medium-Priority Opportunities
 
+### Concrete Quality Capture
+
+**Score: 360** (Impact: 8, Certainty: 6, Urgency: 7.5)
+
+**Description**: Evolve Bridge's quality capture to embed concrete details within poetic language, solving the abstraction problem where captures are emotionally rich but practically opaque.
+
+**Problem Statement**: Current captures like "excitement bubbling up as I prepare to test our completely refactored system" capture feeling but lose the WHAT. Reading bridge.json, you can feel the emotions but have no idea what actually happened.
+
+**Core Concept**: Blend concrete details into qualities while preserving experiential richness:
+
+```typescript
+// Before: Pure poetry, no context
+{
+  "purpose": "completing the circle from creation to integration",
+  "focus": "watching the feature branch dissolve into master"
+}
+
+// After: Concrete details woven into experience
+{
+  "purpose": "merging feature/streamline-experience-structure to complete API consolidation",
+  "focus": "watching 52 files update as enrichment service dissolves into simplicity"
+}
+```
+
+**Implementation Approach (Option 2)**:
+- Embed concrete details naturally within quality sentences
+- Maintain poetic language while adding specific anchors
+- Use active voice with specific nouns and numbers
+- Reference actual file names, branch names, function names
+
+**Benefits**:
+- **Practical recall**: Can actually understand what happened when reviewing
+- **Preserved richness**: Emotional texture remains intact
+- **Better search**: Concrete terms make experiences findable
+- **Knowledge building**: Captures become useful development history
+- **No schema changes**: Works within existing 8-quality structure
+
+**Success Metrics**:
+- Reconstruction test shows 80%+ fidelity for concrete captures (vs ~20% for abstract)
+- LLM can reconstruct technical actions, file changes, and conversation flow
+- Search hit rate improves 50%+ for technical queries
+- Emotional richness maintained (emotional accuracy stays above 70%)
+- Gap analysis shows minimal information loss with concrete style
+
+**MCP Compatibility**: Fully compatible - changes are in capture practice, not protocol.
+
+**Priority Rationale**: High impact (makes Bridge actually useful for development history), good certainty (clear approach via quality embedding), high urgency (current captures are too abstract to be practically useful).
+
 ### Extensible Recall
 
 **Score: 270** (Impact: 9, Certainty: 5, Urgency: 6)
