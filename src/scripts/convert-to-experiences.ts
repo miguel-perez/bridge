@@ -6,7 +6,6 @@
  */
 
 import { readFileSync, writeFileSync } from 'fs';
-import { join } from 'path';
 
 interface FilteredMessage {
   id: string;

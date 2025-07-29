@@ -19,7 +19,7 @@ interface MigratedSource {
   created: string;
   who?: string | string[];
   experience?: string[];
-  experienceQualities?: any;
+  experienceQualities?: Record<string, string | false>;
   context: string;
 }
 
@@ -151,7 +151,7 @@ function improveContext(source: string, originalContext: string): string {
   return `A captured moment.${date ? ` ${date}.` : ''}`;
 }
 
-function improveMigration() {
+function improveMigration(): void {
   const inputPath = join(projectRoot, 'data/migration/migrated.bridge.json');
   const outputPath = join(projectRoot, 'data/migration/migrated-improved.bridge.json');
   

@@ -32,7 +32,7 @@ function extractTimestampFromContext(context: string): string | null {
   return null;
 }
 
-function fixTimestamps() {
+function fixTimestamps(): void {
   const inputPath = join(projectRoot, 'data/migration/migrated-improved.bridge.json');
   const outputPath = join(projectRoot, 'data/migration/migrated-fixed.bridge.json');
   

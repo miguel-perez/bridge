@@ -7,14 +7,13 @@
  */
 
 import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { join, dirname } from 'path';
+import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import OpenAI from 'openai';
 import { errorLog, debugLog } from '../utils/safe-logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const projectRoot = join(__dirname, '..', '..');
 
 // ============================================================================
 // TYPES
@@ -213,8 +212,8 @@ function selectEmoji(content: string, qualityTypes: string[]): string {
 
 /**
  * Transforms legacy quality format to new Bridge format
- * prominence > 0.3 → use manifestation text
- * prominence < 0.3 → false
+ * prominence \> 0.3 → use manifestation text
+ * prominence \< 0.3 → false
  */
 function transformQualities(legacyQualities: LegacySource['experiential_qualities']): NewSource['experienceQualities'] {
   const newQualities: NewSource['experienceQualities'] = {

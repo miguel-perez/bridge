@@ -697,27 +697,27 @@ function formatRecallResults(results: RecallResult[], showIds: boolean = false):
     const displayContent = content.length > 600 ? content.substring(0, 600) + '...' : content;
 
     // Simple numbered format with emoji if available
-    const emoji = (metadata as any).emoji;
+    const emoji = (metadata as Record<string, unknown>).emoji as string | undefined;
     const lines = emoji
       ? [`${index + 1}. ${emoji} "${displayContent}"`]
       : [`${index + 1}. "${displayContent}"`];
 
     // Add full quality details if available
-    if ((metadata as any).experienceQualities) {
-      const qualityDetails = formatQualityDetails((metadata as any).experienceQualities);
+    if ((metadata as Record<string, unknown>).experienceQualities) {
+      const qualityDetails = formatQualityDetails((metadata as Record<string, unknown>).experienceQualities as ExperienceQualities);
       if (qualityDetails.length > 0) {
         lines.push('   Qualities:');
         qualityDetails.forEach(detail => {
           lines.push('   ' + detail);
         });
       }
-    } else if ((metadata as any).experience && (metadata as any).experience.length > 0) {
+    } else if ((metadata as Record<string, unknown>).experience && ((metadata as Record<string, unknown>).experience as string[]).length > 0) {
       // Fallback to old format if needed
-      lines.push(`   ${formatQualityList((metadata as any).experience)}`);
+      lines.push(`   ${formatQualityList((metadata as Record<string, unknown>).experience as string[])}`);
     }
 
     // Add timing
-    const timeAgo = formatTimeAgo((metadata as any).created || '');
+    const timeAgo = formatTimeAgo(((metadata as Record<string, unknown>).created as string) || '');
     lines.push(`   ${timeAgo}`);
 
     // Add relevance score in test mode

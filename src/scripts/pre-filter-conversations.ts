@@ -6,7 +6,6 @@
  */
 
 import { readFileSync, writeFileSync } from 'fs';
-import { join } from 'path';
 
 interface ConversationMessage {
   uuid: string;
@@ -16,13 +15,13 @@ interface ConversationMessage {
     stop_timestamp: string;
     type: string;
     text: string;
-    citations: any[];
+    citations: unknown[];
   }>;
   sender: 'human' | 'assistant';
   created_at: string;
   updated_at: string;
-  attachments: any[];
-  files: any[];
+  attachments: unknown[];
+  files: unknown[];
 }
 
 interface Conversation {

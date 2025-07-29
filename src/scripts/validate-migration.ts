@@ -35,64 +35,68 @@ interface Source {
 
 interface StorageData {
   sources: Source[];
-  embeddings?: any[];
+  embeddings?: unknown[];
 }
 
-function validateSource(source: any): source is Source {
+function validateSource(source: unknown): source is Source {
+  if (!source || typeof source !== 'object' || source === null) {
+    return false;
+  }
+  const src = source as Record<string, unknown>;
   // Required fields
-  if (!source.id || typeof source.id !== 'string') {
-    console.log('❌ Invalid id:', source.id);
+  if (!src.id || typeof src.id !== 'string') {
+    console.log('❌ Invalid id:', src.id);
     return false;
   }
-  if (!source.source || typeof source.source !== 'string') {
-    console.log('❌ Invalid source:', typeof source.source);
+  if (!src.source || typeof src.source !== 'string') {
+    console.log('❌ Invalid source:', typeof src.source);
     return false;
   }
-  if (!source.emoji || typeof source.emoji !== 'string') {
-    console.log('❌ Invalid emoji:', source.emoji);
+  if (!src.emoji || typeof src.emoji !== 'string') {
+    console.log('❌ Invalid emoji:', src.emoji);
     return false;
   }
-  if (!source.created || typeof source.created !== 'string') {
-    console.log('❌ Invalid created:', source.created);
+  if (!src.created || typeof src.created !== 'string') {
+    console.log('❌ Invalid created:', src.created);
     return false;
   }
   
   // ID format
-  if (!source.id.startsWith('src_')) {
-    console.log('❌ Invalid id format:', source.id);
+  if (!src.id.startsWith('src_')) {
+    console.log('❌ Invalid id format:', src.id);
     return false;
   }
   
   // Created date format
   const dateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
-  if (!dateRegex.test(source.created)) {
-    console.log('❌ Invalid date format:', source.created);
+  if (!dateRegex.test(src.created)) {
+    console.log('❌ Invalid date format:', src.created);
     return false;
   }
   
   // Emoji validation
-  if (source.emoji.length === 0) {
+  if ((src.emoji as string).length === 0) {
     console.log('❌ Empty emoji');
     return false;
   }
   
   // Optional fields validation
-  if (source.who !== undefined && typeof source.who !== 'string' && !Array.isArray(source.who)) {
-    console.log('❌ Invalid who:', source.who);
+  if (src.who !== undefined && typeof src.who !== 'string' && !Array.isArray(src.who)) {
+    console.log('❌ Invalid who:', src.who);
     return false;
   }
-  if (source.experience !== undefined && !Array.isArray(source.experience)) {
-    console.log('❌ Invalid experience:', source.experience);
+  if (src.experience !== undefined && !Array.isArray(src.experience)) {
+    console.log('❌ Invalid experience:', src.experience);
     return false;
   }
-  if (source.context !== undefined && typeof source.context !== 'string') {
-    console.log('❌ Invalid context:', source.context);
+  if (src.context !== undefined && typeof src.context !== 'string') {
+    console.log('❌ Invalid context:', src.context);
     return false;
   }
   
   // ExperienceQualities validation
-  if (source.experienceQualities) {
-    const qualities = source.experienceQualities;
+  if (src.experienceQualities) {
+    const qualities = src.experienceQualities as Record<string, unknown>;
     const requiredQualities = ['embodied', 'focus', 'mood', 'purpose', 'space', 'time', 'presence'];
     
     for (const quality of requiredQualities) {
@@ -110,7 +114,7 @@ function validateSource(source: any): source is Source {
   return true;
 }
 
-function validateStorageData(data: any): data is StorageData {
+function validateStorageData(data: unknown): data is StorageData {
   if (!data || typeof data !== 'object') return false;
   if (!Array.isArray(data.sources)) return false;
   
@@ -121,7 +125,7 @@ function validateStorageData(data: any): data is StorageData {
   return true;
 }
 
-function validateMigration() {
+function validateMigration(): void {
   const filePath = join(projectRoot, 'data/migration/migrated-fixed.bridge.json');
   
   try {

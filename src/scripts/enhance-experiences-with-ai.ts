@@ -8,7 +8,7 @@
  */
 
 import { readFileSync, writeFileSync } from 'fs';
-import { join, dirname } from 'path';
+import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import OpenAI from 'openai';
 import { z } from 'zod';
@@ -20,7 +20,6 @@ dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const projectRoot = join(__dirname, '..', '..');
 
 // Schema for enhanced experience
 const EnhancedExperienceSchema = z.object({
@@ -150,7 +149,7 @@ Return your response as valid JSON.`;
   }
 }
 
-async function main() {
+async function main(): Promise<void> {
   const args = process.argv.slice(2);
   
   if (args.includes('--help')) {
