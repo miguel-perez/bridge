@@ -9,7 +9,7 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { convertArrayToSwitchboard, humanQualities, aiQualities } from './format-converter.js';
+// Removed old format converter imports - no longer needed
 import { randomUUID } from 'crypto';
 import type { ExperienceQualities } from '../core/types.js';
 
@@ -98,77 +98,65 @@ export async function createTestEnvironment(): Promise<TestEnvironment> {
  * Creates test data for integration tests
  */
 export function createTestExperiences(): Array<{
-  source: string;
-  emoji: string;
-  experienceQualities: Record<string, string | boolean>;
-  who: string;
-  perspective: 'I' | 'we';
-  processing: 'during' | 'right-after' | 'long-after';
+  anchor: string;
+  embodied: string;
+  focus: string;
+  mood: string;
+  purpose: string;
+  space: string;
+  time: string;
+  presence: string;
+  who: string[];
+  citation?: string;
 }> {
   return [
     {
-      source: 'Feeling anxious about the upcoming presentation',
-      emoji: '😰',
-      experienceQualities: {
-        embodied: 'sensing' as const,
-        focus: false as const,
-        mood: 'closed' as const,
-        purpose: false as const,
-        space: false as const,
-        time: 'future' as const,
-        presence: false as const
-      },
-      who: 'Test Human',
-      perspective: 'I' as const,
-      processing: 'during' as const,
+      anchor: '😰',
+      embodied: 'tension in my chest',
+      focus: 'scattered, can\'t concentrate',
+      mood: 'anxious and closed off',
+      purpose: 'trying to prepare',
+      space: 'in the conference room',
+      time: 'thinking about tomorrow',
+      presence: 'feeling alone with this stress',
+      who: ['Test Human', 'Claude'],
+      citation: 'Feeling anxious about the upcoming presentation'
     },
     {
-      source: 'The code finally compiled after hours of debugging!',
-      emoji: '🎉',
-      experienceQualities: {
-        embodied: 'thinking' as const,
-        focus: false as const,
-        mood: 'open' as const,
-        purpose: 'goal' as const,
-        space: false as const,
-        time: false as const,
-        presence: false as const
-      },
-      who: 'Test Human',
-      perspective: 'I' as const,
-      processing: 'right-after' as const,
+      anchor: '🎉',
+      embodied: 'energy surging through me',
+      focus: 'laser-focused on the success',
+      mood: 'elated and open',
+      purpose: 'achieving the goal',
+      space: 'at my desk',
+      time: 'right now, in this moment',
+      presence: 'sharing joy with Claude',
+      who: ['Test Human', 'Claude'],
+      citation: 'The code finally compiled after hours of debugging!'
     },
     {
-      source: 'We figured out the solution together',
-      emoji: '🤝',
-      experienceQualities: {
-        embodied: false as const,
-        focus: false as const,
-        mood: 'open' as const,
-        purpose: 'goal' as const,
-        space: false as const,
-        time: false as const,
-        presence: 'collective' as const
-      },
-      who: 'Test Team',
-      perspective: 'we' as const,
-      processing: 'during' as const,
+      anchor: '🤝',
+      embodied: 'feeling connected and aligned',
+      focus: 'on our shared understanding',
+      mood: 'collaborative and open',
+      purpose: 'solving problems together',
+      space: 'in our virtual workspace',
+      time: 'in the flow of discovery',
+      presence: 'truly together as a team',
+      who: ['Test Team', 'Claude'],
+      citation: 'We figured out the solution together'
     },
     {
-      source: 'Exploring different approaches without a clear direction',
-      emoji: '🔍',
-      experienceQualities: {
-        embodied: false as const,
-        focus: 'broad' as const,
-        mood: 'open' as const,
-        purpose: 'wander' as const,
-        space: false as const,
-        time: false as const,
-        presence: false as const
-      },
-      who: 'Test Human',
-      perspective: 'I' as const,
-      processing: 'during' as const,
+      anchor: '🔍',
+      embodied: 'curiosity pulling me forward',
+      focus: 'wide and exploratory',
+      mood: 'open to possibilities',
+      purpose: 'wandering through options',
+      space: 'in the exploration space',
+      time: 'taking our time',
+      presence: 'journeying with Claude',
+      who: ['Test Human', 'Claude'],
+      citation: 'Exploring different approaches without a clear direction'
     },
   ];
 }
@@ -270,34 +258,24 @@ export function waitFor(ms: number): Promise<void> {
 export async function callExperience(
   client: Client,
   params: {
-    source: string;
-    emoji: string;
-    experienceQualities: ExperienceQualities | Record<string, string | boolean | false>;
-    who?: string;
-    perspective?: string;
-    processing?: string;
-    context?: string;
-    reflects?: string[];
+    anchor: string;
+    embodied: string;
+    focus: string;
+    mood: string;
+    purpose: string;
+    space: string;
+    time: string;
+    presence: string;
+    who: string[];
+    citation?: string;
     recall?: {
       query?: string;
-      ids?: string | string[];
       limit?: number;
-      offset?: number;
-      qualities?: Record<string, unknown>;
-      who?: string;
-        processing?: string;
-      created?: string | { start: string; end: string };
-      perspective?: string;
-      reflects?: 'only';
-      reflected_by?: string | string[];
-      group_by?: 'similarity' | 'who' | 'date' | 'qualities' | 'perspective' | 'none';
-      sort?: 'relevance' | 'created';
     };
-    nextMoment?: string[] | Record<string, string | boolean>;
   }
 ): Promise<unknown> {
-  // Extract recall and nextMoment from params
-  const { recall, nextMoment, ...experienceParams } = params;
+  // Extract recall from params
+  const { recall, ...experienceParams } = params;
 
   // Add retry logic for flaky operations
   let retries = 3;
@@ -306,12 +284,7 @@ export async function callExperience(
       const result = await client.callTool({
         name: 'experience',
         arguments: {
-          experiences: [
-            {
-              ...experienceParams,
-              ...(nextMoment ? { nextMoment } : {}),
-            },
-          ],
+          experiences: [experienceParams],
           ...(recall ? { recall } : {}),
         },
       });
@@ -335,14 +308,18 @@ export async function callReconsider(
   params: {
     id: string;
     source?: string;
-    experience?: string[];
-    who?: string;
-    perspective?: string;
-    processing?: string;
-    context?: string;
-    reflects?: string[];
+    who?: string[];
+    experienceQualities?: {
+      embodied: string | false;
+      focus: string | false;
+      mood: string | false;
+      purpose: string | false;
+      space: string | false;
+      time: string | false;
+      presence: string | false;
+    };
     release?: boolean;
-    reason?: string;
+    releaseReason?: string;
   }
 ): Promise<unknown> {
   // Add retry logic for flaky operations
@@ -466,5 +443,4 @@ export async function verifyToolResponseWithRetry(
   return false;
 }
 
-// Export format conversion utilities
-export { convertArrayToSwitchboard, humanQualities, aiQualities };
+// Format conversion utilities removed - using flat structure directly

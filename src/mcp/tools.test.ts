@@ -50,14 +50,14 @@ describe('MCP Tools', () => {
       expect(experienceTool).toBeDefined();
       expect(experienceTool.name).toBe('experience');
       expect(experienceTool.description).toContain(
-        'Think with Bridge'
+        'Capture experiential moments'
       );
       expect(experienceTool.readOnlyHint).toBe(false);
       expect(experienceTool.destructiveHint).toBe(false);
       expect(experienceTool.idempotentHint).toBe(false);
       expect(experienceTool.openWorldHint).toBe(false);
       expect(experienceTool.inputSchema).toBeDefined();
-      expect(experienceTool.examples).toHaveLength(13);
+      expect(experienceTool.examples).toHaveLength(5);
     });
 
     it('should have reconsider tool with correct properties', async () => {
@@ -76,17 +76,17 @@ describe('MCP Tools', () => {
       expect(reconsiderTool).toBeDefined();
       expect(reconsiderTool.name).toBe('reconsider');
       expect(reconsiderTool.description).toContain(
-        'Update or release experiences as understanding evolves'
+        'Update experiences as understanding evolves'
       );
       expect(reconsiderTool.readOnlyHint).toBe(false);
       expect(reconsiderTool.destructiveHint).toBe(false);
-      expect(reconsiderTool.idempotentHint).toBe(false);
+      expect(reconsiderTool.idempotentHint).toBe(true);
       expect(reconsiderTool.openWorldHint).toBe(false);
       expect(reconsiderTool.inputSchema).toBeDefined();
       expect(reconsiderTool.inputSchema.$schema).toBe(
         'https://json-schema.org/draft/2020-12/schema'
       );
-      expect(reconsiderTool.examples).toHaveLength(4);
+      expect(reconsiderTool.examples).toHaveLength(3);
     });
 
     it('should include examples with correct structure', async () => {
@@ -120,22 +120,18 @@ describe('MCP Tools', () => {
       // Experience tool examples
       const experienceTool = tools.find((t) => t.name === 'experience');
       const expExampleIds = experienceTool.examples.map((e) => e.id);
-      expect(expExampleIds).toContain('continuous-memory-start');
-      expect(expExampleIds).toContain('shared-moment-alignment');
-      expect(expExampleIds).toContain('pattern-realization-with-reflects');
-      // Remove integrated-recall-search test
-      expect(expExampleIds).toContain('reasoning-chain-next-moment');
-      expect(expExampleIds).toContain('context-for-atomicity');
-      expect(expExampleIds).toContain('complete-moment-capture');
-      // Remove mixed-qualities-true test
+      expect(expExampleIds).toContain('start-with-recall');
+      expect(expExampleIds).toContain('shared-breakthrough');
+      expect(expExampleIds).toContain('debugging-frustration');
+      expect(expExampleIds).toContain('ai-processing');
+      expect(expExampleIds).toContain('collective-team-moment');
 
       // Reconsider tool examples
       const reconsiderTool = tools.find((t) => t.name === 'reconsider');
       const reconsiderExampleIds = reconsiderTool.examples.map((e) => e.id);
-      expect(reconsiderExampleIds).toContain('deepen-understanding');
-      expect(reconsiderExampleIds).toContain('collective-shift');
-      expect(reconsiderExampleIds).toContain('release-single');
-      expect(reconsiderExampleIds).toContain('mixed-operations');
+      expect(reconsiderExampleIds).toContain('add-missing-qualities');
+      expect(reconsiderExampleIds).toContain('fix-who-array');
+      expect(reconsiderExampleIds).toContain('add-citation');
     });
 
     it('should have consistent tool structure', async () => {
@@ -172,7 +168,7 @@ describe('MCP Tools', () => {
       const tools = await getTools();
 
       const experienceTool = tools.find((t) => t.name === 'experience');
-      expect(experienceTool.inputSchema.$schema).toBeUndefined();
+      expect(experienceTool.inputSchema.$schema).toBe('https://json-schema.org/draft/2020-12/schema');
     });
   });
 });

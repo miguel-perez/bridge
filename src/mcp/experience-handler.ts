@@ -149,8 +149,9 @@ export class ExperienceHandler {
       const result = results[0];
       const exp = result.experience;
       
-      output += `${exp.anchor} Experience Captured\n\n`;
-      output += `Who: ${exp.who.join(', ')}\n`;
+      output += `${exp.anchor} Experience Captured\n`;
+      output += `📝 ID: ${exp.id}\n`;
+      output += `\nWho: ${exp.who.join(', ')}\n`;
       
       // Show a few key qualities
       output += `\nQualities:\n`;
