@@ -7,9 +7,12 @@ import { getAllRecords, saveSource } from '../core/storage.js';
 import { saveEmbedding } from '../core/storage.js';
 import { embeddingService } from '../services/embeddings.js';
 import type { ReconsiderInput, ToolResult } from './schemas.js';
-import type { EmbeddingRecord } from '../core/types.js';
+import type { EmbeddingRecord, Experience } from '../core/types.js';
 import { ToolResultSchema } from './schemas.js';
 import { incrementCallCount } from './call-counter.js';
+
+// Type for reconsider item
+type ReconsiderItem = ReconsiderInput['reconsiderations'][0];
 
 /**
  * Handler for the streamlined reconsider tool
@@ -98,7 +101,7 @@ export class ReconsiderHandler {
   /**
    * Update an existing experience
    */
-  private async updateExperience(update: any): Promise<string> {
+  private async updateExperience(update: ReconsiderItem): Promise<string> {
     // Get the existing record
     const records = await getAllRecords();
     const existing = records.find(r => r.id === update.id);
@@ -107,7 +110,7 @@ export class ReconsiderHandler {
       return `❌ Experience not found: ${update.id}`;
     }
     
-    // During migration, we work with Source format
+    // Work with the experience record
     const updated = { ...existing };
     const changedFields: string[] = [];
     
@@ -117,33 +120,39 @@ export class ReconsiderHandler {
       changedFields.push('who');
     }
     
-    // Handle source/citation update
-    if (update.source) {
-      updated.source = update.source;
+    // Handle quality updates (flat structure)
+    const qualityFields = ['embodied', 'focus', 'mood', 'purpose', 'space', 'time', 'presence'] as const;
+    let qualitiesChanged = false;
+    
+    for (const quality of qualityFields) {
+      if (quality in update && update[quality] !== undefined) {
+        updated[quality] = update[quality];
+        changedFields.push(quality);
+        qualitiesChanged = true;
+      }
+    }
+    
+    // Handle anchor update
+    if ('anchor' in update && update.anchor !== undefined) {
+      updated.anchor = update.anchor;
+      changedFields.push('anchor');
+    }
+    
+    // Handle citation update
+    if ('citation' in update) {
+      updated.citation = update.citation;
       changedFields.push('citation');
     }
     
-    // Handle quality updates
-    if (update.experienceQualities) {
-      // Merge qualities
-      updated.experienceQualities = {
-        ...existing.experienceQualities,
-        ...update.experienceQualities
-      };
-      
-      // Track which qualities changed
-      const qualityKeys = Object.keys(update.experienceQualities);
-      changedFields.push(...qualityKeys.map(k => `quality.${k}`));
-      
-      // Regenerate embedding if qualities changed
+    // Regenerate embedding if qualities changed
+    if (qualitiesChanged) {
       try {
         await embeddingService.initialize();
         
         // Build embedding text from all qualities
-        const qualities = updated.experienceQualities || {};
-        const embeddingText = Object.entries(qualities)
-          .filter(([_, v]) => v && v !== false)
-          .map(([_, v]) => v)
+        const embeddingText = qualityFields
+          .map(q => updated[q])
+          .filter(v => v && typeof v === 'string')
           .join(' ');
           
         if (embeddingText) {
@@ -164,7 +173,7 @@ export class ReconsiderHandler {
     }
     
     // Save the updated record
-    await saveSource(updated);
+    await saveSource(updated as Experience);
     
     if (changedFields.length === 0) {
       return `✅ No changes needed for: ${update.id}`;

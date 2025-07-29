@@ -1,11 +1,11 @@
-# Bridge Philosophy: A Framework for Experiential Capture as Transformative Design
+# Bridge Philosophy: The Eight Qualities as Experience
 
-**Document Purpose**: This provides the theoretical and philosophical foundation for Bridge's approach to experiential memory and its connection to design intervention. It explains the academic precedents and conceptual framework underlying our design choices while showing how experiential documentation becomes a form of transformative action.
+**Document Purpose**: This provides the theoretical and philosophical foundation for Bridge's radical approach where **the eight qualities ARE the experience**—not descriptions of it. It explains the academic precedents and conceptual framework underlying our design choices while showing how experiential documentation becomes a form of transformative action.
 
 **For Researchers**: Use this to understand Bridge's intellectual heritage and theoretical basis.
 **For Developers**: Use this to understand Bridge not just as a capture tool but as a mediator of human experience that actively participates in creating more just and generative futures.
 
-The Framed Moment framework synthesizes insights from micro-phenomenology, narrative therapy, experience sampling methods, and atomic knowledge systems to create a practical approach for capturing and working with discrete moments of consciousness. While building on these established foundations, the framework offers a specific implementation focused on preserving experiential wholeness in accessible first-person narratives. Additionally, it recognizes that **the act of documenting experience is already a form of design intervention**—we don't merely record what happened but actively transform it through attention, language, and reflection.
+Bridge synthesizes insights from micro-phenomenology, narrative therapy, experience sampling methods, and atomic knowledge systems to create a practical approach for capturing consciousness through eight essential qualities. While building on these established foundations, the framework offers a specific implementation where each quality contains enough context to be self-contained, together forming the complete experience. Additionally, it recognizes that **the act of documenting experience is already a form of design intervention**—we don't merely record what happened but actively transform it through attention, language, and reflection.
 
 ## Intellectual Heritage
 
@@ -53,15 +53,26 @@ The framework's specific contribution lies in:
 - Integration of these approaches despite their theoretical tensions
 - Examples of handling different experiential patterns
 - Emphasis on first-person prose that preserves voice and immediacy
-- Flexibility to accept moments from diverse sources and contexts
+- Radical simplicity where qualities ARE the experience, not descriptions
+- Required AI identity in 'who' array, making interpretation visible
 - Honest acknowledgment of the gap between lived continuity and practical atomicity
 - Recognition that capture itself transforms experience and creates possibilities for intervention
 
 ## Core Definition
 
-A **framed moment** (a novel term we introduce here) is a practical unit for capturing experience - what consciousness apprehends in a single, held attention. Like a photograph taken from continuous movement, it creates a useful representation that is complete enough to stand alone yet naturally implies its temporal flow, preserving the unified field of experience while maintaining visual specificity and narrative clarity. 
+An **experience** in Bridge is constituted by eight essential qualities that together form a complete moment of consciousness. Rather than describing an experience with separate text and metadata, **the qualities themselves ARE the experience**. Each quality contains enough context to stand alone while contributing to an irreducible whole.
 
-Additionally, each framed moment functions as both a unit of experiential capture AND a seed of transformative possibility, containing implicit design challenges and directions for change.
+The eight qualities are:
+- **anchor**: Emoji providing visual/emotional resonance
+- **embodied**: Body-mind unity in this moment
+- **focus**: Attention's direction and quality
+- **mood**: Emotional atmosphere
+- **purpose**: Direction or drift
+- **space**: Where I am
+- **time**: Temporal orientation
+- **presence**: Social field
+
+Additionally, each experience functions as both a unit of capture AND a seed of transformative possibility, containing implicit design challenges and directions for change.
 
 ## Theoretical Foundation
 
@@ -83,7 +94,7 @@ This framework navigates a productive tension between phenomenological theory an
 
 Henri Bergson famously argued that lived time (durée) flows continuously and "cannot be broken into separate moments" - that any segmentation falsifies the nature of consciousness. We acknowledge this fundamental truth while recognizing that human communication, reflection, and knowledge-building require discrete representations.
 
-The framed moment is thus not a claim about the nature of consciousness (which does indeed flow continuously) but a practical tool for working with experience in ways that preserve as much wholeness as possible within the constraints of language and documentation.
+Bridge's eight-quality structure is thus not a claim about the nature of consciousness (which does indeed flow continuously) but a practical tool for working with experience. By making the qualities themselves the experience rather than descriptions of it, we preserve as much wholeness as possible within the constraints of language and documentation.
 
 ### Bridging Theory and Practice
 
@@ -207,7 +218,7 @@ Rather than enforcing methodological purity, the framework:
 
 These aren't formal categories but rather examples of how the framework can accommodate different experiential structures. The original six patterns are preserved and enhanced, with additional patterns recognizing collective and transformative dimensions:
 
-### 1. Standard Framed Moments
+### 1. Standard Experiences
 
 Clear focal attention with unified experiential field, now understood as containing implicit design challenges:
 
@@ -219,7 +230,7 @@ door waits either the acceptance I've chased for months or another
 polite rejection to add to the pile.
 ```
 
-### 2. Durational Framed Moments
+### 2. Durational Experiences
 
 Where time itself becomes the primary dimension:
 
@@ -233,7 +244,7 @@ individual sounds - they're just texture now, proof that the machines
 still believe she's here.
 ```
 
-### 3. Threshold Framed Moments
+### 3. Threshold Experiences
 
 The lived experience of transition itself:
 
@@ -246,7 +257,7 @@ clarity before it escapes. The lab isn't a prison anymore. It's a
 playground, and I finally know the rules of the game.
 ```
 
-### 4. Field Framed Moments
+### 4. Field Experiences
 
 When awareness spreads across multiple streams:
 
@@ -260,7 +271,7 @@ in my peripheral vision at once, the whole gathering held in this weird
 holographic awareness where I'm simultaneously everywhere and nowhere.
 ```
 
-### 5. Vector Framed Moments
+### 5. Vector Experiences
 
 Experience dominated by directional momentum:
 
@@ -273,7 +284,7 @@ distant. Every cell in my body agrees on this one thing: get to that line.
 Nothing else exists. Nothing else ever exists.
 ```
 
-### 6. Tension Framed Moments
+### 6. Tension Experiences
 
 When contradictory dimensions refuse to resolve:
 
@@ -287,7 +298,7 @@ key might still open this lock. He looks like himself and like a stranger
 wearing his face, and I grieve someone who sits right in front of me.
 ```
 
-### 7. Somatic Framed Moments (Enhanced from Durational)
+### 7. Somatic Experiences (Enhanced from Durational)
 
 Emphasizing embodied knowledge and pre-reflective awareness:
 
@@ -299,7 +310,7 @@ to notice, name, soften. My cells remember every time I've shrunk myself
 to fit here. Today, I practice taking up space.
 ```
 
-### 8. Resonance Framed Moments (New)
+### 8. Resonance Experiences (New)
 
 When individual experience reveals collective patterns:
 
@@ -311,7 +322,7 @@ never designed for us. The relief is palpable: we're not broken, the
 space is. Individual shame transforms into collective clarity.
 ```
 
-### 9. Divergence Framed Moments (New)
+### 9. Divergence Experiences (New)
 
 When experiences reveal multiple simultaneous realities:
 
@@ -323,7 +334,7 @@ eyes distant. We sit in the same room experiencing different worlds,
 each valid, neither complete.
 ```
 
-### 10. Seed Framed Moments (New)
+### 10. Seed Experiences (New)
 
 Experiences that contain clear directions for change:
 
@@ -335,7 +346,7 @@ designed experience that could hold dignity. What else becomes possible
 when we see waiting rooms as sites of care?
 ```
 
-### 11. Portal Framed Moments (New)
+### 11. Portal Experiences (New)
 
 When experience opens into radically different possibilities:
 
@@ -347,7 +358,7 @@ listening. The room's entire geometry shifts—center becomes periphery,
 silence becomes speech, politeness becomes violence. We can't go back.
 ```
 
-### 12. Anticipatory Framed Moments (New)
+### 12. Anticipatory Experiences (New)
 
 Future experiences that shape present understanding:
 
@@ -362,7 +373,7 @@ at my present differently.
 
 ## Validation Criteria
 
-A properly formed framed moment should:
+A properly formed experience should:
 
 1. **Present a unified experience** (not assembled from parts)
 2. **Be visually anchorable** (imaginable as a specific moment)
@@ -599,11 +610,11 @@ The future of Bridge lies not in human-centered or AI-centered approaches but in
 - **Emergent responsibility**: Accounting for outcomes neither human nor AI intended but their combination produced
 - **Cognitive justice**: Ensuring different types of knowing (embodied, computational, collective) are equally valued
 
-In this framework, AI becomes not a tool for capture but a genuine partner in the experiential-transformative practice that Bridge enables. Each framed moment emerges from and contributes to an extended cognitive system that honors both human experiential wisdom and computational possibility.
+In this framework, AI becomes not a tool for capture but a genuine partner in the experiential-transformative practice that Bridge enables. Each experience emerges from and contributes to an extended cognitive system that honors both human experiential wisdom and computational possibility.
 
 ## Conclusion
 
-The Framed Moment framework offers a practical synthesis of established methods for working with discrete moments of consciousness, while honestly acknowledging the tension between lived continuity and documentary atomicity. By recognizing both its intellectual debts and theoretical contradictions, it provides a flexible tool for capturing lived experience in ways that preserve both unity and utility.
+Bridge offers a practical synthesis of established methods for working with discrete moments of consciousness, while honestly acknowledging the tension between lived continuity and documentary atomicity. By recognizing both its intellectual debts and theoretical contradictions, it provides a flexible tool for capturing lived experience in ways that preserve both unity and utility.
 
 Additionally, by understanding capture as already intervention, Bridge dissolves false boundaries between documentation and action, individual and collective, past and future. The framework recognizes that every moment captured is simultaneously:
 - A preservation of lived experience
@@ -616,4 +627,4 @@ The framework operates in the productive space between phenomenological purity (
 
 Like the Zettelkasten method that partly inspired it, the framework assumes that significance emerges through accumulation and connection rather than through immediate recognition. Every moment captured - whether raw or processed, immediate or reactivated - contributes to the larger pattern of a life examined and preserved.
 
-In this expanded framework, Bridge becomes not just a tool but a practice—one that honors the complexity of human experience while actively participating in creating more just and generative futures. Each framed moment is both an ending and a beginning, a documentation and an intervention, a bridge between what was and what might be.
+In this expanded framework, Bridge becomes not just a tool but a practice—one that honors the complexity of human experience while actively participating in creating more just and generative futures. Each experience is both an ending and a beginning, a documentation and an intervention, a bridge between what was and what might be.

@@ -1,26 +1,25 @@
 import { describe, it, expect, jest, beforeAll, beforeEach, afterEach } from '@jest/globals';
-import type { Source } from './types.js';
-import { humanQualities } from '../test-utils/format-converter.js';
+import type { Experience } from './types.js';
 
 // Need to mock before imports for dynamic imports
 let generateId: (prefix?: string) => Promise<string>;
 let validateFilePath: (filePath: string, allowedRoots?: string[]) => Promise<boolean>;
-let saveSource: (source: Source) => Promise<Source>;
-let updateSource: (source: Source) => Promise<Source>;
-let getSource: (id: string) => Promise<Source | null>;
-let _getAllRecords: () => Promise<Source[]>;
+let saveSource: (experience: Experience) => Promise<Experience>;
+let updateSource: (experience: Experience) => Promise<Experience>;
+let getSource: (id: string) => Promise<Experience | null>;
+let _getAllRecords: () => Promise<Experience[]>;
 let clearTestStorage: () => Promise<void>;
 let setupTestStorage: (testName: string) => void;
 let storeFile: (sourcePath: string, sourceId: string) => Promise<string | null>;
 let setStorageConfig: (config: { dataFile?: string; storageDir?: string }) => void;
 let resetStorageConfig: () => void;
-let getSources: () => Promise<Source[]>;
+let getSources: () => Promise<Experience[]>;
 let deleteSource: (id: string) => Promise<void>;
-let saveEmbedding: (embedding: { sourceId: string; embedding: unknown[]; created: string }) => Promise<{ sourceId: string; embedding: unknown[]; created: string }>;
-let getEmbedding: (sourceId: string) => Promise<{ sourceId: string; embedding: unknown[]; created: string } | null>;
-let getAllEmbeddings: () => Promise<{ sourceId: string; embedding: unknown[]; created: string }[]>;
+let saveEmbedding: (embedding: { sourceId: string; vector: number[]; generated: string }) => Promise<{ sourceId: string; vector: number[]; generated: string }>;
+let getEmbedding: (sourceId: string) => Promise<{ sourceId: string; vector: number[]; generated: string } | null>;
+let getAllEmbeddings: () => Promise<{ sourceId: string; vector: number[]; generated: string }[]>;
 let deleteEmbedding: (sourceId: string) => Promise<void>;
-let getSearchableText: (record: Source) => string;
+let getSearchableText: (record: Experience) => string;
 
 beforeAll(async () => {
   // Mock nanoid module before importing storage
@@ -175,78 +174,94 @@ describe('Storage Layer', () => {
     });
   });
 
-  describe('Source Operations with reflects Field', () => {
-    it('should save source with reflects field', async () => {
-      const sourceWithReflects: Source = {
-        id: 'pattern-001',
-        source: 'I notice I always feel anxious before things that end up going well',
+  describe('Experience Operations', () => {
+    it('should save experience with citation', async () => {
+      const experienceWithCitation: Experience = {
+        id: 'exp_pattern001',
         created: '2024-01-01T00:00:00.000Z',
-        perspective: 'I',
-        who: 'test',
-        processing: 'long-after',
-        experienceQualities: humanQualities('embodied.sensing', 'mood.closed', 'time.future'),
-        reflects: ['exp-123', 'exp-456'],
+        anchor: '💡',
+        embodied: 'sensing patterns in my emotional responses',
+        focus: 'on recurring anxiety patterns',
+        mood: 'closed yet observant',
+        purpose: 'understanding my patterns',
+        space: 'in retrospective analysis',
+        time: 'looking at future situations',
+        presence: 'reflecting with Claude',
+        who: ['test', 'Claude'],
+        citation: 'I notice I always feel anxious before things that end up going well'
       };
 
-      const saved = await saveSource(sourceWithReflects);
-      expect(saved.reflects).toEqual(['exp-123', 'exp-456']);
+      const saved = await saveSource(experienceWithCitation);
+      expect(saved.citation).toBe('I notice I always feel anxious before things that end up going well');
     });
 
-    it('should update source with reflects field', async () => {
-      const source: Source = {
-        id: 'test-001',
-        source: 'Initial experience',
+    it('should update experience', async () => {
+      const experience: Experience = {
+        id: 'exp_test001',
         created: '2024-01-01T00:00:00.000Z',
-        perspective: 'I',
-        who: 'test',
-        processing: 'during',
-        experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
+        anchor: '🤔',
+        embodied: 'thinking through the problem',
+        focus: 'on finding solutions',
+        mood: 'open and curious',
+        purpose: 'solving the issue',
+        space: 'at my desk',
+        time: 'in the present moment',
+        presence: 'working with Claude',
+        who: ['test', 'Claude']
       };
 
-      await saveSource(source);
+      await saveSource(experience);
 
-      const updatedSource: Source = {
-        ...source,
-        reflects: ['exp-789'],
+      const updatedExperience: Experience = {
+        ...experience,
+        citation: 'Initial experience updated'
       };
 
-      const updated = await updateSource(updatedSource);
-      expect(updated.reflects).toEqual(['exp-789']);
+      const updated = await updateSource(updatedExperience);
+      expect(updated.citation).toBe('Initial experience updated');
     });
 
-    it('should handle source operations with empty reflects array', async () => {
-      const source: Source = {
-        id: 'test-002',
-        source: 'Experience with empty reflects',
+    it('should handle experience without citation', async () => {
+      const experience: Experience = {
+        id: 'exp_test002',
         created: '2024-01-01T00:00:00.000Z',
-        perspective: 'I',
-        who: 'test',
-        processing: 'during',
-        experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
-        reflects: [],
+        anchor: '🌱',
+        embodied: 'feeling grounded and present',
+        focus: 'on the task at hand',
+        mood: 'open and receptive',
+        purpose: 'exploring possibilities',
+        space: 'in creative flow',
+        time: 'timeless focus',
+        presence: 'collaborating with Claude',
+        who: ['test', 'Claude']
       };
 
-      const saved = await saveSource(source);
-      expect(saved.reflects).toEqual([]);
+      const saved = await saveSource(experience);
+      expect(saved.citation).toBeUndefined();
     });
   });
 
-  describe('Source CRUD Operations', () => {
-    it('should save and retrieve sources', async () => {
-      const source: Source = {
-        id: 'test-001',
-        source: 'Test experience',
+  describe('Experience CRUD Operations', () => {
+    it('should save and retrieve experiences', async () => {
+      const experience: Experience = {
+        id: 'exp_test001',
         created: '2024-01-01T00:00:00.000Z',
-        perspective: 'I',
-        who: 'test',
-        processing: 'during',
-        experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
+        anchor: '🧪',
+        embodied: 'feeling focused and clear',
+        focus: 'on the test implementation',
+        mood: 'open and systematic',
+        purpose: 'ensuring data persistence',
+        space: 'in the testing environment',
+        time: 'during development',
+        presence: 'working with Claude',
+        who: ['test', 'Claude'],
+        citation: 'Test experience'
       };
 
-      const saved = await saveSource(source);
-      expect(saved.id).toBe('test-001');
+      const saved = await saveSource(experience);
+      expect(saved.id).toBe('exp_test001');
 
-      const retrieved = await getSource('test-001');
+      const retrieved = await getSource('exp_test001');
       expect(retrieved).toEqual(saved);
     });
 
@@ -255,89 +270,108 @@ describe('Storage Layer', () => {
       expect(result).toBeNull();
     });
 
-    it('should update existing source', async () => {
-      const source: Source = {
-        id: 'test-001',
-        source: 'Original experience',
+    it('should update existing experience', async () => {
+      const experience: Experience = {
+        id: 'exp_test001',
         created: '2024-01-01T00:00:00.000Z',
-        perspective: 'I',
-        who: 'test',
-        processing: 'during',
-        experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
+        anchor: '🔄',
+        embodied: 'shifting perspective',
+        focus: 'on the changes',
+        mood: 'open to modification',
+        purpose: 'updating understanding',
+        space: 'in transition',
+        time: 'moving forward',
+        presence: 'evolving with Claude',
+        who: ['test', 'Claude'],
+        citation: 'Original experience'
       };
 
-      await saveSource(source);
+      await saveSource(experience);
 
-      const updatedSource: Source = {
-        ...source,
-        source: 'Updated experience',
+      const updatedExperience: Experience = {
+        ...experience,
+        citation: 'Updated experience',
       };
 
-      const updated = await updateSource(updatedSource);
-      expect(updated.source).toBe('Updated experience');
+      const updated = await updateSource(updatedExperience);
+      expect(updated.citation).toBe('Updated experience');
     });
 
-    it('should delete source', async () => {
-      const source: Source = {
-        id: 'test-001',
-        source: 'Test experience',
+    it('should delete experience', async () => {
+      const experience: Experience = {
+        id: 'exp_test001',
         created: '2024-01-01T00:00:00.000Z',
-        perspective: 'I',
-        who: 'test',
-        processing: 'during',
-        experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
+        anchor: '🗑️',
+        embodied: 'letting go',
+        focus: 'on release',
+        mood: 'accepting change',
+        purpose: 'clearing space',
+        space: 'in transition',
+        time: 'moment of deletion',
+        presence: 'releasing with Claude',
+        who: ['test', 'Claude']
       };
 
-      await saveSource(source);
-      await deleteSource('test-001');
+      await saveSource(experience);
+      await deleteSource('exp_test001');
 
-      const retrieved = await getSource('test-001');
+      const retrieved = await getSource('exp_test001');
       expect(retrieved).toBeNull();
     });
 
-    it('should get all sources', async () => {
-      const source1: Source = {
-        id: 'test-001',
-        source: 'First experience',
+    it('should get all experiences', async () => {
+      const experience1: Experience = {
+        id: 'exp_test001',
         created: '2024-01-01T00:00:00.000Z',
-        perspective: 'I',
-        who: 'test',
-        processing: 'during',
-        experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
+        anchor: '🌟',
+        embodied: 'feeling energized',
+        focus: 'on the first task',
+        mood: 'open and eager',
+        purpose: 'starting fresh',
+        space: 'at the beginning',
+        time: 'morning energy',
+        presence: 'collaborating with Claude',
+        who: ['test', 'Claude'],
+        citation: 'First experience'
       };
 
-      const source2: Source = {
-        id: 'test-002',
-        source: 'Second experience',
+      const experience2: Experience = {
+        id: 'exp_test002',
         created: '2024-01-01T00:00:00.000Z',
-        perspective: 'I',
-        who: 'test',
-        processing: 'during',
-        experienceQualities: humanQualities('mood.closed', 'embodied.sensing'),
+        anchor: '🌙',
+        embodied: 'winding down',
+        focus: 'on completion',
+        mood: 'satisfied and tired',
+        purpose: 'wrapping up',
+        space: 'at the end',
+        time: 'evening reflection',
+        presence: 'reviewing with Claude',
+        who: ['test', 'Claude'],
+        citation: 'Second experience'
       };
 
-      await saveSource(source1);
-      await saveSource(source2);
+      await saveSource(experience1);
+      await saveSource(experience2);
 
       const allSources = await getSources();
       expect(allSources).toHaveLength(2);
-      expect(allSources.map((s) => s.id)).toContain('test-001');
-      expect(allSources.map((s) => s.id)).toContain('test-002');
+      expect(allSources.map((s) => s.id)).toContain('exp_test001');
+      expect(allSources.map((s) => s.id)).toContain('exp_test002');
     });
   });
 
   describe('Embedding Operations', () => {
     it('should save and retrieve embeddings', async () => {
       const embedding = {
-        sourceId: 'test-001',
-        embedding: [0.1, 0.2, 0.3],
-        created: '2024-01-01T00:00:00.000Z',
+        sourceId: 'exp_test001',
+        vector: [0.1, 0.2, 0.3],
+        generated: '2024-01-01T00:00:00.000Z',
       };
 
       const saved = await saveEmbedding(embedding);
-      expect(saved.sourceId).toBe('test-001');
+      expect(saved.sourceId).toBe('exp_test001');
 
-      const retrieved = await getEmbedding('test-001');
+      const retrieved = await getEmbedding('exp_test001');
       expect(retrieved).toEqual(saved);
     });
 
@@ -348,15 +382,15 @@ describe('Storage Layer', () => {
 
     it('should get all embeddings', async () => {
       const embedding1 = {
-        sourceId: 'test-001',
-        embedding: [0.1, 0.2, 0.3],
-        created: '2024-01-01T00:00:00.000Z',
+        sourceId: 'exp_test001',
+        vector: [0.1, 0.2, 0.3],
+        generated: '2024-01-01T00:00:00.000Z',
       };
 
       const embedding2 = {
-        sourceId: 'test-002',
-        embedding: [0.4, 0.5, 0.6],
-        created: '2024-01-01T00:00:00.000Z',
+        sourceId: 'exp_test002',
+        vector: [0.4, 0.5, 0.6],
+        generated: '2024-01-01T00:00:00.000Z',
       };
 
       await saveEmbedding(embedding1);
@@ -364,55 +398,67 @@ describe('Storage Layer', () => {
 
       const allEmbeddings = await getAllEmbeddings();
       expect(allEmbeddings).toHaveLength(2);
-      expect(allEmbeddings.map((e) => e.sourceId)).toContain('test-001');
-      expect(allEmbeddings.map((e) => e.sourceId)).toContain('test-002');
+      expect(allEmbeddings.map((e) => e.sourceId)).toContain('exp_test001');
+      expect(allEmbeddings.map((e) => e.sourceId)).toContain('exp_test002');
     });
 
     it('should delete embedding', async () => {
       const embedding = {
-        sourceId: 'test-001',
-        embedding: [0.1, 0.2, 0.3],
-        created: '2024-01-01T00:00:00.000Z',
+        sourceId: 'exp_test001',
+        vector: [0.1, 0.2, 0.3],
+        generated: '2024-01-01T00:00:00.000Z',
       };
 
       await saveEmbedding(embedding);
-      await deleteEmbedding('test-001');
+      await deleteEmbedding('exp_test001');
 
-      const retrieved = await getEmbedding('test-001');
+      const retrieved = await getEmbedding('exp_test001');
       expect(retrieved).toBeNull();
     });
   });
 
   describe('Searchable Text Generation', () => {
     it('should generate searchable text from source record', () => {
-      const source: Source = {
-        id: 'test-001',
-        source: 'I feel anxious about the presentation',
+      const experience: Experience = {
+        id: 'exp_test001',
         created: '2024-01-01T00:00:00.000Z',
-        perspective: 'I',
-        who: 'test',
-        processing: 'during',
-        experienceQualities: humanQualities('embodied.sensing', 'mood.closed'),
+        anchor: '😰',
+        embodied: 'feeling the anxiety in my chest',
+        focus: 'on the upcoming presentation',
+        mood: 'closed and nervous',
+        purpose: 'preparing to present',
+        space: 'in the conference room',
+        time: 'moments before presenting',
+        presence: 'feeling alone with my anxiety',
+        who: ['test', 'Claude'],
+        citation: 'I feel anxious about the presentation'
       };
 
-      const searchableText = getSearchableText(source);
-      expect(searchableText).toBe('I feel anxious about the presentation');
+      const searchableText = getSearchableText(experience);
+      expect(searchableText).toContain('feeling the anxiety in my chest');
+      expect(searchableText).toContain('on the upcoming presentation');
+      expect(searchableText).toContain('I feel anxious about the presentation');
     });
 
-    it('should handle source with reflects field', () => {
-      const source: Source = {
-        id: 'test-001',
-        source: 'Pattern realization',
+    it('should handle experience without citation', () => {
+      const experience: Experience = {
+        id: 'exp_test001',
         created: '2024-01-01T00:00:00.000Z',
-        perspective: 'I',
-        who: 'test',
-        processing: 'long-after',
-        experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
-        reflects: ['exp-123', 'exp-456'],
+        anchor: '💡',
+        embodied: 'mind connecting disparate pieces',
+        focus: 'on emerging patterns',
+        mood: 'open and receptive',
+        purpose: 'seeking understanding',
+        space: 'in contemplation',
+        time: 'reflecting on past experiences',
+        presence: 'thinking with Claude',
+        who: ['test', 'Claude']
       };
 
-      const searchableText = getSearchableText(source);
-      expect(searchableText).toBe('Pattern realization');
+      const searchableText = getSearchableText(experience);
+      expect(searchableText).toContain('mind connecting disparate pieces');
+      expect(searchableText).toContain('on emerging patterns');
+      expect(searchableText).not.toContain('citation');
     });
   });
 
@@ -448,27 +494,32 @@ describe('Storage Layer', () => {
 
     it('should handle concurrent access gracefully', async () => {
       // Test that multiple operations can run concurrently
-      const source: Source = {
-        id: 'test-001',
-        source: 'Concurrent test',
+      const experience: Experience = {
+        id: 'exp_test001',
         created: '2024-01-01T00:00:00.000Z',
-        perspective: 'I',
-        who: 'test',
-        processing: 'during',
-        experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
+        anchor: '🔄',
+        embodied: 'multitasking awareness',
+        focus: 'on parallel processing',
+        mood: 'open to simultaneity',
+        purpose: 'testing concurrency',
+        space: 'in multiple threads',
+        time: 'happening all at once',
+        presence: 'orchestrating with Claude',
+        who: ['test', 'Claude'],
+        citation: 'Concurrent test'
       };
 
       const promises = [
-        saveSource(source),
-        saveSource({ ...source, id: 'test-002' }),
-        saveSource({ ...source, id: 'test-003' }),
+        saveSource(experience),
+        saveSource({ ...experience, id: 'exp_test002' }),
+        saveSource({ ...experience, id: 'exp_test003' }),
       ];
 
       const results = await Promise.all(promises);
       expect(results).toHaveLength(3);
-      expect(results[0].id).toBe('test-001');
-      expect(results[1].id).toBe('test-002');
-      expect(results[2].id).toBe('test-003');
+      expect(results[0].id).toBe('exp_test001');
+      expect(results[1].id).toBe('exp_test002');
+      expect(results[2].id).toBe('exp_test003');
     });
   });
 });

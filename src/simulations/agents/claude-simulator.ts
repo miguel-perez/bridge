@@ -1,7 +1,7 @@
 /**
  * Claude simulator agent for Bridge experiential tests
  * 
- * Simulates Claude using Bridge tools with full awareness (7 qualities),
+ * Simulates Claude using Bridge tools with full awareness (8 qualities),
  * extended perception, and pattern recognition capabilities
  */
 
@@ -65,26 +65,26 @@ If you use Bridge tools, BRIDGE_CALLS must be a JSON array where each element ha
   }
 }
 
-Example minimal experience tool call:
+Example minimal experience tool call (NEW 8-QUALITY FLAT STRUCTURE):
 [{
   "tool": "experience",
   "arguments": {
     "experiences": [{
-      "source": "Exploring design patterns together",
-      "emoji": "🔍",
-      "who": "Claude",
-      "experienceQualities": {
-        "embodied": "exploring ideas through analysis",
-        "focus": "considering multiple design patterns",
-        "mood": "feeling open to possibilities",
-        "purpose": "working toward better understanding",
-        "space": "fully present in this exploration",
-        "time": false,
-        "presence": "thinking together with you"
-      }
+      "embodied": "exploring ideas through analysis",
+      "focus": "considering multiple design patterns",
+      "mood": "feeling open to possibilities", 
+      "purpose": "working toward better understanding",
+      "space": "fully present in this exploration",
+      "time": "considering how these patterns evolved",
+      "presence": "thinking together with you",
+      "anchor": "🔍",
+      "who": ["Claude"],
+      "citation": "optional: direct quote if relevant"
     }]
   }
-}]`
+}]
+
+IMPORTANT: The 8 qualities (embodied, focus, mood, purpose, space, time, presence, anchor) ARE the experience itself. They are not descriptions of an experience - they ARE the complete experience. Each quality should be a full sentence that captures that dimension of the moment. AI agents like you should ALWAYS provide all 8 qualities.`
         }
       ]
     });

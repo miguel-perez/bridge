@@ -6,10 +6,7 @@ import { describe, test, expect } from '@jest/globals';
 import {
   withTestEnvironment,
   withIsolatedTestEnvironment,
-  callExperience,
-  callReconsider,
   verifyToolResponse,
-  extractExperienceId,
 } from '../test-utils/integration-helpers.js';
 
 describe('MCP Handlers Integration', () => {
@@ -89,16 +86,13 @@ describe('MCP Handlers Integration', () => {
     await withTestEnvironment(async (env) => {
       // Test with invalid ID for reconsider
       try {
-        await callReconsider(env.client, {
-          id: 'invalid_id_format',
-          experienceQualities: {
-            embodied: 'Updated feeling',
-            focus: false,
-            mood: false,
-            purpose: false,
-            space: false,
-            time: false,
-            presence: false
+        await env.client.callTool({
+          name: 'reconsider',
+          arguments: {
+            reconsiderations: [{
+              id: 'invalid_id_format',
+              embodied: 'Updated feeling'
+            }]
           }
         });
         expect(true).toBe(false); // Should not reach here

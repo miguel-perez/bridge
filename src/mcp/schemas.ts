@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+type AIIdentity = 'Claude' | 'GPT-4' | 'GPT-3.5' | 'Gemini' | 'Assistant';
+
 // Enums
 // Perspective and Processing enums removed for streamlining
 // Simplified quality types for experiential qualities
@@ -173,7 +175,7 @@ Set to false for qualities not prominently present.`
 ).optional();
 
 // Helper for emoji validation
-const validateEmoji = (val: string) => {
+const validateEmoji = (val: string): boolean => {
   // Comprehensive emoji validation for composite emojis
   if (!val || val.length === 0) return false;
 
@@ -202,8 +204,8 @@ const validateEmoji = (val: string) => {
 };
 
 // Helper for who array validation  
-const validateWhoArray = (who: string[]) => {
-  return who.some(w => AI_IDENTITIES.includes(w as any));
+const validateWhoArray = (who: string[]): boolean => {
+  return who.some(w => AI_IDENTITIES.includes(w as AIIdentity));
 };
 
 // EXPERIENCE tool input - NEW FLAT STRUCTURE
@@ -248,17 +250,10 @@ const ExperienceItemSchema = z
 export const ExperienceInputSchema = z
   .object({
     experiences: z.array(ExperienceItemSchema).min(1).describe('Array of experiences to capture'),
-    recall: z
-      .object({
-        query: z.string().describe('Search query to find related past experiences'),
-        limit: z.number().optional().describe('Maximum number of results (default: 25)'),
-      })
-      .optional()
-      .describe('Simple recall to search past experiences before capturing new ones'),
   })
   .strict()
   .describe(
-    'Input for capturing one or more experiences. Always use array format, even for single experiences.'
+    'Input for capturing one or more experiences. Always use array format, even for single experiences. Bridge automatically shows related past experiences based on the captured experience context.'
   );
 
 // RECALL tool input - Array Only
@@ -317,17 +312,19 @@ export const SearchInputSchema = z
 const ReconsiderItemSchema = z
   .object({
     id: z.string().describe('ID of the experience to reconsider'),
-    source: z.string().min(1).describe('Updated source (optional)').optional(),
-    who: z
-      .union([
-        z.string().describe('Single person who experienced this'),
-        z.array(z.string()).describe('Multiple people who shared this experience'),
-      ])
-      .describe(
-        'Who experienced this moment - single string for individual ("Human", "Claude", or name), array for shared experience (["Human", "Claude"])'
-      )
-      .optional(),
-    experienceQualities: ExperienceObjectOptional.optional(),
+    // Quality updates (all optional)
+    embodied: z.string().min(1).optional(),
+    focus: z.string().min(1).optional(),
+    mood: z.string().min(1).optional(),
+    purpose: z.string().min(1).optional(),
+    space: z.string().min(1).optional(),
+    time: z.string().min(1).optional(),
+    presence: z.string().min(1).optional(),
+    anchor: z.string().refine(validateEmoji, {
+      message: 'Must be a single emoji'
+    }).optional(),
+    who: z.array(z.string()).optional(),
+    citation: z.string().optional(),
     release: z
       .boolean()
       .describe('Whether to release (delete) this experience instead of updating it')
@@ -360,117 +357,6 @@ export const ToolResultSchema = z.object({
   content: z.array(ToolTextContentSchema),
 });
 
-// Example generation functions
-// TODO: Update these for new streamlined format
-/*
-export function generateExperienceExample(): ExperienceInput {
-  return {
-    experiences: [
-      {
-        source:
-          "I'm sitting at my desk, the afternoon light streaming through the window. My fingers hover over the keyboard, that familiar mix of excitement and uncertainty bubbling up. This project feels like it could be something special, but I'm not quite sure how to start.",
-        emoji: '✨',
-        who: ['Alex', 'Claude'],
-        experienceQualities: {
-          embodied: 'sensing',
-          focus: false,
-          mood: 'open',
-          purpose: 'goal',
-          space: false,
-          time: false,
-          presence: false,
-        },
-      },
-    ],
-  };
-}
-
-export function generateSearchExample(): SearchInput {
-  return {
-    searches: [
-      {
-        search: 'creative breakthrough moments',
-        limit: 5,
-        who: ['Alex', 'Claude'],
-        sort: 'relevance',
-      },
-    ],
-  };
-}
-
-export function generateReconsiderExample(): ReconsiderInput {
-  return {
-    reconsiderations: [
-      {
-        id: 'exp_1234567890',
-        source: 'Updated source text with more detail about the creative process',
-        experienceQualities: {
-          embodied: false,
-          focus: 'narrow',
-          mood: false,
-          purpose: false,
-          space: false,
-          time: false,
-          presence: false,
-        },
-      },
-    ],
-  };
-}
-
-export function generateBatchExperienceExample(): ExperienceInput {
-  return {
-    experiences: [
-      {
-        source: 'The first moment of clarity when the solution finally clicks into place.',
-        emoji: '💡',
-        who: ['Alex', 'Claude'],
-        experienceQualities: {
-          embodied: false,
-          focus: 'narrow', // Base quality 'focus' defaults to narrow
-          mood: false,
-          purpose: false,
-          space: false,
-          time: false,
-          presence: false,
-        },
-      },
-      {
-        source:
-          'Walking through the park, the autumn leaves crunching underfoot, feeling grateful for this moment of peace.',
-        emoji: '🍂',
-        who: ['Alex', 'Claude'],
-        experienceQualities: {
-          embodied: 'thinking',
-          focus: false,
-          mood: 'closed',
-          purpose: false,
-          space: false,
-          time: false,
-          presence: false,
-        },
-      },
-    ],
-  };
-}
-
-export function generateBatchSearchExample(): SearchInput {
-  return {
-    searches: [
-      {
-        search: 'creative breakthrough',
-        limit: 3,
-        sort: 'relevance',
-      },
-      {
-        search: 'peaceful moments',
-        limit: 3,
-        sort: 'created',
-      },
-    ],
-  };
-}
-*/
 
 // Type guards using Zod schemas
 /**

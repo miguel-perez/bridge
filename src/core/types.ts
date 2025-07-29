@@ -138,9 +138,6 @@ export interface Source {
   /** Complete switchboard of experiential qualities */
   experienceQualities?: ExperienceQualities;
 
-  // Pattern realization fields
-  /** Array of experience IDs that this experience reflects on/connects to */
-  reflects?: string[];
 }
 
 /**
@@ -161,7 +158,7 @@ export interface EmbeddingRecord {
 
 /** Storage data structure */
 export interface StorageData {
-  sources: Source[];
+  sources: Experience[];  // Now storing flat Experience format
   embeddings?: EmbeddingRecord[];
 }
 
@@ -188,7 +185,7 @@ export type StorageRecord = SourceRecord;
 // ============================================================================
 
 /** Helper function for emoji validation */
-const validateEmoji = (val: string) => {
+const validateEmoji = (val: string): boolean => {
   // Comprehensive emoji validation for composite emojis
   if (!val || val.length === 0) return false;
 
@@ -229,7 +226,7 @@ export const AI_IDENTITIES = ['Claude', 'GPT-4', 'GPT-3.5', 'Gemini', 'Assistant
 export type AIIdentity = (typeof AI_IDENTITIES)[number];
 
 /** Check if who array includes at least one AI identity */
-const validateWhoArray = (who: string[]) => {
+const validateWhoArray = (who: string[]): boolean => {
   // Check if any element in who array is an AI identity
   return who.some(w => AI_IDENTITIES.includes(w as AIIdentity));
 };
@@ -286,15 +283,11 @@ export const SourceSchema = z.object({
     .optional()
     .describe('Who experienced this'),
   // experience array field removed - use experienceQualities only
-  reflects: z
-    .array(z.string())
-    .optional()
-    .describe('Array of experience IDs that this experience reflects on/connects to'),
 });
 
 /** Zod schema for StorageData */
 export const StorageDataSchema = z.object({
-  sources: z.array(SourceSchema).describe('Array of experienceed experiential sources'),
+  sources: z.array(ExperienceSchema).describe('Array of experiences in flat format'),
   embeddings: z
     .array(
       z.object({

@@ -5,7 +5,7 @@
 
 import { z } from 'zod';
 import { saveSource, saveEmbedding } from '../core/storage.js';
-import type { Experience, EmbeddingRecord } from '../core/types.js';
+import type { Experience, EmbeddingRecord, AIIdentity } from '../core/types.js';
 import { generateExperienceId, AI_IDENTITIES } from '../core/types.js';
 import { embeddingService } from './embeddings.js';
 
@@ -14,7 +14,7 @@ import { embeddingService } from './embeddings.js';
 // ============================================================================
 
 // Helper for emoji validation
-const validateEmoji = (val: string) => {
+const validateEmoji = (val: string): boolean => {
   if (!val || val.length === 0) return false;
 
   if (typeof Intl !== 'undefined' && Intl.Segmenter) {
@@ -55,7 +55,7 @@ export const experienceSchema = z.object({
   who: z
     .array(z.string())
     .min(1, 'Who array cannot be empty')
-    .refine((who) => who.some(w => AI_IDENTITIES.includes(w as any)), {
+    .refine((who) => who.some(w => AI_IDENTITIES.includes(w as AIIdentity)), {
       message: 'Who array must include at least one AI identity (Claude, GPT-4, etc.)'
     }),
     
@@ -151,30 +151,11 @@ export class ExperienceService {
 
   /**
    * Saves an experience to storage.
-   * During migration, this will adapt to existing storage format.
    * @param experience - Experience to save
    */
   private async saveExperience(experience: Experience): Promise<void> {
-    // During migration, we need to save as Source format for backward compatibility
-    // This will be updated once storage is migrated
-    const sourceFormat = {
-      id: experience.id,
-      source: experience.citation || 'Experience captured', // Temporary mapping
-      emoji: experience.anchor,
-      created: experience.created,
-      who: experience.who,
-      experienceQualities: {
-        embodied: experience.embodied,
-        focus: experience.focus,
-        mood: experience.mood,
-        purpose: experience.purpose,
-        space: experience.space,
-        time: experience.time,
-        presence: experience.presence,
-      }
-    };
-    
-    await saveSource(sourceFormat);
+    // Save directly as flat Experience format
+    await saveSource(experience);
   }
 
   /**

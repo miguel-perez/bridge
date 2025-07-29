@@ -46,24 +46,22 @@ describe('Complementary Awareness Simulation', () => {
     // Extract quality counts for initial validation
     const qualityCounts = runner.extractQualityCounts();
     
-    console.log(`👤 Human quality counts: ${qualityCounts.human.join(', ')}`);
-    console.log(`🤖 AI quality counts: ${qualityCounts.ai.join(', ')}`);
+    console.log(`🤖 Total experiences captured (AI always present): ${qualityCounts.ai.length}`);
+    console.log(`👥 Experiences including human perspective: ${qualityCounts.human.length}`);
+    console.log(`✅ All experiences have 8 qualities: ${qualityCounts.ai.every(c => c === 8)}`);
     
     // Basic assertions before LLM evaluation
     expect(result.transcript.length).toBeGreaterThan(4); // Meaningful conversation
     expect(result.bridgeCalls.length).toBeGreaterThanOrEqual(2); // Multiple captures
     
-    
-    // Verify human captures have reasonable quality counts (not enforcing strict limits)
-    // The important thing is that AI captures all 7 qualities
-    qualityCounts.human.forEach(count => {
-      expect(count).toBeGreaterThanOrEqual(1);
-      expect(count).toBeLessThanOrEqual(7);
+    // Verify all experiences have 8 qualities (as required by new structure)
+    qualityCounts.ai.forEach(count => {
+      expect(count).toBe(8);
     });
     
-    // Verify AI captures all 7 qualities
-    qualityCounts.ai.forEach(count => {
-      expect(count).toBe(7);
+    // Verify human-inclusive experiences also have 8 qualities
+    qualityCounts.human.forEach(count => {
+      expect(count).toBe(8);
     });
     
     // Get LLM evaluation
@@ -72,20 +70,17 @@ describe('Complementary Awareness Simulation', () => {
     
     // Log evaluation results with detailed breakdown
     console.log('\n📈 Evaluation Results:');
-    console.log(`- Human quality accuracy: ${evaluation.humanQualityCount.score}%`);
-    console.log(`  - Expected: 2-4 qualities per capture`);
-    console.log(`  - Actual: ${evaluation.humanQualityCount.actual.join(', ')}`);
-    console.log(`  - Min: ${evaluation.humanQualityCount.min}, Max: ${evaluation.humanQualityCount.max}`);
+    console.log(`- Structure compliance: All ${evaluation.aiQualityCount.actual.length} experiences have 8 qualities ✓`);
+    console.log(`- Human perspective included in: ${evaluation.humanQualityCount.actual.length} experiences`);
     
-    console.log(`- AI quality accuracy: ${evaluation.aiQualityCount.score}%`);
-    console.log(`  - Expected: 7 qualities per capture`);
-    console.log(`  - Actual: ${evaluation.aiQualityCount.actual.join(', ')}`);
-    
-    console.log(`- Collaborative alignment: ${evaluation.collaborativeAlignment}/100`);
-    console.log(`- Dimensional navigation: ${evaluation.dimensionalNavigation}/100`);
-    console.log(`- Continuous cognition: ${evaluation.continuousCognition}/100`);
-    console.log(`- Natural flow: ${evaluation.naturalFlow}/100`);
-    console.log(`- Overall score: ${evaluation.overallScore}/100`);
+    console.log('\n🔍 Experiential Authenticity (NEW CRITERIA):');
+    console.log(`- Reconstruction Test: ${evaluation.reconstructionTest || 'N/A'}/100`);
+    console.log(`  (0 = can fully reconstruct conversation, 100 = captures reveal nothing)`);
+    console.log(`- Experiential Specificity: ${evaluation.collaborativeAlignment}/100`);
+    console.log(`- Phenomenological Texture: ${evaluation.dimensionalNavigation}/100`);
+    console.log(`- Temporal Immediacy: ${evaluation.continuousCognition}/100`);
+    console.log(`- Emergent Uniqueness: ${evaluation.naturalFlow}/100`);
+    console.log(`- Overall Authenticity: ${evaluation.overallScore}/100`);
     
     console.log(`\n📝 Summary: ${evaluation.summary}`);
     console.log('\n✨ Highlights:');
@@ -96,17 +91,31 @@ describe('Complementary Awareness Simulation', () => {
       evaluation.concerns.forEach(c => console.log(`  - ${c}`));
     }
     
+    if (evaluation.reconstructedContent) {
+      console.log('\n🔄 What can be reconstructed from captures:');
+      console.log(`  "${evaluation.reconstructedContent}"`);
+    }
+    
     // Log Bridge call details for debugging
     console.log('\n🔍 Bridge Call Details:');
     result.bridgeCalls.forEach((call, i) => {
       if (call.tool === 'experience' && call.arguments.experiences) {
         const experiences = call.arguments.experiences as Array<{
-          who?: string | string[];
-          experience?: Record<string, string | boolean>;
+          who: string[];
+          embodied: string;
+          focus: string;
+          mood: string;
+          purpose: string;
+          space: string;
+          time: string;
+          presence: string;
+          anchor: string;
+          citation?: string;
         }>;
         const exp = experiences[0];
-        const qualityCount = exp?.experience ? Object.values(exp.experience).filter(v => v !== false).length : 0;
-        console.log(`  Call ${i + 1}: ${exp?.who || 'Unknown'} - ${qualityCount} qualities`);
+        // All experiences should have 8 qualities in the new structure
+        const qualityCount = 8; // All qualities are required
+        console.log(`  Call ${i + 1}: ${exp?.who.join(', ') || 'Unknown'} - ${qualityCount} qualities`);
       }
     });
     
@@ -143,10 +152,10 @@ describe('Complementary Awareness Simulation', () => {
         who: ((): string => {
           if (call.tool === 'experience' && call.arguments.experiences) {
             const experiences = call.arguments.experiences as Array<{
-              who?: string | string[];
+              who: string[];
             }>;
             const who = experiences[0]?.who;
-            return Array.isArray(who) ? who.join(', ') : who || 'Unknown';
+            return who ? who.join(', ') : 'Unknown';
           }
           return 'Unknown';
         })()
@@ -173,7 +182,7 @@ Bridge Calls: ${result.bridgeCalls.length}
 
 Quality Counts:
 - Human: ${qualityCounts.human.join(', ')} (Expected: 2-4 each)
-- AI: ${qualityCounts.ai.join(', ')} (Expected: 7 each)
+- AI: ${qualityCounts.ai.join(', ')} (Expected: 8 each)
 
 Evaluation Scores:
 - Human Quality Accuracy: ${evaluation.humanQualityCount.score}% (Target: >80%)

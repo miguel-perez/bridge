@@ -3,7 +3,7 @@
  * Dynamically adapts weights based on query characteristics without explicit modes
  */
 
-import type { SourceRecord, ExperienceQualities } from '../core/types.js';
+import type { SourceRecord, Experience } from '../core/types.js';
 import { KNOWN_QUALITIES } from '../core/qualities.js';
 import { qualityFilterService, type QualityFilter } from './quality-filter.js';
 
@@ -83,8 +83,33 @@ function mapSentenceToQuality(quality: string, sentence: string): string | null 
   return null;
 }
 
-// Helper to extract quality list from switchboard format
-function extractQualityList(qualities?: ExperienceQualities | Record<string, string | boolean>): string[] {
+// Helper to extract quality list from flat Experience or old SourceRecord
+function extractQualityList(record: SourceRecord | Experience): string[] {
+  // Check if it's a new Experience format
+  if ('anchor' in record && 'embodied' in record) {
+    const exp = record as Experience;
+    const qualities: string[] = [];
+    
+    // Process each quality
+    const qualityFields = ['embodied', 'focus', 'mood', 'purpose', 'space', 'time', 'presence'] as const;
+    for (const field of qualityFields) {
+      const value = exp[field];
+      if (value) {
+        // Try to map to old format for backward compatibility
+        const mapped = mapSentenceToQuality(field, value);
+        if (mapped) {
+          qualities.push(`${field}.${mapped}`);
+        } else {
+          // Just use the base quality name if no mapping found
+          qualities.push(field);
+        }
+      }
+    }
+    return qualities;
+  }
+  
+  // Fall back to old format
+  const qualities = (record as SourceRecord).experienceQualities;
   if (!qualities) return [];
   return Object.entries(qualities)
     .filter(([_, value]) => value !== false)
@@ -211,7 +236,7 @@ export function calculateQualityRelevance(
   const queryQualities = extractQualities(query);
   if (queryQualities.length === 0) return 0;
 
-  const experienceQualities = extractQualityList(experience.experienceQualities);
+  const experienceQualities = extractQualityList(experience);
   let relevance = 0;
 
   for (const qQual of queryQualities) {
@@ -274,7 +299,7 @@ export function calculateRecencyScore(experience: SourceRecord): number {
  * Calculate quality density (rewards richer experiences)
  */
 export function calculateQualityDensity(experience: SourceRecord): number {
-  const qualityCount = extractQualityList(experience.experienceQualities).length;
+  const qualityCount = extractQualityList(experience).length;
   return Math.min(qualityCount / 5, 1.0);
 }
 
@@ -338,8 +363,6 @@ export function applyFiltersAndScore(
   query: string | string[],
   filters: {
     who?: string;
-    reflects?: 'only';
-    reflected_by?: string | string[];
     qualities?: QualityFilter; // New sophisticated quality filtering
   },
   semanticScores: Map<string, number>
@@ -349,26 +372,6 @@ export function applyFiltersAndScore(
   // Hard filters (binary)
   if (filters.who) {
     filtered = filtered.filter((exp) => exp.who === filters.who);
-  }
-  if (filters.reflects === 'only') {
-    // Filter for pattern realizations only (experiences with reflects field)
-    filtered = filtered.filter((exp) => exp.reflects !== undefined);
-  }
-
-  if (filters.reflected_by) {
-    // Filter for experiences that are reflected by specific pattern realizations
-    const reflectedByIds = Array.isArray(filters.reflected_by)
-      ? filters.reflected_by
-      : [filters.reflected_by];
-    filtered = filtered.filter((exp) => {
-      // Find pattern realizations that reflect on this experience
-      return experiences.some(
-        (patternExp: SourceRecord) =>
-          patternExp.reflects &&
-          patternExp.reflects.includes(exp.id) &&
-          reflectedByIds.includes(patternExp.id)
-      );
-    });
   }
 
   // Enhanced quality filtering with sophisticated filters
@@ -388,7 +391,7 @@ export function applyFiltersAndScore(
     if (query && isQueryPurelyQuality(query)) {
       const queryQualities = extractQualities(query);
       filtered = filtered.filter((exp) => {
-        const experienceQualities = extractQualityList(exp.experienceQualities);
+        const experienceQualities = extractQualityList(exp);
 
         if (Array.isArray(query)) {
           // For array queries, ALL qualities must match

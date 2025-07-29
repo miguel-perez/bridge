@@ -29,39 +29,35 @@ describe('Search Service', () => {
 
   describe('searchExperiences', () => {
     it('should perform semantic search with embeddings', async () => {
-      // Mock storage data with old Source format (during migration)
+      // Mock storage data with new Experience format
       const records = [
         {
           id: 'exp_1',
-          source: 'Experience 1',
-          emoji: '😊',
           created: '2025-01-21T12:00:00Z',
+          anchor: '😊',
+          embodied: 'feeling energized',
+          focus: 'on the task',
+          mood: 'optimistic',
+          purpose: 'learning new things',
+          space: 'at home',
+          time: 'morning',
+          presence: 'with Claude',
           who: ['Human', 'Claude'],
-          experienceQualities: {
-            embodied: 'feeling energized',
-            focus: 'on the task',
-            mood: 'optimistic',
-            purpose: 'learning new things',
-            space: 'at home',
-            time: 'morning',
-            presence: 'with Claude'
-          }
+          citation: 'Experience 1'
         },
         {
           id: 'exp_2',
-          source: 'Experience 2',
-          emoji: '🤔',
           created: '2025-01-21T13:00:00Z',
+          anchor: '🤔',
+          embodied: 'thinking deeply',
+          focus: 'scattered',
+          mood: 'curious',
+          purpose: 'exploring ideas',
+          space: 'in the office',
+          time: 'afternoon',
+          presence: 'collaborating',
           who: ['Alex', 'GPT-4'],
-          experienceQualities: {
-            embodied: 'thinking deeply',
-            focus: 'scattered',
-            mood: 'curious',
-            purpose: 'exploring ideas',
-            space: 'in the office',
-            time: 'afternoon',
-            presence: 'collaborating'
-          }
+          citation: 'Experience 2'
         }
       ];
       
@@ -108,35 +104,31 @@ describe('Search Service', () => {
       const records = [
         {
           id: 'exp_1',
-          source: 'Feeling really energized today',
-          emoji: '⚡',
           created: '2025-01-21T12:00:00Z',
+          anchor: '⚡',
+          embodied: 'feeling energized and alive',
+          focus: 'sharp and clear',
+          mood: 'excited',
+          purpose: 'ready to tackle anything',
+          space: 'in my workspace',
+          time: 'this morning',
+          presence: 'solo but connected',
           who: ['Human', 'Claude'],
-          experienceQualities: {
-            embodied: 'feeling energized and alive',
-            focus: 'sharp and clear',
-            mood: 'excited',
-            purpose: 'ready to tackle anything',
-            space: 'in my workspace',
-            time: 'this morning',
-            presence: 'solo but connected'
-          }
+          citation: 'Feeling really energized today'
         },
         {
           id: 'exp_2',
-          source: 'Feeling tired and sluggish',
-          emoji: '😴',
           created: '2025-01-21T13:00:00Z',
+          anchor: '😴',
+          embodied: 'heavy and slow',
+          focus: 'scattered',
+          mood: 'tired',
+          purpose: 'just getting through',
+          space: 'on the couch',
+          time: 'late afternoon',
+          presence: 'wanting solitude',
           who: ['Human', 'Claude'],
-          experienceQualities: {
-            embodied: 'heavy and slow',
-            focus: 'scattered',
-            mood: 'tired',
-            purpose: 'just getting through',
-            space: 'on the couch',
-            time: 'late afternoon',
-            presence: 'wanting solitude'
-          }
+          citation: 'Feeling tired and sluggish'
         }
       ];
       
@@ -148,46 +140,41 @@ describe('Search Service', () => {
         limit: 10
       });
       
-      // Should return recent experiences when embeddings fail
-      expect(result.experiences).toHaveLength(2);
-      // Most recent first when falling back
-      expect(result.experiences[0].id).toBe('exp_2');
-      expect(result.experiences[1].id).toBe('exp_1');
+      // Should return only experiences matching the search text
+      expect(result.experiences).toHaveLength(1);
+      expect(result.experiences[0].id).toBe('exp_1');
+      expect(result.experiences[0].embodied).toContain('energized');
     });
 
     it('should filter out records without all required qualities', async () => {
       const records = [
         {
           id: 'exp_valid',
-          source: 'Valid experience',
-          emoji: '✅',
           created: '2025-01-21T12:00:00Z',
+          anchor: '✅',
+          embodied: 'feeling complete',
+          focus: 'on validation',
+          mood: 'satisfied',
+          purpose: 'ensuring quality',
+          space: 'in testing',
+          time: 'right now',
+          presence: 'with Claude',
           who: ['Human', 'Claude'],
-          experienceQualities: {
-            embodied: 'feeling complete',
-            focus: 'on validation',
-            mood: 'satisfied',
-            purpose: 'ensuring quality',
-            space: 'in testing',
-            time: 'right now',
-            presence: 'with Claude'
-          }
+          citation: 'Valid experience'
         },
         {
           id: 'exp_invalid',
-          source: 'Invalid experience',
-          emoji: '❌',
           created: '2025-01-21T12:00:00Z',
-          who: ['Human'],
-          experienceQualities: {
-            embodied: false, // Missing quality
-            focus: 'trying',
-            mood: 'frustrated',
-            purpose: 'debugging',
-            space: 'somewhere',
-            time: 'whenever',
-            presence: 'alone'
-          }
+          anchor: '❌',
+          embodied: '', // Empty string - invalid
+          focus: 'trying',
+          mood: 'frustrated',
+          purpose: 'debugging',
+          space: 'somewhere',
+          time: 'whenever',
+          presence: 'alone',
+          who: ['Human'], // Missing AI - invalid
+          citation: 'Invalid experience'
         }
       ];
       
@@ -209,19 +196,17 @@ describe('Search Service', () => {
     it('should respect limit parameter', async () => {
       const records = Array.from({ length: 20 }, (_, i) => ({
         id: `exp_${i}`,
-        source: `Experience ${i}`,
-        emoji: '📝',
         created: new Date(Date.now() - i * 1000).toISOString(),
+        anchor: '📝',
+        embodied: `feeling ${i}`,
+        focus: `focus ${i}`,
+        mood: `mood ${i}`,
+        purpose: `purpose ${i}`,
+        space: `space ${i}`,
+        time: `time ${i}`,
+        presence: `presence ${i}`,
         who: ['Human', 'Claude'],
-        experienceQualities: {
-          embodied: `feeling ${i}`,
-          focus: `focus ${i}`,
-          mood: `mood ${i}`,
-          purpose: `purpose ${i}`,
-          space: `space ${i}`,
-          time: `time ${i}`,
-          presence: `presence ${i}`
-        }
+        citation: `Experience ${i}`
       }));
       
       mockGetAllRecords.mockResolvedValue(records);
@@ -242,19 +227,17 @@ describe('Search Service', () => {
       const records = [
         {
           id: 'exp_1',
-          source: 'Experience needing AI',
-          emoji: '🤖',
           created: '2025-01-21T12:00:00Z',
-          who: 'Human', // Not an array, no AI
-          experienceQualities: {
-            embodied: 'testing migration',
-            focus: 'on compatibility',
-            mood: 'careful',
-            purpose: 'ensuring smooth transition',
-            space: 'in migration code',
-            time: 'during update',
-            presence: 'with the system'
-          }
+          anchor: '🤖',
+          embodied: 'testing migration',
+          focus: 'on compatibility',
+          mood: 'careful',
+          purpose: 'ensuring smooth transition',
+          space: 'in migration code',
+          time: 'during update',
+          presence: 'with the system',
+          who: ['Human'], // Array but no AI
+          citation: 'Experience needing AI'
         }
       ];
       
@@ -268,6 +251,7 @@ describe('Search Service', () => {
         limit: 10
       });
       
+      expect(result.experiences).toHaveLength(1);
       expect(result.experiences[0].who).toEqual(['Human', 'Claude']);
     });
   });
@@ -277,19 +261,17 @@ describe('Search Service', () => {
       const records = [
         {
           id: 'exp_1',
-          source: 'Memory to recall',
-          emoji: '💭',
           created: '2025-01-21T12:00:00Z',
+          anchor: '💭',
+          embodied: 'remembering clearly',
+          focus: 'on the past',
+          mood: 'nostalgic',
+          purpose: 'learning from history',
+          space: 'in reflection',
+          time: 'looking back',
+          presence: 'with memories',
           who: ['Human', 'Claude'],
-          experienceQualities: {
-            embodied: 'remembering clearly',
-            focus: 'on the past',
-            mood: 'nostalgic',
-            purpose: 'learning from history',
-            space: 'in reflection',
-            time: 'looking back',
-            presence: 'with memories'
-          }
+          citation: 'Memory to recall'
         }
       ];
       
@@ -308,19 +290,17 @@ describe('Search Service', () => {
     it('should use default limit of 25', async () => {
       const records = Array.from({ length: 30 }, (_, i) => ({
         id: `exp_${i}`,
-        source: `Memory ${i}`,
-        emoji: '📚',
         created: new Date(Date.now() - i * 1000).toISOString(),
+        anchor: '📚',
+        embodied: `memory ${i}`,
+        focus: `focus ${i}`,
+        mood: `mood ${i}`,
+        purpose: `purpose ${i}`,
+        space: `space ${i}`,
+        time: `time ${i}`,
+        presence: `presence ${i}`,
         who: ['Human', 'Claude'],
-        experienceQualities: {
-          embodied: `memory ${i}`,
-          focus: `focus ${i}`,
-          mood: `mood ${i}`,
-          purpose: `purpose ${i}`,
-          space: `space ${i}`,
-          time: `time ${i}`,
-          presence: `presence ${i}`
-        }
+        citation: `Memory ${i}`
       }));
       
       mockGetAllRecords.mockResolvedValue(records);
@@ -330,7 +310,9 @@ describe('Search Service', () => {
       
       const result = await recall('memory');
       
+      // Should find all 30 records that contain "memory" but limit to 25
       expect(result).toHaveLength(25);
+      expect(result[0].embodied).toContain('memory');
     });
   });
 });

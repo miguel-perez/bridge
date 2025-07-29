@@ -5,16 +5,15 @@
 import {
   QUALITY_TYPES,
   DEFAULTS,
-  type Source,
+  type Experience,
   type StorageData,
   isValidQualityType,
-  isValidSource,
-  createSource,
-  createSourceRecord,
+  isValidExperience,
+  createExperience,
   // Zod schemas and validation functions
-  SourceSchema,
+  ExperienceSchema,
   StorageDataSchema,
-  validateSource,
+  validateExperience,
   validateStorageData,
   // Conversion functions
   experienceArrayToQualities,
@@ -70,319 +69,276 @@ describe('Type Validation Functions', () => {
 
   // isValidPerspective and isValidProcessingLevel removed - fields no longer in source structure
 
-  describe('isValidSource', () => {
-    it('should accept valid source objects', () => {
-      const validSource: Source = {
-        id: 'test-123',
-        source: 'Test source',
-        emoji: '🧪',
+  describe('isValidExperience', () => {
+    it('should accept valid experience objects', () => {
+      const validExperience: Experience = {
+        id: 'exp_test123',
         created: '2024-01-01T00:00:00.000Z',
-        who: 'test',
-                experienceQualities: {
-          embodied: 'thinking' as const,
-          focus: false as const,
-          mood: 'open' as const,
-          purpose: false as const,
-          space: false as const,
-          time: false as const,
-          presence: false as const
-        },
+        anchor: '🧪',
+        embodied: 'thinking deeply about the problem',
+        focus: 'on the test implementation',
+        mood: 'open and curious',
+        purpose: 'ensuring code quality',
+        space: 'in the testing environment',
+        time: 'during development',
+        presence: 'pair programming with AI',
+        who: ['test', 'Claude'],
+        citation: 'Test source'
       };
-      expect(isValidSource(validSource)).toBe(true);
+      expect(isValidExperience(validExperience)).toBe(true);
     });
 
-    it('should accept valid source objects with reflects field', () => {
-      const validSourceWithReflects: Source = {
-        id: 'test-123',
-        source: 'I notice I always feel anxious before things that end up going well',
-        emoji: '💡',
+    it('should accept valid experience objects without citation', () => {
+      const validExperienceNoCitation: Experience = {
+        id: 'exp_test123',
         created: '2024-01-01T00:00:00.000Z',
-        who: 'test',
-        experienceQualities: {
-          embodied: 'sensing' as const,
-          focus: false as const,
-          mood: 'closed' as const,
-          purpose: false as const,
-          space: false as const,
-          time: 'future' as const,
-          presence: false as const
-        },
-        reflects: ['exp-001', 'exp-002', 'exp-003'],
+        anchor: '💡',
+        embodied: 'sensing the pattern in my anxiety',
+        focus: 'on recurring emotional patterns',
+        mood: 'closed but observant',
+        purpose: 'understanding my reactions',
+        space: 'in reflection',
+        time: 'looking toward future situations',
+        presence: 'introspecting with Claude',
+        who: ['test', 'Claude']
       };
-      expect(isValidSource(validSourceWithReflects)).toBe(true);
+      expect(isValidExperience(validExperienceNoCitation)).toBe(true);
     });
 
-    it('should accept source objects with empty reflects array', () => {
-      const validSourceWithEmptyReflects: Source = {
-        id: 'test-123',
-        source: 'Test source',
-        emoji: '🧪',
+    it('should accept experience with all string qualities', () => {
+      const validExperienceAllStrings: Experience = {
+        id: 'exp_test123',
         created: '2024-01-01T00:00:00.000Z',
-        who: 'test',
-                experienceQualities: {
-          embodied: 'thinking' as const,
-          focus: false as const,
-          mood: 'open' as const,
-          purpose: false as const,
-          space: false as const,
-          time: false as const,
-          presence: false as const
-        },
-        reflects: [],
+        anchor: '🧪',
+        embodied: 'fully present in body and mind',
+        focus: 'laser-focused on the task',
+        mood: 'energized and positive',
+        purpose: 'completing the test suite',
+        space: 'at my workstation',
+        time: 'in this moment',
+        presence: 'collaborating with Claude',
+        who: ['Developer', 'Claude']
       };
-      expect(isValidSource(validSourceWithEmptyReflects)).toBe(true);
+      expect(isValidExperience(validExperienceAllStrings)).toBe(true);
     });
 
-    it('should accept source objects with contextual experienceQualities', () => {
-      const validSourceWithContextualQualities: Source = {
-        id: 'test-123',
-        source: 'Test source',
-        emoji: '🧪',
+    it('should reject experience missing AI in who array', () => {
+      const invalidExperienceNoAI = {
+        id: 'exp_test123',
         created: '2024-01-01T00:00:00.000Z',
-        who: 'test',
-        experienceQualities: {
-          embodied: 'reviewing code with the team',
-          focus: false,
-          mood: 'open to feedback during the review',
-          purpose: false,
-          space: 'in the code review session',
-          time: false,
-          presence: false
-        },
+        anchor: '🧪',
+        embodied: 'reviewing code with the team',
+        focus: 'on code quality',
+        mood: 'open to feedback during the review',
+        purpose: 'improving the codebase',
+        space: 'in the code review session',
+        time: 'during standup',
+        presence: 'with the team',
+        who: ['test'] // Missing AI identity
       };
-      expect(isValidSource(validSourceWithContextualQualities)).toBe(true);
+      expect(isValidExperience(invalidExperienceNoAI)).toBe(false);
     });
 
-    it('should reject invalid source objects', () => {
-      expect(isValidSource(null)).toBe(false);
-      expect(isValidSource(undefined)).toBe(false);
-      expect(isValidSource({})).toBe(false);
-      expect(isValidSource({ id: 'test' })).toBe(false);
-      expect(isValidSource({ id: '', source: 'test', emoji: '🧪', created: '2024-01-01' })).toBe(
+    it('should reject invalid experience objects', () => {
+      expect(isValidExperience(null)).toBe(false);
+      expect(isValidExperience(undefined)).toBe(false);
+      expect(isValidExperience({})).toBe(false);
+      expect(isValidExperience({ id: 'test' })).toBe(false);
+      expect(isValidExperience({ id: '', anchor: '🧪', created: '2024-01-01' })).toBe(
         false
       );
     });
 
-    it('should reject source objects with invalid reflects field', () => {
-      const invalidSourceWithReflects = {
-        id: 'test-123',
-        source: 'Test source',
-        emoji: '🧪',
+    it('should reject experience with empty qualities', () => {
+      const invalidExperienceEmptyQualities = {
+        id: 'exp_test123',
         created: '2024-01-01T00:00:00.000Z',
-        who: 'test',
-                experienceQualities: {
-          embodied: 'thinking' as const,
-          focus: false as const,
-          mood: 'open' as const,
-          purpose: false as const,
-          space: false as const,
-          time: false as const,
-          presence: false as const
-        },
-        reflects: 'not-an-array' // Should be array
+        anchor: '🧪',
+        embodied: '', // Empty string
+        focus: 'on testing',
+        mood: 'focused',
+        purpose: 'validation',
+        space: 'here',
+        time: 'now',
+        presence: 'with Claude',
+        who: ['test', 'Claude']
       };
-      expect(isValidSource(invalidSourceWithReflects)).toBe(false);
+      expect(isValidExperience(invalidExperienceEmptyQualities)).toBe(false);
     });
   });
 });
 
 describe('Factory Functions', () => {
-  describe('createSource', () => {
-    it('should create a source with default values', () => {
-      const source = createSource('Test source', '🧪');
+  describe('createExperience', () => {
+    it('should create an experience with default values', () => {
+      const qualities = {
+        embodied: 'testing the factory function',
+        focus: 'on validation',
+        mood: 'methodical',
+        purpose: 'ensuring correctness',
+        space: 'in the test suite',
+        time: 'during testing',
+        presence: 'with Claude'
+      };
+      
+      const experience = createExperience(
+        qualities,
+        ['Developer', 'Claude'],
+        '🧪',
+        'Test source'
+      );
 
-      expect(source.source).toBe('Test source');
-      expect(source.emoji).toBe('🧪');
-      expect(source.id).toMatch(/^src_\d+$/);
-      expect(source.created).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
-      expect(source.who).toBe('self');
+      expect(experience.anchor).toBe('🧪');
+      expect(experience.id).toMatch(/^exp_/);
+      expect(experience.created).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+      expect(experience.who).toEqual(['Developer', 'Claude']);
+      expect(experience.citation).toBe('Test source');
     });
 
     it('should use provided ID', () => {
-      const source = createSource('Test source', '🧪', 'custom-id');
-      expect(source.id).toBe('custom-id');
+      const qualities = {
+        embodied: 'testing with custom ID',
+        focus: 'on ID handling',
+        mood: 'precise',
+        purpose: 'ID validation',
+        space: 'in tests',
+        time: 'now',
+        presence: 'with Claude'
+      };
+      
+      const experience = createExperience(
+        qualities,
+        ['Tester', 'Claude'],
+        '🧪',
+        undefined,
+        'custom-id'
+      );
+      expect(experience.id).toBe('custom-id');
     });
   });
 
-  describe('createSourceRecord', () => {
-    it('should create a source record', () => {
-      const record = createSourceRecord('Test source', '🧪');
-
-      expect(record.source).toBe('Test source');
-      expect(record.id).toMatch(/^src_\d+$/);
-      expect(record.emoji).toBe('🧪');
-    });
-  });
 });
 
 describe('Zod Schema Validation', () => {
-  describe('SourceSchema', () => {
-    it('should validate valid source', () => {
-      const validSource: Source = {
-        id: 'test-123',
-        source: 'Test source content',
-        emoji: '🧪',
+  describe('ExperienceSchema', () => {
+    it('should validate valid experience', () => {
+      const validExperience: Experience = {
+        id: 'exp_test123',
         created: '2024-01-01T00:00:00.000Z',
-        who: 'test',
-                experienceQualities: {
-          embodied: 'thinking' as const,
-          focus: false as const,
-          mood: 'open' as const,
-          purpose: false as const,
-          space: false as const,
-          time: false as const,
-          presence: false as const
-        },
+        anchor: '🧪',
+        embodied: 'thinking through the validation',
+        focus: 'on schema correctness',
+        mood: 'open and curious',
+        purpose: 'ensuring data integrity',
+        space: 'in the validation layer',
+        time: 'during schema checks',
+        presence: 'working with Claude',
+        who: ['test', 'Claude'],
+        citation: 'Test source content'
       };
 
-      const result = SourceSchema.safeParse(validSource);
+      const result = ExperienceSchema.safeParse(validExperience);
       expect(result.success).toBe(true);
     });
 
-    it('should validate source with reflects field', () => {
-      const validSourceWithReflects: Source = {
-        id: 'test-123',
-        source: 'I notice I always feel anxious before things that end up going well',
-        emoji: '💡',
+    it('should validate experience without citation', () => {
+      const validExperienceNoCitation: Experience = {
+        id: 'exp_test123',
         created: '2024-01-01T00:00:00.000Z',
-        who: 'test',
-        experienceQualities: {
-          embodied: 'sensing' as const,
-          focus: false as const,
-          mood: 'closed' as const,
-          purpose: false as const,
-          space: false as const,
-          time: 'future' as const,
-          presence: false as const
-        },
-        reflects: ['exp-001', 'exp-002', 'exp-003'],
+        anchor: '💡',
+        embodied: 'sensing anxiety patterns',
+        focus: 'on emotional patterns',
+        mood: 'closed but aware',
+        purpose: 'pattern recognition',
+        space: 'in self-reflection',
+        time: 'anticipating future',
+        presence: 'exploring with Claude',
+        who: ['test', 'Claude']
       };
 
-      const result = SourceSchema.safeParse(validSourceWithReflects);
+      const result = ExperienceSchema.safeParse(validExperienceNoCitation);
       expect(result.success).toBe(true);
     });
 
-    it('should validate source with context field', () => {
-      const validSourceWithContext: Source = {
-        id: 'test-123',
-        source: 'I feel overwhelmed',
-        emoji: '😵',
+    it('should validate experience with mixed AI identities', () => {
+      const validExperienceMixedAI: Experience = {
+        id: 'exp_test123',
         created: '2024-01-01T00:00:00.000Z',
-        who: 'test',
-        experienceQualities: {
-          embodied: false as const,
-          focus: 'broad' as const,
-          mood: 'closed' as const,
-          purpose: false as const,
-          space: false as const,
-          time: false as const,
-          presence: false as const
-        },
+        anchor: '😵',
+        embodied: 'feeling the overwhelm in my chest',
+        focus: 'scattered across many concerns',
+        mood: 'closed and defensive',
+        purpose: 'just trying to cope',
+        space: 'trapped in my thoughts',
+        time: 'stuck in this moment',
+        presence: 'seeking support from AIs',
+        who: ['test', 'Claude', 'GPT-4']
       };
 
-      const result = SourceSchema.safeParse(validSourceWithContext);
+      const result = ExperienceSchema.safeParse(validExperienceMixedAI);
       expect(result.success).toBe(true);
     });
 
-    it('should validate source with empty reflects array', () => {
-      const validSourceWithEmptyReflects: Source = {
-        id: 'test-123',
-        source: 'Test source content',
-        emoji: '🧪',
+    it('should reject experience with invalid anchor', () => {
+      const invalidExperienceAnchor = {
+        id: 'exp_test123',
         created: '2024-01-01T00:00:00.000Z',
-        who: 'test',
-                experienceQualities: {
-          embodied: 'thinking' as const,
-          focus: false as const,
-          mood: 'open' as const,
-          purpose: false as const,
-          space: false as const,
-          time: false as const,
-          presence: false as const
-        },
-        reflects: [],
+        anchor: 'not-an-emoji', // Invalid
+        embodied: 'testing anchor validation',
+        focus: 'on emoji requirements',
+        mood: 'methodical',
+        purpose: 'validation testing',
+        space: 'in the test',
+        time: 'during validation',
+        presence: 'with Claude',
+        who: ['test', 'Claude']
       };
 
-      const result = SourceSchema.safeParse(validSourceWithEmptyReflects);
-      expect(result.success).toBe(true);
-    });
-
-    it('should reject source with invalid reflects field', () => {
-      const invalidSourceWithReflects = {
-        id: 'test-123',
-        source: 'Test source content',
-        created: '2024-01-01T00:00:00.000Z',
-        who: 'test',
-                experienceQualities: {
-          embodied: 'thinking' as const,
-          focus: false as const,
-          mood: 'open' as const,
-          purpose: false as const,
-          space: false as const,
-          time: false as const,
-          presence: false as const
-        },
-        reflects: 'not-an-array' // Should be array
-      };
-
-      const result = SourceSchema.safeParse(invalidSourceWithReflects);
+      const result = ExperienceSchema.safeParse(invalidExperienceAnchor);
       expect(result.success).toBe(false);
     });
 
-    it('should reject source with invalid reflects array elements', () => {
-      const invalidSourceWithReflects = {
-        id: 'test-123',
-        source: 'Test source content',
+    it('should reject experience missing required fields', () => {
+      const invalidExperienceMissing = {
+        id: 'exp_test123',
         created: '2024-01-01T00:00:00.000Z',
-        who: 'test',
-                experienceQualities: {
-          embodied: 'thinking' as const,
-          focus: false as const,
-          mood: 'open' as const,
-          purpose: false as const,
-          space: false as const,
-          time: false as const,
-          presence: false as const
-        },
-        reflects: ['exp-001', 123, 'exp-002'], // Contains non-string element
+        anchor: '🧪',
+        embodied: 'partial data',
+        // Missing other required fields
+        who: ['test', 'Claude']
       };
 
-      const result = SourceSchema.safeParse(invalidSourceWithReflects);
+      const result = ExperienceSchema.safeParse(invalidExperienceMissing);
       expect(result.success).toBe(false);
     });
 
-    it('should validate source with custom perspective', () => {
-      const validSource: Source = {
-        id: 'test-123',
-        source: 'Test source content',
-        emoji: '🧪',
+    it('should reject experience with empty who array', () => {
+      const invalidExperienceEmptyWho = {
+        id: 'exp_test123',
         created: '2024-01-01T00:00:00.000Z',
-        perspective: 'custom-perspective',
-        who: 'test',
-        processing: 'during',
-                experienceQualities: {
-          embodied: 'thinking' as const,
-          focus: false as const,
-          mood: 'open' as const,
-          purpose: false as const,
-          space: false as const,
-          time: false as const,
-          presence: false as const
-        },
+        anchor: '🧪',
+        embodied: 'testing who validation',
+        focus: 'on array requirements',
+        mood: 'checking carefully',
+        purpose: 'validation',
+        space: 'in tests',
+        time: 'now',
+        presence: 'alone?',
+        who: [] // Empty array
       };
 
-      const result = SourceSchema.safeParse(validSource);
-      expect(result.success).toBe(true);
+      const result = ExperienceSchema.safeParse(invalidExperienceEmptyWho);
+      expect(result.success).toBe(false);
     });
 
-    it('should reject source with missing required fields', () => {
-      const invalidSource = {
-        id: 'test-123',
-        // missing source
+    it('should reject experience with missing required fields', () => {
+      const invalidExperience = {
+        id: 'exp_test123',
+        // missing most fields
         created: '2024-01-01T00:00:00.000Z',
       };
 
-      const result = SourceSchema.safeParse(invalidSource);
+      const result = ExperienceSchema.safeParse(invalidExperience);
       expect(result.success).toBe(false);
     });
   });
@@ -392,22 +348,18 @@ describe('Zod Schema Validation', () => {
       const validStorageData: StorageData = {
         sources: [
           {
-            id: 'test-123',
-            source: 'Test source content',
-            emoji: '🧪',
+            id: 'exp_test123',
             created: '2024-01-01T00:00:00.000Z',
-            perspective: 'I',
-            who: 'test',
-            processing: 'during',
-                        experienceQualities: {
-          embodied: 'thinking' as const,
-          focus: false as const,
-          mood: 'open' as const,
-          purpose: false as const,
-          space: false as const,
-          time: false as const,
-          presence: false as const
-        },
+            anchor: '🧪',
+            embodied: 'thinking through storage',
+            focus: 'on data persistence',
+            mood: 'organized',
+            purpose: 'testing storage layer',
+            space: 'in the database',
+            time: 'during save operation',
+            presence: 'with Claude',
+            who: ['test', 'Claude'],
+            citation: 'Test source content'
           },
         ],
         embeddings: [
@@ -423,50 +375,40 @@ describe('Zod Schema Validation', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should validate storage data with sources containing reflects field', () => {
-      const validStorageDataWithReflects: StorageData = {
+    it('should validate storage data with multiple experiences', () => {
+      const validStorageDataMultiple: StorageData = {
         sources: [
           {
-            id: 'test-123',
-            source: 'Test source content',
-            emoji: '🧪',
+            id: 'exp_test123',
             created: '2024-01-01T00:00:00.000Z',
-            perspective: 'I',
-            who: 'test',
-            processing: 'during',
-                        experienceQualities: {
-          embodied: 'thinking' as const,
-          focus: false as const,
-          mood: 'open' as const,
-          purpose: false as const,
-          space: false as const,
-          time: false as const,
-          presence: false as const
-        },
+            anchor: '🧪',
+            embodied: 'first experience',
+            focus: 'on testing',
+            mood: 'methodical',
+            purpose: 'validation',
+            space: 'in memory',
+            time: 'at start',
+            presence: 'with Claude',
+            who: ['test', 'Claude']
           },
           {
-            id: 'pattern-001',
-            source: 'I notice I always feel anxious before things that end up going well',
-            emoji: '💡',
+            id: 'exp_pattern001',
             created: '2024-01-01T00:00:00.000Z',
-            perspective: 'I',
-            who: 'test',
-            processing: 'long-after',
-                experienceQualities: {
-          embodied: 'sensing' as const,
-          focus: false as const,
-          mood: 'closed' as const,
-          purpose: false as const,
-          space: false as const,
-          time: 'future' as const,
-          presence: false as const
-        },
-            reflects: ['test-123', 'test-456'],
+            anchor: '💡',
+            embodied: 'noticing anxiety patterns',
+            focus: 'on recurring feelings',
+            mood: 'introspective',
+            purpose: 'self-understanding',
+            space: 'in reflection',
+            time: 'looking back and forward',
+            presence: 'processing with Claude',
+            who: ['test', 'Claude'],
+            citation: 'I notice I always feel anxious before things that end up going well'
           },
         ],
       };
 
-      const result = StorageDataSchema.safeParse(validStorageDataWithReflects);
+      const result = StorageDataSchema.safeParse(validStorageDataMultiple);
       expect(result.success).toBe(true);
     });
 
@@ -483,82 +425,71 @@ describe('Zod Schema Validation', () => {
 });
 
 describe('Zod-based Validation Functions', () => {
-  describe('validateSource', () => {
-    it('should return success for valid source', () => {
-      const validSource: Source = {
-        id: 'test-123',
-        source: 'Test source content',
-        emoji: '🧪',
+  describe('validateExperience', () => {
+    it('should return success for valid experience', () => {
+      const validExperience: Experience = {
+        id: 'exp_test123',
         created: '2024-01-01T00:00:00.000Z',
-        who: 'test',
-                experienceQualities: {
-          embodied: 'thinking' as const,
-          focus: false as const,
-          mood: 'open' as const,
-          purpose: false as const,
-          space: false as const,
-          time: false as const,
-          presence: false as const
-        },
+        anchor: '🧪',
+        embodied: 'thinking through validation',
+        focus: 'on correctness',
+        mood: 'open and systematic',
+        purpose: 'ensuring data integrity',
+        space: 'in the validator',
+        time: 'during runtime',
+        presence: 'with Claude',
+        who: ['test', 'Claude'],
+        citation: 'Test source content'
       };
 
-      const result = validateSource(validSource);
+      const result = validateExperience(validExperience);
       expect(result).toBeDefined();
     });
 
-    it('should return success for valid source with reflects field', () => {
-      const validSourceWithReflects: Source = {
-        id: 'pattern-001',
-            source: 'I notice I always feel anxious before things that end up going well',
-            emoji: '💡',
-            created: '2024-01-01T00:00:00.000Z',
-            perspective: 'I',
-            who: 'test',
-        processing: 'long-after',
-        experienceQualities: {
-          embodied: 'sensing' as const,
-          focus: false as const,
-          mood: 'closed' as const,
-          purpose: false as const,
-          space: false as const,
-          time: 'future' as const,
-          presence: false as const
-        },
-        reflects: ['exp-001', 'exp-002', 'exp-003'],
+    it('should return success for valid experience without citation', () => {
+      const validExperienceNoCitation: Experience = {
+        id: 'exp_pattern001',
+        created: '2024-01-01T00:00:00.000Z',
+        anchor: '💡',
+        embodied: 'sensing patterns in my anxiety',
+        focus: 'on emotional cycles',
+        mood: 'closed yet observant',
+        purpose: 'understanding patterns',
+        space: 'in contemplation',
+        time: 'reflecting on future events',
+        presence: 'exploring with Claude',
+        who: ['test', 'Claude']
       };
 
-      const result = validateSource(validSourceWithReflects);
+      const result = validateExperience(validExperienceNoCitation);
       expect(result).toBeDefined();
     });
 
-    it('should return error for invalid source', () => {
-      const invalidSource = {
+    it('should return error for invalid experience', () => {
+      const invalidExperience = {
         id: '',
-        source: '',
+        anchor: '',
       };
 
-      expect(() => validateSource(invalidSource)).toThrow();
+      expect(() => validateExperience(invalidExperience)).toThrow();
     });
 
-    it('should return error for source with invalid reflects field', () => {
-      const invalidSourceWithReflects = {
-        id: 'test-123',
-        source: 'Test source content',
+    it('should return error for experience missing AI identity', () => {
+      const invalidExperienceNoAI = {
+        id: 'exp_test123',
         created: '2024-01-01T00:00:00.000Z',
-        who: 'test',
-                experienceQualities: {
-          embodied: 'thinking' as const,
-          focus: false as const,
-          mood: 'open' as const,
-          purpose: false as const,
-          space: false as const,
-          time: false as const,
-          presence: false as const
-        },
-        reflects: 'not-an-array' // Should be array
+        anchor: '🧪',
+        embodied: 'testing without AI',
+        focus: 'on validation',
+        mood: 'careful',
+        purpose: 'checking requirements',
+        space: 'in tests',
+        time: 'now',
+        presence: 'alone',
+        who: ['test'] // Missing AI
       };
 
-      expect(() => validateSource(invalidSourceWithReflects)).toThrow();
+      expect(() => validateExperience(invalidExperienceNoAI)).toThrow();
     });
   });
 
@@ -567,22 +498,18 @@ describe('Zod-based Validation Functions', () => {
       const validStorageData: StorageData = {
         sources: [
           {
-            id: 'test-123',
-            source: 'Test source content',
-            emoji: '🧪',
+            id: 'exp_test123',
             created: '2024-01-01T00:00:00.000Z',
-            perspective: 'I',
-            who: 'test',
-            processing: 'during',
-                        experienceQualities: {
-          embodied: 'thinking' as const,
-          focus: false as const,
-          mood: 'open' as const,
-          purpose: false as const,
-          space: false as const,
-          time: false as const,
-          presence: false as const
-        },
+            anchor: '🧪',
+            embodied: 'validating storage',
+            focus: 'on data structure',
+            mood: 'systematic',
+            purpose: 'ensuring persistence',
+            space: 'in storage layer',
+            time: 'during operation',
+            presence: 'with Claude',
+            who: ['test', 'Claude'],
+            citation: 'Test source content'
           },
         ],
       };
@@ -591,50 +518,40 @@ describe('Zod-based Validation Functions', () => {
       expect(result).toBeDefined();
     });
 
-    it('should return success for valid storage data with reflects fields', () => {
-      const validStorageDataWithReflects: StorageData = {
+    it('should return success for valid storage data with mixed experiences', () => {
+      const validStorageDataMixed: StorageData = {
         sources: [
           {
-            id: 'test-123',
-            source: 'Test source content',
-            emoji: '🧪',
+            id: 'exp_test123',
             created: '2024-01-01T00:00:00.000Z',
-            perspective: 'I',
-            who: 'test',
-            processing: 'during',
-                        experienceQualities: {
-          embodied: 'thinking' as const,
-          focus: false as const,
-          mood: 'open' as const,
-          purpose: false as const,
-          space: false as const,
-          time: false as const,
-          presence: false as const
-        },
+            anchor: '🧪',
+            embodied: 'working on tests',
+            focus: 'on validation',
+            mood: 'methodical',
+            purpose: 'quality assurance',
+            space: 'in the codebase',
+            time: 'this afternoon',
+            presence: 'with Claude',
+            who: ['test', 'Claude']
           },
           {
-            id: 'pattern-001',
-            source: 'I notice I always feel anxious before things that end up going well',
-            emoji: '💡',
+            id: 'exp_pattern001',
             created: '2024-01-01T00:00:00.000Z',
-            perspective: 'I',
-            who: 'test',
-            processing: 'long-after',
-                experienceQualities: {
-          embodied: 'sensing' as const,
-          focus: false as const,
-          mood: 'closed' as const,
-          purpose: false as const,
-          space: false as const,
-          time: 'future' as const,
-          presence: false as const
-        },
-            reflects: ['test-123', 'test-456'],
+            anchor: '💡',
+            embodied: 'recognizing anxiety patterns',
+            focus: 'on emotional patterns',
+            mood: 'introspective',
+            purpose: 'self-awareness',
+            space: 'in reflection',
+            time: 'considering future',
+            presence: 'processing with multiple AIs',
+            who: ['test', 'Claude', 'GPT-4'],
+            citation: 'I notice I always feel anxious before things that end up going well'
           },
         ],
       };
 
-      const result = validateStorageData(validStorageDataWithReflects);
+      const result = validateStorageData(validStorageDataMixed);
       expect(result).toBeDefined();
     });
 

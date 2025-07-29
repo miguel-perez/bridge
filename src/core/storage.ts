@@ -7,7 +7,7 @@
 import { promises as fs } from 'fs';
 import { join, resolve } from 'path';
 import path from 'path';
-import type { Source, EmbeddingRecord, StorageData } from './types.js';
+import type { Experience, EmbeddingRecord, StorageData } from './types.js';
 
 // ============================================================================
 // CONSTANTS
@@ -271,8 +271,8 @@ async function readData(): Promise<StorageData> {
     }
 
     // Clean up any legacy type fields from records
-    const sources: Source[] = data.sources.map((s) => {
-      const newObj = { ...s } as Source;
+    const sources: Experience[] = data.sources.map((s) => {
+      const newObj = { ...s } as Experience;
       delete (newObj as unknown as Record<string, unknown>).type;
       delete (newObj as unknown as Record<string, unknown>).embedding; // Remove embedding field from sources
       return newObj;
@@ -333,11 +333,11 @@ async function writeData(data: StorageData): Promise<void> {
  * @returns The saved source record with type field
  * @throws Error if storage operations fail
  */
-export async function saveSource(source: Source): Promise<Source> {
+export async function saveSource(experience: Experience): Promise<Experience> {
   const data = await readData();
-  data.sources.push(source);
+  data.sources.push(experience);
   await writeData(data);
-  return source;
+  return experience;
 }
 
 /**
@@ -346,16 +346,16 @@ export async function saveSource(source: Source): Promise<Source> {
  * @returns The updated source record
  * @throws Error if source not found or storage operations fail
  */
-export async function updateSource(source: Source): Promise<Source> {
+export async function updateSource(experience: Experience): Promise<Experience> {
   const data = await readData();
-  const index = data.sources.findIndex((s) => s.id === source.id);
+  const index = data.sources.findIndex((s) => s.id === experience.id);
 
   if (index === -1) {
-    throw new Error(`Source not found: ${source.id}`);
+    throw new Error(`Experience not found: ${experience.id}`);
   }
 
-  // Update the source record
-  data.sources[index] = source;
+  // Update the experience record
+  data.sources[index] = experience;
   await writeData(data);
 
   return data.sources[index];
@@ -366,7 +366,7 @@ export async function updateSource(source: Source): Promise<Source> {
  * @returns Array of source records
  * @throws Error if storage operations fail
  */
-export async function getSources(): Promise<Source[]> {
+export async function getSources(): Promise<Experience[]> {
   const data = await readData();
   return data.sources;
 }
@@ -377,7 +377,7 @@ export async function getSources(): Promise<Source[]> {
  * @returns The source record or null if not found
  * @throws Error if storage operations fail
  */
-export async function getSource(id: string): Promise<Source | null> {
+export async function getSource(id: string): Promise<Experience | null> {
   const sources = await getSources();
   return sources.find((s) => s.id === id) || null;
 }
@@ -404,7 +404,7 @@ export async function deleteSource(id: string): Promise<void> {
  * @returns Array of all source records
  * @throws Error if storage operations fail
  */
-export async function getAllRecords(): Promise<Source[]> {
+export async function getAllRecords(): Promise<Experience[]> {
   // Debug:('[DEBUG] getAllRecords: Called');
   const data = await readData();
   // Debug:('[DEBUG] getAllRecords: Returning', data.sources.length, 'records');
@@ -467,8 +467,18 @@ export async function deleteEmbedding(sourceId: string): Promise<void> {
  * @param record - The source record
  * @returns Searchable text content
  */
-export function getSearchableText(record: Source): string {
-  return record.source;
+export function getSearchableText(record: Experience): string {
+  // Concatenate all quality fields for searchable text
+  return [
+    record.embodied,
+    record.focus,
+    record.mood,
+    record.purpose,
+    record.space,
+    record.time,
+    record.presence,
+    record.citation || ''
+  ].filter(Boolean).join(' ');
 }
 
 // ============================================================================

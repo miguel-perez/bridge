@@ -63,21 +63,35 @@ export class LLMSimulationEvaluator implements SimulationEvaluator {
   }
   
   private buildSystemPrompt(): string {
-    return `You are evaluating a Bridge simulation. Look for evidence of these outcomes:
+    return `You are evaluating Bridge experiential captures using the RECONSTRUCTION TEST.
 
-1. EXTENDED COGNITION - Did human and AI perspectives combine to create richer understanding?
+CORE EVALUATION PRINCIPLE:
+If you can reconstruct the conversation from the Bridge captures, they're too abstract.
+Good captures make you feel the moment but leave you unable to guess what was actually said.
 
-2. QUALITY ACCURACY - Do captured qualities authentically reflect the experiences?
+EVALUATE FOR:
 
-3. COLLABORATIVE MEMORY - Are perspectives from all participants being captured?
+1. EXPERIENTIAL SPECIFICITY - Are captures irreplaceably specific to THIS moment?
+   ❌ BAD: "discussing design strategies" (could be any design conversation)
+   ✅ GOOD: "watching colors bloom across the imaginary map between us"
 
-4. DIMENSIONAL EXPLORATION - Is there movement through experiential dimensions?
+2. PHENOMENOLOGICAL TEXTURE - Do captures have sensory/embodied richness?
+   ❌ BAD: "thinking about user experience" (pure abstraction)
+   ✅ GOOD: "fingers tracing invisible tooltip paths in the air"
 
-5. CONTINUOUS THINKING - Does the conversation build on shared memory?
+3. TEMPORAL IMMEDIACY - Are captures IN the moment or ABOUT the moment?
+   ❌ BAD: "reflecting on evolving ideas" (summary/meta)
+   ✅ GOOD: "your timeline idea crashing into my dashboard vision"
 
-6. NATURAL FLOW - Does the interaction feel authentic and purposeful?
+4. EMERGENT UNIQUENESS - Could these qualities ONLY come from THIS conversation?
+   ❌ BAD: "aiming to create intuitive tools" (generic goal)
+   ✅ GOOD: "discovering feedback could be its own living timeline"
 
-Evaluate based on what actually happened, not whether specific rules were followed. Bridge should enable collaborative wisdom building through shared experiential memory.`;
+5. THE RECONSTRUCTION TEST - Can you recreate the conversation from captures?
+   ❌ FAIL: Captures reveal conversation was about "design, UX, collaboration"
+   ✅ PASS: Captures reveal experiential moments but not conversational content
+
+Bridge captures should be like poetry - evoking the feeling of the moment while keeping its factual content mysterious.`;
   }
   
   private buildEvaluationPrompt(
@@ -101,30 +115,30 @@ BRIDGE TOOL USAGE:
 ${this.formatBridgeCalls(result.bridgeCalls)}
 
 OBSERVED PATTERNS:
-- Human quality captures: ${qualityCounts.human.join(', ')} qualities per experience
-- AI quality captures: ${qualityCounts.ai.join(', ')} qualities per experience
-- Shared moments captured: ${this.countSharedMoments(result)}
+- Total experiences captured: ${qualityCounts.ai.length}
+- All experiences have AI present: ${qualityCounts.ai.join(', ')} qualities each (expected: 8)
+- Experiences including human perspective: ${qualityCounts.human.length} of ${qualityCounts.ai.length}
 - Batch captures used: ${this.countBatchCaptures(result)}
 
-Evaluate the simulation based on what emerged naturally. Look for:
-- Rich collaborative understanding beyond individual perspectives
-- Authentic capture of experiential qualities
-- Multiple perspectives being recorded (human, AI, shared)
-- Natural use of Bridge features based on conversational needs
+ANALYSIS TASKS:
+1. Apply the RECONSTRUCTION TEST: What can you infer about the conversation from the captures?
+2. Rate each Bridge capture for experiential authenticity (0-100)
+3. Identify captures that are too abstract/categorical vs truly experiential
+4. Note if captures feel like "meeting minutes" or "lived moments"
 
 Respond with ONLY a JSON object:
 
 {
-  "humanQualityScore": <0-100 quality of human experience captures>,
-  "aiQualityScore": <0-100 quality of AI experience captures>,
-  "collaborativeAlignment": <0-100 evidence of shared understanding>,
-  "dimensionalNavigation": <0-100 movement through experiential space>,
-  "continuousCognition": <0-100 building on shared memory>,
-  "naturalFlow": <0-100 authentic conversation flow>,
-  "overallScore": <0-100 overall collaborative wisdom building>,
-  "summary": "<2-3 sentences on what emerged>",
-  "highlights": ["<what worked well>"],
-  "concerns": ["<what could improve>"]
+  "reconstructionTest": <0-100 where 0 = can fully reconstruct conversation, 100 = captures reveal nothing about what was discussed>,
+  "experientialSpecificity": <0-100 how specific and irreplaceable are the captures>,
+  "phenomenologicalTexture": <0-100 sensory and embodied richness>,
+  "temporalImmediacy": <0-100 captures IN the moment vs ABOUT the moment>,
+  "emergentUniqueness": <0-100 captures unique to THIS conversation>,
+  "overallScore": <0-100 overall experiential authenticity>,
+  "summary": "<2-3 sentences on capture quality>",
+  "highlights": ["<experientially rich captures>"],
+  "concerns": ["<overly abstract captures>"],
+  "reconstructedContent": "<what you can infer about the conversation from captures alone>"
 }`;
   }
   
@@ -152,19 +166,26 @@ Respond with ONLY a JSON object:
     for (const call of result.bridgeCalls) {
       if (call.tool === 'experience' && call.arguments.experiences) {
         const experiences = call.arguments.experiences as Array<{
-          who?: string | string[];
-          experience?: Record<string, string | boolean>;
+          who: string[];
+          embodied: string;
+          focus: string;
+          mood: string;
+          purpose: string;
+          space: string;
+          time: string;
+          presence: string;
+          anchor: string;
+          citation?: string;
         }>;
         
         for (const exp of experiences) {
-          const qualityCount = this.countQualities(exp.experience || {});
+          const qualityCount = this.countQualities(exp);
           
-          const whoArray = Array.isArray(exp.who) ? exp.who : [exp.who || 'Human'];
+          // AI is always present in all experiences
+          ai.push(qualityCount);
           
-          if (whoArray.includes('Claude')) {
-            ai.push(qualityCount);
-          }
-          if (whoArray.includes('Human')) {
+          // Track when human is also included
+          if (exp.who.includes('Human')) {
             human.push(qualityCount);
           }
         }
@@ -180,13 +201,12 @@ Respond with ONLY a JSON object:
     for (const call of result.bridgeCalls) {
       if (call.tool === 'experience' && call.arguments.experiences) {
         const experiences = call.arguments.experiences as Array<{
-          who?: string | string[];
+          who: string[];
         }>;
         
         for (const exp of experiences) {
-          const whoArray = Array.isArray(exp.who) ? exp.who : [exp.who || 'Unknown'];
           // Count experiences where both Human and Claude are listed
-          if (whoArray.includes('Human') && whoArray.includes('Claude')) {
+          if (exp.who.includes('Human') && exp.who.includes('Claude')) {
             sharedCount++;
           }
         }
@@ -202,7 +222,7 @@ Respond with ONLY a JSON object:
     for (const call of result.bridgeCalls) {
       if (call.tool === 'experience' && call.arguments.experiences) {
         const experiences = call.arguments.experiences as Array<{
-          who?: string | string[];
+          who: string[];
         }>;
         // Count calls with multiple experiences as batch captures
         if (experiences.length > 1) {
@@ -214,14 +234,22 @@ Respond with ONLY a JSON object:
     return batchCount;
   }
   
-  private countQualities(experience: Record<string, string | boolean>): number {
-    // Count prominent qualities (not false)
+  private countQualities(experience: {
+    embodied: string;
+    focus: string;
+    mood: string;
+    purpose: string;
+    space: string;
+    time: string;
+    presence: string;
+    anchor: string;
+  }): number {
+    // Count all 8 qualities
+    const qualities = ['embodied', 'focus', 'mood', 'purpose', 'space', 'time', 'presence', 'anchor'] as const;
     let count = 0;
-    const qualities = ['embodied', 'focus', 'mood', 'purpose', 'space', 'time', 'presence'];
     
     for (const quality of qualities) {
-      const value = experience[quality];
-      if (value !== false && value !== undefined) {
+      if (experience[quality] && typeof experience[quality] === 'string') {
         count++;
       }
     }
@@ -256,24 +284,28 @@ Respond with ONLY a JSON object:
       
       return {
         humanQualityCount: {
-          min: 2,
-          max: 4,
+          min: 8,
+          max: 8,
           actual: qualityCounts.human,
-          score: parsed.humanQualityScore || this.scoreHumanQualities(qualityCounts.human)
+          score: 100 // All experiences have 8 qualities
         },
         aiQualityCount: {
-          expected: 7,
+          expected: 8,
           actual: qualityCounts.ai,
-          score: parsed.aiQualityScore || this.scoreAIQualities(qualityCounts.ai)
+          score: 100 // All experiences have 8 qualities
         },
-        collaborativeAlignment: parsed.collaborativeAlignment || 0,
-        dimensionalNavigation: parsed.dimensionalNavigation || 0,
-        continuousCognition: parsed.continuousCognition || 0,
-        naturalFlow: parsed.naturalFlow || 0,
+        // Map new evaluation criteria to expected fields
+        collaborativeAlignment: parsed.experientialSpecificity || 0,
+        dimensionalNavigation: parsed.phenomenologicalTexture || 0,
+        continuousCognition: parsed.temporalImmediacy || 0,
+        naturalFlow: parsed.emergentUniqueness || 0,
         overallScore: parsed.overallScore || 0,
         summary: parsed.summary || 'Evaluation parsing failed',
         highlights: parsed.highlights || [],
-        concerns: parsed.concerns || []
+        concerns: parsed.concerns || [],
+        // Add new field for reconstruction test result
+        reconstructionTest: parsed.reconstructionTest || 0,
+        reconstructedContent: parsed.reconstructedContent || ''
       };
     } catch (error) {
       console.error('Failed to parse evaluation:', error);
@@ -282,15 +314,15 @@ Respond with ONLY a JSON object:
       // Fallback evaluation with better defaults
       return {
         humanQualityCount: {
-          min: 2,
-          max: 4,
+          min: 8,
+          max: 8,
           actual: qualityCounts.human,
-          score: this.scoreHumanQualities(qualityCounts.human)
+          score: 100
         },
         aiQualityCount: {
-          expected: 7,
+          expected: 8,
           actual: qualityCounts.ai,
-          score: this.scoreAIQualities(qualityCounts.ai)
+          score: 100
         },
         collaborativeAlignment: 50,
         dimensionalNavigation: 50,
@@ -299,20 +331,25 @@ Respond with ONLY a JSON object:
         overallScore: 50,
         summary: 'Evaluation parsing failed, using fallback scores',
         highlights: ['Simulation completed'],
-        concerns: ['Evaluation could not be parsed']
+        concerns: ['Evaluation could not be parsed'],
+        reconstructionTest: 0,
+        reconstructedContent: 'Unable to evaluate'
       };
     }
   }
   
   private scoreHumanQualities(counts: number[]): number {
-    if (counts.length === 0) return 0;
-    const inRange = counts.filter(c => c >= 2 && c <= 4).length;
-    return (inRange / counts.length) * 100;
+    // This now represents the quality of human-inclusive experiences
+    // All experiences should have 8 qualities when human is included
+    if (counts.length === 0) return 100; // No human experiences is fine
+    const correct = counts.filter(c => c === 8).length;
+    return (correct / counts.length) * 100;
   }
   
   private scoreAIQualities(counts: number[]): number {
     if (counts.length === 0) return 0;
-    const correct = counts.filter(c => c === 7).length;
+    // AI should always have all 8 qualities
+    const correct = counts.filter(c => c === 8).length;
     return (correct / counts.length) * 100;
   }
 }

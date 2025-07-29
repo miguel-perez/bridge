@@ -11,7 +11,6 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 // Removed old format converter imports - no longer needed
 import { randomUUID } from 'crypto';
-import type { ExperienceQualities } from '../core/types.js';
 
 /**
  * Test environment for integration tests

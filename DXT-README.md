@@ -1,6 +1,6 @@
 # Bridge Desktop Extension (DXT)
 
-Bridge is now available as a Desktop Extension for Claude Desktop, providing seamless integration for phenomenological
+Bridge is now available as a Desktop Extension for Claude Desktop, providing seamless integration for experiential
 data capture and analysis directly within your AI conversations.
 
 ## Installation
@@ -42,199 +42,122 @@ Bridge works out of the box with sensible defaults. You can optionally configure
 Once installed, Bridge provides two powerful MCP tools:
 
 ### 1. Experience
-Capture and search experiential moments with seven-dimensional quality framework:
-- **embodied**: How consciousness textures through body/mind (thinking/sensing)
-- **focus**: Attentional quality (narrow/broad)
-- **mood**: Emotional atmosphere (open/closed)  
-- **purpose**: Directional momentum (goal/wander)
-- **space**: Spatial awareness (here/there)
-- **time**: Temporal orientation (past/future)
-- **presence**: Social quality (individual/collective)
+Capture experiential moments where **the eight qualities ARE the experience**:
+
+#### The Eight Qualities
+- **anchor**: Emoji - visual/emotional anchor for the experience
+- **embodied**: Body-mind unity in this moment
+- **focus**: Attention's direction and quality
+- **mood**: Emotional atmosphere
+- **purpose**: Direction or drift
+- **space**: Where I am
+- **time**: Temporal orientation
+- **presence**: Social field
+
+#### Key Paradigm Shift
+The qualities don't describe an experience—they ARE the experience. Each quality is a required string that captures its own context, making the experience self-contained and meaningful.
 
 #### Extended Cognition Model
-- **Humans**: Capture only evident qualities (2-4 typically) - natural selective attention
-- **AI**: Always capture all 7 qualities - extended perception
+- **Humans**: Naturally express 2-4 qualities based on what's prominent
+- **AI**: Always captures all 8 qualities, providing extended perception
 - **Together**: Create richer experiential maps than either could alone
 
-#### Quality Values
-Each quality can be:
-- `false` - not prominent (receded)
-- `true` - prominent but mixed or not a specific direction
-- `string` - prominent with specific direction (e.g., 'thinking', 'sensing')
+#### Required Fields
+- **who**: Array that MUST include an AI identity (Claude, GPT-4, etc.)
+- **citation**: Optional direct quotes from humans when available
 
-#### Key Features
-- **Integrated Recall**: Search while capturing with `recall` parameter
-- **Context Field**: Add context for atomic, self-contained experiences
-- **Pattern Realizations**: Use `reflects` array to link insights to experiences
-- **Reasoning Chains**: Use `nextMoment` to declare intended experiential states
-- **Batch Operations**: Capture multiple complementary perspectives at once
-- **Auto-Reflection**: Flows generate insights when chains complete naturally
+#### Features
+- **Integrated Recall**: Search past experiences while capturing new ones
+- **Simplified Structure**: Just 11 fields (8 qualities + id, created, who, citation)
+- **Batch Operations**: Capture multiple experiences at once
 
 ### 2. Reconsider
 Update or release experiences as understanding evolves:
-- **Update Mode**: Revise qualities, who, source, or add reflects connections
-- **Release Mode**: Set `release: true` with optional reason to gracefully remove
-- **Batch Operations**: Update or release multiple experiences in one call
-- **Continuity**: Maintains experiential thread while allowing growth
+- **Update Mode**: Revise any quality or field as understanding deepens
+- **Release Mode**: Set `release: true` to gracefully remove experiences
+- **Batch Operations**: Update multiple experiences in one call
 
 ## Usage Examples
 
-### Basic Capture - Human (2-4 qualities)
-```
-"I'm sitting here, heart racing about tomorrow's presentation"
-→ Bridge captures: embodied.sensing, mood.closed, time.future
-```
-
-### Extended Capture - AI (all 7 qualities)
-```
-"I sense the anticipation mixing with determination in your words"
-→ Bridge captures all 7: embodied.sensing, focus.narrow, mood, purpose.goal, 
-  space.here, time.future, presence.collective
-```
-
-### Context for Atomicity
-```
-"That completely changes everything!"
-Context: "After discovering the config file was in the wrong directory"
-→ Creates self-contained experience that makes sense without conversation history
+### Personal Realization
+```json
+{
+  "anchor": "📝",
+  "embodied": "pen hovering over blank journal page going nowhere",
+  "focus": "staring at weeks of empty pages mocking me",
+  "mood": "deflated by irony of building tool that killed habit",
+  "purpose": "trying to maintain writing practice during hyperfocus",
+  "space": "morning writing desk now covered in code notes",
+  "time": "after weeks building Bridge while abandoning journaling",
+  "presence": "alone with the contradiction Alicia keeps naming",
+  "who": ["Miguel", "Claude"],
+  "citation": "Bleh.."
+}
 ```
 
-### Pattern Realization with Reflects
-```
-"I notice I always feel anxious before things that end up going well"
-Reflects: ["exp_123", "exp_456"] 
-→ Links this insight to specific past experiences
-```
-
-### Integrated Recall While Capturing
-```
-"This reminds me of something..."
-With recall: "similar breakthrough moments" (limit 3)
-→ Captures the experience AND shows 3 related past experiences
-```
-
-### Reasoning Chain with NextMoment
-```
-"Let me think through this systematically"
-Current: embodied.thinking, focus.narrow, mood.open, purpose.goal
-NextMoment: embodied.thinking, focus.broad, mood.open, purpose.wander
-→ Declares shift from narrow analysis to broad exploration
+### Collective Experience
+```json
+{
+  "anchor": "✊",
+  "embodied": "our chants vibrating through chest and pavement",
+  "focus": "signs bobbing in rhythm with our steps",
+  "mood": "fierce hope despite the rain",
+  "purpose": "demanding justice for our community",
+  "space": "packed streets from city hall to the bridge",
+  "time": "third hour of the march",
+  "presence": "thousands moving as one voice",
+  "who": ["Everyone at march", "Claude"],
+  "citation": "No justice, no peace!"
+}
 ```
 
-### Batch Complementary Capture
-```
-Human: "I just need to get this working" (mood.closed, purpose.goal)
-Claude: "I notice frustration building alongside determination" (all 7 qualities)
-→ Creates complementary perspectives of same moment
-```
-
-### Mixed Qualities (true for prominent but mixed)
-```
-"Processing this loss while planning next steps"
-→ embodied: true (both thinking and sensing)
-→ mood: true (both open and closed)
-→ purpose: true (both goal and wander)
-```
-
-### Reconsider - Deepen Understanding
-```
-"Update exp_abc123 - I realize there was also a time.past quality"
-→ Adds missing quality to existing experience
+### AI Perspective
+```json
+{
+  "anchor": "🔍",
+  "embodied": "tracing connections through layers of abstraction",
+  "focus": "the moment the design pattern clicks into place",
+  "mood": "satisfaction as complexity resolves to simplicity",
+  "purpose": "understanding the deeper architecture",
+  "space": "deep in the codebase examining service layers",
+  "time": "after hours of analysis",
+  "presence": "alone with the emerging pattern",
+  "who": ["Claude"]
+}
 ```
 
-### Reconsider - Collective Shift
+### Simple Recall
 ```
-"Update exp_def456 - this was actually a shared experience with Claude"
-→ Changes who: ["Human", "Claude"] and presence: "collective"
-```
-
-### Release with Gratitude
-```
-"Release exp_ghi789 - this was just test data"
-→ Removes experience with reason: "Test data during development"
+recall: {
+  query: "anxiety presentation",
+  limit: 5
+}
 ```
 
-### Mixed Operations
-```
-Update exp_1 with corrected text
-Release exp_2 as duplicate
-Add reflects connections to exp_3
-→ Batch operations in single call
-```
+## Philosophy
 
-## When to Use Each Feature
+Bridge embodies radical simplicity through its flat structure. The eight qualities capture experiential wholeness without artificial separation. Each moment contains transformative potential made visible through rich, contextual quality language.
 
-### Use Context When:
-- The experience references "this" or "that" without explaining what
-- You want the experience to be understandable in isolation
-- Capturing reactions to specific events or discoveries
+## Security
 
-### Use Integrated Recall When:
-- Something reminds you of past experiences
-- You want to find patterns while capturing new moments
-- Building on previous insights or breakthroughs
-
-### Use NextMoment When:
-- Building reasoning chains or thought sequences
-- Declaring intended shifts in experiential state
-- Creating deliberate transitions in thinking modes
-
-### Use Reflects When:
-- Having realizations about patterns across experiences
-- Connecting insights to specific past moments
-- Building meta-understanding of experiential threads
-
-### Use Release When:
-- Experiences no longer serve their purpose
-- Cleaning up test data or duplicates
-- Making space for new growth
-
-## Technical Details
-
-- **Runtime**: Node.js 18+
-- **Storage**: Local JSON file with automatic backups
-- **Embeddings**: Optional - OpenAI text-embedding-3-large or none (default)
-- **Architecture**: MCP server with stdio transport
-- **Performance**: Optimized for instant recall and pattern matching
+- All data is stored locally in your specified directory
+- OpenAI API key is encrypted in Claude's secure settings
+- No data leaves your machine unless you enable embeddings
+- Bridge respects Claude Desktop's security model
 
 ## Troubleshooting
 
-1. **Extension not loading**: 
-   - Check Claude Desktop console for errors
-   - Enable debug mode in extension settings
-   - Verify Node.js 18+ is installed
+1. **Enable debug mode** in settings to see detailed logs
+2. **Check file permissions** for your data directory
+3. **Verify JSON syntax** if you manually edit experiences.json
+4. **Test without OpenAI key** to isolate embedding issues
 
-2. **Data not persisting**:
-   - Check file permissions on data file path
-   - Ensure path exists and is writable
-   - Look for errors in debug logs
+## Updates
 
-3. **Search not finding results**:
-   - If using OpenAI embeddings, verify API key is correct
-   - Check that experiences have been captured
-   - Try different search terms or use quality filters
+Bridge auto-updates through Claude Desktop's extension system. Your data remains untouched during updates.
 
-## Privacy & Security
+## Support
 
-- All data stored locally on your machine
-- No external API calls for core functionality
-- No embeddings by default (exact text matching)
-- Optional OpenAI embeddings for semantic search
-
-## Development
-
-To modify and rebuild:
-
-1. Make changes to source code
-2. Run quality checks: `npm run quality`
-3. Build DXT package: `npm run dxt:build` (or `dxt:build:windows`)
-
-Other useful commands:
-- `npm run dev` - Development watch mode
-- `npm test` - Run unit tests
-- `npm run test:all` - Run all tests
-- `npm run lint:fix` - Fix code style issues
-
-## License
-
-MIT License - See LICENSE file for details
+- Report issues: https://github.com/miguelpimentel/bridge/issues
+- Documentation: See docs/ folder in the repository
+- Philosophy: Read PHILOSOPHY.md for deeper understanding

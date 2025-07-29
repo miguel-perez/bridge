@@ -4,7 +4,7 @@
  */
 
 import { getAllRecords, getAllEmbeddings } from '../core/storage.js';
-import type { Source } from '../core/types.js';
+import type { Experience } from '../core/types.js';
 
 export interface SimilarityResult {
   sourceId: string;
@@ -84,7 +84,7 @@ export async function findSimilarByEmbedding(
 /**
  * Get sources that match the given IDs
  */
-export async function getSourcesByIds(ids: string[]): Promise<Source[]> {
+export async function getSourcesByIds(ids: string[]): Promise<Experience[]> {
   const allSources = await getAllRecords();
   const idSet = new Set(ids);
   

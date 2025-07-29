@@ -80,7 +80,7 @@ describe('Clustering Service', () => {
       expect(anxietyCluster).toBeDefined();
       expect(anxietyCluster?.experienceIds).toContain('exp-1');
       expect(anxietyCluster?.experienceIds).toContain('exp-2');
-      expect(anxietyCluster?.summary).toContain('feeling this in my whole body');
+      expect(anxietyCluster?.summary).toContain('embodied.sensing');
     });
 
     it('should generate meaningful cluster summaries', async () => {
@@ -103,7 +103,7 @@ describe('Clustering Service', () => {
 
       expect(clusters).toHaveLength(1);
       expect(clusters[0].summary).toContain('2 experiences');
-      expect(clusters[0].summary).toContain('feeling this in my whole body');
+      expect(clusters[0].summary).toContain('embodied.sensing');
     });
 
     it('should handle single experiences', async () => {

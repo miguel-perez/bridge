@@ -231,14 +231,22 @@ export class SimulationRunner {
     for (const call of this.bridgeCalls) {
       if (call.tool === 'experience' && call.arguments.experiences) {
         const experiences = call.arguments.experiences as Array<{
-          who?: string | string[];
-          experience?: Record<string, string | boolean>;
+          who: string[];
+          embodied: string;
+          focus: string;
+          mood: string;
+          purpose: string;
+          space: string;
+          time: string;
+          presence: string;
+          anchor: string;
+          citation?: string;
         }>;
         
         for (const exp of experiences) {
-          const qualityCount = this.countQualities(exp.experience || {});
+          const qualityCount = this.countQualities(exp);
           
-          if (exp.who === 'Claude') {
+          if (exp.who.includes('Claude')) {
             ai.push(qualityCount);
           } else {
             human.push(qualityCount);
@@ -250,25 +258,26 @@ export class SimulationRunner {
     return { human, ai };
   }
   
-  private countQualities(experience: Record<string, string | boolean>): number {
-    // For AI, count all qualities present (even if false)
-    // For humans, count only prominent qualities (not false)
-    const qualities = ['embodied', 'focus', 'mood', 'purpose', 'space', 'time', 'presence'];
-    let presentCount = 0;
-    let prominentCount = 0;
+  private countQualities(experience: {
+    embodied: string;
+    focus: string;
+    mood: string;
+    purpose: string;
+    space: string;
+    time: string;
+    presence: string;
+    anchor: string;
+  }): number {
+    // Count all 8 qualities
+    const qualities = ['embodied', 'focus', 'mood', 'purpose', 'space', 'time', 'presence', 'anchor'] as const;
+    let count = 0;
     
     for (const quality of qualities) {
-      const value = experience[quality];
-      if (value !== undefined) {
-        presentCount++;
-        if (value !== false) {
-          prominentCount++;
-        }
+      if (experience[quality] && typeof experience[quality] === 'string') {
+        count++;
       }
     }
     
-    // If all 7 qualities are present, it's an AI capture (return total count)
-    // Otherwise, it's a human capture (return only prominent qualities)
-    return presentCount === 7 ? presentCount : prominentCount;
+    return count;
   }
 }

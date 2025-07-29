@@ -156,15 +156,13 @@ describe('Bridge End-to-End Workflows', () => {
       // 3. Update initial assessment
       const update = await callReconsider(env.client, {
         id: id!,
-        experienceQualities: {
-          embodied: 'understanding dawns as the design principles click',
-          focus: 'seeing how all the complexity actually makes sense',
-          mood: 'feeling enlightened about the architecture',
-          purpose: 'appreciating the thoughtful design choices',
-          space: 'mentally in a much clearer place now',
-          time: false,
-          presence: 'having this realization on my own'
-        }
+        embodied: 'understanding dawns as the design principles click',
+        focus: 'seeing how all the complexity actually makes sense',
+        mood: 'feeling enlightened about the architecture',
+        purpose: 'appreciating the thoughtful design choices',
+        space: 'mentally in a much clearer place now',
+        time: 'after the initial confusion',
+        presence: 'having this realization on my own'
       });
 
       expect(verifyToolResponse(update, 'Updated')).toBe(true);
@@ -180,11 +178,7 @@ describe('Bridge End-to-End Workflows', () => {
         time: 'after the learning journey',
         presence: 'checking on my own',
         who: ['New Developer', 'Claude'],
-        citation: 'Checking my updated understanding',
-        recall: {
-          query: 'framework complex',
-          limit: 5
-        }
+        citation: 'Checking my updated understanding'
       });
 
       // Search should return experiences or indicate no results

@@ -6,7 +6,6 @@ import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { MCPToolHandlers } from './handlers.js';
 import { ExperienceHandler } from './experience-handler.js';
 import { ReconsiderHandler } from './reconsider-handler.js';
-import { humanQualities } from '../test-utils/format-converter.js';
 
 // Mock all handler modules
 jest.mock('./experience-handler.js');
@@ -40,7 +39,20 @@ describe('MCPToolHandlers', () => {
 
   describe('handle', () => {
     it('should delegate experience tool to ExperienceHandler', async () => {
-      const args = { source: 'test experience', experienceQualities: humanQualities('mood.open', 'embodied.thinking') };
+      const args = {
+        experiences: [{
+          embodied: 'thinking through this problem',
+          focus: 'concentrating on the test',
+          mood: 'feeling optimistic',
+          purpose: 'working toward completion',
+          space: 'in my testing environment',
+          time: 'focused on the present',
+          presence: 'collaborating with the code',
+          anchor: '🧪',
+          who: ['Human', 'Claude'],
+          citation: 'test experience'
+        }]
+      };
       const expectedResult = { id: 'exp_123', message: 'Captured' };
 
       mockExperienceHandler.handle.mockResolvedValue(expectedResult);
@@ -52,7 +64,13 @@ describe('MCPToolHandlers', () => {
     });
 
     it('should delegate reconsider tool to ReconsiderHandler', async () => {
-      const args = { id: 'exp_123', experienceQualities: humanQualities('mood.closed', 'embodied.sensing') };
+      const args = {
+        reconsiderations: [{
+          id: 'exp_123',
+          mood: 'feeling more withdrawn',
+          embodied: 'sensing tension in my body'
+        }]
+      };
       const expectedResult = { success: true, message: 'Updated' };
 
       mockReconsiderHandler.handle.mockResolvedValue(expectedResult);
@@ -67,29 +85,6 @@ describe('MCPToolHandlers', () => {
       await expect(handlers.handle('unknown', {})).rejects.toThrow('Unknown tool: unknown');
     });
 
-    it('should pass nextMoment parameter when provided', async () => {
-      const args = {
-        source: 'test',
-        experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
-        nextMoment: {
-          embodied: 'thinking',
-          mood: 'open',
-          focus: false,
-          purpose: false,
-          space: false,
-          time: false,
-          presence: false,
-        },
-      };
-      const expectedResult = { id: 'exp_123', message: 'Captured' };
-
-      mockExperienceHandler.handle.mockResolvedValue(expectedResult);
-
-      const result = await handlers.handle('experience', args);
-
-      expect(mockExperienceHandler.handle).toHaveBeenCalledWith(args);
-      expect(result).toBe(expectedResult);
-    });
 
     it('should propagate errors from handlers', async () => {
       const error = new Error('Handler error');
@@ -124,9 +119,16 @@ describe('MCPToolHandlers', () => {
       const args = {
         experiences: [
           {
-            source: 'feeling anxious',
-            emoji: '😰',
-            experienceQualities: humanQualities('embodied.sensing', 'mood.closed'),
+            embodied: 'feeling tension in my chest',
+            focus: 'unable to concentrate',
+            mood: 'anxious and overwhelmed',
+            purpose: 'trying to calm down',
+            space: 'feeling trapped',
+            time: 'worried about deadlines',
+            presence: 'feeling isolated',
+            anchor: '😰',
+            who: ['Human'],
+            citation: 'feeling anxious'
           },
         ],
       };
@@ -146,7 +148,8 @@ describe('MCPToolHandlers', () => {
         reconsiderations: [
           {
             id: 'exp_123',
-            experienceQualities: humanQualities('mood.open', 'embodied.thinking'),
+            mood: 'feeling more hopeful',
+            embodied: 'thinking clearly now'
           },
         ],
       };

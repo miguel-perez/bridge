@@ -7,13 +7,11 @@ import {
   ExperienceInputSchema,
   SearchInputSchema,
   ReconsiderInputSchema,
-  ExperienceItemSchema,
   AI_IDENTITIES,
   isExperienceInput,
   isSearchInput,
   isReconsiderInput,
   isToolResult,
-  isToolTextContent,
   hasExperienceArray,
   hasSearchArray,
   hasReconsiderArray,
@@ -73,7 +71,7 @@ describe('Schema Validation', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should validate with recall parameter', () => {
+    it('should validate experience without recall (auto-recall is default)', () => {
       const input = {
         experiences: [
           {
@@ -87,14 +85,11 @@ describe('Schema Validation', () => {
             presence: 'with memories and Claude',
             who: ['Human', 'Claude']
           }
-        ],
-        recall: {
-          query: 'previous insights',
-          limit: 10
-        }
+        ]
       };
       const result = ExperienceInputSchema.safeParse(input);
       expect(result.success).toBe(true);
+      // Recall is automatic now, no parameter needed
     });
 
     it('should reject input without experiences array', () => {
@@ -278,17 +273,10 @@ describe('Schema Validation', () => {
         reconsiderations: [
           {
             id: 'exp_123',
-            source: 'Updated citation',
+            citation: 'Updated citation',
             who: ['Human', 'GPT-4'],
-            experienceQualities: {
-              embodied: false,
-              focus: false,
-              mood: 'hopeful',
-              purpose: 'moving forward',
-              space: false,
-              time: false,
-              presence: false
-            }
+            mood: 'hopeful',
+            purpose: 'moving forward'
           }
         ]
       };
@@ -319,15 +307,7 @@ describe('Schema Validation', () => {
           },
           {
             id: 'exp_2',
-            experienceQualities: {
-              embodied: 'feeling different now',
-              focus: false,
-              mood: false,
-              purpose: false,
-              space: false,
-              time: false,
-              presence: false
-            }
+            embodied: 'feeling different now'
           },
           {
             id: 'exp_3',
@@ -343,7 +323,7 @@ describe('Schema Validation', () => {
       const input = {
         reconsiderations: [
           {
-            source: 'Missing ID'
+            citation: 'Missing ID'
           }
         ]
       };

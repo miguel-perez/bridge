@@ -58,22 +58,20 @@ describe('ExperienceService', () => {
       });
       expect(result.embedding).toBe(true);
 
-      // Verify storage was called with correct format
+      // Verify storage was called with flat format
       expect(mockSaveSource).toHaveBeenCalledWith({
         id: result.experience.id,
-        source: 'Testing the streamlined experience capture',
-        emoji: '🧪',
         created: result.experience.created,
+        anchor: '🧪',
+        embodied: 'feeling energized and focused',
+        focus: 'on writing these tests',
+        mood: 'determined and methodical',
+        purpose: 'ensuring code quality',
+        space: 'at my desk in the office',
+        time: 'this Tuesday afternoon',
+        presence: 'working alongside Claude',
         who: ['Human', 'Claude'],
-        experienceQualities: {
-          embodied: 'feeling energized and focused',
-          focus: 'on writing these tests',
-          mood: 'determined and methodical',
-          purpose: 'ensuring code quality',
-          space: 'at my desk in the office',
-          time: 'this Tuesday afternoon',
-          presence: 'working alongside Claude'
-        }
+        citation: 'Testing the streamlined experience capture'
       });
 
       // Verify embedding was generated from concatenated qualities
@@ -99,10 +97,10 @@ describe('ExperienceService', () => {
 
       expect(result.experience.citation).toBeUndefined();
       
-      // Storage should use default source text
+      // Storage should not have citation field
       expect(mockSaveSource).toHaveBeenCalledWith(
-        expect.objectContaining({
-          source: 'Experience captured'
+        expect.not.objectContaining({
+          citation: expect.anything()
         })
       );
     });

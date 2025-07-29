@@ -59,16 +59,20 @@ export interface SimulationEvaluation {
     actual: number[];
     score: number;
   };
-  collaborativeAlignment: number;  // Shared moments captured together?
-  dimensionalNavigation: number;   // Navigation through experiential dimensions?
-  continuousCognition: number;     // Building on shared memory across conversations?
-  naturalFlow: number;             // Does conversation feel authentic?
+  collaborativeAlignment: number;  // Mapped to experientialSpecificity
+  dimensionalNavigation: number;   // Mapped to phenomenologicalTexture
+  continuousCognition: number;     // Mapped to temporalImmediacy
+  naturalFlow: number;             // Mapped to emergentUniqueness
   
   // Overall assessment
   overallScore: number;
   summary: string;
   highlights: string[];
   concerns: string[];
+  
+  // New experiential authenticity fields
+  reconstructionTest?: number;     // Can you reconstruct the conversation?
+  reconstructedContent?: string;   // What can be inferred from captures
 }
 
 export interface SimulationAgent {

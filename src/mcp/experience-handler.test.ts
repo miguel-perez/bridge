@@ -234,16 +234,16 @@ describe('ExperienceHandler', () => {
             anchor: '✨',
             who: ['Human', 'Claude'],
           }
-        ],
-        recall: {
-          query: 'nostalgic moments',
-          limit: 5
-        }
+        ]
       });
 
-      expect(result.content[0].text).toContain('Found 1 past experiences for: "nostalgic moments"');
+      expect(result.content[0].text).toContain('Found 1 past experiences');
       expect(result.content[0].text).toContain('💭');
-      expect(mockRecall).toHaveBeenCalledWith('nostalgic moments', 5);
+      // Recall should be called with the captured experience qualities
+      expect(mockRecall).toHaveBeenCalledWith(
+        'feeling connected to past bridging then and now grateful for the journey integrating experiences in the same spot right now with Claude again',
+        25
+      );
     });
 
     it('should handle errors gracefully', async () => {

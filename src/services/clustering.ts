@@ -1,13 +1,121 @@
-import { SourceRecord, ExperienceQualities } from '../core/types.js';
+import { SourceRecord, Experience } from '../core/types.js';
 
+// Map from sentence patterns to old quality values for backward compatibility
+const sentenceToQualityMap: Record<string, Record<string, string>> = {
+  embodied: {
+    'mind processes': 'thinking',
+    'analytically': 'thinking',
+    'thoughts line up': 'thinking',
+    'feeling this': 'sensing',
+    'whole body': 'sensing',
+    'body knows': 'sensing',
+  },
+  focus: {
+    'zeroing in': 'narrow',
+    'one specific thing': 'narrow',
+    'laser focus': 'narrow',
+    'taking in everything': 'broad',
+    'wide awareness': 'broad',
+    'peripheral': 'broad',
+  },
+  mood: {
+    'curious': 'open',
+    'receptive': 'open',
+    'welcoming': 'open',
+    'possibility': 'open',
+    'shutting down': 'closed',
+    'emotionally': 'closed',
+    'closed off': 'closed',
+    'withdrawn': 'closed',
+  },
+  purpose: {
+    'pushing toward': 'goal',
+    'specific outcome': 'goal',
+    'achievement': 'goal',
+    'exploring': 'wander',
+    'without direction': 'wander',
+    'drifting': 'wander',
+  },
+  space: {
+    'present in this space': 'here',
+    'fully here': 'here',
+    'grounded': 'here',
+    'mind is elsewhere': 'there',
+    'somewhere else': 'there',
+    'distant': 'there',
+  },
+  time: {
+    'memories': 'past',
+    'pulling backward': 'past',
+    'remembering': 'past',
+    'anticipating': 'future',
+    'what comes next': 'future',
+    'forward': 'future',
+  },
+  presence: {
+    'navigating alone': 'individual',
+    'by myself': 'individual',
+    'solitary': 'individual',
+    'shared experience': 'collective',
+    'together': 'collective',
+    'we': 'collective',
+  },
+};
 
-// Helper to extract quality list from switchboard format
-function extractQualityList(qualities?: ExperienceQualities | Record<string, string | boolean>): string[] {
+// Helper to map sentence to old quality value
+function mapSentenceToQuality(quality: string, sentence: string): string | null {
+  const patterns = sentenceToQualityMap[quality];
+  if (!patterns) return null;
+  
+  const lowerSentence = sentence.toLowerCase();
+  for (const [pattern, value] of Object.entries(patterns)) {
+    if (lowerSentence.includes(pattern.toLowerCase())) {
+      return value;
+    }
+  }
+  return null;
+}
+
+// Helper to extract quality list from flat Experience or old SourceRecord
+function extractQualityList(record: SourceRecord | Experience): string[] {
+  // Check if it's a new Experience format
+  if ('anchor' in record && 'embodied' in record) {
+    const exp = record as Experience;
+    const qualities: string[] = [];
+    
+    // Process each quality
+    const qualityFields = ['embodied', 'focus', 'mood', 'purpose', 'space', 'time', 'presence'] as const;
+    for (const field of qualityFields) {
+      const value = exp[field];
+      if (value) {
+        // Try to map to old format for backward compatibility
+        const mapped = mapSentenceToQuality(field, value);
+        if (mapped) {
+          qualities.push(`${field}.${mapped}`);
+        } else {
+          // Just use the base quality name if no mapping found
+          qualities.push(field);
+        }
+      }
+    }
+    return qualities;
+  }
+  
+  // Fall back to old format
+  const qualities = (record as SourceRecord).experienceQualities;
   if (!qualities) return [];
   return Object.entries(qualities)
     .filter(([_, value]) => value !== false)
     .map(([key, value]) => {
       if (value === true) return key;
+      if (typeof value === 'string' && value.includes(' ')) {
+        // It's a sentence, try to map it
+        const mapped = mapSentenceToQuality(key, value);
+        if (mapped) {
+          return `${key}.${mapped}`;
+        }
+        return key;
+      }
       return `${key}.${value}`;
     });
 }
@@ -34,7 +142,7 @@ export async function clusterExperiences(experiences: SourceRecord[]): Promise<E
       id: `cluster-${experiences[0].id}`,
       summary: generateClusterSummary(experiences),
       experienceIds: [experiences[0].id],
-      commonQualities: extractQualityList(experiences[0].experienceQualities),
+      commonQualities: extractQualityList(experiences[0]),
       size: 1
     }];
   }
@@ -59,7 +167,7 @@ function clusterByQualities(experiences: SourceRecord[]): ExperienceCluster[] {
   const qualityGroups = new Map<string, string[]>();
   
   experiences.forEach(experience => {
-    const qualities = extractQualityList(experience.experienceQualities);
+    const qualities = extractQualityList(experience);
     const qualityKey = qualities.sort().join('|');
     
     if (!qualityGroups.has(qualityKey)) {
@@ -120,7 +228,7 @@ function generateClusterSummary(experiences: SourceRecord[]): string {
   
   // Extract qualities from all experiences
   const allQualityLists = experiences
-    .map(exp => extractQualityList(exp.experienceQualities))
+    .map(exp => extractQualityList(exp))
     .filter(qualities => qualities.length > 0);
   
   if (allQualityLists.length === 0) {
@@ -172,7 +280,7 @@ function getCommonQualities(experiences: SourceRecord[]): string[] {
   if (experiences.length === 0) return [];
   
   const allQualities = experiences
-    .map(exp => extractQualityList(exp.experienceQualities))
+    .map(exp => extractQualityList(exp))
     .filter(qualities => qualities.length > 0);
   
   if (allQualities.length === 0) return [];

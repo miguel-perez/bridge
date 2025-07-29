@@ -197,8 +197,6 @@ export interface RecallSearchParams {
   who?: string;
   qualities?: unknown; // QualityFilters type
   created?: string | { start: string; end: string };
-  reflects?: 'only';
-  reflected_by?: string | string[];
 
   // Individual quality dimensions
   embodied?: string;
@@ -317,20 +315,6 @@ export function generateSearchFeedback(
     feedback += ` by ${summary.activeFilters.who}`;
   }
 
-
-  if (summary.activeFilters.reflects === 'only') {
-    feedback += ' (pattern realizations only)';
-  }
-
-  if (summary.activeFilters.reflected_by) {
-    const count = Array.isArray(summary.activeFilters.reflected_by)
-      ? summary.activeFilters.reflected_by.length
-      : 1;
-    feedback +=
-      count === 1
-        ? ` reflected by ${summary.activeFilters.reflected_by}`
-        : ` reflected by ${count} experiences`;
-  }
 
   if (summary.activeFilters.qualities) {
     feedback += ' with ' + formatQualityFilters(summary.activeFilters.qualities);

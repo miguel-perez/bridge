@@ -8,7 +8,6 @@ import { describe, test, expect } from '@jest/globals';
 import {
   withTestEnvironment,
   callExperience,
-  callReconsider,
   verifyToolResponse,
   extractExperienceId,
 } from '../test-utils/integration-helpers.js';
@@ -31,8 +30,8 @@ describe('ExperienceService Integration', () => {
       });
 
       expect(verifyToolResponse(result1, 'Experience Captured')).toBe(true);
-      const id1 = extractExperienceId(result1);
       // ID extraction doesn't work in integration tests, but that's ok
+      extractExperienceId(result1);
 
       // Capture second experience
       const result2 = await callExperience(env.client, {
@@ -49,7 +48,7 @@ describe('ExperienceService Integration', () => {
       });
 
       expect(verifyToolResponse(result2, 'Experience Captured')).toBe(true);
-      const id2 = extractExperienceId(result2);
+      extractExperienceId(result2);
       // IDs may not be extractable in integration tests
     });
   }, 30000);
@@ -110,7 +109,7 @@ describe('ExperienceService Integration', () => {
   test('should handle experience with pattern reflection', async () => {
     await withTestEnvironment(async (env) => {
       // Create experiences to reflect on
-      const exp1 = await callExperience(env.client, {
+      await callExperience(env.client, {
         anchor: '😤',
         embodied: 'struggling with the new framework',
         focus: 'trying to understand',
@@ -123,7 +122,7 @@ describe('ExperienceService Integration', () => {
         citation: 'Struggling with the new framework'
       });
 
-      const exp2 = await callExperience(env.client, {
+      await callExperience(env.client, {
         anchor: '💡',
         embodied: 'concepts clicking in my mind',
         focus: 'seeing the patterns',

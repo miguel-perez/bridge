@@ -5,7 +5,7 @@
  * Supports boolean logic, presence/absence filtering, and complex expressions.
  */
 
-import { SourceRecord, ExperienceQualities } from '../core/types.js';
+import { SourceRecord, Experience } from '../core/types.js';
 import { KNOWN_QUALITIES, KnownQuality } from '../core/qualities.js';
 
 // Core filter types
@@ -84,12 +84,78 @@ export class QualityFilterError extends Error {
  *
  */
 export class QualityFilterService {
-  private hasQuality(qualities: unknown, quality: string): boolean {
+  private hasQuality(record: SourceRecord | Experience, quality: string): boolean {
     const [base, subtype] = quality.split('.');
-    const value = (qualities as Record<string, unknown>)[base];
-    if (!value) return false;
-    if (subtype) return value === subtype;
-    return value !== false;
+    
+    // Check if it's a new Experience format
+    if ('anchor' in record && 'embodied' in record) {
+      const exp = record as Experience;
+      const value = exp[base as keyof Experience];
+      if (!value || typeof value !== 'string') return false;
+      
+      if (subtype) {
+        // Map sentence to old quality value
+        const patterns = this.getQualityPatterns(base, subtype);
+        return patterns.some(pattern => 
+          value.toLowerCase().includes(pattern.toLowerCase())
+        );
+      }
+      return true; // Has the quality
+    }
+    
+    // Fall back to old format
+    const qualities = (record as SourceRecord).experienceQualities;
+    if (!qualities) return false;
+    const value = qualities[base as keyof typeof qualities];
+    // Check for false or falsy values
+    if (value === false || value === undefined || value === null) return false;
+    
+    // At this point, value is a string (not false)
+    if (subtype) {
+      if (value.includes(' ')) {
+        // It's a sentence, check if it contains the pattern
+        const patterns = this.getQualityPatterns(base, subtype);
+        return patterns.some(pattern => 
+          value.toLowerCase().includes(pattern.toLowerCase())
+        );
+      }
+      return value === subtype;
+    }
+    return true; // Has the quality
+  }
+  
+  private getQualityPatterns(quality: string, value: string): string[] {
+    const mappings: Record<string, Record<string, string[]>> = {
+      embodied: {
+        thinking: ['mind processes', 'analytically', 'thoughts line up', 'thinking'],
+        sensing: ['feeling this', 'whole body', 'body knows', 'sensing', 'feeling'],
+      },
+      focus: {
+        narrow: ['zeroing in', 'one specific thing', 'laser focus', 'narrow'],
+        broad: ['taking in everything', 'wide awareness', 'peripheral', 'broad'],
+      },
+      mood: {
+        open: ['curious', 'receptive', 'welcoming', 'possibility', 'open'],
+        closed: ['shutting down', 'emotionally', 'closed off', 'withdrawn', 'closed'],
+      },
+      purpose: {
+        goal: ['pushing toward', 'specific outcome', 'achievement', 'goal'],
+        wander: ['exploring', 'without direction', 'drifting', 'wander'],
+      },
+      space: {
+        here: ['present in this space', 'fully here', 'grounded', 'here'],
+        there: ['mind is elsewhere', 'somewhere else', 'distant', 'there'],
+      },
+      time: {
+        past: ['memories', 'pulling backward', 'remembering', 'past'],
+        future: ['anticipating', 'what comes next', 'forward', 'future'],
+      },
+      presence: {
+        individual: ['navigating alone', 'by myself', 'solitary', 'individual'],
+        collective: ['shared experience', 'together', 'we', 'collective'],
+      },
+    };
+    return mappings[quality]?.[value] || [value];
   }
 
   /**
@@ -175,7 +241,7 @@ export class QualityFilterService {
   /**
    * Evaluate a filter expression against an experience
    */
-  evaluateFilter(experience: SourceRecord, filter: FilterExpression): boolean {
+  evaluateFilter(experience: SourceRecord | Experience, filter: FilterExpression): boolean {
     try {
       return this.evaluateBooleanExpression(filter, experience);
     } catch (error) {
@@ -194,7 +260,7 @@ export class QualityFilterService {
    */
   private evaluateBooleanExpression(
     expression: FilterExpression,
-    experience: SourceRecord
+    experience: SourceRecord | Experience
   ): boolean {
     switch (expression.type) {
       case 'presence':
@@ -227,8 +293,17 @@ export class QualityFilterService {
   /**
    * Evaluate a presence/absence filter
    */
-  private evaluatePresenceFilter(filter: PresenceFilter, experience: SourceRecord): boolean {
-    const qualities = experience.experienceQualities || {};
+  private evaluatePresenceFilter(filter: PresenceFilter, experience: SourceRecord | Experience): boolean {
+    // Check if it's a new Experience format
+    if ('anchor' in experience && 'embodied' in experience) {
+      const exp = experience as Experience;
+      const value = exp[filter.quality as keyof Experience];
+      const hasQuality = value !== undefined && value !== null && value !== '';
+      return filter.present ? hasQuality : !hasQuality;
+    }
+    
+    // Fall back to old format
+    const qualities = (experience as SourceRecord).experienceQualities || {};
     const qualityValue = qualities[filter.quality as keyof typeof qualities];
     const hasQuality = qualityValue !== false && qualityValue !== undefined;
 
@@ -279,13 +354,30 @@ export class QualityFilterService {
   /**
    * Evaluate a value filter
    */
-  private evaluateValueFilter(filter: ValueFilter, experience: SourceRecord): boolean {
-    const qualities = experience.experienceQualities;
+  private evaluateValueFilter(filter: ValueFilter, experience: SourceRecord | Experience): boolean {
+    // Check if it's a new Experience format
+    if ('anchor' in experience && 'embodied' in experience) {
+      const exp = experience as Experience;
+      const qualityValue = exp[filter.quality as keyof Experience];
+      
+      if (typeof qualityValue !== 'string') return false;
+      
+      // Check if any of the filter values match
+      return filter.values.some((filterValue: string) => {
+        const patterns = this.mapQualityValueToSentence(filter.quality, filterValue);
+        return patterns.some(pattern => 
+          qualityValue.toLowerCase().includes(pattern.toLowerCase())
+        );
+      });
+    }
+    
+    // Fall back to old format
+    const qualities = (experience as SourceRecord).experienceQualities;
     if (!qualities) return false;
 
     // Check if any of the filter values match the experience quality
     return filter.values.some((filterValue: string) => {
-      const qualityKey = filter.quality as keyof ExperienceQualities;
+      const qualityKey = filter.quality as keyof typeof qualities;
       const qualityValue = qualities[qualityKey];
       
       // With sentence-based qualities, we need more sophisticated matching

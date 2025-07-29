@@ -120,7 +120,7 @@ describe('MCP Tools', () => {
       // Experience tool examples
       const experienceTool = tools.find((t) => t.name === 'experience');
       const expExampleIds = experienceTool.examples.map((e) => e.id);
-      expect(expExampleIds).toContain('start-with-recall');
+      expect(expExampleIds).toContain('start-conversation');
       expect(expExampleIds).toContain('shared-breakthrough');
       expect(expExampleIds).toContain('debugging-frustration');
       expect(expExampleIds).toContain('ai-processing');

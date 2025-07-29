@@ -8,6 +8,7 @@ import { recall } from '../services/search.js';
 import type { ExperienceInput, ToolResult } from './schemas.js';
 import { ToolResultSchema } from './schemas.js';
 import { incrementCallCount } from './call-counter.js';
+import type { Experience } from '../core/types.js';
 
 /**
  * Handler for the streamlined experience tool
@@ -22,33 +23,43 @@ export class ExperienceHandler {
     try {
       incrementCallCount();
       
-      let recallText = '';
-      
-      // Handle recall if requested
-      if (args.recall) {
-        try {
-          const { query, limit = 25 } = args.recall;
-          const pastExperiences = await recall(query, limit);
-          
-          if (pastExperiences.length > 0) {
-            recallText = this.formatRecallResults(pastExperiences, query);
-          } else {
-            recallText = `\n🔍 No past experiences found for: "${query}"\n`;
-          }
-        } catch (error) {
-          // Don't fail the whole operation if recall fails
-          recallText = '\n⚠️ Recall unavailable at the moment\n';
-        }
-      }
-      
-      // Process new experiences
+      // Process new experiences first
       const results = [];
       for (const exp of args.experiences) {
         const result = await experienceService.captureExperience(exp);
         results.push(result);
       }
       
-      // Format response
+      // Automatic contextual search based on captured experiences
+      let recallText = '';
+      try {
+        // Build search query from the captured experience qualities
+        const searchQueries = results.map(r => {
+          const exp = r.experience;
+          // Combine all qualities for contextual search
+          return [
+            exp.embodied,
+            exp.focus,
+            exp.mood,
+            exp.purpose,
+            exp.space,
+            exp.time,
+            exp.presence
+          ].join(' ');
+        });
+        
+        const searchQuery = searchQueries.join(' ');
+        const pastExperiences = await recall(searchQuery, 25); // Default 25 as per streamlining
+        
+        if (pastExperiences.length > 0) {
+          recallText = this.formatRecallResults(pastExperiences, 'related experiences');
+        }
+      } catch (error) {
+        // Don't fail the whole operation if recall fails
+        // Just continue without showing past experiences
+      }
+      
+      // Format response with automatic recall results
       const responseText = this.formatResponse(results, recallText);
       
       const toolResult: ToolResult = {
@@ -77,7 +88,7 @@ export class ExperienceHandler {
   /**
    * Format recall results for display
    */
-  private formatRecallResults(experiences: any[], query: string): string {
+  private formatRecallResults(experiences: Experience[], query: string): string {
     let output = `\n🔍 Found ${experiences.length} past experiences for: "${query}"\n\n`;
     
     experiences.slice(0, 5).forEach((exp, i) => {
@@ -101,7 +112,7 @@ export class ExperienceHandler {
   /**
    * Build a brief summary from experience qualities
    */
-  private buildExperienceSummary(exp: any): string {
+  private buildExperienceSummary(exp: Experience): string {
     // Pick most informative qualities for summary
     const parts = [];
     
@@ -136,7 +147,7 @@ export class ExperienceHandler {
   /**
    * Format the response for captured experiences
    */
-  private formatResponse(results: any[], recallText: string): string {
+  private formatResponse(results: Array<{ experience: Experience; embedding?: boolean }>, recallText: string): string {
     let output = '';
     
     // Add recall results if any

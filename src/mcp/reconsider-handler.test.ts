@@ -57,34 +57,30 @@ describe('ReconsiderHandler', () => {
     it('should handle single update successfully', async () => {
       const existingRecord = {
         id: 'exp_123',
-        source: 'Original text',
-        emoji: '😊',
         created: '2025-01-21T12:00:00Z',
+        anchor: '😊',
+        embodied: 'feeling original',
+        focus: 'on the past',
+        mood: 'nostalgic',
+        purpose: 'remembering',
+        space: 'in memory',
+        time: 'yesterday',
+        presence: 'alone with thoughts',
         who: ['Human', 'Claude'],
-        experienceQualities: {
-          embodied: 'feeling original',
-          focus: 'on the past',
-          mood: 'nostalgic',
-          purpose: 'remembering',
-          space: 'in memory',
-          time: 'yesterday',
-          presence: 'alone with thoughts'
-        }
+        citation: 'Original text'
       };
       
       mockGetAllRecords.mockResolvedValue([existingRecord]);
-      mockSaveSource.mockResolvedValue(undefined);
+      mockSaveSource.mockResolvedValue(existingRecord);
       mockSaveEmbedding.mockResolvedValue(undefined);
       
       const input: ReconsiderInput = {
         reconsiderations: [
           {
             id: 'exp_123',
-            source: 'Updated text',
-            experienceQualities: {
-              mood: 'hopeful',
-              purpose: 'looking forward'
-            }
+            citation: 'Updated text',
+            mood: 'hopeful',
+            purpose: 'looking forward'
           }
         ]
       };
@@ -93,17 +89,19 @@ describe('ReconsiderHandler', () => {
       
       expect(result.isError).toBeFalsy();
       expect(result.content[0].text).toContain('✅ Updated exp_123');
-      expect(result.content[0].text).toContain('Changed: citation, quality.mood, quality.purpose, embedding');
+      expect(result.content[0].text).toContain('Changed:');
+      expect(result.content[0].text).toContain('mood');
+      expect(result.content[0].text).toContain('purpose');
+      expect(result.content[0].text).toContain('citation');
+      expect(result.content[0].text).toContain('embedding');
       
-      // Verify the record was saved with merged qualities
+      // Verify the record was saved with the correct structure
+      // The handler converts from flat API to nested storage format
       expect(mockSaveSource).toHaveBeenCalledWith({
         ...existingRecord,
-        source: 'Updated text',
-        experienceQualities: {
-          ...existingRecord.experienceQualities,
-          mood: 'hopeful',
-          purpose: 'looking forward'
-        }
+        citation: 'Updated text',
+        mood: 'hopeful', // Updated
+        purpose: 'looking forward', // Updated
       });
     });
 
@@ -132,40 +130,36 @@ describe('ReconsiderHandler', () => {
     it('should handle batch updates', async () => {
       const record1 = {
         id: 'exp_1',
-        source: 'Text 1',
-        emoji: '😊',
         created: '2025-01-21T12:00:00Z',
+        anchor: '😊',
+        embodied: 'feeling one',
+        focus: 'here',
+        mood: 'calm',
+        purpose: 'exploring',
+        space: 'room 1',
+        time: 'morning',
+        presence: 'with others',
         who: ['Human', 'Claude'],
-        experienceQualities: {
-          embodied: 'feeling one',
-          focus: 'here',
-          mood: 'calm',
-          purpose: 'exploring',
-          space: 'room 1',
-          time: 'morning',
-          presence: 'with others'
-        }
+        citation: 'Text 1'
       };
       
       const record2 = {
         id: 'exp_2',
-        source: 'Text 2',
-        emoji: '🤔',
         created: '2025-01-21T12:00:00Z',
+        anchor: '🤔',
+        embodied: 'feeling two',
+        focus: 'there',
+        mood: 'curious',
+        purpose: 'learning',
+        space: 'room 2',
+        time: 'afternoon',
+        presence: 'in collaboration',
         who: ['Alex', 'Claude'],
-        experienceQualities: {
-          embodied: 'feeling two',
-          focus: 'there',
-          mood: 'curious',
-          purpose: 'learning',
-          space: 'room 2',
-          time: 'afternoon',
-          presence: 'in collaboration'
-        }
+        citation: 'Text 2'
       };
       
       mockGetAllRecords.mockResolvedValue([record1, record2]);
-      mockSaveSource.mockResolvedValue(undefined);
+      mockSaveSource.mockResolvedValue(record1);
       
       const input: ReconsiderInput = {
         reconsiderations: [
@@ -175,9 +169,7 @@ describe('ReconsiderHandler', () => {
           },
           {
             id: 'exp_2',
-            experienceQualities: {
-              mood: 'excited'
-            }
+            mood: 'excited'
           }
         ]
       };
@@ -196,7 +188,7 @@ describe('ReconsiderHandler', () => {
         reconsiderations: [
           {
             id: 'exp_nonexistent',
-            source: 'Some update'
+            citation: 'Some update'
           }
         ]
       };
@@ -214,7 +206,7 @@ describe('ReconsiderHandler', () => {
         reconsiderations: [
           {
             id: 'exp_123',
-            source: 'Some update'
+            citation: 'Some update'
           }
         ]
       };
@@ -238,8 +230,8 @@ describe('ReconsiderHandler', () => {
       const result = await handler.handle({
         reconsiderations: [
           {
-            source: 'Missing ID'
-          } as any
+            citation: 'Missing ID'
+          } as unknown as { id: string; citation: string }
         ]
       });
       
