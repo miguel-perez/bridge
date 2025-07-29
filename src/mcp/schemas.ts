@@ -99,7 +99,10 @@ export const QualityFilterSchema = z
 
 // Perspective field removed for streamlining
 
-// Experience qualities schema - complete switchboard
+// Known AI identities for validation
+export const AI_IDENTITIES = ['Claude', 'GPT-4', 'GPT-3.5', 'Gemini', 'Assistant'] as const;
+
+// Experience qualities schema - complete switchboard (kept for migration)
 export const ExperienceQualitiesSchema = z.object({
   embodied: z
     .union([z.literal(false), z.string().min(1)])
@@ -169,77 +172,76 @@ Each quality sentence should embed enough context to make the moment comprehensi
 Set to false for qualities not prominently present.`
 ).optional();
 
-// EXPERIENCE tool input - Array Only
+// Helper for emoji validation
+const validateEmoji = (val: string) => {
+  // Comprehensive emoji validation for composite emojis
+  if (!val || val.length === 0) return false;
+
+  // Use Intl.Segmenter if available (modern browsers/Node.js)
+  if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+    const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
+    const segments = Array.from(segmenter.segment(val));
+
+    // Must be exactly one grapheme cluster (visual character)
+    if (segments.length !== 1) return false;
+
+    // Check if the single grapheme contains emoji characters
+    const segment = segments[0].segment;
+    return /\p{Emoji}/u.test(segment);
+  }
+
+  // Fallback for older environments - comprehensive emoji regex
+  const comprehensiveEmojiRegex =
+    /^(?:\p{Emoji}(?:\p{Emoji_Modifier}|\uFE0F|\u200D(?:\p{Emoji}(?:\p{Emoji_Modifier}|\uFE0F)?))*)+$/u;
+
+  const trimmed = val.trim();
+  if (trimmed !== val) return false; // No leading/trailing whitespace
+  if (/\s/.test(val)) return false; // No internal whitespace
+
+  return comprehensiveEmojiRegex.test(val);
+};
+
+// Helper for who array validation  
+const validateWhoArray = (who: string[]) => {
+  return who.some(w => AI_IDENTITIES.includes(w as any));
+};
+
+// EXPERIENCE tool input - NEW FLAT STRUCTURE
 const ExperienceItemSchema = z
   .object({
-    source: z
+    // The eight qualities that ARE the experience
+    embodied: z.string().min(1).describe('Body-mind unity in this moment'),
+    focus: z.string().min(1).describe("Attention's direction and quality"),
+    mood: z.string().min(1).describe('Emotional atmosphere'),
+    purpose: z.string().min(1).describe('Direction or drift'),
+    space: z.string().min(1).describe('Where I am'),
+    time: z.string().min(1).describe('Temporal orientation'),
+    presence: z.string().min(1).describe('Social field'),
+    
+    anchor: z
       .string()
-      .min(1)
-      .describe(
-        'Raw, exact words from the experiencer - their actual text/voice as written or spoken OR your own experiential observations. Do not summarize, interpret, or modify.'
-      ),
-    emoji: z
-      .string()
-      .refine(
-        (val) => {
-          // Comprehensive emoji validation for composite emojis
-          if (!val || val.length === 0) return false;
-
-          // Use Intl.Segmenter if available (modern browsers/Node.js)
-          if (typeof Intl !== 'undefined' && Intl.Segmenter) {
-            const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
-            const segments = Array.from(segmenter.segment(val));
-
-            // Must be exactly one grapheme cluster (visual character)
-            if (segments.length !== 1) return false;
-
-            // Check if the single grapheme contains emoji characters
-            const segment = segments[0].segment;
-            return /\p{Emoji}/u.test(segment);
-          }
-
-          // Fallback for older environments - comprehensive emoji regex
-          // This pattern matches:
-          // - Basic emojis: \p{Emoji}
-          // - Variation selectors: \uFE0F
-          // - Zero-width joiners: \u200D
-          // - Skin tone modifiers: \p{Emoji_Modifier}
-          // - Regional indicators: \p{Regional_Indicator}
-          const comprehensiveEmojiRegex =
-            /^(?:\p{Emoji}(?:\p{Emoji_Modifier}|\uFE0F|\u200D(?:\p{Emoji}(?:\p{Emoji_Modifier}|\uFE0F)?))*)+$/u;
-
-          // Additional check: ensure it's not multiple separate emojis
-          // Split by common emoji boundaries (space, etc) and check we only have one "unit"
-          const trimmed = val.trim();
-          if (trimmed !== val) return false; // No leading/trailing whitespace
-          if (/\s/.test(val)) return false; // No internal whitespace
-
-          return comprehensiveEmojiRegex.test(val);
-        },
-        {
-          message:
-            'Must be a single emoji (including compound emojis with modifiers, skin tones, and sequences)',
-        }
-      )
+      .refine(validateEmoji, {
+        message:
+          'Must be a single emoji (including compound emojis with modifiers, skin tones, and sequences)',
+      })
       .describe(
         'Single emoji that serves as a visual/memory anchor for this experience. Choose one that captures the essence or feeling.'
       ),
     who: z
-      .union([
-        z.string().describe('Single person who experienced this'),
-        z.array(z.string()).describe('Multiple people who shared this experience'),
-      ])
-      .describe(
-        'Who experienced this moment - single string for individual ("Human", "Claude", or name), array for shared experience (["Human", "Claude"])'
-      )
-      .optional(),
-    experienceQualities: ExperienceObject,
-    reflects: z
       .array(z.string())
+      .min(1, 'Who array cannot be empty')
+      .refine(validateWhoArray, {
+        message: 'Who array must include at least one AI identity (Claude, GPT-4, etc.)'
+      })
       .describe(
-        'Array of experience IDs that this experience reflects on/connects to (for pattern realizations)'
-      )
-      .optional(),
+        'REQUIRED: Array, must include AI identity (Claude, GPT-4, etc.) - e.g. ["Human", "Claude"] or ["Claude"]'
+      ),
+    citation: z
+      .string()
+      .optional()
+      .describe(
+        'Optional: Direct quotes from humans when available'
+      ),
   })
   .strict();
 
@@ -248,59 +250,11 @@ export const ExperienceInputSchema = z
     experiences: z.array(ExperienceItemSchema).min(1).describe('Array of experiences to capture'),
     recall: z
       .object({
-        // ID lookup
-        ids: z
-          .union([
-            z.string().describe('Exact experience ID to fetch'),
-            z.array(z.string()).describe('Array of exact experience IDs to fetch'),
-          ])
-          .optional(),
-        // Semantic search
-        search: z
-          .union([
-            z.string().describe('Semantic search query'),
-            z.array(z.string()).describe('Array of search terms'),
-          ])
-          .optional(),
-        // Quality filtering - using the full QualityFilterSchema
-        qualities: QualityFilterSchema.optional(),
-        // Pagination
-        limit: z.number().describe('Maximum number of results').optional(),
-        offset: z.number().describe('Number of results to skip').optional(),
-        // Filters
-        who: z.string().describe('Filter by who experienced').optional(),
-        // Pattern filters
-        reflects: z.enum(['only']).describe('Filter for pattern realizations only').optional(),
-        reflected_by: z
-          .union([
-            z.string().describe('Find experiences reflected by this ID'),
-            z.array(z.string()).describe('Find experiences reflected by these IDs'),
-          ])
-          .optional(),
-        // Date filtering
-        created: z
-          .union([
-            z.string().describe('Filter by specific date (YYYY-MM-DD)'),
-            z
-              .object({
-                start: z.string().describe('Start date (YYYY-MM-DD)'),
-                end: z.string().describe('End date (YYYY-MM-DD)'),
-              })
-              .describe('Date range'),
-          ])
-          .optional(),
-        // Sorting and grouping
-        sort: SortEnum.optional(),
-        group_by: z
-          .enum(['similarity', 'who', 'date', 'qualities', 'none'])
-          .describe('Group results by criteria')
-          .optional(),
+        query: z.string().describe('Search query to find related past experiences'),
+        limit: z.number().optional().describe('Maximum number of results (default: 25)'),
       })
       .optional()
-      .describe('Full-featured integrated recall with all standalone capabilities'),
-    nextMoment: ExperienceQualitiesSchema.optional().describe(
-      'What experiential state you intend to explore next in this reasoning chain'
-    ),
+      .describe('Simple recall to search past experiences before capturing new ones'),
   })
   .strict()
   .describe(
@@ -330,19 +284,6 @@ const SearchItemSchema = z
     limit: z.number().describe('Maximum number of results to return').optional(),
     offset: z.number().describe('Number of results to skip for pagination').optional(),
     who: z.string().describe('Filter by who experienced').optional(),
-    reflects: z
-      .enum(['only'])
-      .describe('Filter for pattern realizations only (experiences with reflects field)')
-      .optional(),
-    reflected_by: z
-      .union([
-        z.string().describe('Find experiences that are reflected by this specific experience ID'),
-        z
-          .array(z.string())
-          .describe('Find experiences that are reflected by any of these experience IDs'),
-      ])
-      .describe('Filter for experiences that are reflected by specific pattern realizations')
-      .optional(),
     created: z
       .union([
         z.string().describe('Filter by specific date (YYYY-MM-DD format)'),
@@ -387,12 +328,6 @@ const ReconsiderItemSchema = z
       )
       .optional(),
     experienceQualities: ExperienceObjectOptional.optional(),
-    reflects: z
-      .array(z.string())
-      .describe(
-        'Updated array of experience IDs that this experience reflects on/connects to (for pattern realizations)'
-      )
-      .optional(),
     release: z
       .boolean()
       .describe('Whether to release (delete) this experience instead of updating it')
@@ -423,14 +358,6 @@ export const ToolTextContentSchema = z.object({
 export const ToolResultSchema = z.object({
   isError: z.boolean().optional(),
   content: z.array(ToolTextContentSchema),
-  nextMoment: ExperienceQualitiesSchema.optional(),
-  flow: z
-    .object({
-      moments: z.array(z.any()),
-      transitions: z.array(z.any()),
-      reflection: z.any().optional(),
-    })
-    .optional(),
 });
 
 // Example generation functions
