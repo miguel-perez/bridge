@@ -10,7 +10,6 @@ import {
   callExperience,
   extractExperienceId,
   verifyToolResponse,
-  humanQualities,
 } from './test-utils/integration-helpers.js';
 
 describe('Performance Integration Tests', () => {
@@ -23,9 +22,16 @@ describe('Performance Integration Tests', () => {
       // Rapidly create experiences
       for (let i = 0; i < experienceCount; i++) {
         const result = await callExperience(env.client, {
-          source: `Rapid experience ${i}`,
-          emoji: '⚡',
-          experienceQualities: humanQualities('embodied.thinking', 'focus.narrow'),
+          anchor: '⚡',
+          embodied: 'processing rapidly',
+          focus: 'narrowed on this specific task',
+          mood: 'energized by speed',
+          purpose: 'testing rapid creation',
+          space: 'in the test environment',
+          time: `moment ${i}`,
+          presence: 'focused on performance',
+          who: ['Test Runner', 'Claude'],
+          citation: `Rapid experience ${i}`
         });
 
         const id = extractExperienceId(result);
@@ -33,7 +39,7 @@ describe('Performance Integration Tests', () => {
           ids.push(id);
         } else {
           // If no ID in response, just verify the experience was created
-          expect(verifyToolResponse(result, 'Experienced')).toBe(true);
+          expect(verifyToolResponse(result, 'Experience Captured')).toBe(true);
         }
       }
 
@@ -54,9 +60,16 @@ describe('Performance Integration Tests', () => {
     await withTestEnvironment(async (env) => {
       const batchSize = 10;
       const experiences = Array.from({ length: batchSize }, (_, i) => ({
-        source: `Batch experience ${i}`,
-        emoji: '📦',
-        experienceQualities: humanQualities('embodied.thinking', 'purpose.goal'),
+        anchor: '📦',
+        embodied: 'handling batch operations',
+        focus: 'on processing multiple items',
+        mood: 'systematic and efficient',
+        purpose: 'achieving batch goals',
+        space: 'in parallel processing',
+        time: `batch item ${i}`,
+        presence: 'orchestrating operations',
+        who: ['Test Runner', 'Claude'],
+        citation: `Batch experience ${i}`
       }));
 
       const result = await env.client.callTool({
@@ -74,17 +87,31 @@ describe('Performance Integration Tests', () => {
       // Create many experiences
       for (let i = 0; i < 50; i++) {
         await callExperience(env.client, {
-          source: `Test data ${i} with common keyword: optimization`,
-          emoji: '📊',
-          experienceQualities: humanQualities('embodied.thinking', 'purpose.goal'),
+          anchor: '📊',
+          embodied: 'creating test data',
+          focus: 'on optimization patterns',
+          mood: 'methodical',
+          purpose: 'building test dataset',
+          space: 'in data creation phase',
+          time: `iteration ${i}`,
+          presence: 'generating test scenarios',
+          who: ['Test Runner', 'Claude'],
+          citation: `Test data ${i} with common keyword: optimization`
         });
       }
 
       // Search with high limit
       const result = await callExperience(env.client, {
-        source: 'Searching large dataset',
-        emoji: '🔍',
-        experienceQualities: humanQualities('embodied.thinking', 'purpose.goal'),
+        anchor: '🔍',
+        embodied: 'scanning through data',
+        focus: 'searching for patterns',
+        mood: 'determined',
+        purpose: 'finding optimization insights',
+        space: 'navigating large dataset',
+        time: 'after data creation',
+        presence: 'engaged in search',
+        who: ['Test Runner', 'Claude'],
+        citation: 'Searching large dataset',
         recall: {
           query: 'optimization',
           limit: 100, // Request more than exists
@@ -92,7 +119,7 @@ describe('Performance Integration Tests', () => {
       });
 
       // Search won't return results with embeddings disabled
-      expect(verifyToolResponse(result, 'Experienced')).toBe(true);
+      expect(verifyToolResponse(result, 'Experience Captured')).toBe(true);
     });
   }, 90000);
 
@@ -103,35 +130,57 @@ describe('Performance Integration Tests', () => {
       // Create base experiences
       for (let i = 0; i < 5; i++) {
         const result = await callExperience(env.client, {
-          source: `Base experience ${i}`,
-          emoji: '🌱',
-          experienceQualities: humanQualities('embodied.thinking', 'purpose.goal'),
+          anchor: '🌱',
+          embodied: 'planting foundation',
+          focus: 'on core concepts',
+          mood: 'building carefully',
+          purpose: 'establishing base patterns',
+          space: 'in foundational layer',
+          time: `base creation ${i}`,
+          presence: 'laying groundwork',
+          who: ['Test Runner', 'Claude'],
+          citation: `Base experience ${i}`
         });
-        baseIds.push(extractExperienceId(result)!);
+        const id = extractExperienceId(result);
+        if (id) baseIds.push(id);
       }
 
-      // Create pattern realizations that reflect multiple experiences
+      // Create interconnected experiences (reflects feature removed)
       for (let i = 0; i < 3; i++) {
         await callExperience(env.client, {
-          source: `Pattern realization ${i}`,
-          emoji: '🔗',
-          experienceQualities: humanQualities('embodied.thinking', 'focus.broad'),
-          reflects: baseIds.slice(i, i + 2),
+          anchor: '🔗',
+          embodied: 'connecting insights',
+          focus: 'seeing broader patterns',
+          mood: 'insightful',
+          purpose: 'recognizing connections',
+          space: 'in pattern space',
+          time: `pattern discovery ${i}`,
+          presence: 'synthesizing understanding',
+          who: ['Test Runner', 'Claude'],
+          citation: `Pattern realization ${i} connecting to experiences ${baseIds.slice(i, i + 2).join(', ')}`
         });
       }
 
       // Search for patterns
       const patterns = await callExperience(env.client, {
-        source: 'Finding all patterns',
-        emoji: '🔍',
-        experienceQualities: humanQualities('embodied.thinking', 'purpose.goal'),
+        anchor: '🔍',
+        embodied: 'searching for connections',
+        focus: 'on pattern recognition',
+        mood: 'analytical',
+        purpose: 'finding all patterns',
+        space: 'exploring pattern space',
+        time: 'after pattern creation',
+        presence: 'investigating connections',
+        who: ['Test Runner', 'Claude'],
+        citation: 'Finding all patterns',
         recall: {
-          reflects: 'only',
-        },
+          query: 'pattern realization',
+          limit: 10
+        }
       });
 
       // Pattern search won't return results with embeddings disabled
-      expect(verifyToolResponse(patterns, 'Experienced')).toBe(true);
+      expect(verifyToolResponse(patterns, 'Experience Captured')).toBe(true);
     });
   }, 60000);
 
@@ -144,18 +193,32 @@ describe('Performance Integration Tests', () => {
         // Create
         operations.push(
           callExperience(env.client, {
-            source: `Mixed op create ${i}`,
-            emoji: '🎭',
-            experienceQualities: humanQualities('embodied.thinking', 'purpose.goal'),
+            anchor: '🎭',
+            embodied: 'juggling multiple tasks',
+            focus: 'split between operations',
+            mood: 'managing complexity',
+            purpose: 'testing concurrent ops',
+            space: 'in mixed operation mode',
+            time: `concurrent moment ${i}`,
+            presence: 'orchestrating tasks',
+            who: ['Test Runner', 'Claude'],
+            citation: `Mixed op create ${i}`
           })
         );
 
         // Search
         operations.push(
           callExperience(env.client, {
-            source: `Mixed op search ${i}`,
-            emoji: '🔍',
-            experienceQualities: humanQualities('embodied.thinking', 'purpose.goal'),
+            anchor: '🔍',
+            embodied: 'searching while creating',
+            focus: 'on finding patterns',
+            mood: 'multitasking efficiently',
+            purpose: 'testing search under load',
+            space: 'in concurrent search',
+            time: `search moment ${i}`,
+            presence: 'actively querying',
+            who: ['Test Runner', 'Claude'],
+            citation: `Mixed op search ${i}`,
             recall: {
               query: 'mixed',
               limit: 5,
@@ -181,9 +244,16 @@ describe('Performance Integration Tests', () => {
       const total = 30;
       for (let i = 0; i < total; i++) {
         await callExperience(env.client, {
-          source: `Paginated data ${i}`,
-          emoji: '📄',
-          experienceQualities: humanQualities('embodied.thinking', 'purpose.goal'),
+          anchor: '📄',
+          embodied: 'generating page data',
+          focus: 'on structured content',
+          mood: 'systematic',
+          purpose: 'building paginated dataset',
+          space: 'in data generation',
+          time: `record ${i}`,
+          presence: 'creating systematically',
+          who: ['Test Runner', 'Claude'],
+          citation: `Paginated data ${i}`
         });
       }
 
@@ -191,19 +261,25 @@ describe('Performance Integration Tests', () => {
       const pageSize = 10;
       for (let offset = 0; offset < total; offset += pageSize) {
         const result = await callExperience(env.client, {
-          source: `Page ${offset / pageSize + 1}`,
-          emoji: '📖',
-          experienceQualities: humanQualities('embodied.thinking', 'purpose.goal'),
+          anchor: '📖',
+          embodied: 'navigating through pages',
+          focus: 'on specific page range',
+          mood: 'methodical',
+          purpose: 'testing pagination',
+          space: 'in paginated results',
+          time: `page ${offset / pageSize + 1}`,
+          presence: 'systematically browsing',
+          who: ['Test Runner', 'Claude'],
+          citation: `Page ${offset / pageSize + 1}`,
           recall: {
             query: 'paginated',
             limit: pageSize,
-            offset: offset,
           },
         });
 
         expect(
-          verifyToolResponse(result, 'Related experiences') ||
-            verifyToolResponse(result, 'Experienced')
+          verifyToolResponse(result, 'past experiences') ||
+            verifyToolResponse(result, 'Experience Captured')
         ).toBe(true);
       }
     });

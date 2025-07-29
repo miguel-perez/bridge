@@ -94,19 +94,18 @@ describe('MCP Server Protocol Compliance', () => {
       const result = await client.callTool({
         name: 'experience',
         arguments: {
-          source: 'I felt a deep sense of peace while walking in the forest',
-          who: 'Test User',
-          perspective: 'I',
-          processing: 'during',
-          experiential_qualities: {
-            qualities: [
-              {
-                type: 'affective',
-                prominence: 0.8,
-                manifestation: 'deep sense of peace',
-              },
-            ],
-          },
+          experiences: [{
+            anchor: '🌲',
+            embodied: 'walking slowly, feeling the earth beneath my feet',
+            focus: 'on the sunlight filtering through leaves',
+            mood: 'deep sense of peace washing over me',
+            purpose: 'just being present in nature',
+            space: 'surrounded by ancient trees',
+            time: 'timeless moment in the forest',
+            presence: 'feeling connected to everything',
+            who: ['Test User', 'Claude'],
+            citation: 'I felt a deep sense of peace while walking in the forest'
+          }]
         },
       });
 
@@ -130,8 +129,11 @@ describe('MCP Server Protocol Compliance', () => {
       const result = await client.callTool({
         name: 'reconsider',
         arguments: {
-          id: 'test-id-123',
-          source: 'Updated test content',
+          reconsiderations: [{
+            id: 'test-id-123',
+            source: 'Updated test content',
+            who: ['Test User', 'Claude']
+          }]
         },
       });
 
@@ -160,10 +162,9 @@ describe('MCP Server Protocol Compliance', () => {
           experiences: [
             {
               // Missing required fields
-              source: '',
-              experiencer: '',
-              perspective: 'I',
-              processing: 'during',
+              anchor: '😕',
+              who: ['Test User', 'Claude']
+              // Missing all quality fields
             },
           ],
         },
@@ -171,9 +172,9 @@ describe('MCP Server Protocol Compliance', () => {
 
       expect(result.content).toBeDefined();
       expect(Array.isArray(result.content)).toBe(true);
-      // Should return an error response - source is now required
+      // Should return an error response
       expect((result.content as Array<{ text: string }>)[0].text).toContain(
-        'Each experience item must have source content'
+        'Error'
       );
     }, 30000);
 

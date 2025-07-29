@@ -285,7 +285,7 @@ const embedding = await generateEmbedding(unifiedText);
   "space": "Philly warehouse transformed into wrestling venue",
   "time": "early 20s living on 5th and Spring Garden",
   "presence": "Alicia and I both noticing how hot our friend looks",
-  "who": ["Miguel", "Alicia", "Savanah", "Claude"]
+  "who": ["Miguel", "Alicia", "Claude"]
 }
 ```
 

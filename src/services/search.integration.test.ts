@@ -9,26 +9,50 @@ import {
   withTestEnvironment,
   callExperience,
   verifyToolResponse,
-  extractExperienceId,
-  createTestExperiences,
-  humanQualities,
-  _aiQualities,
 } from '../test-utils/integration-helpers.js';
 
 describe('Search/Recall Integration', () => {
   test('should search by semantic query', async () => {
     await withTestEnvironment(async (env) => {
       // Add test experiences
-      const experiences = createTestExperiences();
-      for (const exp of experiences) {
-        await callExperience(env.client, exp);
-      }
+      await callExperience(env.client, {
+        anchor: '😰',
+        embodied: 'feeling anxious about the presentation',
+        focus: 'scattered, can\'t concentrate',
+        mood: 'worried and closed off',
+        purpose: 'trying to prepare',
+        space: 'at my desk',
+        time: 'deadline approaching',
+        presence: 'feeling alone',
+        who: ['Test User', 'Claude'],
+        citation: 'So anxious about tomorrow'
+      });
+
+      await callExperience(env.client, {
+        anchor: '😟',
+        embodied: 'stomach in knots',
+        focus: 'fixated on what could go wrong',
+        mood: 'nervous and tense',
+        purpose: 'wanting to do well',
+        space: 'pacing around',
+        time: 'hours before meeting',
+        presence: 'isolated with worry',
+        who: ['Test User', 'Claude'],
+        citation: 'Really worried about this'
+      });
 
       // Search for anxiety-related experiences
       const result = await callExperience(env.client, {
-        source: 'Searching for past anxiety experiences',
-        emoji: '🔍',
-        experienceQualities: humanQualities('embodied.thinking', 'purpose.goal', 'focus.narrow'),
+        anchor: '🔍',
+        embodied: 'searching through memories',
+        focus: 'looking for anxiety patterns',
+        mood: 'curious',
+        purpose: 'understanding my anxiety',
+        space: 'in reflection',
+        time: 'looking back',
+        presence: 'self-examination',
+        who: ['Test User', 'Claude'],
+        citation: 'Searching for past anxiety experiences',
         recall: {
           query: 'anxious worried nervous',
           limit: 5,
@@ -36,196 +60,244 @@ describe('Search/Recall Integration', () => {
       });
 
       // Recall won't return results with embeddings disabled in tests
-      expect(verifyToolResponse(result, 'Experienced')).toBe(true);
+      expect(verifyToolResponse(result, 'Experience Captured')).toBe(true);
     });
   }, 30000);
 
-  test('should filter by quality signatures', async () => {
+  test('should filter by quality dimensions', async () => {
     await withTestEnvironment(async (env) => {
       // Add diverse experiences
       await callExperience(env.client, {
-        source: 'Deep in thought about the architecture',
-        emoji: '🤔',
-        experienceQualities: humanQualities('embodied.thinking', 'focus.narrow', 'purpose.goal'),
+        anchor: '🤔',
+        embodied: 'deep in thought about the architecture',
+        focus: 'narrowed in on the design',
+        mood: 'engaged',
+        purpose: 'solving the problem',
+        space: 'at whiteboard',
+        time: 'in the moment',
+        presence: 'thinking alone',
+        who: ['Developer', 'Claude'],
+        citation: 'Deep in thought about the architecture'
       });
 
       await callExperience(env.client, {
-        source: 'Feeling the tension in my shoulders',
-        emoji: '😣',
-        experienceQualities: humanQualities('embodied.sensing', 'mood.closed', 'space.here'),
+        anchor: '😣',
+        embodied: 'feeling the tension in my shoulders',
+        focus: 'aware of physical discomfort',
+        mood: 'closed and stressed',
+        purpose: 'pushing through',
+        space: 'here at desk',
+        time: 'been hours',
+        presence: 'working solo',
+        who: ['Developer', 'Claude'],
+        citation: 'Feeling the tension in my shoulders'
       });
 
       await callExperience(env.client, {
-        source: 'Mind racing with possibilities',
-        emoji: '💭',
-        experienceQualities: humanQualities('embodied.thinking', 'focus.broad', 'purpose.wander'),
+        anchor: '💭',
+        embodied: 'mind racing with possibilities',
+        focus: 'broad exploration',
+        mood: 'open to ideas',
+        purpose: 'wandering through options',
+        space: 'mentally expansive',
+        time: 'timeless flow',
+        presence: 'in my own world',
+        who: ['Developer', 'Claude'],
+        citation: 'Mind racing with possibilities'
       });
 
-      // Search for thinking experiences
+      // Search for specific qualities
       const result = await callExperience(env.client, {
-        source: 'Looking for thinking moments',
-        emoji: '🔎',
-        experienceQualities: humanQualities('embodied.thinking', 'purpose.goal'),
+        anchor: '🔎',
+        embodied: 'searching for patterns',
+        focus: 'examining experiences',
+        mood: 'analytical',
+        purpose: 'finding thinking moments',
+        space: 'in search mode',
+        time: 'reviewing past',
+        presence: 'analyzing alone',
+        who: ['Developer', 'Claude'],
+        citation: 'Looking for thinking moments',
         recall: {
-          qualities: {
-            embodied: 'thinking',
-          },
+          query: 'thinking',
+          limit: 10
         },
       });
 
       // Recall won't return results with embeddings disabled in tests
-      expect(verifyToolResponse(result, 'Experienced')).toBe(true);
+      expect(verifyToolResponse(result, 'Experience Captured')).toBe(true);
     });
   }, 30000);
 
-  test('should find pattern realizations', async () => {
+  test('should find experiences by citation text', async () => {
     await withTestEnvironment(async (env) => {
-      // Create base experiences
-      const exp1 = await callExperience(env.client, {
-        source: 'Stuck on the problem',
-        emoji: '🚧',
-        experienceQualities: humanQualities('embodied.thinking', 'mood.closed', 'purpose.goal'),
-      });
-      const id1 = extractExperienceId(exp1);
-
-      const exp2 = await callExperience(env.client, {
-        source: 'Breakthrough moment!',
-        emoji: '✨',
-        experienceQualities: humanQualities('embodied.thinking', 'mood.open', 'purpose.goal'),
-      });
-      const id2 = extractExperienceId(exp2);
-
-      // Create pattern realization
+      // Create experiences
       await callExperience(env.client, {
-        source: 'I see the pattern - struggle leads to breakthrough',
-        emoji: '🔄',
-        experienceQualities: humanQualities('embodied.thinking', 'focus.broad', 'time.past'),
-        reflects: [id1!, id2!],
+        anchor: '🚧',
+        embodied: 'mind stuck on this bug',
+        focus: 'can\'t see the solution',
+        mood: 'frustrated and closed',
+        purpose: 'need to fix this',
+        space: 'trapped in code',
+        time: 'hours passing',
+        presence: 'debugging alone',
+        who: ['Developer', 'Claude'],
+        citation: 'Stuck on the problem'
       });
 
-      // Search for pattern realizations
+      await callExperience(env.client, {
+        anchor: '✨',
+        embodied: 'sudden clarity hits',
+        focus: 'everything clicks',
+        mood: 'open and excited',
+        purpose: 'solution achieved',
+        space: 'same code, new eyes',
+        time: 'breakthrough moment',
+        presence: 'solo victory',
+        who: ['Developer', 'Claude'],
+        citation: 'Breakthrough moment!'
+      });
+
+      // Create reflection
+      await callExperience(env.client, {
+        anchor: '🔄',
+        embodied: 'seeing the pattern clearly',
+        focus: 'broad understanding',
+        mood: 'insightful',
+        purpose: 'learning from experience',
+        space: 'reflective distance',
+        time: 'looking back',
+        presence: 'personal realization',
+        who: ['Developer', 'Claude'],
+        citation: 'I see the pattern - struggle leads to breakthrough'
+      });
+
+      // Search for patterns
       const result = await callExperience(env.client, {
-        source: 'Looking for insights and patterns',
-        emoji: '🔍',
-        experienceQualities: humanQualities('embodied.thinking', 'purpose.wander'),
+        anchor: '🔍',
+        embodied: 'searching for insights',
+        focus: 'looking for patterns',
+        mood: 'curious',
+        purpose: 'wandering through memories',
+        space: 'in search',
+        time: 'exploring past',
+        presence: 'searching alone',
+        who: ['Developer', 'Claude'],
+        citation: 'Looking for insights and patterns',
         recall: {
-          reflects: 'only',
+          query: 'pattern breakthrough',
+          limit: 5
         },
       });
 
       // Pattern search won't work with embeddings disabled
-      expect(verifyToolResponse(result, 'Experienced')).toBe(true);
+      expect(verifyToolResponse(result, 'Experience Captured')).toBe(true);
     });
   }, 30000);
 
-  test('should group results by similarity', async () => {
+  test('should handle search with limit', async () => {
     await withTestEnvironment(async (env) => {
-      // Add experiences with similar themes
-      await callExperience(env.client, {
-        source: 'Debugging the authentication issue',
-        emoji: '🐛',
-        experienceQualities: humanQualities('embodied.thinking', 'purpose.goal', 'mood.closed'),
-      });
+      // Add multiple experiences
+      for (let i = 0; i < 10; i++) {
+        await callExperience(env.client, {
+          anchor: '🔢',
+          embodied: `working on task ${i}`,
+          focus: 'on specific item',
+          mood: 'neutral',
+          purpose: 'completing tasks',
+          space: 'at workstation',
+          time: `moment ${i}`,
+          presence: 'working alone',
+          who: ['Worker', 'Claude'],
+          citation: `Task number ${i}`
+        });
+      }
 
-      await callExperience(env.client, {
-        source: 'Still working on the auth bug',
-        emoji: '🔧',
-        experienceQualities: humanQualities('embodied.thinking', 'purpose.goal', 'mood.closed'),
-      });
-
-      await callExperience(env.client, {
-        source: 'Team meeting about project timeline',
-        emoji: '👥',
-        experienceQualities: humanQualities('presence.collective', 'purpose.goal', 'time.future'),
-      });
-
-      await callExperience(env.client, {
-        source: 'Planning the next sprint with the team',
-        emoji: '📅',
-        experienceQualities: humanQualities('presence.collective', 'purpose.goal', 'time.future'),
-      });
-
-      // Search with grouping
+      // Search with specific limit
       const result = await callExperience(env.client, {
-        source: 'Analyzing all recent work',
-        emoji: '📊',
-        experienceQualities: humanQualities('embodied.thinking', 'focus.broad', 'purpose.wander'),
+        anchor: '📊',
+        embodied: 'reviewing all work',
+        focus: 'broad overview',
+        mood: 'analytical',
+        purpose: 'analyzing patterns',
+        space: 'stepping back',
+        time: 'after work',
+        presence: 'reviewing alone',
+        who: ['Worker', 'Claude'],
+        citation: 'Analyzing all recent work',
         recall: {
-          group_by: 'similarity',
-          limit: 10,
+          query: 'task',
+          limit: 3,
         },
       });
 
-      // Clustering results should be returned in groups
-      // Grouping won't work with embeddings disabled
-      expect(verifyToolResponse(result, 'Experienced')).toBe(true);
+      // Limited results won't be returned with embeddings disabled
+      expect(verifyToolResponse(result, 'Experience Captured')).toBe(true);
     });
   }, 30000);
 
-  test('should filter by who experienced', async () => {
+  test('should combine search with new experience', async () => {
     await withTestEnvironment(async (env) => {
       // Add experiences from different people
       await callExperience(env.client, {
-        source: 'I need to refactor this code',
-        emoji: '🔨',
-        experienceQualities: humanQualities('embodied.thinking', 'purpose.goal'),
-        who: 'Alice',
+        anchor: '🔨',
+        embodied: 'thinking through the refactor',
+        focus: 'on code structure',
+        mood: 'determined',
+        purpose: 'improving codebase',
+        space: 'in the code',
+        time: 'current sprint',
+        presence: 'working alone',
+        who: ['Alice', 'Claude'],
+        citation: 'I need to refactor this code'
       });
 
       await callExperience(env.client, {
-        source: 'The tests are finally passing',
-        emoji: '✅',
-        experienceQualities: humanQualities('mood.open', 'purpose.goal'),
-        who: 'Bob',
+        anchor: '✅',
+        embodied: 'relief washing over me',
+        focus: 'on green tests',
+        mood: 'open and satisfied',
+        purpose: 'validation achieved',
+        space: 'test results',
+        time: 'finally done',
+        presence: 'solo success',
+        who: ['Bob', 'Claude'],
+        citation: 'The tests are finally passing'
       });
 
       await callExperience(env.client, {
-        source: 'Reviewing the pull request',
-        emoji: '👀',
-        experienceQualities: humanQualities('embodied.thinking', 'focus.narrow'),
-        who: 'Alice',
+        anchor: '👀',
+        embodied: 'carefully examining changes',
+        focus: 'narrow on each line',
+        mood: 'critical but fair',
+        purpose: 'ensuring quality',
+        space: 'in PR review',
+        time: 'review time',
+        presence: 'reviewing alone',
+        who: ['Alice', 'Claude'],
+        citation: 'Reviewing the pull request'
       });
 
-      // Search for Alice's experiences
+      // Search while capturing new experience
       const result = await callExperience(env.client, {
-        source: "Looking for Alice's contributions",
-        emoji: '🔍',
-        experienceQualities: humanQualities('embodied.thinking', 'purpose.goal'),
+        anchor: '🔍',
+        embodied: 'searching through contributions',
+        focus: 'on specific person',
+        mood: 'investigative',
+        purpose: 'finding all work',
+        space: 'in history',
+        time: 'looking back',
+        presence: 'researching alone',
+        who: ['Manager', 'Claude'],
+        citation: "Looking for Alice's contributions",
         recall: {
-          who: 'Alice',
+          query: 'Alice',
+          limit: 10
         },
       });
 
-      // Filter by who won't work with embeddings disabled
-      expect(verifyToolResponse(result, 'Experienced')).toBe(true);
-    });
-  }, 30000);
-
-  test('should combine multiple search filters', async () => {
-    await withTestEnvironment(async (env) => {
-      // Add varied experiences
-      const experiences = createTestExperiences();
-      for (const exp of experiences) {
-        await callExperience(env.client, exp);
-      }
-
-      // Complex search with multiple filters
-      const result = await callExperience(env.client, {
-        source: 'Comprehensive search for team moments',
-        emoji: '🔎',
-        experienceQualities: humanQualities('embodied.thinking', 'purpose.goal', 'focus.broad'),
-        recall: {
-          query: 'together team',
-          qualities: {
-            presence: 'collective',
-            mood: 'open',
-          },
-          limit: 5,
-        },
-      });
-
-      // Combined filters won't work with embeddings disabled
-      expect(verifyToolResponse(result, 'Experienced')).toBe(true);
+      // Search results won't be returned with embeddings disabled
+      expect(verifyToolResponse(result, 'Experience Captured')).toBe(true);
     });
   }, 30000);
 });
