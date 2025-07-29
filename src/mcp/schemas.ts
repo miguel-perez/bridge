@@ -374,7 +374,7 @@ export function generateExperienceExample(): ExperienceInput {
         source:
           "I'm sitting at my desk, the afternoon light streaming through the window. My fingers hover over the keyboard, that familiar mix of excitement and uncertainty bubbling up. This project feels like it could be something special, but I'm not quite sure how to start.",
         emoji: '✨',
-        who: 'Alex',
+        who: ['Alex', 'Claude'],
         experienceQualities: {
           embodied: 'sensing',
           focus: false,
@@ -401,7 +401,7 @@ export function generateSearchExample(): SearchInput {
       {
         search: 'creative breakthrough moments',
         limit: 5,
-        who: 'Alex',
+        who: ['Alex', 'Claude'],
         sort: 'relevance',
       },
     ],
@@ -446,7 +446,7 @@ export function generateBatchExperienceExample(): ExperienceInput {
       {
         source: 'The first moment of clarity when the solution finally clicks into place.',
         emoji: '💡',
-        who: 'Alex',
+        who: ['Alex', 'Claude'],
         experienceQualities: {
           embodied: false,
           focus: 'narrow', // Base quality 'focus' defaults to narrow
@@ -461,7 +461,7 @@ export function generateBatchExperienceExample(): ExperienceInput {
         source:
           'Walking through the park, the autumn leaves crunching underfoot, feeling grateful for this moment of peace.',
         emoji: '🍂',
-        who: 'Alex',
+        who: ['Alex', 'Claude'],
         experienceQualities: {
           embodied: 'thinking',
           focus: false,

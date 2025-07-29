@@ -704,7 +704,7 @@ function formatRecallResults(results: RecallResult[], showIds: boolean = false):
 
     // Add full quality details if available
     if ((metadata as Record<string, unknown>).experienceQualities) {
-      const qualityDetails = formatQualityDetails((metadata as Record<string, unknown>).experienceQualities as ExperienceQualities);
+      const qualityDetails = formatQualityDetails((metadata as Record<string, unknown>).experienceQualities as Record<string, string | false>);
       if (qualityDetails.length > 0) {
         lines.push('   Qualities:');
         qualityDetails.forEach(detail => {
